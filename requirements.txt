@@ -1,0 +1,45 @@
+# List all Python dependencies here
+
+# AutoGen
+pyautogen
+
+# RAG Frameworks (Choose one or both)
+llama-index
+langchain
+
+# LLM Providers
+openai
+
+# Vector Databases (Choose at least one)
+chromadb
+# faiss-cpu # or faiss-gpu if you have GPU
+# pinecone-client
+# weaviate-client
+qdrant-client>=1.17.1
+pinecone-client>=1.17.1
+weaviate-client>=3.0
+faiss-cpu>=26.0
+
+# File Processing
+#python-docx
+PyMuPDF
+
+# Utilities
+python-dotenv # To load environment variables from a .env file
+
+# Add other specific libraries as needed...
+
+
+# Database ORM
+sqlalchemy[asyncio]>=2.0
+
+# migrations
+alembic>=1.13
+
+# postgres drivers
+asyncpg>=0.29
+psycopg2-binary>=2.9
+
+# optional typing helpers
+greenlet>=3.0
+
