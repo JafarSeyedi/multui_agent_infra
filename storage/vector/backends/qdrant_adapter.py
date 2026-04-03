@@ -77,7 +77,7 @@ class QdrantAdapter(VectorDBAdapter):
         await self.upsert(ids, vectors, metadatas)
 
 
-    async def query(self, vector: List[float], top_k: int = 5, filters: Optional[Dict] = None) -> List[Dict]:
+    async def query(self, vector: List[float], top_k: int = 5, filters: Optional[Dict[str, Any]] = None) -> List[Dict]:
         """
         Queries Qdrant collection. 'filters' dictionary is translated to Qdrant's filter structure.
         """

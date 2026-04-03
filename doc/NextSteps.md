@@ -2,9 +2,6 @@
 1) لایه داده (Data Layer)
 اینجا مدل‌هایی ساخته می‌شوند که behavioral هستند:
 
-Agent Execution Event
-Agent Interaction Log
-Dialogue Log
 Pipeline Event
 Content Version
 RAG Document & Chunk
@@ -12,77 +9,13 @@ Student State Event
 TaskExecutionRecord
 RuntimeErrorLog
 MemorySnapshot
-فایل‌ها:
-text
-config/models/system/
-    execution_models.py
-    logging_models.py
-    versioning_models.py
-    rag_models.py
-    event_models.py
-نمونه مدل‌ها:
-Agent Execution
-python
-class AgentExecutionRecord(BaseModel):
-    agent_name: str
-    agent_version: str
-    input_payload: dict
-    output_payload: dict
-    execution_time_ms: int
-    timestamp: datetime
-    status: str  # success / failure
-Interaction Log
-python
-class AgentInteractionLog(BaseModel):
-    agent: str
-    user_id: Optional[str]
-    request: dict
-    response: dict
-    timestamp: datetime
-Dialogue Thread
-python
-class DialogueTurn(BaseModel):
-    speaker: str  # user / agent
-    message: str
-    timestamp: datetime
+
 2) لایه ذخیره‌سازی (Persistence Layer)
 در اینجا abstraction های زیر را اضافه می‌کنیم:
 
-StorageAdapter
-VectorDBAdapter
-DocumentStore
-RedisMemoryAdapter
 LocalFileAdapter
-SqlAdapter
-ساختار:
 
-text
-storage/
-    base_storage.py
-    sql_storage.py
-    redis_storage.py
-    vector_storage.py
-    document_storage.py
-مثال:
-python
-class StorageAdapter(ABC):
-    @abstractmethod
-    def save(self, key: str, data: dict):
-        pass
 
-    @abstractmethod
-    def load(self, key: str):
-        pass
-VectorDBAdapter
-python
-class VectorDBAdapter(ABC):
-    @abstractmethod
-    def upsert_embeddings(self, embeddings: List[List[float]], metadata: List[dict]):
-        pass
-
-    @abstractmethod
-    def query(self, vector: List[float], top_k: int):
-        pass
 3) لایه اینترفیس (Interface & Agent‑to‑Agent Communication)
 اینجا سه نوع interface لازم داریم:
 
@@ -363,7 +296,359 @@ RAG integration
 Memory system
 است.
 
+
+
+
+import faiss
+import numpy as np
+from typing import List, Dict, Any, Optional
+
+from ..base import VectorDBAdapter
+from ..embedding_utils import normalize_embedding
+
+
+class FaissAdapter(VectorDBAdapter):
+    """
+    FAISS vector database adapter.
+
+    Designed for:
+    - Local high performance retrieval
+    - Large scale embeddings
+    - Offline RAG systems
+    """
+
+    def __init__(self):
+
+        self.index = None
+        self.dimension = None
+
+        self.id_map: Dict[int, str] = {}
+        self.metadata_store: Dict[str, Dict[str, Any]] = {}
+
+        self._next_internal_id = 0
+
+    async def create_index(
+        self,
+        name: str,
+        dimension: int,
+        config: Optional[Dict[str, Any]] = None
+    ) -> None:
+
+        self.dimension = dimension
+
+        index_type = "flat"
+
+        if config and "type" in config:
+            index_type = config["type"]
+
+        if index_type == "ivf":
+
+            nlist = config.get("nlist", 100)
+
+            quantizer = faiss.IndexFlatIP(dimension)
+
+            index = faiss.IndexIVFFlat(
+                quantizer,
+                dimension,
+                nlist,
+                faiss.METRIC_INNER_PRODUCT
+            )
+
+        else:
+
+            index = faiss.IndexFlatIP(dimension)
+
+        self.index = index
+
+        print(f"FAISS index created (type={index_type}, dim={dimension})")
+
+    async def upsert(
+        self,
+        ids: List[str],
+        vectors: List[List[float]],
+        metadata: List[Dict[str, Any]]
+    ) -> None:
+
+        if self.index is None:
+            raise RuntimeError("Index not initialized")
+
+        if len(ids) != len(vectors):
+            raise ValueError("IDs and vectors mismatch")
+
+        vectors_np = []
+
+        for v in vectors:
+            vec = normalize_embedding(v)
+            vectors_np.append(vec)
+
+        vectors_np = np.array(vectors_np).astype("float32")
+
+        internal_ids = []
+
+        for i, external_id in enumerate(ids):
+
+            internal_id = self._next_internal_id
+            self._next_internal_id += 1
+
+            self.id_map[internal_id] = external_id
+            self.metadata_store[external_id] = metadata[i]
+
+            internal_ids.append(internal_id)
+
+        internal_ids_np = np.array(internal_ids)
+
+        if isinstance(self.index, faiss.IndexIVFFlat) and not self.index.is_trained:
+            self.index.train(vectors_np)
+
+        self.index.add_with_ids(vectors_np, internal_ids_np)
+
+    async def batch_upsert(
+        self,
+        items: List[Dict[str, Any]]
+    ) -> None:
+
+        ids = [x["id"] for x in items]
+        vectors = [x["vector"] for x in items]
+        metadata = [x["metadata"] for x in items]
+
+        await self.upsert(ids, vectors, metadata)
+
+    async def query(
+        self,
+        vector: List[float],
+        top_k: int = 5,
+        filters: Optional[Dict[str, Any]] = None
+    ) -> List[Dict[str, Any]]:
+
+        if self.index is None:
+            raise RuntimeError("Index not initialized")
+
+        vec = normalize_embedding(vector)
+
+        vec = np.array([vec]).astype("float32")
+
+        scores, ids = self.index.search(vec, top_k)
+
+        results = []
+
+        for score, internal_id in zip(scores[0], ids[0]):
+
+            if internal_id == -1:
+                continue
+
+            external_id = self.id_map.get(internal_id)
+
+            meta = self.metadata_store.get(external_id, {})
+
+            if filters:
+
+                match = True
+
+                for k, v in filters.items():
+                    if meta.get(k) != v:
+                        match = False
+                        break
+
+                if not match:
+                    continue
+
+            results.append(
+                {
+                    "_id": external_id,
+                    "_score": float(score),
+                    **meta
+                }
+            )
+
+        return results
+
+    async def delete(self, ids: List[str]) -> None:
+
+        if self.index is None:
+            return
+
+        reverse_map = {v: k for k, v in self.id_map.items()}
+
+        remove_ids = []
+
+        for external_id in ids:
+
+            internal_id = reverse_map.get(external_id)
+
+            if internal_id is not None:
+                remove_ids.append(internal_id)
+
+                self.metadata_store.pop(external_id, None)
+
+        if not remove_ids:
+            return
+
+        remove_ids_np = np.array(remove_ids)
+
+        self.index.remove_ids(remove_ids_np)
+
+        for iid in remove_ids:
+            self.id_map.pop(iid, None)
+
+        print(f"FAISS deleted {len(remove_ids)} vectors")
+
+
+
+
+اگر بخواهی می‌توانیم یکی از این قابلیت‌های بسیار مهم دیگر را انجام دهیم:
+
+Cross‑Encoder Reranker (BERT/RoBERTa)
+
+ارتقای دقت Rerank به سطح موتور جستجوی Bing/Google
+
+Agentic Retrieval (Multi‑Step Agents)
+
+retrieval چندمرحله‌ای با reasoning فعال
+
+Evidence‑Aware Answering
+
+پاسخ دادن با citation دقیق و وزنی
+
+هرکدام سیستم تو را یک لول بالاتر می‌برند.
+
+
+می‌توانیم مرحله‌ی Agentic Summarization + Answer Planning را هم اضافه کنیم تا سیستم یک research report به سبک Deep Research بنویسد.
+
+Graph Store
+یک ذخیره‌ساز ساده که می‌تواند بعداً به:
+
+Neo4j
+ArangoDB
+RedisGraph
+وصل شود.
+
 سه محیط همیشه باید داشته باشیم (حتی اگر الآن همه‌شان لوکال باشند):
 Development
 Staging / Test
 Production
+
+آیا می‌خواهی روی پیاده‌سازیِ دقیقِ Entity Extractor (که با استفاده از یک LLM سریع مثل GPT-4o-mini انجام می‌شود) تمرکز کنیم تا زنجیره روابط را استخراج کنیم؟
+
+یا ترجیح می‌دهی اول یک “Dashboard” یا “View” برای دیدن همین گرافِ در حال رشد بسازیم تا بفهمیم سیستم دقیقاً چه می‌فهمد؟ (این دومی برای دیباگ کردنِ هوشِ سیستم عالی است).
+
+قدم بعدی
+اگر بخواهی، می‌توانیم:
+
+Relation Ranking Engine
+برای اینکه روابط noisy حذف شوند
+
+و یک گراف پایدار (Knowledge Graph) تشکیل شود.
+
+یا:
+
+Graph Query Engine
+برای انجام پرسش‌های تحقیقاتی مثل:
+
+text
+give me all methods related to Transformer but not used by GPT-4
+سیدجعفر، دوست داری مرحله بعد چه باشد؟
+
+رابطه‌سنجی؟ نرمال‌سازی موجودیت؟ یا اجرای Multi-hop Reasoning واقعی؟
+
+
+
+Automated Research Benchmark Suite
+چیزی مثل:
+
+text
+DeepResearchBench
+RAGBench
+HotpotQA evaluation
+MultiHop reasoning tests
+تا موتور تحقیقاتی تو به صورت علمی benchmark شود.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Self‑Improving Autonomous Research Engine
+ویژگی‌ها:
+
+text
+✅ retrieval evaluation
+✅ hallucination detection
+✅ citation verification
+✅ reasoning validation
+✅ completeness measurement
+✅ automatic improvement
+
+
+Research Curriculum Learning Engine
+که باعث می‌شود موتور تحقیق تو:
+
+text
+از تحقیقات قبلی یاد بگیرد
+و خودش بهتر شود
+
+
+
+
+
+
+
+Active Learning Retriever
+که باعث می‌شود سیستم تو خودش داده‌های سخت برای retriever پیدا کند و retriever را چند برابر بهتر کند. این چیزی است که در موتورهای تحقیقاتی خیلی پیشرفته استفاده می‌شود.
+
+
+
+Query Difficulty Estimator + Adaptive Retrieval
+که باعث می‌شود موتور تحقیق تو تشخیص دهد:
+
+text
+این سوال ساده است
+یا نیاز به deep research دارد
+و بر اساس آن:
+
+text
+retrieval depth
+search rounds
+LLM reasoning
+
+
+
+
+
+
+Research Decomposition Engine
+
+که باعث می‌شود سیستم:
+
+text
+سوال پیچیده
+↓
+به چند sub-question شکسته شود
+↓
+برای هرکدام تحقیق مستقل انجام شود
+↓
+در آخر synthesis شود
+این همان معماری است که در OpenAI Deep Research و Perplexity Research Mode استفاده می‌شود.

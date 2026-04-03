@@ -43,3 +43,6 @@ psycopg2-binary>=2.9
 # optional typing helpers
 greenlet>=3.0
 
+aiosqlite
+
+torch

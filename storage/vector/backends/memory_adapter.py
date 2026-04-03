@@ -1,109 +1,108 @@
+from __future__ import annotations
+
+from typing import Any, Dict, List, Optional
+
 import numpy as np
-from sklearn.metrics.pairwise import cosine_similarity
-from typing import List, Dict, Any
+
 from ..base import VectorDBAdapter
+from ..embedding_utils import normalize_embedding
+
 
 class InMemoryVectorStore(VectorDBAdapter):
-    """
-    In-memory vector store for development and testing.
-    Simulates basic upsert and query functionality.
-    """
+    """Simple in-memory cosine-similarity vector store for tests and local use."""
 
     def __init__(self):
-        self._vectors = []
-        self._metadatas = []
-        self._ids = [] # We need to store IDs too for deletion and consistent upsert logic
+        self._vectors: List[List[float]] = []
+        self._metadatas: List[Dict[str, Any]] = []
+        self._ids: List[str] = []
+        self._dimension: Optional[int] = None
 
-    async def create_index(self, name: str, dimension: int, config: Optional[Dict] = None):
-        """No-op for in-memory store, index is implicitly created."""
-        print(f"InMemoryVectorStore: Index '{name}' with dimension {dimension} created (implicitly).")
-        self._dimension = dimension # Store dimension for potential future checks
+    async def create_index(
+        self,
+        name: str,
+        dimension: int,
+        config: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        self._dimension = dimension
 
-    async def upsert(self, ids: List[str], vectors: List[List[float]], metadata: List[Dict]):
-        """
-        Upserts vectors and metadata. Replaces existing entries if IDs match.
-        Assumes vectors are already normalized if needed by the application.
-        """
+    async def upsert(
+        self,
+        ids: List[str],
+        vectors: List[List[float]],
+        metadata: List[Dict[str, Any]],
+    ) -> None:
         if len(ids) != len(vectors) or len(ids) != len(metadata):
             raise ValueError("Length of ids, vectors, and metadata must match.")
 
-        for i in range(len(ids)):
-            item_id = ids[i]
-            vector = vectors[i]
-            meta = metadata[i]
+        if not ids:
+            return
+        if self._dimension is None:
+            self._dimension = len(vectors[0])
+
+        for item_id, vector, meta in zip(ids, vectors, metadata):
+            normalized = normalize_embedding(vector)
+            if len(normalized) != self._dimension:
+                raise ValueError("Vector dimension does not match the initialized index dimension.")
 
             if item_id in self._ids:
-                # Update existing
                 idx = self._ids.index(item_id)
-                self._vectors[idx] = vector
+                self._vectors[idx] = normalized
                 self._metadatas[idx] = meta
             else:
-                # Add new
                 self._ids.append(item_id)
-                self._vectors.append(vector)
+                self._vectors.append(normalized)
                 self._metadatas.append(meta)
-        print(f"InMemoryVectorStore: Upserted {len(ids)} items. Total items: {len(self._ids)}")
 
+    async def batch_upsert(self, items: List[Dict[str, Any]]) -> None:
+        if not items:
+            return
+        await self.upsert(
+            ids=[item["id"] for item in items],
+            vectors=[item["vector"] for item in items],
+            metadata=[item["metadata"] for item in items],
+        )
 
-    async def batch_upsert(self, items: List[Dict]):
-        """
-        Upserts items in batches. Each item should have 'id', 'vector', 'metadata'.
-        """
-        ids = [item['id'] for item in items]
-        vectors = [item['vector'] for item in items]
-        metadatas = [item['metadata'] for item in items]
-        await self.upsert(ids, vectors, metadatas)
-
-
-    async def query(self, vector: List[float], top_k: int = 5, filters: Optional[Dict] = None) -> List[Dict]:
-        """
-        Searches for most similar vectors using cosine similarity.
-        Basic filtering can be implemented here if needed, but for simplicity, it's omitted.
-        """
+    async def query(
+        self,
+        vector: List[float],
+        top_k: int = 5,
+        filters: Optional[Dict[str, Any]] = None,
+    ) -> List[Dict[str, Any]]:
         if not self._vectors:
             return []
+        if self._dimension is None:
+            raise RuntimeError("Index not initialized.")
 
-        if len(vector) != self._dimension:
-             raise ValueError(f"Query vector dimension ({len(vector)}) does not match index dimension ({self._dimension}).")
+        normalized_query = np.array(normalize_embedding(vector), dtype="float32")
+        if normalized_query.shape[0] != self._dimension:
+            raise ValueError("Query vector dimension does not match the initialized index dimension.")
 
+        matrix = np.array(self._vectors, dtype="float32")
+        similarities = matrix @ normalized_query
+        best_indices = np.argsort(similarities)[::-1][: min(top_k, len(self._vectors))]
 
-        vectors_np = np.array(self._vectors).astype("float32")
-        query_vector_np = np.array(vector).astype("float32")
-
-        # Cosine similarity calculation
-        similarities = cosine_similarity([query_vector_np], vectors_np)[0]
-
-        # Get top K indices, handling cases where top_k > number of vectors
-        num_items = len(self._vectors)
-        actual_top_k = min(top_k, num_items)
-
-        best_indices = np.argsort(similarities)[::-1][:actual_top_k]
-
-        results = []
-        for i in best_indices:
-            # In a real scenario, you might include the score and ID
-            # For simplicity, returning only metadata as requested by the base interface
-            result_meta = self._metadatas[i].copy() # Return a copy
-            result_meta["_id"] = self._ids[i]
-            result_meta["_score"] = float(similarities[i]) # Include score
-            results.append(result_meta)
-
+        results: List[Dict[str, Any]] = []
+        for idx in best_indices:
+            metadata = self._metadatas[idx]
+            if filters and any(metadata.get(key) != value for key, value in filters.items()):
+                continue
+            results.append({
+                "_id": self._ids[idx],
+                "_score": float(similarities[idx]),
+                **metadata,
+            })
         return results
 
-    async def delete(self, ids: List[str]):
-        """Deletes items by their IDs."""
-        indices_to_delete = {self._ids.index(id) for id in ids if id in self._ids}
-        
-        if not indices_to_delete:
-            print("InMemoryVectorStore: No matching IDs found for deletion.")
+    async def delete(self, ids: List[str]) -> None:
+        ids_to_remove = set(ids)
+        if not ids_to_remove:
             return
 
-        # Sort indices in descending order to avoid issues when deleting
-        sorted_indices = sorted(list(indices_to_delete), reverse=True)
-
-        for index in sorted_indices:
-            del self._ids[index]
-            del self._vectors[index]
-            del self._metadatas[index]
-        
-        print(f"InMemoryVectorStore: Deleted {len(ids)} items. Total remaining: {len(self._ids)}")
+        retained = [
+            (item_id, vector, metadata)
+            for item_id, vector, metadata in zip(self._ids, self._vectors, self._metadatas)
+            if item_id not in ids_to_remove
+        ]
+        self._ids = [row[0] for row in retained]
+        self._vectors = [row[1] for row in retained]
+        self._metadatas = [row[2] for row in retained]

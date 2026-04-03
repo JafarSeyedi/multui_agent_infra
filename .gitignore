@@ -1,0 +1,29 @@
+# .gitignore
+
+# Environment variables
+.env
+
+# Python cache and compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# IDE/Editor specific files
+.idea/
+.vscode/
+*.swp
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Data and temporary files
+data/status_db.json
+*.log
+*.tmp
+
+# Virtual environment
+venv/
+env/
+.venv/

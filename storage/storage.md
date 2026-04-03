@@ -63,6 +63,11 @@ storage/redis_storage.py
 cache نتایج LLM و RAG
 
 
+Isolation: اگر Redis Cluster تو در دیتاسنتر جابه‌جا شود، فقط RedisManager تغییر می‌کند؛ ایجنت‌های تو اصلاً روحشان هم خبردار نمی‌شود.
+Resilience: با استفاده از Retry و Health Checks در لایه Connection، سیستم در برابر قطعی‌های لحظه‌ای شبکه (Network Blips) ضدضربه است.
+Scalability: ایجنت‌ها می‌توانند روی Redis Streams با مدل Consumer Group کار کنند. یعنی اگر تعداد دانش‌آموزان سیستم تو زیاد شد، کافیست ۱۰ تا ایجنت جدید بالا بیاوری؛ Redis بار را بین آن‌ها پخش می‌کند.
+Data Integrity: با اضافه شدن JSON Module (که در لایه Storage می‌توانیم توسعه دهیم)، دیگر لازم نیست کل داکیومنت را برای تغییر یک فیلد آپدیت کنیم (Atomic Updates).
+
 4️⃣ VectorDB Adapter
 📄 storage/vector_storage.py
 
