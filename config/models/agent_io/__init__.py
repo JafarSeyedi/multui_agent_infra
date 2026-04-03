@@ -1,17 +1,7 @@
-# Content Agents
-from .content_agents import *
+"""Agent I/O schema package.
 
-# Teaching Agents
-from .teaching_agents import *
-
-# Personalization Agents
-from .personalization_agents import *
-
-# Assessment Agents
-from .assessment_agents import *
-
-# Analytics Agents
-from .analytics_agents import *
-
-# Evaluation Agents
-from .evaluation_agents import *
+Modules are intentionally not auto-imported here because the schema surface is large
+and some submodules may still be under active development.
+Import the specific schema module you need, e.g.:
+`from config.models.agent_io.content_agents import TextRewriteInput`
+"""
