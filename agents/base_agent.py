@@ -47,8 +47,27 @@ class BaseAgent:
             raise
 
     def run_sync(self, input_data: Any) -> BaseModel:
-        return asyncio.run(self.run(input_data))
+        """
+        Synchronous wrapper around the async `run` method.
 
+        NOTE:
+        - Must NOT be called from within an already running event loop.
+        - Intended for CLI scripts, simple synchronous environments, or tests.
+        """
+        try:
+            # اگر loop فعالی وجود داشته باشد، get_running_loop بدون خطا برمی‌گردد
+            asyncio.get_running_loop()
+        except RuntimeError:
+            # هیچ event loop فعالی نیست → استفاده از asyncio.run امن است
+            return asyncio.run(self.run(input_data))
+
+        # اگر به اینجا رسیدیم یعنی داخل یک event loop هستیم
+        raise RuntimeError(
+            "BaseAgent.run_sync() cannot be used inside an active asyncio event loop. "
+            "Use `await agent.run(...)` instead, or call this method from a purely "
+            "synchronous context (e.g., a separate thread or process)."
+        )
+        
     async def execute(self, input_model: BaseModel) -> dict[str, Any]:
         raise NotImplementedError(f"{self.agent_name} must implement execute().")
 

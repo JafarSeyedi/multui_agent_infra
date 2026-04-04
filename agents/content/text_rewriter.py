@@ -12,7 +12,7 @@ class TextRewriterAgent(BaseAgent):
     InputModel = TextRewriteInput
     OutputModel = TextRewriteOutput
 
-    async def execute(self, input_model: TextRewriteInput):
+    async def execute(self, input_model: TextRewriteInput) -> TextRewriteOutput:
         rewritten = await self._rewrite_text(input_model)
         return {
             "rewritten_text": rewritten,
