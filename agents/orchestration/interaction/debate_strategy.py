@@ -11,12 +11,7 @@ from ..models import (
 
 class DebateStrategy(InteractionStrategy):
 
-    async def execute(
-        self,
-        request: OrchestrationRequest,
-        agent_registry,
-        message_bus
-    ) -> OrchestrationResult:
+    async def execute(self, request: OrchestrationRequest) -> OrchestrationResult:
 
         context: Dict[str, Any] = dict(request.context)
 
@@ -28,8 +23,8 @@ class DebateStrategy(InteractionStrategy):
         proposer_task = tasks[0]
         critic_task = tasks[1]
 
-        proposer = agent_registry.get(proposer_task.agent_name)
-        critic = agent_registry.get(critic_task.agent_name)
+        proposer = self.registry.get(proposer_task.agent_name)
+        critic = self.registry.get(critic_task.agent_name)
 
         if proposer is None or critic is None:
             raise ValueError("Debate agents not found")
@@ -44,7 +39,7 @@ class DebateStrategy(InteractionStrategy):
 
         for round_id in range(1, max_rounds + 1):
 
-            await message_bus.publish({
+            await self.message_bus.publish({
                 "event": "debate_round_started",
                 "round": round_id
             })
@@ -57,7 +52,7 @@ class DebateStrategy(InteractionStrategy):
                 "round": round_id
             }
 
-            proposer_output = await proposer.run(proposer_payload)
+            proposer_output = await proposer.execute(proposer_payload)
 
             results.append(
                 TaskResult(
@@ -78,7 +73,7 @@ class DebateStrategy(InteractionStrategy):
                 "round": round_id
             }
 
-            critic_output = await critic.run(critic_payload)
+            critic_output = await critic.execute(critic_payload)
 
             results.append(
                 TaskResult(
@@ -99,14 +94,14 @@ class DebateStrategy(InteractionStrategy):
 
                 if critic_output.get("approved") is True:
 
-                    await message_bus.publish({
+                    await self.message_bus.publish({
                         "event": "debate_finished",
                         "round": round_id
                     })
 
                     break
 
-            await message_bus.publish({
+            await self.message_bus.publish({
                 "event": "debate_round_completed",
                 "round": round_id
             })

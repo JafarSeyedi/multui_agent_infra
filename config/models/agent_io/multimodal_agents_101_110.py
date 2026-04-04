@@ -7,12 +7,12 @@ from .common import ConfidenceScore, Evidence
 # Agent 101 — TextToSpeechAgent
 # -------------------------------------------------
 
-class TextToSpeechInput(BaseModel):
+class TextToSpeechInput(OrchestrationRequest):
     text: str
     voice_style: Optional[str]
 
 
-class TextToSpeechOutput(BaseModel):
+class TextToSpeechOutput(OrchestrationResult):
     audio_file_url: str
 
 
@@ -20,12 +20,12 @@ class TextToSpeechOutput(BaseModel):
 # Agent 102 — SpeechToTextAgent
 # -------------------------------------------------
 
-class SpeechToTextInput(BaseModel):
+class SpeechToTextInput(OrchestrationRequest):
     audio_file_url: str
     language: Optional[str]
 
 
-class SpeechToTextOutput(BaseModel):
+class SpeechToTextOutput(OrchestrationResult):
     transcript: str
     confidence: Optional[ConfidenceScore]
 
@@ -34,12 +34,12 @@ class SpeechToTextOutput(BaseModel):
 # Agent 103 — VisualIllustrationGenerator
 # -------------------------------------------------
 
-class VisualIllustrationInput(BaseModel):
+class VisualIllustrationInput(OrchestrationRequest):
     concept: str
     style: Optional[str]
 
 
-class VisualIllustrationOutput(BaseModel):
+class VisualIllustrationOutput(OrchestrationResult):
     image_url: str
     caption: Optional[str]
 
@@ -48,11 +48,11 @@ class VisualIllustrationOutput(BaseModel):
 # Agent 104 — BoardDrawingAgent
 # -------------------------------------------------
 
-class BoardDrawingInput(BaseModel):
+class BoardDrawingInput(OrchestrationRequest):
     equation_or_diagram: str
 
 
-class BoardDrawingOutput(BaseModel):
+class BoardDrawingOutput(OrchestrationResult):
     drawing_url: str
 
 
@@ -60,11 +60,11 @@ class BoardDrawingOutput(BaseModel):
 # Agent 105 — EmotionAnalysisAgent
 # -------------------------------------------------
 
-class EmotionAnalysisInput(BaseModel):
+class EmotionAnalysisInput(OrchestrationRequest):
     video_frame_urls: List[str]
 
 
-class EmotionAnalysisOutput(BaseModel):
+class EmotionAnalysisOutput(OrchestrationResult):
     detected_emotions: Dict[str, float]  # e.g., {"bored":0.1, "focused":0.8}
     dominant_emotion: Optional[str]
 
@@ -73,11 +73,11 @@ class EmotionAnalysisOutput(BaseModel):
 # Agent 106 — EngagementDetector
 # -------------------------------------------------
 
-class EngagementDetectorInput(BaseModel):
+class EngagementDetectorInput(OrchestrationRequest):
     student_behavior_events: List[str]
 
 
-class EngagementDetectorOutput(BaseModel):
+class EngagementDetectorOutput(OrchestrationResult):
     engagement_score: float
 
 
@@ -85,12 +85,12 @@ class EngagementDetectorOutput(BaseModel):
 # Agent 107 — VisualFeedbackAgent
 # -------------------------------------------------
 
-class VisualFeedbackInput(BaseModel):
+class VisualFeedbackInput(OrchestrationRequest):
     student_emotion: str
     lesson_state: str
 
 
-class VisualFeedbackOutput(BaseModel):
+class VisualFeedbackOutput(OrchestrationResult):
     feedback_image_url: str
 
 
@@ -98,11 +98,11 @@ class VisualFeedbackOutput(BaseModel):
 # Agent 108 — GestureRecognitionAgent
 # -------------------------------------------------
 
-class GestureRecognitionInput(BaseModel):
+class GestureRecognitionInput(OrchestrationRequest):
     video_clip_url: str
 
 
-class GestureRecognitionOutput(BaseModel):
+class GestureRecognitionOutput(OrchestrationResult):
     recognized_gestures: List[str]
 
 
@@ -110,12 +110,12 @@ class GestureRecognitionOutput(BaseModel):
 # Agent 109 — AudioFeedbackAgent
 # -------------------------------------------------
 
-class AudioFeedbackInput(BaseModel):
+class AudioFeedbackInput(OrchestrationRequest):
     detected_emotion: str
     student_id: Optional[str]
 
 
-class AudioFeedbackOutput(BaseModel):
+class AudioFeedbackOutput(OrchestrationResult):
     audio_response_url: str
 
 
@@ -123,10 +123,10 @@ class AudioFeedbackOutput(BaseModel):
 # Agent 110 — InteractiveLessonOrchestrator
 # -------------------------------------------------
 
-class InteractiveLessonOrchestratorInput(BaseModel):
+class InteractiveLessonOrchestratorInput(OrchestrationRequest):
     multimodal_context: Dict  # combination of audio, visual, and text state
 
 
-class InteractiveLessonOrchestratorOutput(BaseModel):
+class InteractiveLessonOrchestratorOutput(OrchestrationResult):
     orchestrated_actions: List[str]
     confidence: Optional[ConfidenceScore]

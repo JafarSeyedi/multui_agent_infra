@@ -14,12 +14,12 @@ from config.models.core.learning_objects import (
 # Agent 46 — Concept Graph Builder
 # --------------------------------------------------
 
-class ConceptGraphBuilderInput(BaseModel):
+class ConceptGraphBuilderInput(OrchestrationRequest):
 
     lessons: List[Lesson]
 
 
-class ConceptGraphBuilderOutput(BaseModel):
+class ConceptGraphBuilderOutput(OrchestrationResult):
 
     concepts: List[ConceptNode]
 
@@ -32,14 +32,14 @@ class ConceptGraphBuilderOutput(BaseModel):
 # Agent 47 — Concept Relation Extractor
 # --------------------------------------------------
 
-class ConceptRelationExtractorInput(BaseModel):
+class ConceptRelationExtractorInput(OrchestrationRequest):
 
     concepts: List[ConceptNode]
 
     lesson_texts: Optional[List[str]]
 
 
-class ConceptRelationExtractorOutput(BaseModel):
+class ConceptRelationExtractorOutput(OrchestrationResult):
 
     extracted_relations: List[str]
 
@@ -50,12 +50,12 @@ class ConceptRelationExtractorOutput(BaseModel):
 # Agent 48 — Prerequisite Inference Agent
 # --------------------------------------------------
 
-class PrerequisiteInferenceInput(BaseModel):
+class PrerequisiteInferenceInput(OrchestrationRequest):
 
     concepts: List[ConceptNode]
 
 
-class PrerequisiteInferenceOutput(BaseModel):
+class PrerequisiteInferenceOutput(OrchestrationResult):
 
     prerequisite_pairs: List[str]
 
@@ -66,14 +66,14 @@ class PrerequisiteInferenceOutput(BaseModel):
 # Agent 49 — Curriculum Planner
 # --------------------------------------------------
 
-class CurriculumPlannerInput(BaseModel):
+class CurriculumPlannerInput(OrchestrationRequest):
 
     learning_objectives: List[LearningObjective]
 
     target_level: Optional[str]
 
 
-class CurriculumPlannerOutput(BaseModel):
+class CurriculumPlannerOutput(OrchestrationResult):
 
     curriculum_lessons: List[Lesson]
 
@@ -84,12 +84,12 @@ class CurriculumPlannerOutput(BaseModel):
 # Agent 50 — Lesson Sequence Planner
 # --------------------------------------------------
 
-class LessonSequencePlannerInput(BaseModel):
+class LessonSequencePlannerInput(OrchestrationRequest):
 
     lessons: List[Lesson]
 
 
-class LessonSequencePlannerOutput(BaseModel):
+class LessonSequencePlannerOutput(OrchestrationResult):
 
     ordered_lessons: List[Lesson]
 
@@ -100,14 +100,14 @@ class LessonSequencePlannerOutput(BaseModel):
 # Agent 51 — Learning Path Generator
 # --------------------------------------------------
 
-class LearningPathGeneratorInput(BaseModel):
+class LearningPathGeneratorInput(OrchestrationRequest):
 
     student: StudentProfile
 
     objectives: List[LearningObjective]
 
 
-class LearningPathGeneratorOutput(BaseModel):
+class LearningPathGeneratorOutput(OrchestrationResult):
 
     recommended_lessons: List[Lesson]
 
@@ -118,14 +118,14 @@ class LearningPathGeneratorOutput(BaseModel):
 # Agent 52 — Personalized Curriculum Planner
 # --------------------------------------------------
 
-class PersonalizedCurriculumInput(BaseModel):
+class PersonalizedCurriculumInput(OrchestrationRequest):
 
     student: StudentProfile
 
     curriculum_lessons: List[Lesson]
 
 
-class PersonalizedCurriculumOutput(BaseModel):
+class PersonalizedCurriculumOutput(OrchestrationResult):
 
     personalized_lessons: List[Lesson]
 
@@ -136,14 +136,14 @@ class PersonalizedCurriculumOutput(BaseModel):
 # Agent 53 — Skill Gap Curriculum Adapter
 # --------------------------------------------------
 
-class SkillGapCurriculumAdapterInput(BaseModel):
+class SkillGapCurriculumAdapterInput(OrchestrationRequest):
 
     student: StudentProfile
 
     missing_concepts: List[str]
 
 
-class SkillGapCurriculumAdapterOutput(BaseModel):
+class SkillGapCurriculumAdapterOutput(OrchestrationResult):
 
     remedial_lessons: List[Lesson]
 
@@ -154,14 +154,14 @@ class SkillGapCurriculumAdapterOutput(BaseModel):
 # Agent 54 — Difficulty Balancer
 # --------------------------------------------------
 
-class DifficultyBalancerInput(BaseModel):
+class DifficultyBalancerInput(OrchestrationRequest):
 
     lessons: List[Lesson]
 
     student: StudentProfile
 
 
-class DifficultyBalancerOutput(BaseModel):
+class DifficultyBalancerOutput(OrchestrationResult):
 
     balanced_lessons: List[Lesson]
 
@@ -172,14 +172,14 @@ class DifficultyBalancerOutput(BaseModel):
 # Agent 55 — Study Strategy Planner
 # --------------------------------------------------
 
-class StudyStrategyPlannerInput(BaseModel):
+class StudyStrategyPlannerInput(OrchestrationRequest):
 
     student: StudentProfile
 
     objectives: List[LearningObjective]
 
 
-class StudyStrategyPlannerOutput(BaseModel):
+class StudyStrategyPlannerOutput(OrchestrationResult):
 
     study_plan: List[str]
 
@@ -190,14 +190,14 @@ class StudyStrategyPlannerOutput(BaseModel):
 # Agent 56 — Review Scheduler
 # --------------------------------------------------
 
-class ReviewSchedulerInput(BaseModel):
+class ReviewSchedulerInput(OrchestrationRequest):
 
     concepts: List[ConceptNode]
 
     student: StudentProfile
 
 
-class ReviewSchedulerOutput(BaseModel):
+class ReviewSchedulerOutput(OrchestrationResult):
 
     review_schedule: List[str]
 
@@ -206,14 +206,14 @@ class ReviewSchedulerOutput(BaseModel):
 # Agent 57 — Remediation Planner
 # --------------------------------------------------
 
-class RemediationPlannerInput(BaseModel):
+class RemediationPlannerInput(OrchestrationRequest):
 
     student: StudentProfile
 
     weak_concepts: List[str]
 
 
-class RemediationPlannerOutput(BaseModel):
+class RemediationPlannerOutput(OrchestrationResult):
 
     remediation_lessons: List[Lesson]
 
@@ -224,14 +224,14 @@ class RemediationPlannerOutput(BaseModel):
 # Agent 58 — Enrichment Planner
 # --------------------------------------------------
 
-class EnrichmentPlannerInput(BaseModel):
+class EnrichmentPlannerInput(OrchestrationRequest):
 
     student: StudentProfile
 
     mastered_concepts: List[str]
 
 
-class EnrichmentPlannerOutput(BaseModel):
+class EnrichmentPlannerOutput(OrchestrationResult):
 
     enrichment_lessons: List[Lesson]
 
@@ -240,14 +240,14 @@ class EnrichmentPlannerOutput(BaseModel):
 # Agent 59 — Concept Reinforcement Planner
 # --------------------------------------------------
 
-class ConceptReinforcementInput(BaseModel):
+class ConceptReinforcementInput(OrchestrationRequest):
 
     concepts: List[ConceptNode]
 
     student: StudentProfile
 
 
-class ConceptReinforcementOutput(BaseModel):
+class ConceptReinforcementOutput(OrchestrationResult):
 
     reinforcement_activities: List[str]
 
@@ -256,14 +256,14 @@ class ConceptReinforcementOutput(BaseModel):
 # Agent 60 — Long-Term Learning Planner
 # --------------------------------------------------
 
-class LongTermLearningPlannerInput(BaseModel):
+class LongTermLearningPlannerInput(OrchestrationRequest):
 
     student: StudentProfile
 
     long_term_goals: List[str]
 
 
-class LongTermLearningPlannerOutput(BaseModel):
+class LongTermLearningPlannerOutput(OrchestrationResult):
 
     long_term_plan: List[str]
 

@@ -8,7 +8,7 @@ from .common import ConfidenceScore, Recommendation
 # Agent 61 — Learning Session Planner
 # -------------------------------------------------
 
-class LearningSessionPlannerInput(BaseModel):
+class LearningSessionPlannerInput(OrchestrationRequest):
 
     student_id: str
 
@@ -17,7 +17,7 @@ class LearningSessionPlannerInput(BaseModel):
     available_time_minutes: Optional[int]
 
 
-class LearningSessionPlannerOutput(BaseModel):
+class LearningSessionPlannerOutput(OrchestrationResult):
 
     session_plan: List[str]
 
@@ -28,14 +28,14 @@ class LearningSessionPlannerOutput(BaseModel):
 # Agent 62 — Agent Workflow Planner
 # -------------------------------------------------
 
-class AgentWorkflowPlannerInput(BaseModel):
+class AgentWorkflowPlannerInput(OrchestrationRequest):
 
     task_description: str
 
     available_agents: List[str]
 
 
-class AgentWorkflowPlannerOutput(BaseModel):
+class AgentWorkflowPlannerOutput(OrchestrationResult):
 
     workflow_steps: List[str]
 
@@ -46,12 +46,12 @@ class AgentWorkflowPlannerOutput(BaseModel):
 # Agent 63 — Task Decomposer
 # -------------------------------------------------
 
-class TaskDecomposerInput(BaseModel):
+class TaskDecomposerInput(OrchestrationRequest):
 
     complex_task: str
 
 
-class TaskDecomposerOutput(BaseModel):
+class TaskDecomposerOutput(OrchestrationResult):
 
     subtasks: List[str]
 
@@ -60,14 +60,14 @@ class TaskDecomposerOutput(BaseModel):
 # Agent 64 — Agent Selector
 # -------------------------------------------------
 
-class AgentSelectorInput(BaseModel):
+class AgentSelectorInput(OrchestrationRequest):
 
     task: str
 
     candidate_agents: List[str]
 
 
-class AgentSelectorOutput(BaseModel):
+class AgentSelectorOutput(OrchestrationResult):
 
     selected_agent: str
 
@@ -78,14 +78,14 @@ class AgentSelectorOutput(BaseModel):
 # Agent 65 — Agent Router
 # -------------------------------------------------
 
-class AgentRouterInput(BaseModel):
+class AgentRouterInput(OrchestrationRequest):
 
     task: str
 
     metadata: Optional[Dict]
 
 
-class AgentRouterOutput(BaseModel):
+class AgentRouterOutput(OrchestrationResult):
 
     routed_agent: str
 
@@ -96,14 +96,14 @@ class AgentRouterOutput(BaseModel):
 # Agent 66 — Context Manager
 # -------------------------------------------------
 
-class ContextManagerInput(BaseModel):
+class ContextManagerInput(OrchestrationRequest):
 
     conversation_history: List[str]
 
     current_task: str
 
 
-class ContextManagerOutput(BaseModel):
+class ContextManagerOutput(OrchestrationResult):
 
     condensed_context: str
 
@@ -112,7 +112,7 @@ class ContextManagerOutput(BaseModel):
 # Agent 67 — Workflow State Tracker
 # -------------------------------------------------
 
-class WorkflowStateTrackerInput(BaseModel):
+class WorkflowStateTrackerInput(OrchestrationRequest):
 
     workflow_id: str
 
@@ -121,7 +121,7 @@ class WorkflowStateTrackerInput(BaseModel):
     pending_steps: List[str]
 
 
-class WorkflowStateTrackerOutput(BaseModel):
+class WorkflowStateTrackerOutput(OrchestrationResult):
 
     next_step: Optional[str]
 
@@ -132,14 +132,14 @@ class WorkflowStateTrackerOutput(BaseModel):
 # Agent 68 — Failure Recovery Agent
 # -------------------------------------------------
 
-class FailureRecoveryInput(BaseModel):
+class FailureRecoveryInput(OrchestrationRequest):
 
     failed_step: str
 
     error_message: str
 
 
-class FailureRecoveryOutput(BaseModel):
+class FailureRecoveryOutput(OrchestrationResult):
 
     recovery_action: str
 
@@ -150,14 +150,14 @@ class FailureRecoveryOutput(BaseModel):
 # Agent 69 — Retry Strategy Planner
 # -------------------------------------------------
 
-class RetryStrategyInput(BaseModel):
+class RetryStrategyInput(OrchestrationRequest):
 
     failed_task: str
 
     retry_count: int
 
 
-class RetryStrategyOutput(BaseModel):
+class RetryStrategyOutput(OrchestrationResult):
 
     retry_strategy: str
 
@@ -166,14 +166,14 @@ class RetryStrategyOutput(BaseModel):
 # Agent 70 — Short-Term Memory Manager
 # -------------------------------------------------
 
-class ShortTermMemoryInput(BaseModel):
+class ShortTermMemoryInput(OrchestrationRequest):
 
     session_id: str
 
     new_information: str
 
 
-class ShortTermMemoryOutput(BaseModel):
+class ShortTermMemoryOutput(OrchestrationResult):
 
     updated_memory_summary: str
 
@@ -182,14 +182,14 @@ class ShortTermMemoryOutput(BaseModel):
 # Agent 71 — Long-Term Memory Manager
 # -------------------------------------------------
 
-class LongTermMemoryInput(BaseModel):
+class LongTermMemoryInput(OrchestrationRequest):
 
     student_id: str
 
     knowledge_update: str
 
 
-class LongTermMemoryOutput(BaseModel):
+class LongTermMemoryOutput(OrchestrationResult):
 
     stored: bool
 
@@ -200,14 +200,14 @@ class LongTermMemoryOutput(BaseModel):
 # Agent 72 — Workflow Optimizer
 # -------------------------------------------------
 
-class WorkflowOptimizerInput(BaseModel):
+class WorkflowOptimizerInput(OrchestrationRequest):
 
     workflow_steps: List[str]
 
     performance_metrics: Optional[Dict]
 
 
-class WorkflowOptimizerOutput(BaseModel):
+class WorkflowOptimizerOutput(OrchestrationResult):
 
     optimized_steps: List[str]
 
@@ -218,14 +218,14 @@ class WorkflowOptimizerOutput(BaseModel):
 # Agent 73 — Cost Efficiency Analyzer
 # -------------------------------------------------
 
-class CostEfficiencyAnalyzerInput(BaseModel):
+class CostEfficiencyAnalyzerInput(OrchestrationRequest):
 
     workflow_steps: List[str]
 
     token_usage: Optional[Dict]
 
 
-class CostEfficiencyAnalyzerOutput(BaseModel):
+class CostEfficiencyAnalyzerOutput(OrchestrationResult):
 
     cost_score: float
 
@@ -236,14 +236,14 @@ class CostEfficiencyAnalyzerOutput(BaseModel):
 # Agent 74 — Agent Performance Monitor
 # -------------------------------------------------
 
-class AgentPerformanceMonitorInput(BaseModel):
+class AgentPerformanceMonitorInput(OrchestrationRequest):
 
     agent_name: str
 
     execution_logs: List[str]
 
 
-class AgentPerformanceMonitorOutput(BaseModel):
+class AgentPerformanceMonitorOutput(OrchestrationResult):
 
     performance_score: float
 
@@ -254,14 +254,14 @@ class AgentPerformanceMonitorOutput(BaseModel):
 # Agent 75 — System Health Evaluator
 # -------------------------------------------------
 
-class SystemHealthEvaluatorInput(BaseModel):
+class SystemHealthEvaluatorInput(OrchestrationRequest):
 
     active_agents: List[str]
 
     system_metrics: Optional[Dict]
 
 
-class SystemHealthEvaluatorOutput(BaseModel):
+class SystemHealthEvaluatorOutput(OrchestrationResult):
 
     health_score: float
 

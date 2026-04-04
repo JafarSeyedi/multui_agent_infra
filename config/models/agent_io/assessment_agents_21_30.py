@@ -23,7 +23,7 @@ DifficultyLevel = Literal[1, 2, 3, 4, 5]
 # Quiz Builder
 # --------------------------------------------------
 
-class QuizBuilderInput(BaseModel):
+class QuizBuilderInput(OrchestrationRequest):
 
     topic: str
 
@@ -59,7 +59,7 @@ class QuizQuestion(BaseModel):
     explanation: Optional[str] = None
 
 
-class QuizBuilderOutput(BaseModel):
+class QuizBuilderOutput(OrchestrationResult):
 
     quiz_title: str
 
@@ -75,7 +75,7 @@ class QuizBuilderOutput(BaseModel):
 # Answer Evaluator
 # --------------------------------------------------
 
-class AnswerEvaluationInput(BaseModel):
+class AnswerEvaluationInput(OrchestrationRequest):
 
     question_id: Optional[str]
 
@@ -90,7 +90,7 @@ class AnswerEvaluationInput(BaseModel):
     subject: Optional[str]
 
 
-class AnswerEvaluationOutput(BaseModel):
+class AnswerEvaluationOutput(OrchestrationResult):
 
     score: float
 
@@ -108,7 +108,7 @@ class AnswerEvaluationOutput(BaseModel):
 # Feedback Generator
 # --------------------------------------------------
 
-class FeedbackGenerationInput(BaseModel):
+class FeedbackGenerationInput(OrchestrationRequest):
 
     question_text: str
 
@@ -123,7 +123,7 @@ class FeedbackGenerationInput(BaseModel):
     student_profile: Optional[Dict]
 
 
-class FeedbackGenerationOutput(BaseModel):
+class FeedbackGenerationOutput(OrchestrationResult):
 
     feedback_text: str
 
@@ -139,7 +139,7 @@ class FeedbackGenerationOutput(BaseModel):
 # Rubric Generator
 # --------------------------------------------------
 
-class RubricGenerationInput(BaseModel):
+class RubricGenerationInput(OrchestrationRequest):
 
     assignment_description: str
 
@@ -157,7 +157,7 @@ class RubricCriterion(BaseModel):
     max_points: int
 
 
-class RubricGenerationOutput(BaseModel):
+class RubricGenerationOutput(OrchestrationResult):
 
     rubric: List[RubricCriterion]
 
@@ -169,7 +169,7 @@ class RubricGenerationOutput(BaseModel):
 # Misconception Analyzer
 # --------------------------------------------------
 
-class MisconceptionAnalysisInput(BaseModel):
+class MisconceptionAnalysisInput(OrchestrationRequest):
 
     student_answers: List[str]
 
@@ -187,7 +187,7 @@ class MisconceptionPattern(BaseModel):
     suggested_intervention: str
 
 
-class MisconceptionAnalysisOutput(BaseModel):
+class MisconceptionAnalysisOutput(OrchestrationResult):
 
     detected_patterns: List[MisconceptionPattern]
 
@@ -199,7 +199,7 @@ class MisconceptionAnalysisOutput(BaseModel):
 # Skill Mastery Estimator
 # --------------------------------------------------
 
-class SkillMasteryInput(BaseModel):
+class SkillMasteryInput(OrchestrationRequest):
 
     student_id: str
 
@@ -210,7 +210,7 @@ class SkillMasteryInput(BaseModel):
     attempt_history: Optional[List[Dict]]
 
 
-class SkillMasteryOutput(BaseModel):
+class SkillMasteryOutput(OrchestrationResult):
 
     mastery_probability: float
 
@@ -231,7 +231,7 @@ class SkillMasteryOutput(BaseModel):
 # Learning Gap Detector
 # --------------------------------------------------
 
-class LearningGapInput(BaseModel):
+class LearningGapInput(OrchestrationRequest):
 
     student_performance: Dict
 
@@ -247,7 +247,7 @@ class LearningGap(BaseModel):
     recommended_lessons: List[str]
 
 
-class LearningGapOutput(BaseModel):
+class LearningGapOutput(OrchestrationResult):
 
     gaps: List[LearningGap]
 
@@ -259,7 +259,7 @@ class LearningGapOutput(BaseModel):
 # Knowledge Graph Updater
 # --------------------------------------------------
 
-class KnowledgeGraphUpdateInput(BaseModel):
+class KnowledgeGraphUpdateInput(OrchestrationRequest):
 
     concept: str
 
@@ -268,7 +268,7 @@ class KnowledgeGraphUpdateInput(BaseModel):
     source: Optional[str]
 
 
-class KnowledgeGraphUpdateOutput(BaseModel):
+class KnowledgeGraphUpdateOutput(OrchestrationResult):
 
     nodes_added: List[str]
 
@@ -284,14 +284,14 @@ class KnowledgeGraphUpdateOutput(BaseModel):
 # Concept Difficulty Estimator
 # --------------------------------------------------
 
-class ConceptDifficultyInput(BaseModel):
+class ConceptDifficultyInput(OrchestrationRequest):
 
     concept: str
 
     student_attempts: Optional[List[Dict]]
 
 
-class ConceptDifficultyOutput(BaseModel):
+class ConceptDifficultyOutput(OrchestrationResult):
 
     estimated_difficulty: float
 
@@ -305,7 +305,7 @@ class ConceptDifficultyOutput(BaseModel):
 # Curriculum Mapper
 # --------------------------------------------------
 
-class CurriculumMappingInput(BaseModel):
+class CurriculumMappingInput(OrchestrationRequest):
 
     lesson_content: str
 
@@ -319,7 +319,7 @@ class CurriculumMapping(BaseModel):
     description: str
 
 
-class CurriculumMappingOutput(BaseModel):
+class CurriculumMappingOutput(OrchestrationResult):
 
     mapped_standards: List[CurriculumMapping]
 

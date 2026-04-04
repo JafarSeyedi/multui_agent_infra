@@ -11,12 +11,7 @@ from ..models import (
 
 class SelfRefineStrategy(InteractionStrategy):
 
-    async def execute(
-        self,
-        request: OrchestrationRequest,
-        agent_registry,
-        message_bus
-    ) -> OrchestrationResult:
+    async def execute(self, request: OrchestrationRequest) -> OrchestrationResult:
 
         context: Dict[str, Any] = dict(request.context)
 
@@ -31,19 +26,19 @@ class SelfRefineStrategy(InteractionStrategy):
 
         results: List[TaskResult] = []
 
-        generator = agent_registry.get(generator_name)
-        critic = agent_registry.get(critic_name)
-        refiner = agent_registry.get(refiner_name)
+        generator = self.registry.get(generator_name)
+        critic = self.registry.get(critic_name)
+        refiner = self.registry.get(refiner_name)
 
         if not generator or not critic or not refiner:
             raise ValueError("Required agents not registered")
 
-        await message_bus.publish({
+        await self.message_bus.publish({
             "event": "self_refine_started"
         })
 
         # Step 1 — Generate initial answer
-        output = await generator.run(context)
+        output = await generator.execute(context)
 
         results.append(
             TaskResult(
@@ -60,7 +55,7 @@ class SelfRefineStrategy(InteractionStrategy):
 
             iteration += 1
 
-            await message_bus.publish({
+            await self.message_bus.publish({
                 "event": "self_refine_iteration",
                 "iteration": iteration
             })
@@ -70,7 +65,7 @@ class SelfRefineStrategy(InteractionStrategy):
                 "context": context
             }
 
-            critique = await critic.run(critique_input)
+            critique = await critic.execute(critique_input)
 
             results.append(
                 TaskResult(
@@ -85,7 +80,7 @@ class SelfRefineStrategy(InteractionStrategy):
 
             if score >= quality_threshold:
 
-                await message_bus.publish({
+                await self.message_bus.publish({
                     "event": "self_refine_converged",
                     "score": score
                 })
@@ -98,7 +93,7 @@ class SelfRefineStrategy(InteractionStrategy):
                 "context": context
             }
 
-            output = await refiner.run(refine_input)
+            output = await refiner.execute(refine_input)
 
             results.append(
                 TaskResult(

@@ -8,12 +8,12 @@ from config.models.core.learning_objects import Lesson, LearningObjective
 # Agent 91 — Example Generator
 # -------------------------------------------------
 
-class ExampleGeneratorInput(BaseModel):
+class ExampleGeneratorInput(OrchestrationRequest):
     concept: str
     difficulty_level: Optional[str]
 
 
-class ExampleGeneratorOutput(BaseModel):
+class ExampleGeneratorOutput(OrchestrationResult):
     examples: List[str]
     confidence: Optional[ConfidenceScore]
 
@@ -22,13 +22,13 @@ class ExampleGeneratorOutput(BaseModel):
 # Agent 92 — Exercise Creator
 # -------------------------------------------------
 
-class ExerciseCreatorInput(BaseModel):
+class ExerciseCreatorInput(OrchestrationRequest):
     concept: str
     learning_objective: Optional[LearningObjective]
     difficulty: Optional[str]
 
 
-class ExerciseCreatorOutput(BaseModel):
+class ExerciseCreatorOutput(OrchestrationResult):
     exercises: List[str]
     recommendations: Optional[List[Recommendation]]
 
@@ -37,12 +37,12 @@ class ExerciseCreatorOutput(BaseModel):
 # Agent 93 — StoryBasedLessonCreator
 # -------------------------------------------------
 
-class StoryLessonCreatorInput(BaseModel):
+class StoryLessonCreatorInput(OrchestrationRequest):
     topic: str
     target_age: int
 
 
-class StoryLessonCreatorOutput(BaseModel):
+class StoryLessonCreatorOutput(OrchestrationResult):
     story_text: str
     moral_message: Optional[str]
 
@@ -51,12 +51,12 @@ class StoryLessonCreatorOutput(BaseModel):
 # Agent 94 — ConceptExplanationGenerator
 # -------------------------------------------------
 
-class ConceptExplanationInput(BaseModel):
+class ConceptExplanationInput(OrchestrationRequest):
     concept: str
     student_level: Optional[str]
 
 
-class ConceptExplanationOutput(BaseModel):
+class ConceptExplanationOutput(OrchestrationResult):
     explanation: str
     confidence: Optional[ConfidenceScore]
 
@@ -65,12 +65,12 @@ class ConceptExplanationOutput(BaseModel):
 # Agent 95 — PracticeQuestionGenerator
 # -------------------------------------------------
 
-class PracticeQuestionGeneratorInput(BaseModel):
+class PracticeQuestionGeneratorInput(OrchestrationRequest):
     lesson: Lesson
     question_count: int = 5
 
 
-class PracticeQuestionGeneratorOutput(BaseModel):
+class PracticeQuestionGeneratorOutput(OrchestrationResult):
     questions: List[str]
 
 
@@ -78,12 +78,12 @@ class PracticeQuestionGeneratorOutput(BaseModel):
 # Agent 96 — AdaptiveQuestionGenerator
 # -------------------------------------------------
 
-class AdaptiveQuestionGeneratorInput(BaseModel):
+class AdaptiveQuestionGeneratorInput(OrchestrationRequest):
     recent_performance_score: float
     target_concept: str
 
 
-class AdaptiveQuestionGeneratorOutput(BaseModel):
+class AdaptiveQuestionGeneratorOutput(OrchestrationResult):
     generated_questions: List[str]
     difficulty_level: str
 
@@ -92,12 +92,12 @@ class AdaptiveQuestionGeneratorOutput(BaseModel):
 # Agent 97 — ExplanationRewriter
 # -------------------------------------------------
 
-class ExplanationRewriterInput(BaseModel):
+class ExplanationRewriterInput(OrchestrationRequest):
     original_explanation: str
     target_level: str
 
 
-class ExplanationRewriterOutput(BaseModel):
+class ExplanationRewriterOutput(OrchestrationResult):
     rewritten_explanation: str
 
 
@@ -105,11 +105,11 @@ class ExplanationRewriterOutput(BaseModel):
 # Agent 98 — SummaryGenerator
 # -------------------------------------------------
 
-class SummaryGeneratorInput(BaseModel):
+class SummaryGeneratorInput(OrchestrationRequest):
     lesson_text: str
 
 
-class SummaryGeneratorOutput(BaseModel):
+class SummaryGeneratorOutput(OrchestrationResult):
     summary: str
 
 
@@ -117,12 +117,12 @@ class SummaryGeneratorOutput(BaseModel):
 # Agent 99 — ContentSimplifier
 # -------------------------------------------------
 
-class ContentSimplifierInput(BaseModel):
+class ContentSimplifierInput(OrchestrationRequest):
     text: str
     target_level: str
 
 
-class ContentSimplifierOutput(BaseModel):
+class ContentSimplifierOutput(OrchestrationResult):
     simplified_text: str
 
 
@@ -130,11 +130,11 @@ class ContentSimplifierOutput(BaseModel):
 # Agent 100 — AssessmentQuestionGenerator
 # -------------------------------------------------
 
-class AssessmentQuestionGeneratorInput(BaseModel):
+class AssessmentQuestionGeneratorInput(OrchestrationRequest):
     learning_objectives: List[LearningObjective]
     question_types: Optional[List[str]]
 
 
-class AssessmentQuestionGeneratorOutput(BaseModel):
+class AssessmentQuestionGeneratorOutput(OrchestrationResult):
     generated_questions: List[str]
     confidence: Optional[ConfidenceScore]

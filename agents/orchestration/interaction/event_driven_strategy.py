@@ -14,12 +14,7 @@ from ..models import (
 
 class EventDrivenStrategy(InteractionStrategy):
 
-    async def execute(
-        self,
-        request: OrchestrationRequest,
-        agent_registry,
-        message_bus
-    ) -> OrchestrationResult:
+    async def execute(self, request: OrchestrationRequest) -> OrchestrationResult:
 
         context: Dict[str, Any] = dict(request.context)
 
@@ -54,7 +49,7 @@ class EventDrivenStrategy(InteractionStrategy):
             event_type = event["type"]
             payload = event.get("payload", {})
 
-            await message_bus.publish({
+            await self.message_bus.publish({
                 "event": "event_received",
                 "type": event_type
             })
@@ -65,12 +60,10 @@ class EventDrivenStrategy(InteractionStrategy):
                 continue
 
             coroutines = [
-                self._run_listener(
+                self._execute_listener(
                     task,
                     payload,
-                    context,
-                    agent_registry,
-                    message_bus
+                    context
                 )
                 for task in listeners
             ]
@@ -120,22 +113,20 @@ class EventDrivenStrategy(InteractionStrategy):
 
         return event_map
 
-    async def _run_listener(
+    async def _execute_listener(
         self,
         task: TaskDefinition,
         payload: Dict[str, Any],
-        context: Dict[str, Any],
-        agent_registry,
-        message_bus
+        context: Dict[str, Any]
     ) -> TaskResult:
 
-        await message_bus.publish({
+        await self.message_bus.publish({
             "event": "event_listener_started",
             "task_id": task.task_id,
             "agent": task.agent_name
         })
 
-        agent = agent_registry.get(task.agent_name)
+        agent = self.registry.get(task.agent_name)
 
         if agent is None:
 
@@ -154,12 +145,12 @@ class EventDrivenStrategy(InteractionStrategy):
 
         try:
 
-            output = await agent.run(merged_payload)
+            output = await agent.execute(merged_payload)
 
             if isinstance(output, dict):
                 context.update(output)
 
-            await message_bus.publish({
+            await self.message_bus.publish({
                 "event": "event_listener_completed",
                 "task_id": task.task_id
             })

@@ -16,7 +16,7 @@ from config.models.core.learning_objects import (
 # Student Behavior Analyzer
 # --------------------------------------------------
 
-class StudentBehaviorAnalysisInput(BaseModel):
+class StudentBehaviorAnalysisInput(OrchestrationRequest):
 
     student_id: str
 
@@ -34,7 +34,7 @@ class BehaviorPattern(BaseModel):
     confidence: float
 
 
-class StudentBehaviorAnalysisOutput(BaseModel):
+class StudentBehaviorAnalysisOutput(OrchestrationResult):
 
     detected_patterns: List[BehaviorPattern]
 
@@ -48,14 +48,14 @@ class StudentBehaviorAnalysisOutput(BaseModel):
 # Engagement Detector
 # --------------------------------------------------
 
-class EngagementDetectionInput(BaseModel):
+class EngagementDetectionInput(OrchestrationRequest):
 
     student_id: str
 
     recent_events: List[LearningEvent]
 
 
-class EngagementDetectionOutput(BaseModel):
+class EngagementDetectionOutput(OrchestrationResult):
 
     engagement_level: str
 
@@ -71,7 +71,7 @@ class EngagementDetectionOutput(BaseModel):
 # Motivation Analyzer
 # --------------------------------------------------
 
-class MotivationAnalysisInput(BaseModel):
+class MotivationAnalysisInput(OrchestrationRequest):
 
     student_id: str
 
@@ -80,7 +80,7 @@ class MotivationAnalysisInput(BaseModel):
     performance_history: Optional[List[AssessmentResult]]
 
 
-class MotivationAnalysisOutput(BaseModel):
+class MotivationAnalysisOutput(OrchestrationResult):
 
     motivation_level: str
 
@@ -96,7 +96,7 @@ class MotivationAnalysisOutput(BaseModel):
 # Dropout Risk Predictor
 # --------------------------------------------------
 
-class DropoutRiskPredictionInput(BaseModel):
+class DropoutRiskPredictionInput(OrchestrationRequest):
 
     student_id: str
 
@@ -107,7 +107,7 @@ class DropoutRiskPredictionInput(BaseModel):
     assessment_results: Optional[List[AssessmentResult]]
 
 
-class DropoutRiskPredictionOutput(BaseModel):
+class DropoutRiskPredictionOutput(OrchestrationResult):
 
     risk_score: float
 
@@ -125,7 +125,7 @@ class DropoutRiskPredictionOutput(BaseModel):
 # Study Pattern Miner
 # --------------------------------------------------
 
-class StudyPatternMiningInput(BaseModel):
+class StudyPatternMiningInput(OrchestrationRequest):
 
     student_id: str
 
@@ -141,7 +141,7 @@ class StudyPattern(BaseModel):
     frequency: int
 
 
-class StudyPatternMiningOutput(BaseModel):
+class StudyPatternMiningOutput(OrchestrationResult):
 
     patterns: List[StudyPattern]
 
@@ -155,7 +155,7 @@ class StudyPatternMiningOutput(BaseModel):
 # Performance Trend Analyzer
 # --------------------------------------------------
 
-class PerformanceTrendAnalysisInput(BaseModel):
+class PerformanceTrendAnalysisInput(OrchestrationRequest):
 
     student_id: str
 
@@ -171,7 +171,7 @@ class PerformanceTrend(BaseModel):
     description: Optional[str]
 
 
-class PerformanceTrendAnalysisOutput(BaseModel):
+class PerformanceTrendAnalysisOutput(OrchestrationResult):
 
     trend: PerformanceTrend
 
@@ -185,7 +185,7 @@ class PerformanceTrendAnalysisOutput(BaseModel):
 # Learning Outcome Predictor
 # --------------------------------------------------
 
-class LearningOutcomePredictionInput(BaseModel):
+class LearningOutcomePredictionInput(OrchestrationRequest):
 
     student_id: str
 
@@ -194,7 +194,7 @@ class LearningOutcomePredictionInput(BaseModel):
     recent_assessments: Optional[List[AssessmentResult]]
 
 
-class LearningOutcomePredictionOutput(BaseModel):
+class LearningOutcomePredictionOutput(OrchestrationResult):
 
     predicted_mastery_levels: Dict[str, float]
 
@@ -208,14 +208,14 @@ class LearningOutcomePredictionOutput(BaseModel):
 # Classroom Analytics Agent
 # --------------------------------------------------
 
-class ClassroomAnalyticsInput(BaseModel):
+class ClassroomAnalyticsInput(OrchestrationRequest):
 
     class_id: str
 
     student_progress_data: List[LearningProgress]
 
 
-class ClassroomAnalyticsOutput(BaseModel):
+class ClassroomAnalyticsOutput(OrchestrationResult):
 
     average_mastery: float
 
@@ -231,7 +231,7 @@ class ClassroomAnalyticsOutput(BaseModel):
 # Cohort Comparison Agent
 # --------------------------------------------------
 
-class CohortComparisonInput(BaseModel):
+class CohortComparisonInput(OrchestrationRequest):
 
     cohort_a_id: str
 
@@ -242,7 +242,7 @@ class CohortComparisonInput(BaseModel):
     cohort_b_results: List[AssessmentResult]
 
 
-class CohortComparisonOutput(BaseModel):
+class CohortComparisonOutput(OrchestrationResult):
 
     cohort_a_average: float
 
@@ -260,7 +260,7 @@ class CohortComparisonOutput(BaseModel):
 # Teacher Dashboard Aggregator
 # --------------------------------------------------
 
-class TeacherDashboardAggregationInput(BaseModel):
+class TeacherDashboardAggregationInput(OrchestrationRequest):
 
     class_id: str
 
@@ -271,7 +271,7 @@ class TeacherDashboardAggregationInput(BaseModel):
     engagement_data: Optional[Dict]
 
 
-class TeacherDashboardAggregationOutput(BaseModel):
+class TeacherDashboardAggregationOutput(OrchestrationResult):
 
     class_average_score: Optional[float]
 

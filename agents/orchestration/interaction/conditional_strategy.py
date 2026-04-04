@@ -12,12 +12,7 @@ from ..models import (
 
 class ConditionalStrategy(InteractionStrategy):
 
-    async def execute(
-        self,
-        request: OrchestrationRequest,
-        agent_registry,
-        message_bus
-    ) -> OrchestrationResult:
+    async def execute(self, request: OrchestrationRequest) -> OrchestrationResult:
 
         context: Dict[str, Any] = dict(request.context)
 
@@ -48,13 +43,13 @@ class ConditionalStrategy(InteractionStrategy):
             if task is None:
                 raise ValueError(f"Task '{current_task_id}' not found")
 
-            await message_bus.publish({
+            await self.message_bus.publish({
                 "event": "conditional_task_started",
                 "task_id": task.task_id,
                 "agent": task.agent_name
             })
 
-            agent = agent_registry.get(task.agent_name)
+            agent = self.registry.get(task.agent_name)
 
             if agent is None:
                 raise ValueError(f"Agent '{task.agent_name}' not registered")
@@ -63,7 +58,7 @@ class ConditionalStrategy(InteractionStrategy):
 
             try:
 
-                output = await agent.run(payload)
+                output = await agent.execute(payload)
 
                 result = TaskResult(
                     task_id=task.task_id,
@@ -94,7 +89,7 @@ class ConditionalStrategy(InteractionStrategy):
                     final_context=context
                 )
 
-            await message_bus.publish({
+            await self.message_bus.publish({
                 "event": "conditional_task_completed",
                 "task_id": task.task_id
             })

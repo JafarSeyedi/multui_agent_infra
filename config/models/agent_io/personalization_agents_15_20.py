@@ -4,7 +4,7 @@ from datetime import datetime
 from .user_models import LearningStyle, StudentProfile # Import from user_models
 
 # --- مدل‌های عامل 15: مدرس دیالوگ (Dialogue Tutor) ---
-class DialogueTutorInput(BaseModel):
+class DialogueTutorInput(OrchestrationRequest):
     user_query: str
     conversation_history: List[Dict] # History of user messages and tutor responses
     student_profile: StudentProfile # Full student profile
@@ -14,12 +14,12 @@ class TutorResponse(BaseModel):
     response_text: str
     actions: Optional[List[str]] = None # e.g., "ask_clarification", "suggest_resource"
 
-class DialogueTutorOutput(BaseModel):
+class DialogueTutorOutput(OrchestrationResult):
     tutor_response: TutorResponse
     next_step_recommendation: Optional[str] = None
 
 # --- مدل‌های عامل 16: سازگار کننده سبک یادگیری (Learning Style Adapter) ---
-class StyleAdaptationInput(BaseModel):
+class StyleAdaptationInput(OrchestrationRequest):
     content: str # Lesson content, explanation, etc.
     learning_style: LearningStyle
     content_type: str # e.g., "lesson", "explanation", "exercise"
@@ -29,12 +29,12 @@ class AdaptedContent(BaseModel):
     suggested_visuals: Optional[List[str]] = None # e.g., image prompts
     suggested_activities: Optional[List[str]] = None # e.g., hands-on exercises
 
-class StyleAdaptationOutput(BaseModel):
+class StyleAdaptationOutput(OrchestrationResult):
     adapted_content: AdaptedContent
     adaptation_effectiveness_score: float
 
 # --- مدل‌های عامل 17: تحلیلگر پیشرفت (Progress Analyzer) ---
-class ProgressAnalysisInput(BaseModel):
+class ProgressAnalysisInput(OrchestrationRequest):
     student_id: str
     performance_data: Dict # e.g., assessment scores, quiz results, interaction logs
     learning_objectives: Optional[List[str]] = None
@@ -46,7 +46,7 @@ class LearningProgress(BaseModel):
     score_trend: Optional[List[float]] = None
     confidence_level: Optional[float] = None
 
-class ProgressAnalysisOutput(BaseModel):
+class ProgressAnalysisOutput(OrchestrationResult):
     overall_progress: float
     key_strengths: List[str]
     areas_for_improvement: List[str]
@@ -54,7 +54,7 @@ class ProgressAnalysisOutput(BaseModel):
     recommendations: List[str]
 
 # --- مدل‌های عامل 18: سازنده مسیر یادگیری (Learning Path Creator) ---
-class LearningPathCreationInput(BaseModel):
+class LearningPathCreationInput(OrchestrationRequest):
     student_profile: StudentProfile
     learning_goals: List[str]
     available_content: List[str] # IDs or titles of available lessons/modules
@@ -66,12 +66,12 @@ class LearningStep(BaseModel):
     sequence: int
     estimated_time: Optional[str] = None
 
-class LearningPathCreationOutput(BaseModel):
+class LearningPathCreationOutput(OrchestrationResult):
     learning_path: List[LearningStep]
     path_rationale: str
 
 # --- مدل‌های عامل 19: پیشنهاد دهنده منابع (Resource Recommender) ---
-class ResourceRecommendationInput(BaseModel):
+class ResourceRecommendationInput(OrchestrationRequest):
     student_profile: StudentProfile
     current_topic: str
     learning_goal: Optional[str] = None
@@ -84,11 +84,11 @@ class RecommendedResource(BaseModel):
     relevance_score: float
     reason: str
 
-class ResourceRecommendationOutput(BaseModel):
+class ResourceRecommendationOutput(OrchestrationResult):
     recommendations: List[RecommendedResource]
 
 # --- مدل‌های عامل 20: تحلیلگر سبک تعامل (Interaction Style Analyzer) ---
-class InteractionStyleAnalysisInput(BaseModel):
+class InteractionStyleAnalysisInput(OrchestrationRequest):
     user_id: str
     interaction_logs: List[Dict] # Logs of user interactions with the system
 
@@ -97,7 +97,7 @@ class InteractionPattern(BaseModel):
     description: str
     frequency: int
 
-class InteractionStyleAnalysisOutput(BaseModel):
+class InteractionStyleAnalysisOutput(OrchestrationResult):
     dominant_interaction_style: str
     identified_patterns: List[InteractionPattern]
     suggested_system_adjustments: List[str]

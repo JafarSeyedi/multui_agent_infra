@@ -682,3 +682,22 @@ text
 ↓
 در آخر synthesis شود
 این همان معماری است که در OpenAI Deep Research و Perplexity Research Mode استفاده می‌شود.
+
+
+
+
+
+
+
+
+
+
+3️⃣ Execution Tracing
+برای:
+
+text
+debug
+visualization
+monitoring
+4️⃣ Graph Visualization
+ساخت گراف اجرای workflow.

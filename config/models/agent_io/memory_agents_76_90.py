@@ -8,14 +8,14 @@ from .common import ConfidenceScore, Evidence
 # Agent 76 — Knowledge Ingestion Agent
 # -------------------------------------------------
 
-class KnowledgeIngestionInput(BaseModel):
+class KnowledgeIngestionInput(OrchestrationRequest):
 
     source_documents: List[str]
 
     source_type: Optional[str]
 
 
-class KnowledgeIngestionOutput(BaseModel):
+class KnowledgeIngestionOutput(OrchestrationResult):
 
     ingested_documents: List[str]
 
@@ -26,14 +26,14 @@ class KnowledgeIngestionOutput(BaseModel):
 # Agent 77 — Document Chunking Agent
 # -------------------------------------------------
 
-class DocumentChunkingInput(BaseModel):
+class DocumentChunkingInput(OrchestrationRequest):
 
     document_text: str
 
     chunk_size: Optional[int]
 
 
-class DocumentChunkingOutput(BaseModel):
+class DocumentChunkingOutput(OrchestrationResult):
 
     chunks: List[str]
 
@@ -42,12 +42,12 @@ class DocumentChunkingOutput(BaseModel):
 # Agent 78 — Embedding Generator
 # -------------------------------------------------
 
-class EmbeddingGeneratorInput(BaseModel):
+class EmbeddingGeneratorInput(OrchestrationRequest):
 
     texts: List[str]
 
 
-class EmbeddingGeneratorOutput(BaseModel):
+class EmbeddingGeneratorOutput(OrchestrationResult):
 
     embeddings_generated: int
 
@@ -56,14 +56,14 @@ class EmbeddingGeneratorOutput(BaseModel):
 # Agent 79 — Semantic Indexer
 # -------------------------------------------------
 
-class SemanticIndexerInput(BaseModel):
+class SemanticIndexerInput(OrchestrationRequest):
 
     embeddings_reference: str
 
     metadata: Optional[Dict]
 
 
-class SemanticIndexerOutput(BaseModel):
+class SemanticIndexerOutput(OrchestrationResult):
 
     index_id: str
 
@@ -74,14 +74,14 @@ class SemanticIndexerOutput(BaseModel):
 # Agent 80 — Vector Search Agent
 # -------------------------------------------------
 
-class VectorSearchInput(BaseModel):
+class VectorSearchInput(OrchestrationRequest):
 
     query: str
 
     top_k: Optional[int]
 
 
-class VectorSearchOutput(BaseModel):
+class VectorSearchOutput(OrchestrationResult):
 
     retrieved_chunks: List[str]
 
@@ -92,7 +92,7 @@ class VectorSearchOutput(BaseModel):
 # Agent 81 — Hybrid Retrieval Agent
 # -------------------------------------------------
 
-class HybridRetrievalInput(BaseModel):
+class HybridRetrievalInput(OrchestrationRequest):
 
     query: str
 
@@ -101,7 +101,7 @@ class HybridRetrievalInput(BaseModel):
     keyword_results: List[str]
 
 
-class HybridRetrievalOutput(BaseModel):
+class HybridRetrievalOutput(OrchestrationResult):
 
     merged_results: List[str]
 
@@ -110,14 +110,14 @@ class HybridRetrievalOutput(BaseModel):
 # Agent 82 — Context Builder Agent
 # -------------------------------------------------
 
-class ContextBuilderInput(BaseModel):
+class ContextBuilderInput(OrchestrationRequest):
 
     retrieved_chunks: List[str]
 
     max_context_length: Optional[int]
 
 
-class ContextBuilderOutput(BaseModel):
+class ContextBuilderOutput(OrchestrationResult):
 
     constructed_context: str
 
@@ -126,12 +126,12 @@ class ContextBuilderOutput(BaseModel):
 # Agent 83 — Memory Consolidation Agent
 # -------------------------------------------------
 
-class MemoryConsolidationInput(BaseModel):
+class MemoryConsolidationInput(OrchestrationRequest):
 
     recent_memories: List[str]
 
 
-class MemoryConsolidationOutput(BaseModel):
+class MemoryConsolidationOutput(OrchestrationResult):
 
     consolidated_memory: str
 
@@ -140,14 +140,14 @@ class MemoryConsolidationOutput(BaseModel):
 # Agent 84 — Episodic Memory Agent
 # -------------------------------------------------
 
-class EpisodicMemoryInput(BaseModel):
+class EpisodicMemoryInput(OrchestrationRequest):
 
     student_id: str
 
     session_events: List[str]
 
 
-class EpisodicMemoryOutput(BaseModel):
+class EpisodicMemoryOutput(OrchestrationResult):
 
     stored: bool
 
@@ -158,14 +158,14 @@ class EpisodicMemoryOutput(BaseModel):
 # Agent 85 — Student Knowledge Memory Agent
 # -------------------------------------------------
 
-class StudentKnowledgeMemoryInput(BaseModel):
+class StudentKnowledgeMemoryInput(OrchestrationRequest):
 
     student_id: str
 
     concept_updates: Dict
 
 
-class StudentKnowledgeMemoryOutput(BaseModel):
+class StudentKnowledgeMemoryOutput(OrchestrationResult):
 
     updated_concepts: List[str]
 
@@ -176,14 +176,14 @@ class StudentKnowledgeMemoryOutput(BaseModel):
 # Agent 86 — Knowledge Updater Agent
 # -------------------------------------------------
 
-class KnowledgeUpdaterInput(BaseModel):
+class KnowledgeUpdaterInput(OrchestrationRequest):
 
     existing_knowledge: str
 
     new_information: str
 
 
-class KnowledgeUpdaterOutput(BaseModel):
+class KnowledgeUpdaterOutput(OrchestrationResult):
 
     updated_knowledge: str
 
@@ -192,12 +192,12 @@ class KnowledgeUpdaterOutput(BaseModel):
 # Agent 87 — Knowledge Conflict Resolver
 # -------------------------------------------------
 
-class KnowledgeConflictResolverInput(BaseModel):
+class KnowledgeConflictResolverInput(OrchestrationRequest):
 
     conflicting_entries: List[str]
 
 
-class KnowledgeConflictResolverOutput(BaseModel):
+class KnowledgeConflictResolverOutput(OrchestrationResult):
 
     resolved_entry: str
 
@@ -208,14 +208,14 @@ class KnowledgeConflictResolverOutput(BaseModel):
 # Agent 88 — Retrieval Ranker
 # -------------------------------------------------
 
-class RetrievalRankerInput(BaseModel):
+class RetrievalRankerInput(OrchestrationRequest):
 
     query: str
 
     retrieved_items: List[str]
 
 
-class RetrievalRankerOutput(BaseModel):
+class RetrievalRankerOutput(OrchestrationResult):
 
     ranked_items: List[str]
 
@@ -224,14 +224,14 @@ class RetrievalRankerOutput(BaseModel):
 # Agent 89 — Context Relevance Evaluator
 # -------------------------------------------------
 
-class ContextRelevanceEvaluatorInput(BaseModel):
+class ContextRelevanceEvaluatorInput(OrchestrationRequest):
 
     query: str
 
     context_chunks: List[str]
 
 
-class ContextRelevanceEvaluatorOutput(BaseModel):
+class ContextRelevanceEvaluatorOutput(OrchestrationResult):
 
     relevance_scores: List[float]
 
@@ -240,12 +240,12 @@ class ContextRelevanceEvaluatorOutput(BaseModel):
 # Agent 90 — Knowledge Summarizer Agent
 # -------------------------------------------------
 
-class KnowledgeSummarizerInput(BaseModel):
+class KnowledgeSummarizerInput(OrchestrationRequest):
 
     knowledge_chunks: List[str]
 
 
-class KnowledgeSummarizerOutput(BaseModel):
+class KnowledgeSummarizerOutput(OrchestrationResult):
 
     summary: str
 

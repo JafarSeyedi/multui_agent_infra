@@ -5,7 +5,7 @@ from datetime import datetime
 
 # Agent1: بازنویس متون (Text Rewriter)
 ## Input
-class TextRewriteInput(BaseModel):
+class TextRewriteInput(OrchestrationRequest):
 
     raw_text: str
 
@@ -18,14 +18,14 @@ class TextRewriteInput(BaseModel):
     language: str = "fa"
 
 ## Output
-class RewriteChange(BaseModel):
+class RewriteChange(OrchestrationResult):
 
     original_segment: str
     rewritten_segment: str
     reason: Optional[str] = None
 
 
-class TextRewriteOutput(BaseModel):
+class TextRewriteOutput(OrchestrationResult):
 
     rewritten_text: str
 
@@ -38,7 +38,7 @@ class TextRewriteOutput(BaseModel):
 
 # Agent2 اعتبارسنج محتوا (Content Validator)
 ## Input
-class ContentValidationInput(BaseModel):
+class ContentValidationInput(OrchestrationRequest):
 
     content_text: str
 
@@ -57,7 +57,7 @@ class ValidationIssue(BaseModel):
     suggested_fix: Optional[str]
 
 
-class ContentValidationOutput(BaseModel):
+class ContentValidationOutput(OrchestrationResult):
 
     verified_statements: List[str]
 
@@ -70,7 +70,7 @@ class ContentValidationOutput(BaseModel):
 
 # Agent 3  ارجاع‌ساز (Citation Generator)
 ## Input
-class CitationGenerationInput(BaseModel):
+class CitationGenerationInput(OrchestrationRequest):
 
     content_text: str
 
@@ -87,7 +87,7 @@ class CitationEntry(BaseModel):
     year: Optional[int]
     link: Optional[str]
 
-class CitationGenerationOutput(BaseModel):
+class CitationGenerationOutput(OrchestrationResult):
 
     cited_text: str
 
@@ -96,7 +96,7 @@ class CitationGenerationOutput(BaseModel):
 
 # Agent 4  واژه‌نامه‌ساز (Glossary Builder)
 ## Input
-class GlossaryBuilderInput(BaseModel):
+class GlossaryBuilderInput(OrchestrationRequest):
 
     lesson_text: str
 
@@ -118,14 +118,14 @@ class GlossaryTerm(BaseModel):
     related_links: Optional[List[str]]
 
 
-class GlossaryBuilderOutput(BaseModel):
+class GlossaryBuilderOutput(OrchestrationResult):
 
     glossary_terms: List[GlossaryTerm]
 
 
 # Agent 5 به‌روزرسانی پویا (Dynamic Content Update)
 ## Input
-class DynamicUpdateInput(BaseModel):
+class DynamicUpdateInput(OrchestrationRequest):
 
     current_content: str
 
@@ -142,7 +142,7 @@ class ContentUpdateSuggestion(BaseModel):
     reason: str
 
 
-class DynamicUpdateOutput(BaseModel):
+class DynamicUpdateOutput(OrchestrationResult):
 
     updates: List[ContentUpdateSuggestion]
 
@@ -152,7 +152,7 @@ class DynamicUpdateOutput(BaseModel):
 # Agent 6 روایت‌ساز (Narrative Builder)
 ## Input
 
-class NarrativeBuilderInput(BaseModel):
+class NarrativeBuilderInput(OrchestrationRequest):
 
     lesson_content: str
 
@@ -170,7 +170,7 @@ class NarrativeElement(BaseModel):
     content: str
 
 
-class NarrativeBuilderOutput(BaseModel):
+class NarrativeBuilderOutput(OrchestrationResult):
 
     narrative_lesson: List[NarrativeElement]
 
@@ -179,7 +179,7 @@ class NarrativeBuilderOutput(BaseModel):
 
 # Agent 7  ساختاردهی خودکار (Auto Structurer)
 ## Input
-class StructuringInput(BaseModel):
+class StructuringInput(OrchestrationRequest):
 
     raw_text: str
 
@@ -198,7 +198,7 @@ class LessonSection(BaseModel):
     subsections: Optional[List[str]]
 
 
-class StructuringOutput(BaseModel):
+class StructuringOutput(OrchestrationResult):
 
     structured_sections: List[LessonSection]
 
@@ -207,7 +207,7 @@ class StructuringOutput(BaseModel):
 
 # Agent 8  پیشینه‌ساز (Prerequisite Builder)
 ## Input
-class PrerequisiteInput(BaseModel):
+class PrerequisiteInput(OrchestrationRequest):
 
     topic: str
 
@@ -225,7 +225,7 @@ class PrerequisiteItem(BaseModel):
     review_resource_link: Optional[str]
 
 
-class PrerequisiteOutput(BaseModel):
+class PrerequisiteOutput(OrchestrationResult):
 
     prerequisites: List[PrerequisiteItem]
 

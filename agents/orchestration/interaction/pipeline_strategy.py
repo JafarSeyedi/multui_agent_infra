@@ -16,19 +16,14 @@ class PipelineStrategy(InteractionStrategy):
     اجرای خطی تسک‌ها
     """
 
-    async def execute(
-        self,
-        request: OrchestrationRequest,
-        agent_registry,
-        message_bus
-    ) -> OrchestrationResult:
+    async def execute(self, request: OrchestrationRequest) -> OrchestrationResult:
 
         context: Dict[str, Any] = dict(request.context)
         results: List[TaskResult] = []
 
         for task in request.tasks:
 
-            await message_bus.publish({
+            await self.message_bus.publish({
                 "event": "task_started",
                 "task_id": task.task_id,
                 "agent": task.agent_name
@@ -36,8 +31,7 @@ class PipelineStrategy(InteractionStrategy):
 
             result = await self._execute_task(
                 task=task,
-                context=context,
-                agent_registry=agent_registry
+                context=context
             )
 
             results.append(result)
@@ -47,7 +41,7 @@ class PipelineStrategy(InteractionStrategy):
                 if isinstance(result.output, dict):
                     context.update(result.output)
 
-                await message_bus.publish({
+                await self.message_bus.publish({
                     "event": "task_completed",
                     "task_id": task.task_id,
                     "agent": task.agent_name
@@ -55,7 +49,7 @@ class PipelineStrategy(InteractionStrategy):
 
             else:
 
-                await message_bus.publish({
+                await self.message_bus.publish({
                     "event": "task_failed",
                     "task_id": task.task_id,
                     "agent": task.agent_name,
@@ -77,11 +71,10 @@ class PipelineStrategy(InteractionStrategy):
     async def _execute_task(
         self,
         task: TaskDefinition,
-        context: Dict[str, Any],
-        agent_registry
+        context: Dict[str, Any]
     ) -> TaskResult:
 
-        agent = agent_registry.get(task.agent_name)
+        agent = self.registry.get(task.agent_name)
 
         if agent is None:
 
@@ -98,7 +91,7 @@ class PipelineStrategy(InteractionStrategy):
 
         try:
 
-            output = await agent.run(payload)
+            output = await agent.execute(payload)
 
             return TaskResult(
                 task_id=task.task_id,

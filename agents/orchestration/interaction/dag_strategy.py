@@ -13,12 +13,7 @@ from ..models import (
 
 class DAGStrategy(InteractionStrategy):
 
-    async def execute(
-        self,
-        request: OrchestrationRequest,
-        agent_registry,
-        message_bus
-    ) -> OrchestrationResult:
+    async def execute(self, request: OrchestrationRequest) -> OrchestrationResult:
 
         context: Dict[str, Any] = dict(request.context)
         results: List[TaskResult] = []
@@ -49,9 +44,7 @@ class DAGStrategy(InteractionStrategy):
                 self._execute_task(
                     task=tasks_by_id[task_id],
                     context=context,
-                    context_lock=context_lock,
-                    agent_registry=agent_registry,
-                    message_bus=message_bus
+                    context_lock=context_lock
                 )
                 for task_id in ready_tasks
             ]
@@ -72,7 +65,7 @@ class DAGStrategy(InteractionStrategy):
 
                 else:
 
-                    await message_bus.publish({
+                    await self.message_bus.publish({
                         "event": "task_failed",
                         "task_id": result.task_id,
                         "error": result.error
@@ -141,18 +134,16 @@ class DAGStrategy(InteractionStrategy):
         self,
         task: TaskDefinition,
         context: Dict[str, Any],
-        context_lock,
-        agent_registry,
-        message_bus
+        context_lock
     ) -> TaskResult:
 
-        await message_bus.publish({
+        await self.message_bus.publish({
             "event": "task_started",
             "task_id": task.task_id,
             "agent": task.agent_name
         })
 
-        agent = agent_registry.get(task.agent_name)
+        agent = self.registry.get(task.agent_name)
 
         if agent is None:
 
@@ -168,14 +159,14 @@ class DAGStrategy(InteractionStrategy):
 
         try:
 
-            output = await agent.run(payload)
+            output = await agent.execute(payload)
 
             if isinstance(output, dict):
 
                 async with context_lock:
                     context.update(output)
 
-            await message_bus.publish({
+            await self.message_bus.publish({
                 "event": "task_completed",
                 "task_id": task.task_id,
                 "agent": task.agent_name

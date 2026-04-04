@@ -76,7 +76,7 @@ class CoverageGap(BaseModel):
 # Agent 41 — Question Quality Evaluator
 # -------------------------------------------------------
 
-class QuestionQualityEvaluationInput(BaseModel):
+class QuestionQualityEvaluationInput(OrchestrationRequest):
 
     question: Question
 
@@ -85,7 +85,7 @@ class QuestionQualityEvaluationInput(BaseModel):
     evaluation_criteria: Optional[List[EvaluationCriterion]]
 
 
-class QuestionQualityEvaluationOutput(BaseModel):
+class QuestionQualityEvaluationOutput(OrchestrationResult):
 
     overall_score: float
 
@@ -102,7 +102,7 @@ class QuestionQualityEvaluationOutput(BaseModel):
 # Agent 42 — Explanation Quality Evaluator
 # -------------------------------------------------------
 
-class ExplanationQualityEvaluationInput(BaseModel):
+class ExplanationQualityEvaluationInput(OrchestrationRequest):
 
     explanation_text: str
 
@@ -111,7 +111,7 @@ class ExplanationQualityEvaluationInput(BaseModel):
     evaluation_criteria: Optional[List[EvaluationCriterion]]
 
 
-class ExplanationQualityEvaluationOutput(BaseModel):
+class ExplanationQualityEvaluationOutput(OrchestrationResult):
 
     clarity_score: float
 
@@ -130,14 +130,14 @@ class ExplanationQualityEvaluationOutput(BaseModel):
 # Agent 43 — Pedagogical Alignment Evaluator
 # -------------------------------------------------------
 
-class PedagogicalAlignmentInput(BaseModel):
+class PedagogicalAlignmentInput(OrchestrationRequest):
 
     content_text: str
 
     learning_objectives: List[LearningObjective]
 
 
-class PedagogicalAlignmentOutput(BaseModel):
+class PedagogicalAlignmentOutput(OrchestrationResult):
 
     alignment_result: AlignmentResult
 
@@ -150,14 +150,14 @@ class PedagogicalAlignmentOutput(BaseModel):
 # Agent 44 — Multi-Agent Output Consistency Evaluator
 # -------------------------------------------------------
 
-class ConsistencyEvaluationInput(BaseModel):
+class ConsistencyEvaluationInput(OrchestrationRequest):
 
     outputs: List[str]
 
     agent_names: Optional[List[str]]
 
 
-class ConsistencyEvaluationOutput(BaseModel):
+class ConsistencyEvaluationOutput(OrchestrationResult):
 
     consistency_score: float
 
@@ -170,14 +170,14 @@ class ConsistencyEvaluationOutput(BaseModel):
 # Agent 45 — Curriculum Coverage Evaluator
 # -------------------------------------------------------
 
-class CurriculumCoverageInput(BaseModel):
+class CurriculumCoverageInput(OrchestrationRequest):
 
     lessons: List[Lesson]
 
     required_objectives: List[LearningObjective]
 
 
-class CurriculumCoverageOutput(BaseModel):
+class CurriculumCoverageOutput(OrchestrationResult):
 
     coverage_percentage: float
 

@@ -12,12 +12,7 @@ from ..models import (
 
 class BroadcastStrategy(InteractionStrategy):
 
-    async def execute(
-        self,
-        request: OrchestrationRequest,
-        agent_registry,
-        message_bus
-    ) -> OrchestrationResult:
+    async def execute(self, request: OrchestrationRequest) -> OrchestrationResult:
 
         context: Dict[str, Any] = dict(request.context)
 
@@ -30,15 +25,15 @@ class BroadcastStrategy(InteractionStrategy):
 
         aggregator_mode = request.metadata.get("aggregator", "merge")
 
-        async def run_single(task: TaskDefinition) -> TaskResult:
+        async def execute_single(task: TaskDefinition) -> TaskResult:
 
-            await message_bus.publish({
+            await self.message_bus.publish({
                 "event": "broadcast_task_started",
                 "task_id": task.task_id,
                 "agent": task.agent_name
             })
 
-            agent = agent_registry.get(task.agent_name)
+            agent = self.registry.get(task.agent_name)
 
             if agent is None:
                 return TaskResult(
@@ -51,9 +46,9 @@ class BroadcastStrategy(InteractionStrategy):
             payload = {**task.payload, "context": context}
 
             try:
-                output = await agent.run(payload)
+                output = await agent.execute(payload)
 
-                await message_bus.publish({
+                await self.message_bus.publish({
                     "event": "broadcast_task_completed",
                     "task_id": task.task_id,
                     "agent": task.agent_name
@@ -74,7 +69,7 @@ class BroadcastStrategy(InteractionStrategy):
                     error=str(e)
                 )
 
-        coroutines = [run_single(task) for task in tasks]
+        coroutines = [execute_single(task) for task in tasks]
         task_results = await asyncio.gather(*coroutines)
 
         results.extend(task_results)

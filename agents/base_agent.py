@@ -68,7 +68,7 @@ class BaseAgent:
             "synchronous context (e.g., a separate thread or process)."
         )
         
-    async def execute(self, input_model: BaseModel) -> dict[str, Any]:
+    async def execute(self, input_model: OrchestrationRequest) -> OrchestrationResult:
         raise NotImplementedError(f"{self.agent_name} must implement execute().")
 
     def _validate_input(self, input_data: Any) -> BaseModel:
