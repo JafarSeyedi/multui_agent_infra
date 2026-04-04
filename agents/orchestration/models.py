@@ -1,60 +1,77 @@
-from __future__ import annotations
-
-from datetime import datetime
-from typing import Any, Dict, List, Literal, Optional
-
+from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
-from config.models.system.interaction_models import AgentMessage, PipelineStep
 
-
-ScenarioType = Literal[
-    "sequential",
-    "broadcast",
-    "round_robin",
-    "selector",
-    "group_chat",
-]
-
-BackendType = Literal["native", "autogen", "auto"]
-
-
-class OrchestrationTask(BaseModel):
-    agent_name: str
-    input_payload: Dict[str, Any] = Field(default_factory=dict)
-    task_id: Optional[str] = None
-    description: Optional[str] = None
-    depends_on: List[str] = []
-
-
-class OrchestrationRequest(BaseModel):
-    workflow_id: str
-    scenario: ScenarioType = "sequential"
-    backend: BackendType = "auto"
-    tasks: List[OrchestrationTask]
-    shared_context: Dict[str, Any] = Field(default_factory=dict)
-    max_rounds: int = 3
-    selected_agent: Optional[str] = None
-    autogen_config: Dict[str, Any] = Field(default_factory=dict)
-
-
-class OrchestrationExecution(BaseModel):
+# -------------------------------
+# TASK DEFINITION
+# -------------------------------
+class TaskDefinition(BaseModel):
+    """
+    تعریف یک تسک در orchestration
+    """
     task_id: str
     agent_name: str
-    status: Literal["success", "failure", "skipped"]
-    output_payload: Optional[Dict[str, Any]] = None
-    error_message: Optional[str] = None
+
+    payload: Dict[str, Any] = Field(default_factory=dict)
+
+    # برای DAG
+    depends_on: List[str] = Field(default_factory=list)
+
+    # برای conditional routing
+    condition: Optional[str] = None
+
+    # برای self-refine یا loop
+    max_iterations: Optional[int] = None
+
+    # متادیتا برای هر تسک
+    metadata: Dict[str, Any] = Field(default_factory=dict)
 
 
+# -------------------------------
+# ORCHESTRATION REQUEST
+# -------------------------------
+class OrchestrationRequest(BaseModel):
+    """
+    ورودی اصلی به OrchestratorAgent
+    """
+    interaction_mode: str = "pipeline"
+    tasks: List[TaskDefinition]
+
+    # context مشترک برای همه استراتژی‌ها
+    context: Dict[str, Any] = Field(default_factory=dict)
+
+    # متادیتای تکمیلی
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+
+# -------------------------------
+# RESULT OF EACH TASK
+# -------------------------------
+class TaskResult(BaseModel):
+    """
+    نتیجه اجرای یک تسک
+    """
+    task_id: str
+    agent_name: str
+
+    success: bool
+    output: Any = None
+    error: Optional[str] = None
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+
+# -------------------------------
+# FULL ORCHESTRATION RESULT
+# -------------------------------
 class OrchestrationResult(BaseModel):
-    workflow_id: str
-    scenario: ScenarioType
-    backend_used: str
-    status: Literal["success", "partial_success", "failure"]
-    started_at: datetime
-    completed_at: datetime
-    shared_context: Dict[str, Any] = Field(default_factory=dict)
-    steps: List[PipelineStep] = Field(default_factory=list)
-    executions: List[OrchestrationExecution] = Field(default_factory=list)
-    messages: List[AgentMessage] = Field(default_factory=list)
-    notes: List[str] = Field(default_factory=list)
+    """
+    خروجی کامل orchestration
+    """
+    results: List[TaskResult]
+
+    success: bool = True
+
+    # context نهایی که توسط استراتژی ها آپدیت شده
+    final_context: Dict[str, Any] = Field(default_factory=dict)
+
+    metadata: Dict[str, Any] = Field(default_factory=dict)
