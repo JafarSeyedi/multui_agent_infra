@@ -1,143 +1,116 @@
+# agents/orchestration/interaction/broadcast_strategy.py
 import asyncio
-from typing import Dict, Any, List
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 from .base_strategy import InteractionStrategy
 from ..models import (
     OrchestrationRequest,
     OrchestrationResult,
     TaskDefinition,
-    TaskResult
+    TaskResult,
 )
 
 
 class BroadcastStrategy(InteractionStrategy):
-
     async def execute(self, request: OrchestrationRequest) -> OrchestrationResult:
-
-        context: Dict[str, Any] = dict(request.context)
-
-        tasks: List[TaskDefinition] = request.tasks
+        context: Dict[str, Any] = dict(request.context or {})
+        tasks: List[TaskDefinition] = request.tasks or []
 
         if not tasks:
-            raise ValueError("BroadcastStrategy requires at least one task")
+            raise ValueError("BroadcastStrategy requires at least one task.")
 
+        mode = request.metadata.get("aggregator", "merge")
         results: List[TaskResult] = []
 
-        aggregator_mode = request.metadata.get("aggregator", "merge")
+        coroutines = [self._execute_task(task, dict(context)) for task in tasks]
+        task_results = await asyncio.gather(*coroutines, return_exceptions=True)
 
-        async def execute_single(task: TaskDefinition) -> TaskResult:
-
-            await self.message_bus.publish({
-                "event": "broadcast_task_started",
-                "task_id": task.task_id,
-                "agent": task.agent_name
-            })
-
-            agent = self.registry.get(task.agent_name)
-
-            if agent is None:
-                return TaskResult(
-                    task_id=task.task_id,
-                    agent_name=task.agent_name,
-                    success=False,
-                    error=f"Agent '{task.agent_name}' not found"
-                )
-
-            payload = {**task.payload, "context": context}
-
-            try:
-                output = await agent.execute(payload)
-
-                await self.message_bus.publish({
-                    "event": "broadcast_task_completed",
-                    "task_id": task.task_id,
-                    "agent": task.agent_name
-                })
-
-                return TaskResult(
-                    task_id=task.task_id,
-                    agent_name=task.agent_name,
-                    success=True,
-                    output=output
-                )
-
-            except Exception as e:
-                return TaskResult(
-                    task_id=task.task_id,
-                    agent_name=task.agent_name,
-                    success=False,
-                    error=str(e)
-                )
-
-        coroutines = [execute_single(task) for task in tasks]
-        task_results = await asyncio.gather(*coroutines)
-
+        task_results = self._normalize_gather_results(task_results)
         results.extend(task_results)
 
-        final_output = self._aggregate_outputs(
-            results=task_results,
-            mode=aggregator_mode
-        )
+        final_output = self._aggregate_outputs(results, mode)
 
         return OrchestrationResult(
-            success=True,
+            success=all(result.success for result in results),
             results=results,
             final_context={
                 **context,
-                "broadcast_output": final_output
-            }
+                "broadcast_output": final_output,
+                "aggregation_mode": mode,
+                "task_count": len(results),
+            },
         )
 
-    def _aggregate_outputs(
-        self,
-        results: List[TaskResult],
-        mode: str
-    ) -> Any:
+    async def _execute_task(self, task: TaskDefinition, context_snapshot: Dict[str, Any]) -> TaskResult:
+        payload = {**task.payload, "context": context_snapshot}
 
+        if self.message_bus:
+            await self.message_bus.publish(
+                {"event": "broadcast_task_started", "task_id": task.task_id, "agent": task.agent_name}
+            )
+
+        agent = self.registry.get(task.agent_name)
+        if agent is None:
+            return TaskResult(
+                task_id=task.task_id,
+                agent_name=task.agent_name,
+                success=False,
+                error=f"Agent '{task.agent_name}' not found.",
+            )
+
+        try:
+            output = await agent.execute(payload)
+            if self.message_bus:
+                await self.message_bus.publish(
+                    {"event": "broadcast_task_completed", "task_id": task.task_id, "agent": task.agent_name}
+                )
+
+            return TaskResult(
+                task_id=task.task_id,
+                agent_name=task.agent_name,
+                success=True,
+                output=output,
+            )
+        except Exception as exc:
+            return TaskResult(
+                task_id=task.task_id,
+                agent_name=task.agent_name,
+                success=False,
+                error=str(exc),
+            )
+
+    @staticmethod
+    def _normalize_gather_results(results: Iterable[Any]) -> List[TaskResult]:
+        normalized: List[TaskResult] = []
+        for item in results:
+            if isinstance(item, TaskResult):
+                normalized.append(item)
+            elif isinstance(item, Exception):
+                normalized.append(
+                    TaskResult(
+                        task_id="unknown",
+                        agent_name="unknown",
+                        success=False,
+                        error=str(item),
+                    )
+                )
+        return normalized
+
+    def _aggregate_outputs(self, results: List[TaskResult], mode: str) -> Any:
         if mode == "merge":
-
-            merged = {}
-
-            for r in results:
-                if r.success:
-                    merged[r.agent_name] = r.output
-
-            return merged
-
+            return {res.agent_name: res.output for res in results if res.success}
         if mode == "list":
-
             return [
-                {
-                    "agent": r.agent_name,
-                    "output": r.output,
-                    "success": r.success
-                }
-                for r in results
+                {"agent": res.agent_name, "output": res.output, "success": res.success, "error": res.error}
+                for res in results
             ]
-
         if mode == "vote":
-
-            votes = {}
-
-            for r in results:
-
-                if not r.success:
-                    continue
-
-                if not isinstance(r.output, str):
-                    continue
-
-                votes[r.output] = votes.get(r.output, 0) + 1
-
+            votes: Dict[Any, int] = {}
+            for res in results:
+                if res.success and isinstance(res.output, str):
+                    votes[res.output] = votes.get(res.output, 0) + 1
             if not votes:
                 return None
-
             return max(votes.items(), key=lambda kv: kv[1])[0]
-
-        return [
-            {
-                "agent": r.agent_name,
-                "output": r.output
-            }
-            for r in results
-        ]
+        # fallback
+        return [res.output for res in results if res.success]

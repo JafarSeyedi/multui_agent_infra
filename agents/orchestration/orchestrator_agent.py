@@ -1,8 +1,9 @@
+# agents/orchestration/orchestrator_agent.py
 from typing import Any, Dict
 from agents.base_agent import BaseAgent
 
 from .models import OrchestrationRequest, OrchestrationResult
-from .backends import NativeOrchestrationBackend
+from .native_backend import NativeOrchestrationBackend
 
 
 class OrchestratorAgent(BaseAgent):
@@ -10,7 +11,7 @@ class OrchestratorAgent(BaseAgent):
     Agent سطح بالا برای اجرای workflowهای چندعامله
     """
 
-    def __init__(self, name: str, agent_registry, message_bus):
+    def __init__(self, name: str, agent_registry, message_bus: MessageBus):
         super().__init__(name)
 
         self.backend = NativeOrchestrationBackend(

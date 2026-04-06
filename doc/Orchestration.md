@@ -1039,3 +1039,166 @@ critic
 refiner
 ```
 می‌توانند حتی مدل‌های مختلف LLM باشند.
+
+
+# GroupChatStrategy 
+
+## اهداف
+GroupChatStrategy باید:
+
+- یک چت روم چندعاملی جنریک باشد.
+- تاریخچه مشترک (messages / history) را نگه دارد.
+- نوبت‌دهی را پشتیبانی کند:
+  - round_robin
+  - یا ساده‌ترین variant‌های دیگر (مثلاً "speaker_order").
+- شرط پایان:
+  - max_rounds (یا max_turns)
+  - یا فلگ done در خروجی هر agent
+  - یا termination از طریق متادیتا (مثلاً "stop_on_role": "moderator")
+## شکل context و metadata
+### Context (ورودی/خروجی):
+
+context["messages"]: لیستی از پیام‌ها، هر پیام مثلاً:
+```python
+  {
+      "role": "user" | "assistant" | "system" | custom_role,
+      "sender": "user" | task_id,
+      "content": "..."
+  }
+Optional:
+context["conversation_id"]
+context["topic"]
+هر state دیگر که agentها می‌خواهند.
+```
+### Metadata:
+
+- metadata["max_rounds"] (int) → پیش‌فرض مثلاً 8
+- metadata["mode"]:
+  - "round_robin" (default)
+  - "single_moderator" (اگر خواستی توسعه دهی؛ این نسخه primarily round_robin را هدف می‌گیرد)
+- metadata["participant_order"]: لیست task_id برای override کردن ترتیب.
+- metadata["moderator_task_id"]: اگر agent خاصی نقش moderator دارد.
+- metadata["stop_on_done"]: bool (default: True)
+- metadata["stop_on_role"]: مثلاً "moderator" (اختیاری)
+
+## ویژگی‌های مهم این پیاده‌سازی:
+
+- از OrchestrationRequest, OrchestrationResult, TaskResult, TaskDefinition موجود استفاده می‌کند.
+- با الگوی بقیه‌ی استراتژی‌ها در استفاده از سازگار است.:
+  - self.registry.get(task.agent_name)
+  - await agent.execute(payload)
+  - self.message_bus.publish({...})
+
+- context["messages"] را به‌صورت canonical history نگه می‌دارد.
+- از metadata برای کنترل behavior استفاده می‌کند، بدون این‌که مدل‌ها را تغییر دهد.
+
+# RoundRobin / TurnTakingStrategy (برای group chat ساده)
+
+یک لیست agent
+هر دور: یک agent، بر اساس history، پیام جدید تولید کند.
+برای سناریوهای simulation یا brainstorming گروهی ساده.
+
+
+وقتی GroupChatStrategy داریم، RoundRobin در واقع یک policy ساده داخل همان استراتژی است نه الزاماً یک استراتژی کاملاً جدید.
+
+اما در این سیستم‌ عمداً این را به عنوان یک استراتژی مستقل پیاده‌سازی می‌کنیم چون:
+
+- رفتار آن بسیار deterministic و ساده‌تر از group chat است
+- بدون moderator / termination پیچیده کار می‌کند
+- برای simulation / brainstorming / multi-agent reasoning loops عالی است
+
+## مفهوم RoundRobin / TurnTakingStrategy
+RoundRobinStrategy یک الگوی تعامل چندعاملی است که در آن:
+
+- چند agent در یک لیست مشخص قرار دارند
+- در هر دور فقط یک agent صحبت می‌کند
+- ترتیب صحبت ثابت و چرخه‌ای است
+```text
+Agent1 → Agent2 → Agent3 → Agent1 → Agent2 → ...
+```
+### از نظر مفهومی ساده‌تر از GroupChatStrategy
+ قوانین تعاملش کاملاً deterministic است.
+یعنی:
+
+- ترتیب speakerها ثابت است
+- هیچ routing پیچیده‌ای ندارد
+- هیچ branching یا debate role logic ندارد
+- فقط turn-taking ساده انجام می‌دهد
+
+
+### مفهوم RoundRobin / TurnTaking Strategy
+تعریف
+الگوی Round Robin یعنی:
+
+یک لیست از agentها داریم:
+
+```text
+A1, A2, A3, A4
+```
+نوبت‌ها به ترتیب می‌چرخند:
+
+```text
+Turn1 → A1
+Turn2 → A2
+Turn3 → A3
+Turn4 → A4
+Turn5 → A1
+Turn6 → A2
+...
+```
+هر agent:
+
+- history گفتگو را می‌گیرد
+- یک پیام تولید می‌کند
+- پیام به history اضافه می‌شود
+- agent بعدی اجرا می‌شود
+## کاربردهای واقعی
+این استراتژی surprisingly کاربردهای زیادی دارد:
+
+### 1️⃣ Brainstorming چند agent
+مثلاً:
+
+```text
+IdeaGenerator
+Critic
+Refiner
+Summarizer
+```
+هر کدام در نوبت خود ایده را توسعه می‌دهند.
+
+### 2️⃣ Simulation
+مثلاً:
+
+```text
+Teacher
+Student
+Observer
+```
+### 3️⃣ collaborative reasoning
+مثلاً:
+
+```text
+MathAgent
+LogicAgent
+Verifier
+```
+### 4️⃣ conversation replay systems
+برای تست رفتار agentها.
+
+# Supervisor/ManagerStrategy
+
+یک agent «مدیر» (supervisor) که:
+وظایف را بین agentهای دیگر تقسیم می‌کند،
+خروجی‌ها را بررسی و تجمیع می‌کند.
+شبیه الگوی “Manager + Workers”.
+
+# Voting / EnsembleStrategy
+
+چند agent مستقل یک پاسخ می‌دهند،
+یک aggregator (یا voting rule) پاسخ نهایی را انتخاب/merge می‌کند.
+برای بهبود robustness و کیفیت خروجی در کارهای حساس.
+
+# Memory-AugmentedStrategy
+
+orchestrator که به طور مشخص state بلندمدت را مدیریت می‌کند و بر اساس آن تصمیم می‌گیرد کدام agent/مسیر فعال شود.
+البته بخشی از این را می‌توان روی metadata/context همین استراتژی‌های فعلی گذاشت و شاید نیازی به کلاس جدید نباشد.

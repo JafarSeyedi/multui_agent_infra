@@ -1,123 +1,98 @@
-from typing import Dict, Any, List
+# agents/orchestration/interaction/self_refine_strategy.py
+from typing import Any, Dict, List
 
 from .base_strategy import InteractionStrategy
-
 from ..models import (
     OrchestrationRequest,
     OrchestrationResult,
-    TaskResult
+    TaskResult,
 )
 
 
 class SelfRefineStrategy(InteractionStrategy):
-
     async def execute(self, request: OrchestrationRequest) -> OrchestrationResult:
+        context: Dict[str, Any] = dict(request.context or {})
+        metadata = request.metadata or {}
 
-        context: Dict[str, Any] = dict(request.context)
+        generator_name = metadata.get("generator_agent")
+        critic_name = metadata.get("critic_agent")
+        refiner_name = metadata.get("refiner_agent")
+        if not (generator_name and critic_name and refiner_name):
+            raise ValueError("generator_agent, critic_agent and refiner_agent must be defined in metadata.")
 
-        metadata = request.metadata
-
-        generator_name = metadata["generator_agent"]
-        critic_name = metadata["critic_agent"]
-        refiner_name = metadata["refiner_agent"]
-
-        max_refinements = metadata.get("max_refinements", 3)
-        quality_threshold = metadata.get("quality_threshold", 0.9)
-
-        results: List[TaskResult] = []
+        max_refinements = int(metadata.get("max_refinements", 3))
+        quality_threshold = float(metadata.get("quality_threshold", 0.9))
 
         generator = self.registry.get(generator_name)
         critic = self.registry.get(critic_name)
         refiner = self.registry.get(refiner_name)
-
         if not generator or not critic or not refiner:
-            raise ValueError("Required agents not registered")
+            raise ValueError("Self-refine agents must be registered before executing strategy.")
 
-        await self.message_bus.publish({
-            "event": "self_refine_started"
-        })
+        results: List[TaskResult] = []
 
-        # Step 1 — Generate initial answer
-        output = await generator.execute(context)
-
-        results.append(
-            TaskResult(
-                task_id="generate",
-                agent_name=generator_name,
-                success=True,
-                output=output
-            )
+        output = await self._safe_execute(
+            generator,
+            generator_name,
+            {"context": dict(context)},
+            "generate",
+            results,
         )
 
-        iteration = 0
+        iterations = 0
+        converged_round: int | None = None
 
-        while iteration < max_refinements:
+        while iterations < max_refinements:
+            iterations += 1
 
-            iteration += 1
-
-            await self.message_bus.publish({
-                "event": "self_refine_iteration",
-                "iteration": iteration
-            })
-
-            critique_input = {
-                "answer": output,
-                "context": context
-            }
-
-            critique = await critic.execute(critique_input)
-
-            results.append(
-                TaskResult(
-                    task_id=f"critique_{iteration}",
-                    agent_name=critic_name,
-                    success=True,
-                    output=critique
-                )
+            critique = await self._safe_execute(
+                critic,
+                critic_name,
+                {"answer": output, "context": dict(context)},
+                f"critique_{iterations}",
+                results,
             )
 
             score = self._extract_score(critique)
-
             if score >= quality_threshold:
-
-                await self.message_bus.publish({
-                    "event": "self_refine_converged",
-                    "score": score
-                })
-
+                converged_round = iterations
                 break
 
-            refine_input = {
-                "answer": output,
-                "critique": critique,
-                "context": context
-            }
-
-            output = await refiner.execute(refine_input)
-
-            results.append(
-                TaskResult(
-                    task_id=f"refine_{iteration}",
-                    agent_name=refiner_name,
-                    success=True,
-                    output=output
-                )
+            output = await self._safe_execute(
+                refiner,
+                refiner_name,
+                {"answer": output, "critique": critique, "context": dict(context)},
+                f"refine_{iterations}",
+                results,
             )
 
         context["final_answer"] = output
-
         return OrchestrationResult(
             success=True,
             results=results,
-            final_context=context
+            final_context=context,
+            metadata={
+                "iterations": iterations,
+                "converged_round": converged_round,
+                "threshold": quality_threshold,
+            },
         )
 
-    def _extract_score(self, critique):
+    async def _safe_execute(
+        self, agent, agent_name: str, payload: Dict[str, Any], task_id: str, results: List[TaskResult]
+    ) -> Any:
+        try:
+            output = await agent.execute(payload)
+            results.append(TaskResult(task_id=task_id, agent_name=agent_name, success=True, output=output))
+            return output
+        except Exception as exc:
+            results.append(TaskResult(task_id=task_id, agent_name=agent_name, success=False, error=str(exc)))
+            raise
 
+    @staticmethod
+    def _extract_score(critique: Any) -> float:
         if isinstance(critique, dict):
             score = critique.get("score")
-
             if isinstance(score, (int, float)):
                 return float(score)
-
         return 0.0

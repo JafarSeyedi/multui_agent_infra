@@ -1,24 +1,14 @@
-# class InteractionStrategy:
-#     def __init__(self, registry, message_bus, storage):
-#         self.registry = registry
-#         self.message_bus = message_bus
-#         self.storage = storage
-#     async def run(self, request):
-#         raise NotImplementedError()
-
-
 # agents/orchestration/interaction/base_strategy.py
 from typing import Dict, List, Protocol, Any
 from agents.orchestration.models import (
     OrchestrationRequest,
-    OrchestrationExecution,
-    PipelineStep,
+    OrchestrationResult
 )
-from agents.message_bus import AgentMessage  # اگر در مسیر واقعی است
-
+from config.models.system.interaction_models import AgentMessage
+from agents.orchestration.buses.base import MessageBus
 
 class InteractionStrategy:
-    def __init__(self, registry, message_bus, storage):
+    def __init__(self, registry, message_bus: MessageBus, storage):
         self.registry = registry
         self.message_bus = message_bus
         self.storage = storage

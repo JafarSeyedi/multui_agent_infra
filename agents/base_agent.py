@@ -1,3 +1,4 @@
+# agents/base_agent.py
 from __future__ import annotations
 
 import asyncio
@@ -5,13 +6,16 @@ import inspect
 import time
 import uuid
 from datetime import datetime
-from typing import Any, Optional, Type
+from typing import Any, Optional, Type, TYPE_CHECKING
 
 from pydantic import BaseModel
 
 from config.models.system.execution_models import AgentExecutionRecord
 from storage.base_storage import StorageAdapter
 from storage.vector.base import VectorDBAdapter
+
+if TYPE_CHECKING:
+    from agents.orchestration.models import OrchestrationRequest, OrchestrationResult
 
 
 class BaseAgent:
@@ -55,20 +59,17 @@ class BaseAgent:
         - Intended for CLI scripts, simple synchronous environments, or tests.
         """
         try:
-            # اگر loop فعالی وجود داشته باشد، get_running_loop بدون خطا برمی‌گردد
             asyncio.get_running_loop()
         except RuntimeError:
-            # هیچ event loop فعالی نیست → استفاده از asyncio.run امن است
             return asyncio.run(self.run(input_data))
 
-        # اگر به اینجا رسیدیم یعنی داخل یک event loop هستیم
         raise RuntimeError(
             "BaseAgent.run_sync() cannot be used inside an active asyncio event loop. "
             "Use `await agent.run(...)` instead, or call this method from a purely "
             "synchronous context (e.g., a separate thread or process)."
         )
-        
-    async def execute(self, input_model: OrchestrationRequest) -> OrchestrationResult:
+
+    async def execute(self, input_model: "OrchestrationRequest") -> "OrchestrationResult":
         raise NotImplementedError(f"{self.agent_name} must implement execute().")
 
     def _validate_input(self, input_data: Any) -> BaseModel:
