@@ -317,7 +317,7 @@ class ArchitectureAnalyzer:
         empty = [
             f
             for f in self.files
-            if not f.classes and not f.functions and not f.errors
+            if not f.classes and not f.functions and not f.errors and Path(f.relative).name != "__init__.py"
         ]
         if empty:
             issues.append("\n### 🟡 فایل‌های خالی یا فقط شامل import")

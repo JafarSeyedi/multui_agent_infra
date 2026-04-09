@@ -1,16 +1,16 @@
 # 📐 Architecture Report
 
 > تولید شده توسط `tools/analyze_architecture.py`  
-> تاریخ: 2026-04-09 07:26:18  
+> تاریخ: 2026-04-10 00:33:07  
 ---
 
 ## 📊 آمار کلی
 
 | معیار | مقدار |
 |-------|-------|
-| فایل‌های Python | 239 |
-| کلاس‌ها | 499 |
-| توابع سطح بالا | 80 |
+| فایل‌های Python | 256 |
+| کلاس‌ها | 507 |
+| توابع سطح بالا | 81 |
 | فایل‌های با خطا | 0 |
 
 ---
@@ -38,6 +38,7 @@
   │   ├── 📁 explain/
   │   ├── 📁 graph/
   │   ├── 📁 learning/
+  │   ├── 📁 llm/
   │   ├── 📁 planner/
   │   ├── 📁 reflection/
   │   ├── 📁 reranking/
@@ -53,6 +54,7 @@
   │   │   ├── 📁 observability/
   │   │   └── 📁 summarization/
   │   ├── 📁 retrieval/
+  │   ├── 📁 services/
   │   └── 📁 trainer/
   ├── 📁 storage/
   │   ├── 📁 backends/
@@ -180,6 +182,13 @@
   │   ├── 📁 learning/
   │   │   ├── 📄 __init__.py
   │   │   └── 📄 retrieval_policy.py
+  │   ├── 📁 llm/
+  │   │   ├── 📄 __init__.py
+  │   │   ├── 📄 base_llm.py
+  │   │   ├── 📄 llm_factory.py
+  │   │   ├── 📄 llm_protocols.py
+  │   │   ├── 📄 ollama_llm.py
+  │   │   └── 📄 openai_llm.py
   │   ├── 📁 planner/
   │   │   ├── 📄 __init__.py
   │   │   ├── 📄 adaptive_planner.py
@@ -229,6 +238,7 @@
   │   │   │   ├── 📄 __init__.py
   │   │   │   └── 📄 hallucination_guard.py
   │   │   ├── 📁 improvement/
+  │   │   │   ├── 📄 __init__.py
   │   │   │   └── 📄 feedback_controller.py
   │   │   ├── 📁 memory/
   │   │   │   ├── 📁 reasoning/
@@ -281,15 +291,17 @@
   │   │   ├── 📄 topk_optimizer.py
   │   │   ├── 📄 vector_retriever.py
   │   │   └── 📄 weight_manager.py
+  │   ├── 📁 services/
+  │   │   ├── 📄 __init__.py
+  │   │   ├── 📄 chunking.py
+  │   │   ├── 📄 embedding.py
+  │   │   └── 📄 query_rewriter.py
   │   ├── 📁 trainer/
   │   │   ├── 📄 __init__.py
   │   │   ├── 📄 base_trainer.py
   │   │   ├── 📄 fusion_trainer.py
   │   │   └── 📄 reranker_trainer.py
   │   ├── 📄 __init__.py
-  │   ├── 📄 chunking.py
-  │   ├── 📄 embedding.py
-  │   ├── 📄 query_rewriter.py
   │   └── 📄 vector_service.py
   ├── 📁 storage/
   │   ├── 📁 backends/
@@ -319,47 +331,56 @@
   │   ├── 📄 document_store.py
   │   └── 📄 log_storage.py
   ├── 📁 tests/
-  │   └── 📁 agents/
-  │       ├── 📁 agents_unit/
-  │       │   ├── 📄 test_agent_registry.py
-  │       │   ├── 📄 test_base_agent.py
-  │       │   └── 📄 test_message_bus.py
-  │       └── 📁 orchestration/
-  │           ├── 📁 interaction/
-  │           │   ├── 📁 interaction_performance/
-  │           │   │   ├── 📄 conftest_performance.py
-  │           │   │   ├── 📄 test_broadcast_strategy_performance.py
-  │           │   │   ├── 📄 test_conditional_strategy_performance.py
-  │           │   │   ├── 📄 test_dag_strategy_performance.py
-  │           │   │   ├── 📄 test_debate_strategy_performance.py
-  │           │   │   ├── 📄 test_ensemble_strategy_performance.py
-  │           │   │   ├── 📄 test_event_driven_strategy_performance.py
-  │           │   │   ├── 📄 test_group_chat_strategy_performance.py
-  │           │   │   ├── 📄 test_manager_strategy_performance.py
-  │           │   │   ├── 📄 test_memory_augmented_strategy_performance.py
-  │           │   │   ├── 📄 test_pipeline_strategy_performance.py
-  │           │   │   └── 📄 test_self_refine_strategy_performance.py
-  │           │   └── 📁 interaction_unit/
-  │           │       ├── 📄 conftest.py
-  │           │       ├── 📄 test_broadcast_strategy.py
-  │           │       ├── 📄 test_conditional_strategy.py
-  │           │       ├── 📄 test_dag_strategy.py
-  │           │       ├── 📄 test_debate_strategy.py
-  │           │       ├── 📄 test_ensemble_strategy.py
-  │           │       ├── 📄 test_event_driven_strategy.py
-  │           │       ├── 📄 test_group_chat_strategy.py
-  │           │       ├── 📄 test_manager_strategy.py
-  │           │       ├── 📄 test_memory_augmented_strategy.py
-  │           │       ├── 📄 test_pipeline_strategy.py
-  │           │       └── 📄 test_self_refine_strategy.py
-  │           ├── 📁 orchestration_performance/
-  │           │   ├── 📄 test_native_orchestration_backend_performance.py
-  │           │   └── 📄 test_orchestrator_agent_performance.py
-  │           └── 📁 orchestration_unit/
-  │               ├── 📄 test_autogen_orchestration_backend.py
-  │               ├── 📄 test_models.py
-  │               ├── 📄 test_native_orchestration_backend.py
-  │               └── 📄 test_orchestrator_agent.py
+  │   ├── 📁 agents/
+  │   │   ├── 📁 agents_unit/
+  │   │   │   ├── 📄 __init__.py
+  │   │   │   ├── 📄 test_agent_registry.py
+  │   │   │   ├── 📄 test_base_agent.py
+  │   │   │   └── 📄 test_message_bus.py
+  │   │   ├── 📁 orchestration/
+  │   │   │   ├── 📁 interaction/
+  │   │   │   │   ├── 📁 interaction_performance/
+  │   │   │   │   │   ├── 📄 __init__.py
+  │   │   │   │   │   ├── 📄 conftest_performance.py
+  │   │   │   │   │   ├── 📄 test_broadcast_strategy_performance.py
+  │   │   │   │   │   ├── 📄 test_conditional_strategy_performance.py
+  │   │   │   │   │   ├── 📄 test_dag_strategy_performance.py
+  │   │   │   │   │   ├── 📄 test_debate_strategy_performance.py
+  │   │   │   │   │   ├── 📄 test_ensemble_strategy_performance.py
+  │   │   │   │   │   ├── 📄 test_event_driven_strategy_performance.py
+  │   │   │   │   │   ├── 📄 test_group_chat_strategy_performance.py
+  │   │   │   │   │   ├── 📄 test_manager_strategy_performance.py
+  │   │   │   │   │   ├── 📄 test_memory_augmented_strategy_performance.py
+  │   │   │   │   │   ├── 📄 test_pipeline_strategy_performance.py
+  │   │   │   │   │   └── 📄 test_self_refine_strategy_performance.py
+  │   │   │   │   ├── 📁 interaction_unit/
+  │   │   │   │   │   ├── 📄 __init__.py
+  │   │   │   │   │   ├── 📄 conftest.py
+  │   │   │   │   │   ├── 📄 test_broadcast_strategy.py
+  │   │   │   │   │   ├── 📄 test_conditional_strategy.py
+  │   │   │   │   │   ├── 📄 test_dag_strategy.py
+  │   │   │   │   │   ├── 📄 test_debate_strategy.py
+  │   │   │   │   │   ├── 📄 test_ensemble_strategy.py
+  │   │   │   │   │   ├── 📄 test_event_driven_strategy.py
+  │   │   │   │   │   ├── 📄 test_group_chat_strategy.py
+  │   │   │   │   │   ├── 📄 test_manager_strategy.py
+  │   │   │   │   │   ├── 📄 test_memory_augmented_strategy.py
+  │   │   │   │   │   ├── 📄 test_pipeline_strategy.py
+  │   │   │   │   │   └── 📄 test_self_refine_strategy.py
+  │   │   │   │   └── 📄 __init__.py
+  │   │   │   ├── 📁 orchestration_performance/
+  │   │   │   │   ├── 📄 __init__.py
+  │   │   │   │   ├── 📄 test_native_orchestration_backend_performance.py
+  │   │   │   │   └── 📄 test_orchestrator_agent_performance.py
+  │   │   │   ├── 📁 orchestration_unit/
+  │   │   │   │   ├── 📄 __init__.py
+  │   │   │   │   ├── 📄 test_autogen_orchestration_backend.py
+  │   │   │   │   ├── 📄 test_models.py
+  │   │   │   │   ├── 📄 test_native_orchestration_backend.py
+  │   │   │   │   └── 📄 test_orchestrator_agent.py
+  │   │   │   └── 📄 __init__.py
+  │   │   └── 📄 __init__.py
+  │   └── 📄 __init__.py
   └── 📁 tools/
       ├── 📄 __init__.py
       ├── 📄 analyze_architecture.py
@@ -669,7 +690,6 @@
 | `config/models/agent_io/personalization_agents_15_20.py` | `AdaptedContent` | `BaseModel` | `` |
 | `config/models/agent_io/personalization_agents_15_20.py` | `StyleAdaptationOutput` | `OrchestrationResult` | `` |
 | `config/models/agent_io/personalization_agents_15_20.py` | `ProgressAnalysisInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/personalization_agents_15_20.py` | `LearningProgress` | `BaseModel` | `` |
 | `config/models/agent_io/personalization_agents_15_20.py` | `ProgressAnalysisOutput` | `OrchestrationResult` | `` |
 | `config/models/agent_io/personalization_agents_15_20.py` | `LearningPathCreationInput` | `OrchestrationRequest` | `` |
 | `config/models/agent_io/personalization_agents_15_20.py` | `LearningStep` | `BaseModel` | `` |
@@ -711,11 +731,9 @@
 | `rag/agentic/query_decomposer.py` | `QueryDecomposer` | `—` | `__init__, decompose` |
 | `rag/agentic/retrieval_agent.py` | `RetrievalAgent` | `—` | `__init__, run` |
 | `rag/agentic/uncertainty.py` | `UncertaintyEstimator` | `—` | `__init__, score` |
-| `rag/chunking.py` | `Chunker` | `—` | `__init__, create_chunks, _split_text` |
 | `rag/compression/base.py` | `BaseCompressor` | `—` | `compress` |
 | `rag/compression/embedding_compressor.py` | `EmbeddingCompressor` | `BaseCompressor` | `__init__, compress` |
 | `rag/compression/llm_compressor.py` | `LLMCompressor` | `BaseCompressor` | `__init__, compress` |
-| `rag/embedding.py` | `EmbeddingModel` | `—` | `__init__, embed, embed_one, _fallback_embed, _tokenize, _coerce_vector` |
 | `rag/evidence/evidence_clusterer.py` | `EvidenceClusterer` | `—` | `__init__, cluster` |
 | `rag/explain/retrieval_explainer.py` | `RetrievalExplainer` | `—` | `__init__, explain` |
 | `rag/graph/graph_builder.py` | `GraphBuilder` | `—` | `__init__, extract` |
@@ -724,9 +742,12 @@
 | `rag/graph/graph_retriever.py` | `GraphRetriever` | `—` | `__init__, retrieve, search` |
 | `rag/graph/graph_store.py` | `MemoryGraphStore` | `—` | `__init__, add_node, add_edge, neighbors` |
 | `rag/learning/retrieval_policy.py` | `RetrievalPolicy` | `—` | `__init__, get_state, select, update` |
+| `rag/llm/base_llm.py` | `BaseLLM` | `ABC` | `ainvoke, astream` |
+| `rag/llm/llm_protocols.py` | `AsyncLLM` | `Protocol` | `ainvoke, astream` |
+| `rag/llm/ollama_llm.py` | `OllamaLLM` | `BaseLLM` | `__init__, ainvoke, _stream_impl, astream` |
+| `rag/llm/openai_llm.py` | `OpenAILLM` | `BaseLLM` | `__init__, ainvoke, _stream_impl, astream` |
 | `rag/planner/adaptive_planner.py` | `AdaptiveRetrievalPlanner` | `—` | `__init__, plan` |
 | `rag/planner/retrieval_plan.py` | `RetrievalPlan` | `BaseModel` | `` |
-| `rag/query_rewriter.py` | `QueryRewriter` | `—` | `__init__, rewrite` |
 | `rag/reflection/reflection_critic.py` | `RetrievalCritic` | `—` | `__init__, evaluate` |
 | `rag/reflection/reflection_loop.py` | `ReflectionLoop` | `—` | `__init__, improve_query, run` |
 | `rag/reranking/base_reranker.py` | `BaseReranker` | `ABC` | `rerank` |
@@ -821,6 +842,9 @@
 | `rag/retrieval/topk_optimizer.py` | `TopKOptimizer` | `—` | `__init__, choose, update` |
 | `rag/retrieval/vector_retriever.py` | `VectorRetriever` | `BaseRetriever` | `__init__, search, _result_to_chunk` |
 | `rag/retrieval/weight_manager.py` | `WeightManager` | `—` | `__init__, get, update, all` |
+| `rag/services/chunking.py` | `Chunker` | `—` | `__init__, create_chunks, _split_text` |
+| `rag/services/embedding.py` | `EmbeddingModel` | `—` | `__init__, embed, embed_one, _fallback_embed, _tokenize, _coerce_vector` |
+| `rag/services/query_rewriter.py` | `QueryRewriter` | `—` | `__init__, rewrite` |
 | `rag/trainer/base_trainer.py` | `BaseTrainer` | `ABC` | `train` |
 | `rag/trainer/fusion_trainer.py` | `FusionTrainer` | `BaseTrainer` | `__init__, ensure_optimizer, train_epoch, train` |
 | `rag/trainer/reranker_trainer.py` | `RerankerTrainer` | `BaseTrainer` | `__init__, train_step` |
@@ -844,8 +868,8 @@
 | `storage/vector/base.py` | `VectorDBAdapter` | `ABC` | `create_index, upsert, batch_upsert, query, delete, search ...` |
 | `storage/vector/index_config.py` | `HNSWConfig` | `—` | `` |
 | `storage/vector/index_config.py` | `IVFConfig` | `—` | `` |
-| `tests/agents/agents_unit/test_agent_registry.py` | `SimpleInput` | `BaseModel` | `` |
-| `tests/agents/agents_unit/test_agent_registry.py` | `SimpleOutput` | `BaseModel` | `` |
+| `tests/agents/agents_unit/test_agent_registry.py` | `SimpleInput` | `OrchestrationRequest` | `` |
+| `tests/agents/agents_unit/test_agent_registry.py` | `SimpleOutput` | `OrchestrationResult` | `` |
 | `tests/agents/agents_unit/test_agent_registry.py` | `SimpleAgent` | `BaseAgent` | `execute` |
 | `tests/agents/agents_unit/test_base_agent.py` | `InputModel` | `OrchestrationRequest` | `` |
 | `tests/agents/agents_unit/test_base_agent.py` | `OutputModel` | `OrchestrationResult` | `` |
@@ -853,28 +877,33 @@
 | `tests/agents/agents_unit/test_base_agent.py` | `FailingAgent` | `EchoAgent` | `execute` |
 | `tests/agents/orchestration/interaction/interaction_unit/conftest.py` | `TestAgent` | `—` | `__init__, execute` |
 | `tests/agents/orchestration/interaction/interaction_unit/conftest.py` | `TestRegistry` | `—` | `__init__, register, execute` |
-| `tests/agents/orchestration/interaction/interaction_unit/conftest.py` | `DummyMessageBus` | `MessageBus` | `__init__, publish` |
+| `tests/agents/orchestration/interaction/interaction_unit/conftest.py` | `DummyMessageBus` | `MessageBus` | `__init__, publish, subscribe, unsubscribe` |
 | `tests/agents/orchestration/orchestration_performance/test_native_orchestration_backend_performance.py` | `DummyOutput` | `—` | `__init__, model_dump` |
 | `tests/agents/orchestration/orchestration_performance/test_native_orchestration_backend_performance.py` | `SimpleRegistry` | `—` | `execute` |
-| `tests/agents/orchestration/orchestration_performance/test_orchestrator_agent_performance.py` | `DummyBackend` | `—` | `__init__, execute, model_dump` |
-| `tests/agents/orchestration/orchestration_performance/test_orchestrator_agent_performance.py` | `Result` | `—` | `model_dump` |
+| `tests/agents/orchestration/orchestration_performance/test_orchestrator_agent_performance.py` | `DummyBackend` | `BaseOrchestrationBackend` | `__init__, execute, model_dump` |
+| `tests/agents/orchestration/orchestration_performance/test_orchestrator_agent_performance.py` | `Result` | `OrchestrationResult` | `model_dump` |
 | `tests/agents/orchestration/orchestration_unit/test_autogen_orchestration_backend.py` | `DummyRegistry` | `—` | `execute` |
-| `tests/agents/orchestration/orchestration_unit/test_autogen_orchestration_backend.py` | `DummyMessageBus` | `MessageBus` | `publish` |
+| `tests/agents/orchestration/orchestration_unit/test_autogen_orchestration_backend.py` | `DummyMessageBus` | `MessageBus` | `publish, subscribe, unsubscribe` |
 | `tests/agents/orchestration/orchestration_unit/test_autogen_orchestration_backend.py` | `DummyResult` | `—` | `__init__, execute` |
 | `tests/agents/orchestration/orchestration_unit/test_autogen_orchestration_backend.py` | `SimpleRequest` | `—` | `__init__` |
 | `tests/agents/orchestration/orchestration_unit/test_native_orchestration_backend.py` | `DummyOutput` | `—` | `__init__, model_dump` |
 | `tests/agents/orchestration/orchestration_unit/test_native_orchestration_backend.py` | `DummyRegistry` | `—` | `__init__, execute` |
-| `tests/agents/orchestration/orchestration_unit/test_native_orchestration_backend.py` | `DummyMessageBus` | `—` | `__init__, publish` |
-| `tests/agents/orchestration/orchestration_unit/test_orchestrator_agent.py` | `DummyBackend` | `—` | `__init__, execute, model_dump` |
-| `tests/agents/orchestration/orchestration_unit/test_orchestrator_agent.py` | `Result` | `—` | `model_dump` |
+| `tests/agents/orchestration/orchestration_unit/test_native_orchestration_backend.py` | `DummyMessageBus` | `MessageBus` | `__init__, publish, subscribe, unsubscribe` |
+| `tests/agents/orchestration/orchestration_unit/test_orchestrator_agent.py` | `DummyBackend` | `BaseOrchestrationBackend` | `__init__, execute, model_dump` |
+| `tests/agents/orchestration/orchestration_unit/test_orchestrator_agent.py` | `Result` | `OrchestrationResult` | `model_dump` |
 | `tools/analyze_architecture.py` | `ClassInfo` | `—` | `` |
 | `tools/analyze_architecture.py` | `FileInfo` | `—` | `` |
 | `tools/analyze_architecture.py` | `ASTParser` | `—` | `parse, _extract, _parse_class, _is_top_level, _name` |
 | `tools/analyze_architecture.py` | `ProjectCollector` | `—` | `__init__, collect, _iter_python_files` |
 | `tools/analyze_architecture.py` | `ArchitectureAnalyzer` | `—` | `__init__, folder_structure, folder_tree, classes_table, inheritance_map, abstract_classes ...` |
 | `tools/analyze_architecture.py` | `MarkdownRenderer` | `—` | `__init__, render` |
+| `tools/code_auditor.py` | `MockPosition` | `—` | `__init__` |
+| `tools/code_auditor.py` | `MockRange` | `—` | `__init__` |
+| `tools/code_auditor.py` | `MockLocation` | `—` | `__init__` |
+| `tools/code_auditor.py` | `MockDiagnostic` | `—` | `__init__` |
+| `tools/code_auditor.py` | `MockDiagnosticSeverity` | `—` | `` |
 | `tools/code_auditor.py` | `Issue` | `—` | `__str__` |
-| `tools/code_auditor.py` | `CodeAuditor` | `—` | `__init__, _iter_files, _check_syntax, _get_params, _is_intentionally_empty, _check_abstract_methods ...` |
+| `tools/code_auditor.py` | `CodeAuditor` | `—` | `__init__, _iter_files, _check_syntax, _get_params, _is_intentionally_empty, _assign_to_stmt ...` |
 
 ---
 
@@ -1176,7 +1205,6 @@ OrchestrationRequest  →  StyleAdaptationInput
 BaseModel  →  AdaptedContent
 OrchestrationResult  →  StyleAdaptationOutput
 OrchestrationRequest  →  ProgressAnalysisInput
-BaseModel  →  LearningProgress
 OrchestrationResult  →  ProgressAnalysisOutput
 OrchestrationRequest  →  LearningPathCreationInput
 BaseModel  →  LearningStep
@@ -1216,6 +1244,10 @@ BaseCompressor  →  EmbeddingCompressor
 BaseCompressor  →  LLMCompressor
 BaseModel  →  GraphNode
 BaseModel  →  GraphEdge
+ABC  →  BaseLLM
+Protocol  →  AsyncLLM
+BaseLLM  →  OllamaLLM
+BaseLLM  →  OpenAILLM
 BaseModel  →  RetrievalPlan
 ABC  →  BaseReranker
 BaseReranker  →  Reranker
@@ -1273,15 +1305,20 @@ VectorDBAdapter  →  PineconeAdapter
 VectorDBAdapter  →  QdrantAdapter
 VectorDBAdapter  →  WeaviateAdapter
 ABC  →  VectorDBAdapter
-BaseModel  →  SimpleInput
-BaseModel  →  SimpleOutput
+OrchestrationRequest  →  SimpleInput
+OrchestrationResult  →  SimpleOutput
 BaseAgent  →  SimpleAgent
 OrchestrationRequest  →  InputModel
 OrchestrationResult  →  OutputModel
 BaseAgent[InputModel, OutputModel]  →  EchoAgent
 EchoAgent  →  FailingAgent
 MessageBus  →  DummyMessageBus
+BaseOrchestrationBackend  →  DummyBackend
+OrchestrationResult  →  Result
 MessageBus  →  DummyMessageBus
+MessageBus  →  DummyMessageBus
+BaseOrchestrationBackend  →  DummyBackend
+OrchestrationResult  →  Result
 ```
 
 ---
@@ -1294,6 +1331,8 @@ MessageBus  →  DummyMessageBus
   - متدها: `execute`
 - **`InteractionStrategy`** (`agents/orchestration/interaction/base_strategy.py`)
   - متدها: `__init__`, `execute`, `_emit`
+- **`BaseLLM`** (`rag/llm/base_llm.py`)
+  - متدها: `ainvoke`, `astream`
 - **`BaseReranker`** (`rag/reranking/base_reranker.py`)
   - متدها: `rerank`
 - **`BaseResearchAgent`** (`rag/research/base_research_agent.py`)
@@ -1321,53 +1360,10 @@ MessageBus  →  DummyMessageBus
 
 
 ### 🟡 فایل‌های خالی یا فقط شامل import
-- `agents/__init__.py`
-- `agents/buses/__init__.py`
-- `agents/content/__init__.py`
-- `agents/orchestration/__init__.py`
-- `agents/orchestration/backends/__init__.py`
-- `agents/orchestration/interaction/__init__.py`
-- `config/__init__.py`
-- `config/models/__init__.py`
-- `config/models/agent_io/__init__.py`
-- `config/models/rag/__init__.py`
-- `config/models/system/__init__.py`
 - `config/settings.py`
-- `migrations/__init__.py`
-- `rag/__init__.py`
-- `rag/agentic/__init__.py`
-- `rag/compression/__init__.py`
-- `rag/evidence/__init__.py`
-- `rag/explain/__init__.py`
-- `rag/graph/__init__.py`
-- `rag/learning/__init__.py`
-- `rag/planner/__init__.py`
-- `rag/reflection/__init__.py`
-- `rag/reranking/__init__.py`
-- `rag/research/__init__.py`
-- `rag/research/autonomous/__init__.py`
-- `rag/research/dashboard/__init__.py`
-- `rag/research/evaluation/__init__.py`
-- `rag/research/graph/__init__.py`
-- `rag/research/guardrails/__init__.py`
-- `rag/research/memory/__init__.py`
-- `rag/research/memory/reasoning/__init__.py`
-- `rag/research/observability/__init__.py`
-- `rag/research/summarization/__init__.py`
-- `rag/retrieval/__init__.py`
-- `rag/trainer/__init__.py`
-- `storage/__init__.py`
-- `storage/backends/__init__.py`
-- `storage/backends/redis/__init__.py`
-- `storage/vector/__init__.py`
-- `storage/vector/backends/__init__.py`
-- `tools/__init__.py`
 
 ### 🟠 کلاس‌های بدون Base Class (احتمال عدم رعایت interface مشترک)
 - `VectorService` در `rag/vector_service.py`
-- `DummyBackend` در `tests/agents/orchestration/orchestration_performance/test_orchestrator_agent_performance.py`
-- `DummyMessageBus` در `tests/agents/orchestration/orchestration_unit/test_native_orchestration_backend.py`
-- `DummyBackend` در `tests/agents/orchestration/orchestration_unit/test_orchestrator_agent.py`
 
 ---
 

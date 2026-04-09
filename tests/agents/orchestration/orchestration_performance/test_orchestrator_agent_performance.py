@@ -4,18 +4,20 @@ import time
 import pytest
 
 from agents.orchestration.orchestrator_agent import OrchestratorAgent
+from agents.orchestration.models import OrchestrationRequest, OrchestrationResult
+from agents.orchestration.backends.base_backend import BaseOrchestrationBackend
 
 
-class DummyBackend:
+class DummyBackend(BaseOrchestrationBackend):
     def __init__(self, *args, **kwargs):
         self.calls = 0
 
-    async def execute(self, request):
+    async def execute(self, request: OrchestrationRequest) -> OrchestrationResult:
         self.calls += 1
-        class Result:
+        class Result(OrchestrationResult):
             def model_dump(self_inner):
                 return {"success": True}
-        return Result()
+        return Result(results=[])
 
 
 @pytest.mark.asyncio

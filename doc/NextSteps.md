@@ -738,3 +738,18 @@ visualization
 monitoring
 4️⃣ Graph Visualization
 ساخت گراف اجرای workflow.
+
+
+یک “Architecture Boundary Map” برای کل پروژه رسم کنیم.
+
+یعنی دقیق مشخص کنیم:
+
+text
+Core
+Agents
+Orchestration
+Transport (Bus)
+Tools
+RAG
+System
+و اینکه چه لایه‌ای اجازه import از چه لایه‌ای را دارد

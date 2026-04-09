@@ -5,6 +5,7 @@ import pytest
 
 from agents.orchestration.backends.native_backend import NativeOrchestrationBackend
 # from agents.orchestration.backends.autogen_backend import AutoGenOrchestrationBackend  # for Shared helpers if needed
+from agents.buses.base import MessageBus, HandlerType
 
 
 class DummyOutput:
@@ -27,12 +28,16 @@ class DummyRegistry:
         return DummyOutput({"agent": agent_name, "input": payload})
 
 
-class DummyMessageBus:
+class DummyMessageBus(MessageBus):
     def __init__(self):
         self.published = []
 
     async def publish(self, message):
         self.published.append(message)
+    async def subscribe(self, recipient: str, handler: HandlerType) -> None:
+        pass
+    async def unsubscribe(self, recipient: str, handler: HandlerType) -> None:
+        pass
 
 
 def make_task(agent_name, input_payload=None, task_id=None, description=None):

@@ -3,18 +3,20 @@ import pytest
 from pydantic import ValidationError
 
 from agents.orchestration.orchestrator_agent import OrchestratorAgent
+from agents.orchestration.models import OrchestrationRequest, OrchestrationResult
+from agents.orchestration.backends.base_backend import BaseOrchestrationBackend
 
 
-class DummyBackend:
+class DummyBackend(BaseOrchestrationBackend):
     def __init__(self, *args, **kwargs):
         self.calls = []
 
-    async def execute(self, request):
+    async def execute(self, request: OrchestrationRequest) -> OrchestrationResult:
         self.calls.append(request)
-        class Result:
+        class Result(OrchestrationResult):
             def model_dump(self_inner):
-                return {"success": True, "workflow": request.workflow_id}
-        return Result()
+                return {"success": True}
+        return Result(results=[])
 
 
 @pytest.mark.asyncio
