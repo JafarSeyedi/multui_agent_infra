@@ -18,9 +18,9 @@ from rag.research.memory.reasoning.event_types import ReasoningEventType
 from rag.research.memory.reasoning_memory import ReasoningMemory
 from rag.research.observability.observability_controller import ObservabilityController
 from rag.research.summarization.research_summarizer import ResearchSummarizer
+from rag.research.base_research_agent import BaseResearchAgent
 
-
-class ResearchAgent:
+class ResearchAgent(BaseResearchAgent):
     def __init__(
         self,
         planner,

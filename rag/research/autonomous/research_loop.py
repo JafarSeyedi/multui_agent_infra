@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import List
-
 from rag.research.memory.reasoning.event_types import ReasoningEventType
 from rag.research.memory.reasoning_memory import ReasoningMemory
 

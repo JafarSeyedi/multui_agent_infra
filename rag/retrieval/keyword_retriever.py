@@ -1,15 +1,14 @@
-from typing import List, Dict, Any, Optional
-import math
+from typing import List
 
 from storage.document_store import DocumentStore
 from .retriever_result import RetrievalResult
-
+from .base_retriever import BaseRetriever
 
 # ---------------------------------------------------------
 # Keyword Retriever (Simple BM25-style scoring)
 # ---------------------------------------------------------
 
-class KeywordRetriever:
+class KeywordRetriever(BaseRetriever):
 
     def __init__(self, document_store: DocumentStore):
         self.document_store = document_store

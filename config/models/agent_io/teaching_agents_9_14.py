@@ -1,6 +1,6 @@
-from pydantic import OrchestrationResult, Field
+from pydantic import BaseModel
+from agents.orchestration.models import OrchestrationRequest, OrchestrationResult
 from typing import List, Optional, Dict, Literal
-from datetime import datetime
 
 # --- مدل‌های عامل 9 ---
 class QuestionRefineInput(OrchestrationRequest):
@@ -33,7 +33,7 @@ class HintGenerationInput(OrchestrationRequest):
     question_text: str
     user_answer: Optional[str] = None
     correct_answer: Optional[str] = None
-    context: str # Lesson context or problem statement
+    lessen_context: str # Lesson context or problem statement
     hint_level: int = 1 # Number of hints requested
 
 class HintGenerationOutput(OrchestrationResult):

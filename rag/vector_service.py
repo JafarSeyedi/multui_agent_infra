@@ -13,8 +13,8 @@ from rag.planner.adaptive_planner import AdaptiveRetrievalPlanner
 from rag.query_rewriter import QueryRewriter
 from rag.reranking import Reranker
 from rag.retrieval.bm25_retriever import BM25KeywordRetriever
-from rag.retrieval.feedback_memory import RetrievalFeedbackBuffer
-from rag.retrieval.fusion_trainer import FusionTrainer
+from rag.retrieval.retrieval_feedback_buffer import RetrievalFeedbackBuffer
+from rag.trainer.fusion_trainer import FusionTrainer
 from rag.retrieval.hybrid_retriever_super import HybridRetrieverSuper
 from rag.retrieval.topk_optimizer import TopKOptimizer
 from rag.retrieval.vector_retriever import VectorRetriever
@@ -83,8 +83,9 @@ class VectorService:
         evidences,
         results: List[QueryResult],
         chosen_chunk_id: str,
+        positive_chunks, negative_chunks
     ) -> None:
-        await self.retriever.collect_feedback(query=query, results=results, chosen_chunk_id=chosen_chunk_id)
+        await self.retriever.collect_feedback(query=query, results=results, chosen_chunk_id=chosen_chunk_id, positive_chunks=positive_chunks, negative_chunks=negative_chunks)
         if len(self.feedback_buffer) > 200:
             await self.retriever.train_from_feedback(batch_size=200)
 

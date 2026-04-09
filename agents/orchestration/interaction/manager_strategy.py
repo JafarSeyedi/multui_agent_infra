@@ -1,9 +1,10 @@
 # agents/orchestration/interaction/manager_strategy.py
 from __future__ import annotations
 
-from typing import Any, Dict, List, Sequence
+from typing import Any, Dict, List, Optional, Sequence
 
-from agents.message_bus import AgentMessage
+from agents.buses.base import MessageBus
+from agents.orchestration.models import AgentMessage
 from agents.orchestration.models import (
     OrchestrationRequest,
     OrchestrationResult,
@@ -19,17 +20,17 @@ class ManagerStrategy(InteractionStrategy):
     خروجی آن‌ها را اعتبارسنجی/تجمیع می‌کند، و نتیجه نهایی یا خطا را بازمی‌گرداند.
     """
 
-    scenario = "manager"
+    scenario_name = "manager"
 
     def __init__(
         self,
-        registry,
+        agent_registry,
         message_bus: Optional[MessageBus] = None,
-        storage = None,
+        storage=None,
         validation_agent: str | None = None,
         aggregator_agent: str | None = None,
     ):
-        super().__init__(registry, message_bus, storage)
+        super().__init__(agent_registry, message_bus, storage)
         self.validation_agent = validation_agent
         self.aggregator_agent = aggregator_agent
 
@@ -51,7 +52,7 @@ class ManagerStrategy(InteractionStrategy):
             payload.setdefault("shared_context", dict(shared_context))
             task_id = task.task_id or f"manager:{task.agent_name}"
             try:
-                output_model = await self.registry.execute(task.agent_name, payload)
+                output_model = await self.agent_registry.execute(task.agent_name, payload)
                 output_payload = self._normalize_output(output_model)
 
                 shared_context.setdefault("worker_outputs", {})[task.agent_name] = output_payload
@@ -101,7 +102,7 @@ class ManagerStrategy(InteractionStrategy):
                 "worker_results": [res.dict() for res in results],
                 "shared_context": dict(shared_context),
             }
-            validation_output = await self.registry.execute(self.validation_agent, payload)
+            validation_output = await self.agent_registry.execute(self.validation_agent, payload)
             shared_context["validation"] = self._normalize_output(validation_output)
         except Exception as exc:  # noqa: BLE001
             shared_context.setdefault("validation_errors", []).append(str(exc))
@@ -113,7 +114,7 @@ class ManagerStrategy(InteractionStrategy):
                 "shared_context": dict(shared_context),
             }
             try:
-                output = await self.registry.execute(self.aggregator_agent, payload)
+                output = await self.agent_registry.execute(self.aggregator_agent, payload)
                 aggregated_payload = self._normalize_output(output)
                 shared_context["aggregated_result"] = aggregated_payload
                 return aggregated_payload
@@ -125,20 +126,17 @@ class ManagerStrategy(InteractionStrategy):
     async def _publish_turn_message(
         self, agent_name: str, task_id: str, input_payload: Dict[str, Any], output_payload: Any
     ) -> None:
-        if self.message_bus is None:
-            return
-        await self.message_bus.publish(
-            AgentMessage(
-                message_id=f"manager-{task_id}",
-                sender="ManagerStrategy",
-                recipient=agent_name,
-                message_type="task_result",
-                payload={
-                    "task_id": task_id,
-                    "input": input_payload,
-                    "output": output_payload,
-                },
-            )
+        # ✅ استفاده از _emit
+        await self._emit(
+            message_type="task_result",
+            payload={
+                "task_id": task_id,
+                "input": input_payload,
+                "output": output_payload,
+            },
+            sender="ManagerStrategy",
+            recipient=agent_name,
+            message_id=f"manager-{task_id}",
         )
 
     @staticmethod

@@ -10,6 +10,8 @@ from ..models import (
 
 
 class SelfRefineStrategy(InteractionStrategy):
+    scenario_name = "self_refine"
+
     async def execute(self, request: OrchestrationRequest) -> OrchestrationResult:
         context: Dict[str, Any] = dict(request.context or {})
         metadata = request.metadata or {}
@@ -23,9 +25,9 @@ class SelfRefineStrategy(InteractionStrategy):
         max_refinements = int(metadata.get("max_refinements", 3))
         quality_threshold = float(metadata.get("quality_threshold", 0.9))
 
-        generator = self.registry.get(generator_name)
-        critic = self.registry.get(critic_name)
-        refiner = self.registry.get(refiner_name)
+        generator = self.agent_registry.get(generator_name)
+        critic = self.agent_registry.get(critic_name)
+        refiner = self.agent_registry.get(refiner_name)
         if not generator or not critic or not refiner:
             raise ValueError("Self-refine agents must be registered before executing strategy.")
 

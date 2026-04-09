@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Optional, Dict
+import time
+import uuid
+from typing import Optional, Dict, Any
 
 from .reasoning_event import ReasoningEvent
 from .event_types import ReasoningEventType
@@ -14,20 +16,17 @@ class ReasoningRecorder:
     Main tracing engine.
     """
 
-    def __init__(self):
-
+    def __init__(self) -> None:
         self.tree = ReasoningTree()
+        self._session_id: str = str(uuid.uuid4())
 
     def start(self, name: str):
-
         return self.tree.start_group(name)
 
     def end(self):
-
         self.tree.end_group()
 
     def rollback(self):
-
         self.tree.rollback_group()
 
     def event(
@@ -35,22 +34,27 @@ class ReasoningRecorder:
         event_type: ReasoningEventType,
         message: str,
         *,
-        meta: Optional[Dict] = None,
-        tokens: Optional[int] = None
-    ):
+        meta: Optional[Dict[str, Any]] = None,
+        tokens: Optional[int] = None,
+    ) -> ReasoningEvent:
 
+        group = self.tree.current
         e = ReasoningEvent(
-            event_type=event_type,
+            id=str(uuid.uuid4()),
+            timestamp=time.time(),
+            session_id=self._session_id,
+            group=group.name if hasattr(group, "name") else "root",
+            step=group.step_count if hasattr(group, "step_count") else 0,
+            phase="default",
+            event_type=event_type.value,
+            level="info",
             message=message,
-            meta=meta,
-            token_count=tokens
+            meta=meta or {},
+            token_count=tokens,
         )
 
-        self.tree.current.add_event(e)
-
+        group.add_event(e)
         return e
 
-    def export(self):
-
+    def export(self) -> Dict[str, Any]:
         return self.tree.to_dict()
-

@@ -2,17 +2,20 @@ from __future__ import annotations
 
 import math
 from collections import Counter, defaultdict
-from typing import Dict, List, Sequence
+from typing import Dict, List
 
 from config.models.rag.rag_models import DocumentChunk
 
 from .retriever_result import RetrievalResult
+from .base_retriever import BaseRetriever
 
-
-class BM25KeywordRetriever:
+# ---------------------------------------------------------
+# Keyword Retriever (BM25-style scoring)
+# ---------------------------------------------------------
+class BM25KeywordRetriever(BaseRetriever):
     """Dependency-light BM25 retriever backed by the document store cache."""
 
-    def __init__(self, document_store):
+    def __init__(self, document_store) -> None:
         self.document_store = document_store
         self.index_built = False
         self.corpus_chunks: List[DocumentChunk] = []

@@ -4,6 +4,8 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from .base_strategy import InteractionStrategy
+from agents.buses.base import MessageBus
+from agents.orchestration.models import AgentMessage
 from agents.orchestration.models import (
     OrchestrationRequest,
     OrchestrationResult,
@@ -13,10 +15,10 @@ from agents.orchestration.models import (
 
 
 class GroupChatStrategy(InteractionStrategy):
-    scenario = "group_chat"
+    scenario_name = "group_chat"
 
-    def __init__(self, registry, message_bus: MessageBus, storage, default_max_rounds: int = 8):
-        super().__init__(registry, message_bus, storage)
+    def __init__(self, agent_registry, message_bus: MessageBus, storage, default_max_rounds: int = 8):
+        super().__init__(agent_registry, message_bus, storage)
         self.default_max_rounds = max(1, default_max_rounds)
 
     async def execute(self, request: OrchestrationRequest) -> OrchestrationResult:
@@ -51,7 +53,7 @@ class GroupChatStrategy(InteractionStrategy):
             speaker = participants[speaker_index]
             speaker_index = (speaker_index + 1) % len(participants)
 
-            agent = self.registry.get(speaker.agent_name)
+            agent = self.agent_registry.get(speaker.agent_name)
             if agent is None:
                 failure_reason = f"Agent '{speaker.agent_name}' missing for task {speaker.task_id}."
                 await self._publish_event(
@@ -185,6 +187,13 @@ class GroupChatStrategy(InteractionStrategy):
     async def _publish_event(self, event: str, payload: Dict[str, Any]) -> None:
         if not self.message_bus:
             return
-        data = {"event": event}
-        data.update(payload or {})
-        await self.message_bus.publish(data)
+        await self.message_bus.publish(
+            AgentMessage(
+                message_id=f"group_chat_{event}",
+                sender="GroupChatStrategy",
+                recipient="system",
+                message_type=event,
+                payload=payload
+            )
+        )
+    

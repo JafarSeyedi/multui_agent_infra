@@ -5,9 +5,10 @@ from typing import Dict, List, Optional
 from config.models.rag.rag_models import Document, DocumentChunk
 
 from .base_storage import StorageAdapter
+from .base_storage import BaseStorage
 
 
-class DocumentStore:
+class DocumentStore(BaseStorage):
     """Document repository with in-memory caching and optional persistence."""
 
     def __init__(self, storage: Optional[StorageAdapter] = None):

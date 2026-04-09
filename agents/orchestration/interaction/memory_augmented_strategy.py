@@ -1,9 +1,10 @@
 # agents/orchestration/interaction/memory_augmented_strategy.py
 from __future__ import annotations
 
-from typing import Any, Dict, List, Sequence
+from typing import Any, Dict, List, Optional, Sequence
 
-from agents.message_bus import AgentMessage
+from agents.buses.base import MessageBus
+from agents.orchestration.models import AgentMessage
 from agents.orchestration.models import (
     OrchestrationRequest,
     OrchestrationResult,
@@ -18,10 +19,17 @@ class MemoryAugmentedStrategy(InteractionStrategy):
     استراتژی‌ای که state بلندمدت (memory) را مدیریت می‌کند و بر اساس آن مسیر مناسب را انتخاب می‌نماید.
     """
 
-    scenario = "memory_augmented"
+    scenario_name = "memory_augmented"
 
-    def __init__(self, registry, message_bus: Optional[MessageBus] = None, storage = None, memory_key: str = "long_term_memory", max_memory_size: int = 50):
-        super().__init__(registry, message_bus, storage)
+    def __init__(
+        self,
+        agent_registry,
+        message_bus: Optional[MessageBus] = None,
+        storage=None,
+        memory_key: str = "long_term_memory",
+        max_memory_size: int = 50,
+    ):
+        super().__init__(agent_registry, message_bus, storage)
         self.memory_key = memory_key
         self.max_memory_size = max(1, max_memory_size)
 
@@ -38,12 +46,12 @@ class MemoryAugmentedStrategy(InteractionStrategy):
             task_id = task.task_id or f"memory:{task.agent_name}"
 
             try:
-                output_model = await self.registry.execute(task.agent_name, payload)
+                output_model = await self.agent_registry.execute(task.agent_name, payload)
                 normalized = self._normalize_output(output_model)
 
                 memory.append({"agent": task.agent_name, "output": normalized})
                 if len(memory) > self.max_memory_size:
-                    memory = memory[-self.max_memory_size:]
+                    memory = memory[-self.max_memory_size :]
 
                 shared_context[self.memory_key] = memory
                 results.append(
@@ -80,10 +88,11 @@ class MemoryAugmentedStrategy(InteractionStrategy):
             metadata={"memory_size": len(memory)},
         )
 
-    def _prioritize_tasks(self, tasks: Sequence[TaskDefinition], memory: List[Any]) -> Sequence[TaskDefinition]:
+    def _prioritize_tasks(
+        self, tasks: Sequence[TaskDefinition], memory: List[Any]
+    ) -> Sequence[TaskDefinition]:
         if not memory:
             return tasks
-        # مثال ساده: اگر حافظه حاوی کلید خاص است، عامل مرتبط را اول اجرا کن
         if memory and isinstance(memory[-1], dict) and memory[-1].get("agent"):
             last_agent = memory[-1]["agent"]
             ordered = sorted(tasks, key=lambda task: task.agent_name != last_agent)
@@ -91,16 +100,13 @@ class MemoryAugmentedStrategy(InteractionStrategy):
         return tasks
 
     async def _publish_memory_update(self, task_id: str, agent_name: str, output: Any) -> None:
-        if self.message_bus is None:
-            return
-        await self.message_bus.publish(
-            AgentMessage(
-                message_id=f"memory-{task_id}",
-                sender="MemoryAugmentedStrategy",
-                recipient=agent_name,
-                message_type="memory_update",
-                payload={"task_id": task_id, "output": output},
-            )
+        # ✅ استفاده از _emit
+        await self._emit(
+            message_type="memory_update",
+            payload={"task_id": task_id, "output": output},
+            sender="MemoryAugmentedStrategy",
+            recipient=agent_name,
+            message_id=f"memory-{task_id}",
         )
 
     @staticmethod

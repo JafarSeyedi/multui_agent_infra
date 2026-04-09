@@ -1,11 +1,11 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
+from agents.orchestration.models import OrchestrationRequest, OrchestrationResult
 from typing import List, Optional, Dict
 from datetime import datetime
 
-from config.models.core.learning_objects import (
+from .learning_objects import (
     LearningEvent,
     AssessmentResult,
-    StudentAnswer,
     LearningProgress,
     SkillPerformance
 )

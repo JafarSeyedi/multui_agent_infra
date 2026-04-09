@@ -1,3 +1,4 @@
+# storage/base_storage.py
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, List
 
@@ -24,3 +25,16 @@ class StorageAdapter(ABC):
     async def list_keys(self, prefix: Optional[str] = None) -> List[str]:
         """List keys optionally filtered by prefix."""
         pass
+
+
+class BaseStorage(ABC):
+    """قرارداد مشترک تمام Storage ها"""
+
+    @abstractmethod
+    def add(self, key: str, value) -> None: ...
+
+    @abstractmethod
+    def get(self, key: str): ...
+
+    @abstractmethod
+    def delete(self, key: str) -> None: ...

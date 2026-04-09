@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from agents.base_agent import BaseAgent
-from config.models.agent_io.content_agents import RewriteChange, TextRewriteInput, TextRewriteOutput
+from config.models.agent_io.content_agents_1_8 import RewriteChange, TextRewriteInput, TextRewriteOutput
 
 
 class TextRewriterAgent(BaseAgent):
@@ -14,18 +14,19 @@ class TextRewriterAgent(BaseAgent):
 
     async def execute(self, input_model: TextRewriteInput) -> TextRewriteOutput:
         rewritten = await self._rewrite_text(input_model)
-        return {
-            "rewritten_text": rewritten,
-            "changes": [
+        return TextRewriteOutput(
+            rewritten_text = rewritten,
+            changes = [
                 RewriteChange(
                     original_segment=input_model.raw_text,
                     rewritten_segment=rewritten,
                     reason=f"Adapted for grade level {input_model.grade_level}",
                 )
             ],
-            "readability_score": self._estimate_readability(rewritten),
-            "created_at": datetime.utcnow(),
-        }
+            results = [],
+            readability_score = self._estimate_readability(rewritten),
+            created_at = datetime.utcnow(),
+        )
 
     async def _rewrite_text(self, input_model: TextRewriteInput) -> str:
         if self.llm is None:

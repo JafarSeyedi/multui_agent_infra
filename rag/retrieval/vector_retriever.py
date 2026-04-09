@@ -7,9 +7,10 @@ from rag.embedding import EmbeddingModel
 from storage.vector.base import VectorDBAdapter
 
 from .retriever_result import RetrievalResult
+from .base_retriever import BaseRetriever
 
 
-class VectorRetriever:
+class VectorRetriever(BaseRetriever):
     def __init__(self, vector_db: VectorDBAdapter, embedding_model: EmbeddingModel):
         self.vector_db = vector_db
         self.embedding_model = embedding_model

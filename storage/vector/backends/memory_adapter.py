@@ -1,3 +1,5 @@
+# storage/vector/backends/memory_adapter.py
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
@@ -11,7 +13,7 @@ from ..embedding_utils import normalize_embedding
 class InMemoryVectorStore(VectorDBAdapter):
     """Simple in-memory cosine-similarity vector store for tests and local use."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._vectors: List[List[float]] = []
         self._metadatas: List[Dict[str, Any]] = []
         self._ids: List[str] = []

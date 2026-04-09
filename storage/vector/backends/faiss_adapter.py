@@ -1,4 +1,6 @@
-import faiss
+# storage/vector/backends/faiss_adapter.py
+
+import faiss # type: ignore[import-untyped, import-not-found]
 import numpy as np
 from typing import List, Dict, Any, Optional
 
@@ -16,15 +18,14 @@ class FaissAdapter(VectorDBAdapter):
     - Offline RAG systems
     """
 
-    def __init__(self):
-
-        self.index = None
-        self.dimension = None
+    def __init__(self) -> None:
+        self.index: Optional[Any] = None
+        self.dimension: Optional[int] = None
 
         self.id_map: Dict[int, str] = {}
         self.metadata_store: Dict[str, Dict[str, Any]] = {}
 
-        self._next_internal_id = 0
+        self._next_internal_id: int = 0
 
     async def create_index(
         self,
@@ -42,7 +43,8 @@ class FaissAdapter(VectorDBAdapter):
 
         if index_type == "ivf":
 
-            nlist = config.get("nlist", 100)
+            if config:
+                nlist = config.get("nlist", 100)
 
             quantizer = faiss.IndexFlatIP(dimension)
 
@@ -74,13 +76,11 @@ class FaissAdapter(VectorDBAdapter):
         if len(ids) != len(vectors):
             raise ValueError("IDs and vectors mismatch")
 
-        vectors_np = []
-
+        vectors_list: List[Any] = []
         for v in vectors:
             vec = normalize_embedding(v)
-            vectors_np.append(vec)
-
-        vectors_np = np.array(vectors_np).astype("float32")
+            vectors_list.append(vec)
+        vectors_np = np.array(vectors_list).astype("float32")
 
         internal_ids = []
 
@@ -135,30 +135,19 @@ class FaissAdapter(VectorDBAdapter):
             if internal_id == -1:
                 continue
 
-            external_id = self.id_map.get(internal_id)
+            external_id = self.id_map.get(int(internal_id))
+            if external_id is None:
+                continue
 
             meta = self.metadata_store.get(external_id, {})
 
             if filters:
-
-                match = True
-
-                for k, v in filters.items():
-                    if meta.get(k) != v:
-                        match = False
-                        break
-
+                match = all(meta.get(k) == v for k, v in filters.items())
                 if not match:
                     continue
 
-            results.append(
-                {
-                    "_id": external_id,
-                    "_score": float(score),
-                    **meta
-                }
-            )
-
+            results.append({"_id": external_id, "_score": float(score), **meta})
+            
         return results
 
     async def delete(self, ids: List[str]) -> None:

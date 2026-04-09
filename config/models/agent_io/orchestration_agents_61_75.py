@@ -1,5 +1,5 @@
-from pydantic import BaseModel
 from typing import List, Optional, Dict
+from agents.orchestration.models import OrchestrationRequest, OrchestrationResult
 
 from .common import ConfidenceScore, Recommendation
 
@@ -74,22 +74,22 @@ class AgentSelectorOutput(OrchestrationResult):
     confidence: Optional[ConfidenceScore]
 
 
-# -------------------------------------------------
-# Agent 65 — Agent Router
-# -------------------------------------------------
+# # -------------------------------------------------
+# # Agent 65 — Agent Router
+# # -------------------------------------------------
 
-class AgentRouterInput(OrchestrationRequest):
+# class AgentRouterInput(OrchestrationRequest):
 
-    task: str
+#     task: str
 
-    metadata: Optional[Dict]
+#     metadata: Optional[Dict]
 
 
-class AgentRouterOutput(OrchestrationResult):
+# class AgentRouterOutput(OrchestrationResult):
 
-    routed_agent: str
+#     routed_agent: str
 
-    routing_reason: Optional[str]
+#     routing_reason: Optional[str]
 
 
 # -------------------------------------------------

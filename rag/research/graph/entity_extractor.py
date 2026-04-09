@@ -1,9 +1,10 @@
+# rag/research/graph/entity_extractor
 from __future__ import annotations
 
 import json
 import re
 from dataclasses import dataclass
-from typing import Any, Iterable, List
+from typing import Any, Iterable, List, Dict
 
 
 @dataclass
@@ -62,7 +63,7 @@ class EntityExtractor:
         ]
 
     def _deduplicate(self, entities: List[Entity]) -> List[Entity]:
-        best = {}
+        best: Dict[tuple[str, str], Entity] = {}
         for entity in entities:
             key = (entity.name.casefold(), entity.type.casefold())
             current = best.get(key)

@@ -4,15 +4,16 @@ from __future__ import annotations
 
 import time
 from typing import List, Dict, Optional
+from dataclasses import dataclass
 
-
+@dataclass
 class ReasoningStep:
     """
     Represents a single reasoning event in the research pipeline.
     """
     __slots__ = ("step", "details", "timestamp", "meta")
 
-    def __init__(self, step: str, details: str, meta: Optional[dict] = None):
+    def __init__(self, step: str, details: str, meta: Optional[dict] = None) -> None:
         self.step = step
         self.details = details
         self.meta = meta or {}
@@ -27,6 +28,7 @@ class ReasoningStep:
         }
 
 
+@dataclass
 class ReasoningMemory:
     """
     Stores the reasoning trace of the entire research process.
@@ -37,7 +39,7 @@ class ReasoningMemory:
     - Feeding information into future memory modules
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._steps: List[ReasoningStep] = []
         self._groups: List[dict] = []     # for nested sections
         self._current_group: Optional[str] = None

@@ -1,46 +1,31 @@
 # rag/research/memory/reasoning/reasoning_event.py
-
 from __future__ import annotations
 
-import time
-from typing import Optional, Dict
+from dataclasses import dataclass, field, asdict
+from typing import Any, Dict, Optional
 
 from .event_types import ReasoningEventType
 
 
+@dataclass
 class ReasoningEvent:
     """
     Atomic event in reasoning trace.
     """
+    id: str
+    timestamp: float
+    session_id: str
+    group: str
+    step: int
+    phase: str
+    event_type: str          # مقدار .value از ReasoningEventType ذخیره می‌شه
+    level: str
+    message: str
+    meta: Dict[str, Any] = field(default_factory=dict)
+    token_count: Optional[int] = None
 
-    __slots__ = (
-        "event_type",
-        "message",
-        "meta",
-        "timestamp",
-        "token_count"
-    )
-
-    def __init__(
-        self,
-        event_type: ReasoningEventType,
-        message: str,
-        *,
-        meta: Optional[Dict] = None,
-        token_count: Optional[int] = None
-    ):
-        self.event_type = event_type
-        self.message = message
-        self.meta = meta or {}
-        self.token_count = token_count
-        self.timestamp = time.time()
-
-    def to_dict(self):
-
-        return {
-            "type": self.event_type.value,
-            "message": self.message,
-            "meta": self.meta,
-            "token_count": self.token_count,
-            "timestamp": self.timestamp
-        }
+    def to_dict(self) -> Dict[str, Any]:
+        d = asdict(self)
+        if not isinstance(d["meta"], dict):
+            d["meta"] = {"value": str(d["meta"])}
+        return d

@@ -5,7 +5,7 @@ import logging
 from collections import defaultdict
 from typing import Dict, List
 from .base import MessageBus, HandlerType
-from config.models.system.interaction_models import AgentMessage
+from agents.orchestration.models import AgentMessage
 
 logger = logging.getLogger(__name__)
 BROADCAST = "*"

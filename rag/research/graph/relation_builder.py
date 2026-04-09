@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass
-from typing import Any, List
+from typing import Any, List, Dict
 
 
 @dataclass
@@ -97,7 +97,7 @@ class RelationBuilder:
         return output
 
     def _deduplicate(self, relations: List[CandidateRelation]) -> List[CandidateRelation]:
-        best = {}
+        best: Dict[tuple[str, str, str], CandidateRelation] = {}  # ← instance واقعی
         for relation in relations:
             key = (relation.src.casefold(), relation.dst.casefold(), relation.relation.casefold())
             current = best.get(key)

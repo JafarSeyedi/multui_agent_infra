@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from agents.orchestration.models import OrchestrationRequest, OrchestrationResult
 from typing import List, Optional, Dict
 from datetime import datetime
 
@@ -18,7 +19,7 @@ class TextRewriteInput(OrchestrationRequest):
     language: str = "fa"
 
 ## Output
-class RewriteChange(OrchestrationResult):
+class RewriteChange(BaseModel):
 
     original_segment: str
     rewritten_segment: str

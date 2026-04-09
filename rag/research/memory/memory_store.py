@@ -16,7 +16,7 @@ class MemoryItem:
 
 class MemoryStore:
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._items: Dict[int, MemoryItem] = {}
         self._next_id = 1
 

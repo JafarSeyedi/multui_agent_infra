@@ -10,6 +10,8 @@ from ..models import (
 
 
 class DebateStrategy(InteractionStrategy):
+    scenario_name = "debate"
+
     async def execute(self, request: OrchestrationRequest) -> OrchestrationResult:
         context: Dict[str, Any] = dict(request.context or {})
         tasks = request.tasks or []
@@ -18,8 +20,8 @@ class DebateStrategy(InteractionStrategy):
             raise ValueError("DebateStrategy requires at least two tasks (proposer & critic).")
 
         proposer_task, critic_task = tasks[0], tasks[1]
-        proposer = self.registry.get(proposer_task.agent_name)
-        critic = self.registry.get(critic_task.agent_name)
+        proposer = self.agent_registry.get(proposer_task.agent_name)
+        critic = self.agent_registry.get(critic_task.agent_name)
         if proposer is None or critic is None:
             raise ValueError("Required debate agents are not registered.")
 
@@ -30,8 +32,13 @@ class DebateStrategy(InteractionStrategy):
         approved_round: Optional[int] = None
 
         for round_id in range(1, max_rounds + 1):
-            if self.message_bus:
-                await self.message_bus.publish({"event": "debate_round_started", "round": round_id})
+            # ✅ حل خطای 34
+            await self._emit(
+                message_type="debate_round_started",
+                payload={"round": round_id},
+                sender="DebateStrategy",
+                message_id=f"debate_start_{round_id}",
+            )
 
             try:
                 proposer_output = await proposer.execute(
@@ -87,14 +94,25 @@ class DebateStrategy(InteractionStrategy):
                 break
 
             history.append({"round": round_id, "answer": current_answer, "critique": critic_output})
+
             if isinstance(critic_output, dict) and critic_output.get("approved") is True:
                 approved_round = round_id
-                if self.message_bus:
-                    await self.message_bus.publish({"event": "debate_finished", "round": round_id})
+                # ✅ حل خطای 93
+                await self._emit(
+                    message_type="debate_finished",
+                    payload={"round": round_id},
+                    sender="DebateStrategy",
+                    message_id=f"debate_finished_{round_id}",
+                )
                 break
 
-            if self.message_bus:
-                await self.message_bus.publish({"event": "debate_round_completed", "round": round_id})
+            # ✅ حل خطای 97
+            await self._emit(
+                message_type="debate_round_completed",
+                payload={"round": round_id},
+                sender="DebateStrategy",
+                message_id=f"debate_round_{round_id}",
+            )
 
         context["debate_history"] = history
         context["final_answer"] = current_answer

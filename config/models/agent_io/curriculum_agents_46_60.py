@@ -1,8 +1,8 @@
-from pydantic import BaseModel
 from typing import List, Optional
+from agents.orchestration.models import OrchestrationRequest, OrchestrationResult
 
 from .common import ConfidenceScore, Recommendation, Evidence
-from config.models.core.learning_objects import (
+from .learning_objects import (
     ConceptNode,
     Lesson,
     LearningObjective,

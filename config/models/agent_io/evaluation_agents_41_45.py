@@ -1,11 +1,11 @@
 from pydantic import BaseModel
 from typing import List, Optional
-from datetime import datetime
 
-from .common import ConfidenceScore, Evidence, ReasoningTrace
-from config.models.core.learning_objects import (
+from .common import Evidence, ReasoningTrace
+from .learning_objects import (
     LearningObjective, Question, Lesson
 )
+from agents.orchestration.models import OrchestrationRequest, OrchestrationResult
 
 
 # -------------------------------------------------------

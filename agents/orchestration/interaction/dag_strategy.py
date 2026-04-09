@@ -12,6 +12,8 @@ from ..models import (
 
 
 class DAGStrategy(InteractionStrategy):
+    scenario_name = "dag"
+
     async def execute(self, request: OrchestrationRequest) -> OrchestrationResult:
         context: Dict[str, Any] = dict(request.context or {})
         tasks = {task.task_id: task for task in request.tasks if task.task_id}
@@ -36,41 +38,55 @@ class DAGStrategy(InteractionStrategy):
 
             running.update(ready)
 
-            coroutines = [self._execute_task(tasks[task_id], dict(context), context_lock) for task_id in ready]
+            coroutines = [
+                self._execute_task(tasks[task_id], dict(context), context_lock)
+                for task_id in ready
+            ]
             gathered = await asyncio.gather(*coroutines, return_exceptions=True)
 
-            for result in gathered:
-                if isinstance(result, Exception):
+            # ✅ حل خطاهای 54-70: فیلتر BaseException قبل از استفاده
+            for outcome in gathered:
+                if isinstance(outcome, BaseException):
                     results.append(
                         TaskResult(
                             task_id="unknown",
                             agent_name="unknown",
                             success=False,
-                            error=str(result),
+                            error=str(outcome),
                         )
                     )
                     continue
 
-                results.append(result)
-                running.discard(result.task_id)
+                # اینجا مطمئنیم outcome از نوع TaskResult است
+                results.append(outcome)
+                running.discard(outcome.task_id)
 
-                if result.success:
-                    completed.add(result.task_id)
-                    if self.message_bus:
-                        await self.message_bus.publish(
-                            {"event": "task_completed", "task_id": result.task_id, "agent": result.agent_name}
-                        )
+                if outcome.success:
+                    completed.add(outcome.task_id)
+                    await self._emit(
+                        message_type="task_completed",
+                        payload={"task_id": outcome.task_id, "agent": outcome.agent_name},
+                        sender="DAGStrategy",
+                        recipient=outcome.agent_name,
+                        message_id=f"dag_done_{outcome.task_id}",
+                    )
                 else:
-                    if self.message_bus:
-                        await self.message_bus.publish(
-                            {
-                                "event": "task_failed",
-                                "task_id": result.task_id,
-                                "agent": result.agent_name,
-                                "error": result.error,
-                            }
-                        )
-                    return OrchestrationResult(success=False, results=results, final_context=context)
+                    await self._emit(
+                        message_type="task_failed",
+                        payload={
+                            "task_id": outcome.task_id,
+                            "agent": outcome.agent_name,
+                            "error": outcome.error,
+                        },
+                        sender="DAGStrategy",
+                        recipient=outcome.agent_name,
+                        message_id=f"dag_fail_{outcome.task_id}",
+                    )
+                    return OrchestrationResult(
+                        success=False,
+                        results=results,
+                        final_context=context,
+                    )
 
         return OrchestrationResult(success=True, results=results, final_context=context)
 
@@ -100,10 +116,16 @@ class DAGStrategy(InteractionStrategy):
         context_snapshot: Dict[str, Any],
         context_lock: asyncio.Lock,
     ) -> TaskResult:
-        if self.message_bus:
-            await self.message_bus.publish({"event": "task_started", "task_id": task.task_id, "agent": task.agent_name})
+        # ✅ حل خطای 104
+        await self._emit(
+            message_type="task_started",
+            payload={"task_id": task.task_id, "agent": task.agent_name},
+            sender="DAGStrategy",
+            recipient=task.agent_name,
+            message_id=f"dag_start_{task.task_id}",
+        )
 
-        agent = self.registry.get(task.agent_name)
+        agent = self.agent_registry.get(task.agent_name)
         if agent is None:
             return TaskResult(
                 task_id=task.task_id,
@@ -118,7 +140,12 @@ class DAGStrategy(InteractionStrategy):
             if isinstance(output, dict):
                 async with context_lock:
                     context_snapshot.update(output)
-            return TaskResult(task_id=task.task_id, agent_name=task.agent_name, success=True, output=output)
+            return TaskResult(
+                task_id=task.task_id,
+                agent_name=task.agent_name,
+                success=True,
+                output=output,
+            )
         except Exception as exc:
             return TaskResult(
                 task_id=task.task_id,

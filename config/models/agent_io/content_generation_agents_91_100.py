@@ -1,8 +1,7 @@
-from pydantic import BaseModel
 from typing import List, Optional
 from .common import ConfidenceScore, Recommendation
-from config.models.core.learning_objects import Lesson, LearningObjective
-
+from .learning_objects import Lesson, LearningObjective
+from agents.orchestration.models import OrchestrationRequest, OrchestrationResult
 
 # -------------------------------------------------
 # Agent 91 — Example Generator

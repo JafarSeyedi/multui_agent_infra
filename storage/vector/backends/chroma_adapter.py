@@ -1,9 +1,12 @@
+# storage/vector/backends/chroma_adapter.py
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
 import chromadb
+from chromadb.api.models.Collection import Collection
 from chromadb.config import Settings
+from chromadb.api.types import Metadata
 
 from ..base import VectorDBAdapter
 from ..embedding_utils import normalize_embedding
@@ -12,16 +15,30 @@ from ..embedding_utils import normalize_embedding
 class ChromaAdapter(VectorDBAdapter):
     """Persistent Chroma adapter with a normalized result shape."""
 
-    def __init__(self, db_path: str = "./chroma_db", collection_name: str = "documents"):
+    def __init__(self, db_path: str = "./chroma_db", collection_name: str = "documents") -> None:
         self.client = chromadb.PersistentClient(
             path=db_path,
             settings=Settings(allow_reset=True),
         )
         self.collection_name = collection_name
-        self._collection = None
+        self._collection: Optional[Collection] = None  # ← fix: نوع صریح
         self._dimension: Optional[int] = None
 
-    async def _get_or_create_collection(self, dimension: int):
+    def _sanitize_metadata(self, meta: Dict[str, Any]) -> Metadata:
+        """Convert metadata values to chromadb-compatible primitives."""
+        result: Dict[str, str | int | float | bool] = {}
+        for k, v in meta.items():
+            if isinstance(v, bool):
+                result[k] = v
+            elif isinstance(v, (int, float, str)):
+                result[k] = v
+            elif v is None:
+                result[k] = ""        # chroma None را نمی‌پذیرد
+            else:
+                result[k] = str(v)    # fallback برای list, dict, etc.
+        return result  # Dict[str, str|int|float|bool] با Metadata سازگاره
+
+    async def _get_or_create_collection(self, dimension: int) -> Collection:
         if self._collection is None:
             self._dimension = dimension
             try:
@@ -55,7 +72,8 @@ class ChromaAdapter(VectorDBAdapter):
 
         collection = await self._get_or_create_collection(dimension=len(vectors[0]))
         normalized_vectors = [normalize_embedding(v) for v in vectors]
-        collection.upsert(ids=ids, embeddings=normalized_vectors, metadatas=metadata)
+        sanitized = [self._sanitize_metadata(m) for m in metadata]
+        collection.upsert(ids=ids, embeddings=normalized_vectors, metadatas=sanitized)
 
     async def batch_upsert(self, items: List[Dict[str, Any]]) -> None:
         if not items:
@@ -90,13 +108,13 @@ class ChromaAdapter(VectorDBAdapter):
             return formatted_results
 
         for idx, item_id in enumerate(ids[0]):
-            metadata = metadatas[0][idx] if metadatas and metadatas[0] else {}
+            meta = metadatas[0][idx] if metadatas and metadatas[0] else {}
             distance = distances[0][idx] if distances and distances[0] else None
             formatted_results.append(
                 {
                     "_id": item_id,
                     "_score": 1.0 - float(distance) if distance is not None else 0.0,
-                    **metadata,
+                    **meta,
                 }
             )
         return formatted_results

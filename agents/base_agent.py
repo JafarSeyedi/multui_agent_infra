@@ -6,7 +6,7 @@ import inspect
 import time
 import uuid
 from datetime import datetime
-from typing import Any, Optional, Type, TYPE_CHECKING
+from typing import Any, Optional, Type, TypeVar, Generic
 
 from pydantic import BaseModel
 
@@ -14,18 +14,20 @@ from config.models.system.execution_models import AgentExecutionRecord
 from storage.base_storage import StorageAdapter
 from storage.vector.base import VectorDBAdapter
 
-if TYPE_CHECKING:
-    from agents.orchestration.models import OrchestrationRequest, OrchestrationResult
+TInput = TypeVar("TInput", bound=OrchestrationRequest)
+TOutput = TypeVar("TOutput", bound=OrchestrationResult)
 
+from agents.orchestration.models import OrchestrationRequest, OrchestrationResult
 
-class BaseAgent:
+class BaseAgent(Generic[TInput, TOutput]):
     """Production-ready base class for typed educational agents."""
 
     agent_name: str = "BaseAgent"
     agent_version: str = "1.0.0"
-    InputModel: Type[BaseModel] = BaseModel
-    OutputModel: Type[BaseModel] = BaseModel
 
+    input_model_class: Type[TInput]
+    output_model_class: Type[TOutput]
+    
     def __init__(
         self,
         llm: Optional[Any] = None,
@@ -38,7 +40,7 @@ class BaseAgent:
         self.storage = storage
         self.metadata = metadata or {}
 
-    async def run(self, input_data: Any) -> BaseModel:
+    async def run(self, input_data: Any) -> TOutput:
         start = time.perf_counter()
         validated_input = self._validate_input(input_data)
         try:
@@ -50,14 +52,7 @@ class BaseAgent:
             await self._log_execution(validated_input, None, start, status="failure", error_message=str(exc))
             raise
 
-    def run_sync(self, input_data: Any) -> BaseModel:
-        """
-        Synchronous wrapper around the async `run` method.
-
-        NOTE:
-        - Must NOT be called from within an already running event loop.
-        - Intended for CLI scripts, simple synchronous environments, or tests.
-        """
+    def run_sync(self, input_data: Any) -> TOutput:
         try:
             asyncio.get_running_loop()
         except RuntimeError:
@@ -69,24 +64,24 @@ class BaseAgent:
             "synchronous context (e.g., a separate thread or process)."
         )
 
-    async def execute(self, input_model: "OrchestrationRequest") -> "OrchestrationResult":
+    async def execute(self, input_model: TInput) -> TOutput:
         raise NotImplementedError(f"{self.agent_name} must implement execute().")
 
-    def _validate_input(self, input_data: Any) -> BaseModel:
-        if isinstance(input_data, self.InputModel):
+    def _validate_input(self, input_data: Any) -> TInput:
+        if isinstance(input_data, self.input_model_class):
             return input_data
         if isinstance(input_data, BaseModel):
             input_data = self._model_dump(input_data)
-        return self.InputModel(**input_data)
+        return self.input_model_class(**input_data)
 
-    def _validate_output(self, result: Any) -> BaseModel:
-        if isinstance(result, self.OutputModel):
+    def _validate_output(self, result: Any) -> TOutput:
+        if isinstance(result, self.output_model_class):
             return result
         if isinstance(result, BaseModel):
             result = self._model_dump(result)
-        return self.OutputModel(**result)
+        return self.output_model_class(**result)
 
-    async def _invoke_execute(self, input_model: BaseModel) -> Any:
+    async def _invoke_execute(self, input_model: TInput) -> Any:
         result = self.execute(input_model)
         if inspect.isawaitable(result):
             return await result
@@ -94,8 +89,8 @@ class BaseAgent:
 
     async def _log_execution(
         self,
-        input_model: BaseModel,
-        output_model: Optional[BaseModel],
+        input_model: TInput,
+        output_model: Optional[TOutput],
         start_time: float,
         status: str,
         error_message: Optional[str] = None,

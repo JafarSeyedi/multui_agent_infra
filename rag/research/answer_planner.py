@@ -2,11 +2,23 @@ from __future__ import annotations
 
 import json
 from types import SimpleNamespace
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
 
 from rag.research.memory.reasoning.event_types import ReasoningEventType
 from rag.research.memory.reasoning_memory import ReasoningMemory
 
+
+@runtime_checkable
+class LLMProtocol(Protocol):
+    async def complete(self, prompt: str) -> str: ...
+
+@runtime_checkable  
+class LLMGenerateProtocol(Protocol):
+    async def generate(self, prompt: str) -> str: ...
+
+@runtime_checkable
+class LLMInvokeProtocol(Protocol):
+    async def ainvoke(self, prompt: str) -> str: ...
 
 class AnswerPlanner:
     def __init__(self, llm: Optional[Any] = None, reasoning: Optional[ReasoningMemory] = None):
@@ -76,12 +88,16 @@ class AnswerPlanner:
         return sections
 
     async def _complete(self, prompt: str) -> str:
-        if hasattr(self.llm, "complete"):
+        if self.llm is None:
+            raise TypeError("LLM is not initialized")
+        
+        if isinstance(self.llm, LLMProtocol):
             return str(await self.llm.complete(prompt))
-        if hasattr(self.llm, "generate"):
+        if isinstance(self.llm, LLMGenerateProtocol):
             return str(await self.llm.generate(prompt))
-        if hasattr(self.llm, "ainvoke"):
+        if isinstance(self.llm, LLMInvokeProtocol):
             return str(await self.llm.ainvoke(prompt))
+        
         raise TypeError("Unsupported LLM interface")
 
     def _evidence_to_text(self, item: Any) -> str:

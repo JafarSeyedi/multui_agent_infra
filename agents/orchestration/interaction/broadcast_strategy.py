@@ -1,6 +1,6 @@
 # agents/orchestration/interaction/broadcast_strategy.py
 import asyncio
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List
 
 from .base_strategy import InteractionStrategy
 from ..models import (
@@ -12,6 +12,8 @@ from ..models import (
 
 
 class BroadcastStrategy(InteractionStrategy):
+    scenario_name = "broadcast"
+
     async def execute(self, request: OrchestrationRequest) -> OrchestrationResult:
         context: Dict[str, Any] = dict(request.context or {})
         tasks: List[TaskDefinition] = request.tasks or []
@@ -20,13 +22,12 @@ class BroadcastStrategy(InteractionStrategy):
             raise ValueError("BroadcastStrategy requires at least one task.")
 
         mode = request.metadata.get("aggregator", "merge")
-        results: List[TaskResult] = []
 
         coroutines = [self._execute_task(task, dict(context)) for task in tasks]
-        task_results = await asyncio.gather(*coroutines, return_exceptions=True)
+        raw_results = await asyncio.gather(*coroutines, return_exceptions=True)
 
-        task_results = self._normalize_gather_results(task_results)
-        results.extend(task_results)
+        # ✅ فیلتر با _normalize_gather_results - خطای broadcast 28/29
+        results: List[TaskResult] = self._normalize_gather_results(raw_results)
 
         final_output = self._aggregate_outputs(results, mode)
 
@@ -44,12 +45,16 @@ class BroadcastStrategy(InteractionStrategy):
     async def _execute_task(self, task: TaskDefinition, context_snapshot: Dict[str, Any]) -> TaskResult:
         payload = {**task.payload, "context": context_snapshot}
 
-        if self.message_bus:
-            await self.message_bus.publish(
-                {"event": "broadcast_task_started", "task_id": task.task_id, "agent": task.agent_name}
-            )
+        # ✅ استفاده از _emit - خطای broadcast 49
+        await self._emit(
+            message_type="broadcast_task_started",
+            payload={"task_id": task.task_id, "agent": task.agent_name},
+            sender="BroadcastStrategy",
+            recipient=task.agent_name,
+            message_id=f"broadcast_start_{task.task_id}",
+        )
 
-        agent = self.registry.get(task.agent_name)
+        agent = self.agent_registry.get(task.agent_name)
         if agent is None:
             return TaskResult(
                 task_id=task.task_id,
@@ -60,10 +65,15 @@ class BroadcastStrategy(InteractionStrategy):
 
         try:
             output = await agent.execute(payload)
-            if self.message_bus:
-                await self.message_bus.publish(
-                    {"event": "broadcast_task_completed", "task_id": task.task_id, "agent": task.agent_name}
-                )
+
+            # ✅ استفاده از _emit - خطای broadcast 65
+            await self._emit(
+                message_type="broadcast_task_completed",
+                payload={"task_id": task.task_id, "agent": task.agent_name},
+                sender="BroadcastStrategy",
+                recipient=task.agent_name,
+                message_id=f"broadcast_done_{task.task_id}",
+            )
 
             return TaskResult(
                 task_id=task.task_id,
@@ -81,11 +91,12 @@ class BroadcastStrategy(InteractionStrategy):
 
     @staticmethod
     def _normalize_gather_results(results: Iterable[Any]) -> List[TaskResult]:
+        """✅ حل خطای assignment و extend - تبدیل Exception به TaskResult"""
         normalized: List[TaskResult] = []
         for item in results:
             if isinstance(item, TaskResult):
                 normalized.append(item)
-            elif isinstance(item, Exception):
+            elif isinstance(item, BaseException):  # BaseException نه فقط Exception
                 normalized.append(
                     TaskResult(
                         task_id="unknown",
@@ -112,5 +123,4 @@ class BroadcastStrategy(InteractionStrategy):
             if not votes:
                 return None
             return max(votes.items(), key=lambda kv: kv[1])[0]
-        # fallback
         return [res.output for res in results if res.success]

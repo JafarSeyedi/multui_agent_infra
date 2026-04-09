@@ -7,7 +7,7 @@ class FeedbackController:
         self.research_loop = research_loop
         self.hallucination_guard = hallucination_guard
 
-    async def apply_feedback(self, query, evidences, evaluation):
+    async def apply_feedback(self, query, evidences, evaluation, positive_chunks, negative_chunks):
         if evaluation.hallucination_rate > 0.2 and self.hallucination_guard:
             self.hallucination_guard.enable_strict_mode()
 
@@ -25,6 +25,8 @@ class FeedbackController:
                     evidences=evidences,
                     results=[],
                     chosen_chunk_id=chosen_chunk_id,
+                    positive_chunks=positive_chunks, 
+                    negative_chunks=negative_chunks
                 )
             except Exception:
                 pass

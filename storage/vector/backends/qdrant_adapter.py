@@ -1,151 +1,218 @@
+# storage/vector/backends/qdrant_adapter.py
+
+from __future__ import annotations
+
+from typing import Any, Dict, List, Optional, Sequence
+
 from qdrant_client import QdrantClient, models
-from typing import List, Dict, Any, Optional
+from qdrant_client.models import ScoredPoint
+
 from ..base import VectorDBAdapter
-from ..embedding_utils import normalize_embedding # Import normalization
+from ..embedding_utils import normalize_embedding
+
 
 class QdrantAdapter(VectorDBAdapter):
-    """
-    Adapter for Qdrant, a fast and scalable vector database.
-    """
+    """Adapter for Qdrant vector database."""
 
-    def __init__(self, url: str = "http://localhost:6333", collection_name: str = "documents"):
+    def __init__(
+        self,
+        url: str = "http://localhost:6333",
+        collection_name: str = "documents",
+    ) -> None:
         self.client = QdrantClient(url=url)
         self.collection_name = collection_name
-        self._dimension = None
+        self._dimension: int = 0
 
-    async def create_index(self, name: str, dimension: int, config: Optional[Dict] = None):
-        """Creates or recreates a Qdrant collection with specified configuration."""
+    async def create_index(
+        self,
+        name: str,
+        dimension: int,
+        config: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Creates or recreates a Qdrant collection."""
         self.collection_name = name
         self._dimension = dimension
-        
-        # Default index configuration (HNSW)
-        hnsw_config = models.HnswConfigDiff(
-            m=config.get("m", 16) if config else 16,
-            ef_construct=config.get("ef_construction", 200) if config else 200,
-        ) if config else None
+
+        hnsw_config = (
+            models.HnswConfigDiff(
+                m=int(config.get("m", 16)),
+                ef_construct=int(config.get("ef_construction", 200)),
+            )
+            if config
+            else None
+        )
 
         vector_params = models.VectorParams(
             size=dimension,
-            distance=models.Distance.COSINE # Default to cosine
+            distance=models.Distance.COSINE,
         )
 
         self.client.recreate_collection(
             collection_name=self.collection_name,
             vectors_config=vector_params,
-            hnsw_config=hnsw_config
-            # Add other configs like quantizer, optimizers, etc. if needed
+            hnsw_config=hnsw_config,
         )
-        print(f"QdrantAdapter: Collection '{self.collection_name}' recreated with dimension {dimension}.")
+        print(
+            f"QdrantAdapter: Collection '{self.collection_name}' "
+            f"recreated with dimension {dimension}."
+        )
 
-    async def upsert(self, ids: List[str], vectors: List[List[float]], metadata: List[Dict]):
-        """Upserts points (vectors and metadata) into the Qdrant collection."""
-        if not ids: return
+    async def upsert(
+        self,
+        ids: List[str],
+        vectors: List[List[float]],
+        metadata: List[Dict[str, Any]],
+    ) -> None:
+        """Upserts points into the Qdrant collection."""
+        if not ids:
+            return
         if len(ids) != len(vectors) or len(ids) != len(metadata):
             raise ValueError("Length of ids, vectors, and metadata must match.")
 
-        if self._dimension is None:
-             raise RuntimeError("Collection dimension not set. Call create_index first.")
-        
-        # Normalize vectors before upserting
         normalized_vectors = [normalize_embedding(v) for v in vectors]
 
-        # Convert metadata into Qdrant's payload format
-        points = []
-        for i in range(len(ids)):
-            points.append(models.PointStruct(
+        points = [
+            models.PointStruct(
                 id=ids[i],
                 vector=normalized_vectors[i],
-                payload={**metadata[i]} # Qdrant expects payload as a dict
-            ))
+                payload=dict(metadata[i]),
+            )
+            for i in range(len(ids))
+        ]
 
-        # Use batching for efficiency
         self.client.upsert(
             collection_name=self.collection_name,
-            wait=True, # Wait for operation to complete
-            points=points
+            wait=True,
+            points=points,
         )
-        print(f"QdrantAdapter: Upserted {len(ids)} items into collection '{self.collection_name}'.")
+        print(
+            f"QdrantAdapter: Upserted {len(ids)} items "
+            f"into collection '{self.collection_name}'."
+        )
 
-    async def batch_upsert(self, items: List[Dict]):
-        """
-        Upserts items in batches. Each item should have 'id', 'vector', 'metadata'.
-        """
-        if not items: return
-        ids = [item['id'] for item in items]
-        vectors = [item['vector'] for item in items]
-        metadatas = [item['metadata'] for item in items]
-        await self.upsert(ids, vectors, metadatas)
+    async def batch_upsert(self, items: List[Dict[str, Any]]) -> None:
+        """Upserts items in batches."""
+        if not items:
+            return
+        await self.upsert(
+            ids=[item["id"] for item in items],
+            vectors=[item["vector"] for item in items],
+            metadata=[item["metadata"] for item in items],
+        )
 
-
-    async def query(self, vector: List[float], top_k: int = 5, filters: Optional[Dict[str, Any]] = None) -> List[Dict]:
-        """
-        Queries Qdrant collection. 'filters' dictionary is translated to Qdrant's filter structure.
-        """
-        if self._dimension is None:
-             raise RuntimeError("Collection dimension not set. Call create_index first.")
-
-        # Normalize the query vector
+    async def query(
+        self,
+        vector: List[float],
+        top_k: int = 5,
+        filters: Optional[Dict[str, Any]] = None,
+    ) -> List[Dict[str, Any]]:
+        """Queries the Qdrant collection for nearest neighbours."""
         normalized_query_vector = normalize_embedding(vector)
 
-        # Translate generic filters to Qdrant filter models
-        qdrant_filter = None
+        qdrant_filter: Optional[models.Filter] = None
         if filters:
-            # Example: filters = {"source": "doc1", "score_gt": 0.8}
-            # This requires mapping and constructing Qdrant's Filter object
-            # For simplicity, let's assume filters are direct key-value matches for now.
-            # More complex filters (range, exists, etc.) need explicit mapping.
-            
-            # Example for a simple key-value filter:
-            filter_conditions = []
-            for key, value in filters.items():
-                if isinstance(value, (int, float, str, bool)):
-                    filter_conditions.append(models.FieldCondition(
-                        key=key,
-                        match=models.MatchValue(value=value)
-                    ))
-                elif isinstance(value, dict) and "gt" in value: # Example for range filter
-                    filter_conditions.append(models.FieldCondition(
-                        key=key,
-                        range=models.Range(gte=value["gt"]) # Assuming gt means greater than or equal
-                    ))
-            if filter_conditions:
-                qdrant_filter = models.Filter(must=filter_conditions)
+            filter_conditions: List[models.FieldCondition] = []
 
+            for key, value in filters.items():
+                # ── نکته: bool باید قبل از int چک شود ──
+                # چون bool زیرکلاس int است و isinstance(True, int) → True
+                if isinstance(value, bool):
+                    filter_conditions.append(
+                        models.FieldCondition(
+                            key=key,
+                            match=models.MatchValue(value=value),  # bool مجاز است
+                        )
+                    )
+                elif isinstance(value, int):
+                    filter_conditions.append(
+                        models.FieldCondition(
+                            key=key,
+                            match=models.MatchValue(value=value),  # int مجاز است
+                        )
+                    )
+                elif isinstance(value, float):
+                    # ── FIX خطا ۱: float در MatchValue مجاز نیست → Range ──
+                    filter_conditions.append(
+                        models.FieldCondition(
+                            key=key,
+                            range=models.Range(gte=value, lte=value),
+                        )
+                    )
+                elif isinstance(value, str):
+                    filter_conditions.append(
+                        models.FieldCondition(
+                            key=key,
+                            match=models.MatchValue(value=value),  # str مجاز است
+                        )
+                    )
+                elif isinstance(value, dict):
+                    # فیلتر range صریح: {"gte": 0.5, "lte": 0.9}
+                    filter_conditions.append(
+                        models.FieldCondition(
+                            key=key,
+                            range=models.Range(
+                                gte=value.get("gte"),
+                                lte=value.get("lte"),
+                                gt=value.get("gt"),
+                                lt=value.get("lt"),
+                            ),
+                        )
+                    )
+
+            if filter_conditions:
+                # ── FIX خطا ۲: cast به Sequence برای رفع invariance ──
+                must_seq: Sequence[models.FieldCondition] = filter_conditions
+                qdrant_filter = models.Filter(must=must_seq)  # type: ignore[arg-type]
 
         try:
-            search_result = self.client.search(
+            # ── FIX خطا ۳: جایگزینی client.search با client.query_points ──
+            search_result = self.client.query_points(
                 collection_name=self.collection_name,
-                query_vector=normalized_query_vector,
+                query=normalized_query_vector,
                 limit=top_k,
                 query_filter=qdrant_filter,
-                with_payload=True # Include payload (metadata)
+                with_payload=True,
             )
         except Exception as e:
             print(f"QdrantAdapter: Error during query: {e}")
             return []
 
-        formatted_results = []
-        if search_result:
-            for hit in search_result:
-                formatted_results.append({
+        formatted_results: List[Dict[str, Any]] = []
+        raw_points = (
+            search_result.points
+            if hasattr(search_result, "points")
+            else search_result
+        )
+
+        for hit in raw_points:
+            if not isinstance(hit, ScoredPoint):
+                continue  # tuple یا موارد غیرمنتظره را رد کن
+
+            payload = hit.payload or {}
+            formatted_results.append(
+                {
                     "_id": hit.id,
                     "_score": hit.score,
-                    **hit.payload # Payload contains the metadata
-                })
+                    **payload,
+                }
+            )
         return formatted_results
 
-    async def delete(self, ids: List[str]):
-        """Deletes points by their IDs from the Qdrant collection."""
-        if not ids: return
+    async def delete(self, ids: List[str]) -> None:
+        """Deletes points by their IDs."""
+        if not ids:
+            return
 
         try:
+            # ── FIX خطا ۴: جایگزینی PointSelector با PointIdsList ──
             self.client.delete(
                 collection_name=self.collection_name,
                 wait=True,
-                points_selector=models.PointSelector(
-                    ids=ids
-                )
+                points_selector=models.PointIdsList(points=ids),  # type: ignore[arg-type]
             )
-            print(f"QdrantAdapter: Deleted {len(ids)} items from collection '{self.collection_name}'.")
+            print(
+                f"QdrantAdapter: Deleted {len(ids)} items "
+                f"from collection '{self.collection_name}'."
+            )
         except Exception as e:
             print(f"QdrantAdapter: Error deleting items: {e}")

@@ -1,3 +1,5 @@
+# storage/vector/base.py
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -24,6 +26,7 @@ class VectorDBAdapter(ABC):
         metadata: List[Dict[str, Any]],
     ) -> None:
         """Insert or update vectors and associated metadata."""
+        ...
 
     @abstractmethod
     async def batch_upsert(self, items: List[Dict[str, Any]]) -> None:
@@ -41,6 +44,7 @@ class VectorDBAdapter(ABC):
     @abstractmethod
     async def delete(self, ids: List[str]) -> None:
         """Delete vectors by ID."""
+        ...
 
     async def search(
         self,

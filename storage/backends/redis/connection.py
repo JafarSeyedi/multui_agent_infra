@@ -1,11 +1,9 @@
 import logging
-import asyncio
-from typing import Optional, Any, Union
-from redis.asyncio import Redis, ConnectionPool, Sentinel
+from typing import Optional, Union
+from redis.asyncio import Redis, Sentinel
 from redis.asyncio.cluster import RedisCluster
 from redis.backoff import ExponentialBackoff
 from redis.retry import Retry
-from redis.exceptions import ConnectionError, TimeoutError
 
 class RedisManager:
     """
@@ -49,7 +47,7 @@ class RedisManager:
             self.logger.error(f"❌ Redis connection failed: {e}")
             raise
 
-    async def get_client(self) -> Union[Redis, RedisCluster]:
+    async def get_client(self) -> Optional[Union[Redis, RedisCluster]]:
         if not self.client:
             await self.connect()
         return self.client

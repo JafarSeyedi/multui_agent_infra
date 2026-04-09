@@ -11,6 +11,8 @@ from ..models import (
 
 
 class ConditionalStrategy(InteractionStrategy):
+    scenario_name = "conditional"
+
     async def execute(self, request: OrchestrationRequest) -> OrchestrationResult:
         context: Dict[str, Any] = dict(request.context or {})
         tasks = {task.task_id: task for task in request.tasks if task.task_id}
@@ -19,7 +21,7 @@ class ConditionalStrategy(InteractionStrategy):
         if not start_task:
             raise ValueError("No valid start_task provided for ConditionalStrategy.")
 
-        current_task_id = start_task
+        current_task_id: Optional[str] = start_task
         results: List[TaskResult] = []
         visited: set[str] = set()
 
@@ -32,16 +34,21 @@ class ConditionalStrategy(InteractionStrategy):
             if not task:
                 raise ValueError(f"Task '{current_task_id}' is not defined.")
 
-            if self.message_bus:
-                await self.message_bus.publish(
-                    {"event": "conditional_task_started", "task_id": task.task_id, "agent": task.agent_name}
-                )
+            # ✅ حل خطای 37
+            await self._emit(
+                message_type="conditional_task_started",
+                payload={"task_id": task.task_id, "agent": task.agent_name},
+                sender="ConditionalStrategy",
+                recipient=task.agent_name,
+                message_id=f"cond_start_{task.task_id}",
+            )
 
-            agent = self.registry.get(task.agent_name)
+            agent = self.agent_registry.get(task.agent_name)
             if agent is None:
                 raise ValueError(f"Agent '{task.agent_name}' not registered.")
 
             payload = {**task.payload, "context": dict(context)}
+            output: Any = None
 
             try:
                 output = await agent.execute(payload)
@@ -56,10 +63,14 @@ class ConditionalStrategy(InteractionStrategy):
                 )
                 return OrchestrationResult(success=False, results=results, final_context=context)
 
-            if self.message_bus:
-                await self.message_bus.publish(
-                    {"event": "conditional_task_completed", "task_id": task.task_id, "output": output}
-                )
+            # ✅ حل خطای 61
+            await self._emit(
+                message_type="conditional_task_completed",
+                payload={"task_id": task.task_id, "output": output},
+                sender="ConditionalStrategy",
+                recipient=task.agent_name,
+                message_id=f"cond_done_{task.task_id}",
+            )
 
             current_task_id = self._select_next_task(task, output)
 
@@ -70,13 +81,10 @@ class ConditionalStrategy(InteractionStrategy):
         routes = getattr(task, "routes", None) or {}
         if not routes:
             return None
-
         if isinstance(output, dict):
             route_key = output.get("route")
             if route_key and route_key in routes:
                 return routes[route_key]
-
         if isinstance(output, str) and output in routes:
             return routes[output]
-
         return routes.get("default")

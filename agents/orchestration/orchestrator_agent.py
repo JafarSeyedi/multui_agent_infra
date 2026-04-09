@@ -3,8 +3,8 @@ from typing import Any, Dict
 from agents.base_agent import BaseAgent
 
 from .models import OrchestrationRequest, OrchestrationResult
-from .native_backend import NativeOrchestrationBackend
-
+from .backends.native_backend import NativeOrchestrationBackend
+from agents.buses.base import MessageBus
 
 class OrchestratorAgent(BaseAgent):
     """

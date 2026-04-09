@@ -4,7 +4,7 @@ from .graph_models import GraphNode, GraphEdge
 
 class MemoryGraphStore:
 
-    def __init__(self):
+    def __init__(self) -> None:
 
         self.nodes: Dict[str, GraphNode] = {}
         self.edges: List[GraphEdge] = []

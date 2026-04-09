@@ -1,14 +1,15 @@
 # agents/orchestration/interaction/round_robin_strategy.py
 from __future__ import annotations
 
-from typing import Any, Dict, List, Sequence
+from typing import Any, Dict, List, Sequence, Optional
 
-from agents.message_bus import AgentMessage
+from agents.buses.base import MessageBus
 from agents.orchestration.models import (
     OrchestrationRequest,
     OrchestrationResult,
     TaskDefinition,
     TaskResult,
+    AgentMessage
 )
 from .base_strategy import InteractionStrategy
 
@@ -19,10 +20,10 @@ class RoundRobinStrategy(InteractionStrategy):
     brainstorming یا simulation که ترتیب صحبت عوامل کاملاً deterministic است.
     """
 
-    scenario = "round_robin"
+    scenario_name = "round_robin"
 
-    def __init__(self, registry, message_bus: Optional[MessageBus] = None, storage = None, default_rounds: int = 3):
-        super().__init__(registry, message_bus, storage)
+    def __init__(self, agent_registry, message_bus: Optional[MessageBus] = None, storage = None, default_rounds: int = 3):
+        super().__init__(agent_registry, message_bus, storage)
         self.default_rounds = max(1, default_rounds)
 
     async def execute(self, request: OrchestrationRequest) -> OrchestrationResult:
@@ -53,7 +54,7 @@ class RoundRobinStrategy(InteractionStrategy):
 
                 task_id = task.task_id or f"{task.agent_name}-{round_index}-{turn_index}"
                 try:
-                    output_model = await self.registry.execute(task.agent_name, task_payload)
+                    output_model = await self.agent_registry.execute(task.agent_name, task_payload)
                     output_payload = self._normalize_output(output_model)
 
                     history_entry = {

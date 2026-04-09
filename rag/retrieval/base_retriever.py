@@ -1,0 +1,10 @@
+# rag/retrieval/base_retriever.py
+from abc import ABC, abstractmethod
+from rag.retrieval.retriever_result import RetrievalResult
+
+class BaseRetriever(ABC):
+    """قرارداد مشترک تمام Retriever ها"""
+
+    @abstractmethod
+    def search(self, query: str, top_k: int = 10) -> list[RetrievalResult]:
+        """جستجو و برگرداندن نتایج"""

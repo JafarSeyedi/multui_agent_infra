@@ -3,9 +3,9 @@ from typing import List, Dict, Any, Optional
 from .retriever_result import RetrievalResult
 from .vector_retriever import VectorRetriever
 from .bm25_retriever import BM25KeywordRetriever
+from .base_retriever import BaseRetriever
 
-
-class HybridRetriever:
+class HybridRetriever(BaseRetriever):
     """
     Production-grade hybrid retriever combining:
 

@@ -24,7 +24,7 @@ class GraphEdge:
 
 
 class GraphIndex:
-    def __init__(self):
+    def __init__(self) -> None:
         self.nodes: Dict[str, GraphNode] = {}
         self.adj: Dict[str, List[GraphEdge]] = defaultdict(list)
 

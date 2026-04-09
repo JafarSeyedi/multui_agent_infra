@@ -7,20 +7,17 @@ import asyncio
 import logging
 from typing import Callable, Awaitable, Dict
 from .base import MessageBus, HandlerType
-from config.models.system.interaction_models import AgentMessage
+from agents.orchestration.models import AgentMessage
 
 logger = logging.getLogger(__name__)
-
-ReplyHandlerType = Callable[[AgentMessage], Awaitable[AgentMessage]]
-
 
 class RequestReplyBus(MessageBus):
     """RPC-style request/reply bus."""
 
     def __init__(self) -> None:
-        self._handlers: Dict[str, ReplyHandlerType] = {}
+        self._handlers: Dict[str, HandlerType] = {}
 
-    async def subscribe(self, recipient: str, handler: ReplyHandlerType) -> None:
+    async def subscribe(self, recipient: str, handler: HandlerType) -> None:
         self._handlers[recipient] = handler
 
     async def unsubscribe(self, recipient: str, handler: HandlerType) -> None:
@@ -34,4 +31,10 @@ class RequestReplyBus(MessageBus):
         handler = self._handlers.get(message.recipient)
         if not handler:
             raise ValueError(f"No handler for {message.recipient!r}")
-        return await asyncio.wait_for(handler(message), timeout=timeout)
+        
+        result = await asyncio.wait_for(handler(message), timeout=timeout)
+        
+        if result is None:
+            raise ValueError(f"Handler for {message.recipient!r} returned no response")
+        
+        return result

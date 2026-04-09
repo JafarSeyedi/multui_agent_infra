@@ -1,6 +1,6 @@
-from pydantic import BaseModel
 from typing import List, Optional, Dict
 
+from agents.orchestration.models import OrchestrationRequest, OrchestrationResult
 from .common import ConfidenceScore, Evidence
 
 
@@ -19,7 +19,7 @@ class KnowledgeIngestionOutput(OrchestrationResult):
 
     ingested_documents: List[str]
 
-    metadata: Optional[Dict]
+    knowledge_metadata: Optional[Dict]
 
 
 # -------------------------------------------------
@@ -60,7 +60,7 @@ class SemanticIndexerInput(OrchestrationRequest):
 
     embeddings_reference: str
 
-    metadata: Optional[Dict]
+    semantic_metadata: Optional[Dict]
 
 
 class SemanticIndexerOutput(OrchestrationResult):

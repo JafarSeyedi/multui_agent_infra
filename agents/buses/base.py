@@ -2,10 +2,10 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Awaitable, Callable
-from config.models.system.interaction_models import AgentMessage
+from typing import Awaitable, Callable, Optional
+from agents.orchestration.models import AgentMessage
 
-HandlerType = Callable[[AgentMessage], Awaitable[None]]
+HandlerType = Callable[[AgentMessage], Awaitable[Optional[AgentMessage]]]
 
 
 class MessageBus(ABC):
@@ -26,10 +26,10 @@ class MessageBus(ABC):
         """Remove a previously registered handler."""
         ...
 
-    async def start(self) -> None:
+    async def start(self) -> None: 
         """Initialize bus resources (connections, channels, etc.)."""
-        pass
+        ...
 
     async def stop(self) -> None:
         """Clean up bus resources."""
-        pass
+        ...

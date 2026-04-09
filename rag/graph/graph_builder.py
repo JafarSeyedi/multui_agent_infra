@@ -1,3 +1,5 @@
+from .graph_models import GraphNode, GraphEdge
+
 class GraphBuilder:
 
     def __init__(self, llm, graph_store):

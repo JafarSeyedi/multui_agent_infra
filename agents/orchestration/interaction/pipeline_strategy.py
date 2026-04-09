@@ -1,6 +1,7 @@
 # agents/orchestration/interaction/pipeline_strategy.py
 from typing import Any, Dict, List
 
+from agents.orchestration.models import AgentMessage
 from .base_strategy import InteractionStrategy
 from ..models import (
     OrchestrationRequest,
@@ -11,15 +12,21 @@ from ..models import (
 
 
 class PipelineStrategy(InteractionStrategy):
+    scenario_name = "pipeline"
+
     async def execute(self, request: OrchestrationRequest) -> OrchestrationResult:
         context: Dict[str, Any] = dict(request.context or {})
         results: List[TaskResult] = []
 
         for task in request.tasks or []:
-            if self.message_bus:
-                await self.message_bus.publish(
-                    {"event": "task_started", "task_id": task.task_id, "agent": task.agent_name}
-                )
+            # ✅ استفاده از _emit
+            await self._emit(
+                message_type="task_started",
+                payload={"task_id": task.task_id, "agent": task.agent_name},
+                sender="PipelineStrategy",
+                recipient=task.agent_name,
+                message_id=f"task_{task.task_id}",
+            )
 
             result = await self._execute_task(task, dict(context))
             results.append(result)
@@ -27,20 +34,21 @@ class PipelineStrategy(InteractionStrategy):
             if result.success:
                 if isinstance(result.output, dict):
                     context.update(result.output)
-                if self.message_bus:
-                    await self.message_bus.publish(
-                        {"event": "task_completed", "task_id": task.task_id, "agent": task.agent_name}
-                    )
+                await self._emit(
+                    message_type="task_completed",
+                    payload={"task_id": task.task_id, "agent": task.agent_name},
+                    sender="PipelineStrategy",
+                    recipient=task.agent_name,
+                    message_id=f"task_done_{task.task_id}",
+                )
             else:
-                if self.message_bus:
-                    await self.message_bus.publish(
-                        {
-                            "event": "task_failed",
-                            "task_id": task.task_id,
-                            "agent": task.agent_name,
-                            "error": result.error,
-                        }
-                    )
+                await self._emit(
+                    message_type="task_failed",
+                    payload={"task_id": task.task_id, "agent": task.agent_name, "error": result.error},
+                    sender="PipelineStrategy",
+                    recipient=task.agent_name,
+                    message_id=f"task_fail_{task.task_id}",
+                )
                 return OrchestrationResult(
                     success=False,
                     results=results,
@@ -51,7 +59,7 @@ class PipelineStrategy(InteractionStrategy):
         return OrchestrationResult(success=True, results=results, final_context=context)
 
     async def _execute_task(self, task: TaskDefinition, context_snapshot: Dict[str, Any]) -> TaskResult:
-        agent = self.registry.get(task.agent_name)
+        agent = self.agent_registry.get(task.agent_name)
         if agent is None:
             return TaskResult(
                 task_id=task.task_id,

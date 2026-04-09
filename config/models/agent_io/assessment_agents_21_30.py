@@ -1,4 +1,5 @@
 from pydantic import BaseModel, Field
+from agents.orchestration.models import OrchestrationRequest, OrchestrationResult
 from typing import List, Optional, Dict, Literal
 from datetime import datetime
 

@@ -26,7 +26,7 @@ ReviewerAgent
 ## نمونه Orchestration Request
 ```python
 {
- "interaction_mode": "pipeline",
+ "scenario": "pipeline",
  "context": {
      "topic": "Large Language Models"
  },
@@ -348,7 +348,7 @@ APPROVED
 ## نمونه Orchestration Request
 ```python
 {
- "interaction_mode": "debate",
+ "scenario": "debate",
 
  "context": {
      "topic": "Explain transformers"
@@ -518,7 +518,7 @@ broadcast_task_completed
 ## 📌 نمونه OrchestrationRequest
 ```python
 {
- "interaction_mode": "broadcast",
+ "scenario": "broadcast",
 
  "context": {
      "question": "Explain Transformers"
@@ -629,7 +629,7 @@ routes:
 ## نمونه OrchestrationRequest
 ```python
 {
- "interaction_mode": "conditional",
+ "scenario": "conditional",
 
  "metadata": {
      "start_task": "router"
@@ -957,7 +957,7 @@ quality_threshold
 ## نمونه OrchestrationRequest
 ```python
 {
- "interaction_mode": "self_refine",
+ "scenario": "self_refine",
 
  "context": {
     "question": "Explain backpropagation"
@@ -1085,7 +1085,7 @@ context["topic"]
 
 - از OrchestrationRequest, OrchestrationResult, TaskResult, TaskDefinition موجود استفاده می‌کند.
 - با الگوی بقیه‌ی استراتژی‌ها در استفاده از سازگار است.:
-  - self.registry.get(task.agent_name)
+  - self.agent_registry.get(task.agent_name)
   - await agent.execute(payload)
   - self.message_bus.publish({...})
 

@@ -6,6 +6,7 @@ import uuid
 from dataclasses import dataclass, asdict, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
+from .reasoning_event import ReasoningEvent
 
 
 class ReasoningLevel(str, Enum):
@@ -34,28 +35,28 @@ class ReasoningPhase(str, Enum):
     OTHER = "other"
 
 
-@dataclass
-class ReasoningEvent:
-    """
-    یک رویداد واحد در ترِیس استدلال.
-    """
-    id: str
-    timestamp: float
-    session_id: str
-    group: str
-    step: int
-    phase: str
-    event_type: str
-    level: str
-    message: str
-    meta: Dict[str, Any] = field(default_factory=dict)
+# @dataclass
+# class ReasoningEvent:
+#     """
+#     یک رویداد واحد در ترِیس استدلال.
+#     """
+#     id: str
+#     timestamp: float
+#     session_id: str
+#     group: str
+#     step: int
+#     phase: str
+#     event_type: str
+#     level: str
+#     message: str
+#     meta: Dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
-        d = asdict(self)
-        # تضمین JSON-safe بودن meta
-        if not isinstance(d["meta"], dict):
-            d["meta"] = {"value": str(d["meta"])}
-        return d
+#     def to_dict(self) -> Dict[str, Any]:
+#         d = asdict(self)
+#         # تضمین JSON-safe بودن meta
+#         if not isinstance(d["meta"], dict):
+#             d["meta"] = {"value": str(d["meta"])}
+#         return d
 
 
 class ReasoningMemory:

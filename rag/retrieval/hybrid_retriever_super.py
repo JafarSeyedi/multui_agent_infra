@@ -11,7 +11,7 @@ from rag.research.memory.reasoning_memory import ReasoningMemory
 from .bm25_retriever import BM25KeywordRetriever
 from .retriever_result import RetrievalResult
 from .vector_retriever import VectorRetriever
-
+from .base_retriever import BaseRetriever
 
 class FusionMLP:
     """Small dependency-free fusion model with trainable linear weights."""
@@ -27,7 +27,7 @@ class FusionMLP:
     __call__ = predict
 
 
-class HybridRetrieverSuper:
+class HybridRetrieverSuper(BaseRetriever):
     """Professional hybrid retrieval pipeline with optional graph and rerank fusion."""
 
     def __init__(
@@ -55,7 +55,7 @@ class HybridRetrieverSuper:
     def attach_trainer(self, trainer) -> None:
         self.trainer = trainer
 
-    async def collect_feedback(self, query, results, chosen_chunk_id):
+    async def collect_feedback(self, query, results, chosen_chunk_id, positive_chunks, negative_chunks):
         if self.feedback_buffer is None:
             return
         for result in results:
@@ -65,6 +65,7 @@ class HybridRetrieverSuper:
                 meta.get("keyword_raw_score", 0.0),
                 meta.get("graph_raw_score", 0.0),
                 1.0 if result.chunk.chunk_id == chosen_chunk_id else 0.0,
+                positive_chunks, negative_chunks
             )
 
     async def train_from_feedback(self, batch_size: int = 200):

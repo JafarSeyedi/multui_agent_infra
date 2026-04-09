@@ -7,7 +7,7 @@ import time
 
 class TemporalGraph:
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.nodes: Dict[str, float] = {}
         self.edges: List[dict] = []
 

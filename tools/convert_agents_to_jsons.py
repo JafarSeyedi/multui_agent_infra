@@ -1,6 +1,5 @@
-import re
 import json
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 
 def parse_agent_list_md(md_content: str) -> List[Dict[str, Any]]:
     """

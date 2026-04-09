@@ -4,10 +4,10 @@
 # agents/buses/kafka_bus.py
 import asyncio
 import logging
-from typing import Dict, Set
-from aiokafka import AIOKafkaProducer, AIOKafkaConsumer
+from typing import Dict, Set, Any
+from aiokafka import AIOKafkaProducer, AIOKafkaConsumer  # type: ignore[import-untyped]
 from .base import MessageBus, HandlerType
-from config.models.system.interaction_models import AgentMessage
+from agents.orchestration.models import AgentMessage
 
 logger = logging.getLogger(__name__)
 
@@ -18,8 +18,8 @@ class KafkaMessageBus(MessageBus):
     def __init__(self, bootstrap_servers: str, group_id: str = "agents") -> None:
         self._servers = bootstrap_servers
         self._group_id = group_id
-        self._producer: AIOKafkaProducer | None = None
-        self._consumers: Dict[str, asyncio.Task] = {}
+        self._producer: Any = None  # AIOKafkaProducer
+        self._consumers: Dict[str, asyncio.Task[None]] = {}
         self._handlers: Dict[str, Set[HandlerType]] = {}
 
     async def start(self) -> None:
@@ -55,7 +55,7 @@ class KafkaMessageBus(MessageBus):
         await self._producer.send(topic=message.recipient, value=message.model_dump_json().encode())
 
     async def _consume(self, topic: str) -> None:
-        consumer = AIOKafkaConsumer(
+        consumer: Any = AIOKafkaConsumer(
             topic, bootstrap_servers=self._servers, group_id=self._group_id, auto_offset_reset="earliest"
         )
         await consumer.start()

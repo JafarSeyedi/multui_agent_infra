@@ -1,41 +1,38 @@
 from __future__ import annotations
 
 from typing import Any, Iterable, List, Optional
+from rag.research.summarization.base_summarizer import BaseSummarizer
 
+from rag.research.citation_manager import CitationManager
 
-class ResearchSummarizer:
+class ResearchSummarizer(BaseSummarizer):
     def __init__(self, llm: Optional[Any], guard=None):
         self.llm = llm
         self.guard = guard
 
-    def build_prompt(self, query, evidence_chunks):
-        evidence_text = "\n\n".join([f"[{i+1}] {getattr(chunk, 'text', '')}" for i, chunk in enumerate(evidence_chunks)])
-        if self.guard and getattr(self.guard, 'strict_mode', False):
-            system_prompt = (
-                "You are a scientific research assistant.\n"
-                "STRICT MODE ENABLED.\n"
-                "Use only the provided evidence and cite factual claims."
-            )
-        else:
-            system_prompt = (
-                "You are a scientific research assistant.\n"
-                "Write a structured answer using the provided evidence."
-            )
-        return f"{system_prompt}\n\nUser Question:\n{query}\n\nEvidence:\n{evidence_text}\n\nAnswer:\n"
-
-    def enforce_citations(self, answer):
-        if not self.guard or not getattr(self.guard, 'strict_mode', False):
-            return answer
-        sentences = [sentence.strip() for sentence in answer.split('.') if sentence.strip()]
-        valid = [sentence for sentence in sentences if '[' in sentence and ']' in sentence]
-        return '. '.join(valid) if valid else 'Insufficient evidence.'
-
-    async def summarize(self, query, evidence_chunks):
+    async def summarize(
+        self,
+        query: str,
+        plan: Any = None,
+        raw_evidence: Optional[List[Any]] = None,
+        hidden_edges: Optional[List[Any]] = None,
+        citation_manager: Optional[CitationManager] = None,
+        evidence_chunks: Optional[List[Any]] = None,
+    ) -> str:
+        chunks = evidence_chunks or [
+            getattr(item, "chunk", item) for item in (raw_evidence or [])
+        ]
         evidence_chunks = list(evidence_chunks)
         if self.llm is None:
             return self._fallback_summary(query, evidence_chunks)
 
-        prompt = self.build_prompt(query, evidence_chunks)
+        prompt = self.build_prompt(
+            query=query,
+            plan=plan,
+            chunks=chunks,
+            hidden_edges=hidden_edges or [],
+        )
+
         if hasattr(self.llm, 'generate'):
             answer = await self.llm.generate(prompt)
         elif hasattr(self.llm, 'complete'):
@@ -44,14 +41,45 @@ class ResearchSummarizer:
             answer = await self.llm.ainvoke(prompt)
         else:
             raise TypeError('Unsupported LLM interface')
-        return self.enforce_citations(str(answer))
 
-    def _fallback_summary(self, query: str, evidence_chunks: Iterable[Any]) -> str:
-        bullets: List[str] = []
-        for idx, chunk in enumerate(evidence_chunks, start=1):
-            text = str(getattr(chunk, 'text', '')).strip()
-            if text:
-                bullets.append(f"- {text} [{idx}]")
-        if not bullets:
-            return f"Question: {query}\n\nInsufficient evidence."
-        return f"Question: {query}\n\nKey findings:\n" + "\n".join(bullets)
+        result = self.enforce_citations(answer, citation_manager)
+
+        if self.guard and not self.guard.is_safe(result):
+            return await self._fallback_summary(query, chunks)
+
+        return result
+
+    def build_prompt(
+        self,
+        query: str,
+        plan: Any,
+        chunks: List[Any],
+        hidden_edges: List[Any],
+    ) -> str:
+        sections = getattr(plan, "sections", plan) if plan else []
+        evidence_text = "\n".join(
+            str(getattr(c, "text", c)) for c in chunks
+        )
+        edges_text = "\n".join(str(e) for e in hidden_edges)
+
+        return (
+            f"Query: {query}\n\n"
+            f"Plan sections: {sections}\n\n"
+            f"Evidence:\n{evidence_text}\n\n"
+            f"Graph connections:\n{edges_text}"
+        )
+
+    def enforce_citations(
+        self,
+        text: str,
+        citation_manager: Optional[CitationManager],
+    ) -> str:
+        if citation_manager is None:
+            return text
+        return citation_manager.inject_citations(text) if hasattr(citation_manager, "inject_citations") else text
+
+    async def _fallback_summary(self, query: str, chunks: List[Any]) -> str:
+        texts = [str(getattr(c, "text", c)) for c in chunks[:3]]
+        joined = "\n".join(texts)
+        prompt = f"Summarize briefly for: {query}\n\n{joined}"
+        return await self.llm.complete(prompt)

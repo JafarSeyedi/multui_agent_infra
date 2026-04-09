@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import time
 from typing import Any, Dict
+from abc import ABC
 
-
-class TelemetryEvent:
+class TelemetryEvent(ABC):
     def __init__(self, name: str, payload: Dict[str, Any]):
         self.name = name
         self.payload = payload
@@ -14,7 +14,7 @@ class TelemetryEvent:
         return {"name": self.name, "payload": self.payload, "timestamp": self.timestamp}
 
 
-class Telemetry:
+class Telemetry(ABC):
     def __init__(self, collector):
         self.collector = collector
 

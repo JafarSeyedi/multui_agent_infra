@@ -1,6 +1,6 @@
-from pydantic import BaseModel
 from typing import List, Optional, Dict
-from .common import ConfidenceScore, Evidence
+from agents.orchestration.models import OrchestrationRequest, OrchestrationResult
+from .common import ConfidenceScore
 
 
 # -------------------------------------------------

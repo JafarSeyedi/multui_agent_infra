@@ -1,4 +1,3 @@
-import os
 import json
 import aiofiles
 from typing import Any, Dict, List, Optional

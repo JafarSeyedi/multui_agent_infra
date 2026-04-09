@@ -1,3 +1,5 @@
+from typing import List
+
 class UncertaintyEstimator:
 
     def __init__(self, llm):

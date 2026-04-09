@@ -2,14 +2,14 @@
 from __future__ import annotations
 
 from collections import Counter
-from typing import Any, Dict, Iterable, List, Sequence
+from typing import Any, Dict, List, Optional
 
-from agents.message_bus import AgentMessage
+from agents.buses.base import MessageBus
 from agents.orchestration.models import (
     OrchestrationRequest,
     OrchestrationResult,
-    TaskDefinition,
     TaskResult,
+    AgentMessage
 )
 from .base_strategy import InteractionStrategy
 
@@ -20,10 +20,10 @@ class EnsembleStrategy(InteractionStrategy):
     یک قاعده‌ی رای‌گیری یا aggregator پاسخ نهایی را ارائه می‌دهد.
     """
 
-    scenario = "ensemble"
+    scenario_name = "ensemble"
 
-    def __init__(self, registry, message_bus: Optional[MessageBus] = None, storage = None, vote_key: str = "final_answer", aggregator_agent: str | None = None):
-        super().__init__(registry, message_bus, storage)
+    def __init__(self, agent_registry, message_bus: Optional[MessageBus] = None, storage = None, vote_key: str = "final_answer", aggregator_agent: str | None = None):
+        super().__init__(agent_registry, message_bus, storage)
         self.vote_key = vote_key
         self.aggregator_agent = aggregator_agent
 
@@ -37,7 +37,7 @@ class EnsembleStrategy(InteractionStrategy):
             payload.setdefault("shared_context", dict(shared_context))
             task_id = task.task_id or f"ensemble:{task.agent_name}"
             try:
-                output_model = await self.registry.execute(task.agent_name, payload)
+                output_model = await self.agent_registry.execute(task.agent_name, payload)
                 normalized = self._normalize_output(output_model)
                 vote_value = normalized.get(self.vote_key, normalized) if isinstance(normalized, dict) else normalized
                 votes.append(vote_value)
@@ -79,7 +79,7 @@ class EnsembleStrategy(InteractionStrategy):
         if self.aggregator_agent:
             try:
                 payload = {"votes": votes, "shared_context": dict(shared_context)}
-                output_model = await self.registry.execute(self.aggregator_agent, payload)
+                output_model = await self.agent_registry.execute(self.aggregator_agent, payload)
                 aggregated = self._normalize_output(output_model)
                 shared_context["aggregator_output"] = aggregated
                 return aggregated

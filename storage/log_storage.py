@@ -2,8 +2,9 @@ from datetime import datetime
 from typing import Dict, List, Optional
 from .backends.sql_storage import SQLStorage
 
+from .base_storage import BaseStorage
 
-class LogStorage:
+class LogStorage(BaseStorage):
     """
     Async log persistence layer built on top of SQLStorage.
     Used for agent execution logs and system events.

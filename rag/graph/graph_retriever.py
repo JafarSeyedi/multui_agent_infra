@@ -10,7 +10,7 @@ class GraphRetriever:
     def __init__(self, graph_store: Any, reasoning: ReasoningMemory | None = None):
         self.store = graph_store
         self.reasoning = reasoning or ReasoningMemory()
-        self.link_strengths = {}
+        self.link_strengths: dict[str, float] = {}
 
     async def retrieve(self, entity_id: str, hops: int = 2):
         visited = set()

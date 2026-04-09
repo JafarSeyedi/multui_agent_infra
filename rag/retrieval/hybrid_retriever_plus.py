@@ -7,9 +7,9 @@ from typing import Any, Callable, Dict, List, Optional
 from .bm25_retriever import BM25KeywordRetriever
 from .retriever_result import RetrievalResult
 from .vector_retriever import VectorRetriever
+from .base_retriever import BaseRetriever
 
-
-class HybridRetrieverPlus:
+class HybridRetrieverPlus(BaseRetriever):
     """Hybrid retriever with query analysis, adaptive fusion, and score boosting."""
 
     def __init__(

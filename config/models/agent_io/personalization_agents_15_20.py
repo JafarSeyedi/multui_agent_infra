@@ -1,7 +1,7 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import List, Optional, Dict, Literal
-from datetime import datetime
-from .user_models import LearningStyle, StudentProfile # Import from user_models
+from agents.orchestration.models import OrchestrationRequest, OrchestrationResult
+from .learning_objects import LearningStyle, StudentProfile # Import from user_models
 
 # --- مدل‌های عامل 15: مدرس دیالوگ (Dialogue Tutor) ---
 class DialogueTutorInput(OrchestrationRequest):
