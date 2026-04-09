@@ -8,6 +8,7 @@ from .bm25_retriever import BM25KeywordRetriever
 from .retriever_result import RetrievalResult
 from .vector_retriever import VectorRetriever
 from .base_retriever import BaseRetriever
+from rag.llm.llm_protocols import AsyncLLM
 
 class HybridRetrieverPlus(BaseRetriever):
     """Hybrid retriever with query analysis, adaptive fusion, and score boosting."""
@@ -16,7 +17,7 @@ class HybridRetrieverPlus(BaseRetriever):
         self,
         vector_retriever: VectorRetriever,
         keyword_retriever: BM25KeywordRetriever,
-        llm: Optional[object] = None,
+        llm: Optional[AsyncLLM] = None,
         chunk_frequency_getter: Optional[Callable[[str], float]] = None,
         base_k: int = 60,
     ):

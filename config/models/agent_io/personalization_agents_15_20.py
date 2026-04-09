@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Literal
 from agents.orchestration.models import OrchestrationRequest, OrchestrationResult
-from .learning_objects import LearningStyle, StudentProfile # Import from user_models
+from .learning_objects import LearningStyle, StudentProfile, LearningProgress
 
 # --- مدل‌های عامل 15: مدرس دیالوگ (Dialogue Tutor) ---
 class DialogueTutorInput(OrchestrationRequest):
@@ -39,12 +39,6 @@ class ProgressAnalysisInput(OrchestrationRequest):
     performance_data: Dict # e.g., assessment scores, quiz results, interaction logs
     learning_objectives: Optional[List[str]] = None
     time_period: Optional[str] = None # e.g., "last_week", "semester"
-
-class LearningProgress(BaseModel):
-    objective: str
-    status: Literal["on_track", "needs_improvement", "mastered", "struggling"]
-    score_trend: Optional[List[float]] = None
-    confidence_level: Optional[float] = None
 
 class ProgressAnalysisOutput(OrchestrationResult):
     overall_progress: float

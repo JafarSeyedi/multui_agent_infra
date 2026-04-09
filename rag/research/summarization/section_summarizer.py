@@ -1,3 +1,5 @@
+# rag/research/summarization/section_summarizer.py
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
@@ -17,12 +19,15 @@ class SectionSummarizer(BaseSummarizer):
     async def summarize(
         self,
         query: str,
-        plan: List[Dict[str, Any]],
-        raw_evidence: List[Any],
-        hidden_edges: List[Any],
+        plan: Optional[List[Dict[str, Any]]] = None,
+        raw_evidence: Optional[List[Any]] = None,
+        hidden_edges: Optional[List[Any]] = None,
         citation_manager: Optional[CitationManager] = None,
     ) -> str:
         compiled_sections: List[str] = []
+        plan = plan or []
+        raw_evidence = raw_evidence or []
+        hidden_edges = hidden_edges or []        
         for section in plan:
             title = str(section.get("title", "Section"))
             description = str(section.get("description", "")).strip()

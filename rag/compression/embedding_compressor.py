@@ -3,7 +3,7 @@ from typing import List
 
 from .base import BaseCompressor
 from config.models.rag.rag_models import DocumentChunk
-from services.embedding import EmbeddingModel
+from rag.services.embedding import EmbeddingModel
 
 
 class EmbeddingCompressor(BaseCompressor):

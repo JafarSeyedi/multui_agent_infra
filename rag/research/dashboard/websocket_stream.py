@@ -9,7 +9,7 @@ from .schema import TelemetryEventResponse
 
 
 class WebSocketStream:
-    def __init__(self, observability):
+    def __init__(self, observability) -> None:
         self.obs = observability
         self.clients: set[WebSocket] = set()
 

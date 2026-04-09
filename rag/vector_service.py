@@ -6,11 +6,11 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel
 
 from config.models.rag.rag_models import Document, DocumentChunk
-from rag.chunking import Chunker
-from rag.embedding import EmbeddingModel
+from rag.services.chunking import Chunker
+from rag.services.embedding import EmbeddingModel
 from rag.graph.graph_retriever import GraphRetriever
 from rag.planner.adaptive_planner import AdaptiveRetrievalPlanner
-from rag.query_rewriter import QueryRewriter
+from rag.services.query_rewriter import QueryRewriter
 from rag.reranking import Reranker
 from rag.retrieval.bm25_retriever import BM25KeywordRetriever
 from rag.retrieval.retrieval_feedback_buffer import RetrievalFeedbackBuffer

@@ -1,16 +1,16 @@
 # tests/agents/unit/test_agent_registry.py
 import pytest
-from pydantic import BaseModel
 
 from agents.agent_registry import AgentRegistry
 from agents.base_agent import BaseAgent
+from agents.orchestration.models import OrchestrationRequest, OrchestrationResult
 
 
-class SimpleInput(BaseModel):
+class SimpleInput(OrchestrationRequest):
     text: str
 
 
-class SimpleOutput(BaseModel):
+class SimpleOutput(OrchestrationResult):
     text: str
 
 
@@ -20,7 +20,7 @@ class SimpleAgent(BaseAgent):
     OutputModel = SimpleOutput
 
     async def execute(self, input_model: SimpleInput) -> SimpleOutput:
-        return {"text": input_model.text.upper()}
+        return SimpleOutput(text= input_model.text.upper(), results=[])
 
 
 @pytest.fixture(autouse=True)

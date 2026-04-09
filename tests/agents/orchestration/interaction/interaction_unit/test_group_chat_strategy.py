@@ -4,7 +4,7 @@ import pytest
 from agents.orchestration.interaction.group_chat_strategy import GroupChatStrategy
 from agents.orchestration.models import OrchestrationRequest, TaskDefinition
 
-from .conftest import TestAgent
+from tests.agents.orchestration.interaction.interaction_unit.conftest import TestAgent
 
 
 @pytest.mark.asyncio

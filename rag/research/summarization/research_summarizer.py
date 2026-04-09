@@ -1,6 +1,7 @@
+# rag/research/summarization/research_summarizer.py
 from __future__ import annotations
 
-from typing import Any, Iterable, List, Optional
+from typing import Any, Iterable, List, Optional, Dict
 from rag.research.summarization.base_summarizer import BaseSummarizer
 
 from rag.research.citation_manager import CitationManager
@@ -13,7 +14,7 @@ class ResearchSummarizer(BaseSummarizer):
     async def summarize(
         self,
         query: str,
-        plan: Any = None,
+        plan: Optional[List[Dict[str, Any]]] = None,
         raw_evidence: Optional[List[Any]] = None,
         hidden_edges: Optional[List[Any]] = None,
         citation_manager: Optional[CitationManager] = None,
@@ -22,9 +23,9 @@ class ResearchSummarizer(BaseSummarizer):
         chunks = evidence_chunks or [
             getattr(item, "chunk", item) for item in (raw_evidence or [])
         ]
-        evidence_chunks = list(evidence_chunks)
+        evidence_chunks = evidence_chunks or []
         if self.llm is None:
-            return self._fallback_summary(query, evidence_chunks)
+            return await self._fallback_summary(query, evidence_chunks)
 
         prompt = self.build_prompt(
             query=query,
@@ -82,4 +83,8 @@ class ResearchSummarizer(BaseSummarizer):
         texts = [str(getattr(c, "text", c)) for c in chunks[:3]]
         joined = "\n".join(texts)
         prompt = f"Summarize briefly for: {query}\n\n{joined}"
+
+        if self.llm is None:
+            return joined
+
         return await self.llm.complete(prompt)

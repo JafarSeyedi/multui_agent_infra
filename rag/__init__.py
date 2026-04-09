@@ -1,3 +1,1 @@
-from .chunking import Chunker
-from .embedding import EmbeddingModel
-from .query_rewriter import QueryRewriter
+from .vector_service import QueryResult, VectorService

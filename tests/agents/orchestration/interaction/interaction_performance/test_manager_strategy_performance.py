@@ -6,7 +6,7 @@ import pytest
 from agents.orchestration.interaction.manager_strategy import ManagerStrategy
 from agents.orchestration.models import OrchestrationRequest, TaskDefinition
 
-from .conftest_performance import TestAgent
+from tests.agents.orchestration.interaction.interaction_unit.conftest import TestAgent
 
 
 @pytest.mark.asyncio

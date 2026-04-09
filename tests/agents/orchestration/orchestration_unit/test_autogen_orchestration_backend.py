@@ -3,7 +3,7 @@
 import pytest
 
 from agents.orchestration.backends.autogen_backend import AutoGenOrchestrationBackend
-from agents.buses.base import MessageBus
+from agents.buses.base import MessageBus, HandlerType
 
 
 class DummyRegistry:
@@ -14,6 +14,10 @@ class DummyRegistry:
 class DummyMessageBus(MessageBus):
     async def publish(self, message):
         pass # intentionally empty
+    async def subscribe(self, recipient: str, handler: HandlerType) -> None:
+        pass
+    async def unsubscribe(self, recipient: str, handler: HandlerType) -> None:
+        pass
 
 
 class DummyResult:

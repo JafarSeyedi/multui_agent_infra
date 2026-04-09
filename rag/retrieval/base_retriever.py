@@ -6,5 +6,6 @@ class BaseRetriever(ABC):
     """قرارداد مشترک تمام Retriever ها"""
 
     @abstractmethod
-    def search(self, query: str, top_k: int = 10) -> list[RetrievalResult]:
+    async def search(self, query: str, top_k: int = 10) -> list[RetrievalResult]:
         """جستجو و برگرداندن نتایج"""
+        ...

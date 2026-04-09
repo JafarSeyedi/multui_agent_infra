@@ -226,6 +226,10 @@ class LearningProgress(BaseModel):
     recent_scores: Optional[List[float]]
     overall_mastery: Optional[float]
     last_activity_ts: datetime
+    objective: str
+    status: Literal["on_track", "needs_improvement", "mastered", "struggling"]
+    score_trend: Optional[List[float]] = None
+    confidence_level: Optional[float] = None
 
 
 # --------------------------------------------------

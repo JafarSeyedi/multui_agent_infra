@@ -10,9 +10,10 @@ class BaseSummarizer(ABC):
     async def summarize(
         self,
         query: str,
-        plan: List[Dict[str, Any]],
-        raw_evidence: List[Any],
-        hidden_edges: List[Any],
+        plan: Optional[List[Dict[str, Any]]] = None,
+        raw_evidence: Optional[List[Any]] = None,
+        hidden_edges: Optional[List[Any]] = None,
         citation_manager: Optional[CitationManager] = None,
     ) -> str:
         """تولید خلاصه از متن ورودی"""
+        ...

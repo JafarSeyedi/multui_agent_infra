@@ -4,7 +4,7 @@ import pytest
 from agents.orchestration.interaction.memory_augmented_strategy import MemoryAugmentedStrategy
 from agents.orchestration.models import OrchestrationRequest
 
-from .conftest import TestAgent, make_task
+from tests.agents.orchestration.interaction.interaction_unit.conftest import TestAgent, make_task
 
 
 @pytest.mark.asyncio

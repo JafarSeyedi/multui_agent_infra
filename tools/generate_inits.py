@@ -54,13 +54,13 @@ def generate_init(folder: Path, dry_run: bool = False) -> str | None:
         print(content)
         return content
 
-    # Backup existing __init__.py if it has content
-    if init_file.exists():
-        existing = init_file.read_text(encoding="utf-8").strip()
-        if existing and existing != content.strip():
-            backup = init_file.with_suffix(".py.bak")
-            backup.write_text(existing, encoding="utf-8")
-            print(f"  ⚠️  Backed up existing {init_file.name} → {backup.name}")
+    # # Backup existing __init__.py if it has content
+    # if init_file.exists():
+    #     existing = init_file.read_text(encoding="utf-8").strip()
+    #     if existing and existing != content.strip():
+    #         backup = init_file.with_suffix(".py.bak")
+    #         backup.write_text(existing, encoding="utf-8")
+    #         print(f"  ⚠️  Backed up existing {init_file.name} → {backup.name}")
 
     init_file.write_text(content, encoding="utf-8")
     print(f"  ✅ {init_file}")

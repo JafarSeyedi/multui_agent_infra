@@ -1,15 +1,15 @@
-# tests/agents/orchestration/interaction/unit/conftest.py
+# tests/agents/orchestration/interaction/interaction_unit/conftest.py
 
 import inspect
 from typing import Any, Callable, Dict, List
 
 import pytest
-from agents.orchestration.models import TaskDefinition
-from agents.buses.base import MessageBus
+from agents.orchestration.models import TaskDefinition, AgentMessage
+from agents.buses.base import MessageBus, HandlerType
 
 
 class TestAgent:
-    def __init__(self, name: str, behavior: Callable[[Dict[str, Any]], Any]):
+    def __init__(self, name: str, behavior: Callable[[Dict[str, Any]], Any]) -> None:
         self.name = name
         self.behavior = behavior
         self.calls: List[Dict[str, Any]] = []
@@ -23,7 +23,7 @@ class TestAgent:
 
 
 class TestRegistry:
-    def __init__(self):
+    def __init__(self) -> None:
         self._agents: Dict[str, TestAgent] = {}
 
     def register(self, agent: TestAgent) -> TestAgent:
@@ -38,11 +38,15 @@ class TestRegistry:
 
 
 class DummyMessageBus(MessageBus):
-    def __init__(self):
-        self.published: List[Dict[str, Any]] = []
+    def __init__(self) -> None:
+        self.published: List[AgentMessage] = []
 
-    async def publish(self, message: Dict[str, Any]) -> None:
+    async def publish(self, message: AgentMessage) -> None:
         self.published.append(message)
+    async def subscribe(self, recipient: str, handler: HandlerType) -> None:
+        pass
+    async def unsubscribe(self, recipient: str, handler: HandlerType) -> None:
+        pass
 
 
 @pytest.fixture

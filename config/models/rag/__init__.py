@@ -1,1 +1,1 @@
-from .rag_models import Document, DocumentChunk
+from .rag_models import Document, DocumentChunk, RetrievedDocument

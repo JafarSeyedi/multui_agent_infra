@@ -25,6 +25,43 @@ Remaining Work
 
 
 
+قدم بعدی برای قوی‌تر شدن سیستم تو
+اگر بخواهیم این لایه را واقعاً در حد Perplexity / DeepSearch RAG کنیم، باید اضافه کنیم:
+
+LLM caching
+retry + rate limit
+token counting
+prompt templates
+batch inference
+structured output (Pydantic)
+مثلاً:
+
+text
+rag/llm/
+   cache.py
+   tokenizer.py
+   structured_output.py
+✅ اگر بخواهی سیدجعفر، در قدم بعدی می‌توانم برایت این‌ها را هم طراحی کنم:
+
+یک RAG LLM Stack کامل شامل:
+
+Prompt Engine
+Structured Output
+LLM Cache
+Cost Tracking
+Token Budgeting
+که دقیقاً همان معماری است که در سیستم‌های RAG بسیار بزرگ استفاده می‌شود.
+
+
+اگر بخواهی سیدجعفر، در قدم بعدی می‌توانم برایت یک LLM Engine بسیار قوی‌تر طراحی کنم که شامل این‌ها باشد:
+
+LLM caching (Redis / SQLite)
+retry + rate limit
+token counting
+cost tracking
+structured outputs (Pydantic)
+parallel batch inference
+که دقیقاً همان چیزی است که در Perplexity / OpenAI RAG / DeepSearch استفاده می‌شود.
 
 Previous version:
 

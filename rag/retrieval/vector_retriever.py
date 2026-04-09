@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from config.models.rag.rag_models import DocumentChunk
-from rag.embedding import EmbeddingModel
+from rag.services.embedding import EmbeddingModel
 from storage.vector.base import VectorDBAdapter
 
 from .retriever_result import RetrievalResult
