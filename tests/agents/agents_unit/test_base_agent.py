@@ -2,15 +2,15 @@
 import pytest
 from pydantic import BaseModel
 
-from agents.base_agent import BaseAgent
-from agents.orchestration.models import OrchestrationRequest, OrchestrationResult
+from agents.base_agents.base_agent import BaseAgent
+from agents.base_agents.models import AgentInput, AgentOutput
 
 
-class InputModel(OrchestrationRequest):
+class InputModel(AgentInput):
     value: int
 
 
-class OutputModel(OrchestrationResult):
+class OutputModel(AgentOutput):
     doubled: int
 
 class EchoAgent(BaseAgent[InputModel, OutputModel]):
@@ -19,7 +19,7 @@ class EchoAgent(BaseAgent[InputModel, OutputModel]):
     output_model_class = OutputModel
     
     async def execute(self, input_model: InputModel) -> OutputModel:
-        return OutputModel(doubled=input_model.value * 2, results=[] )
+        return OutputModel(doubled=input_model.value * 2, agent_name=self.agent_name)
 
 
 class FailingAgent(EchoAgent):

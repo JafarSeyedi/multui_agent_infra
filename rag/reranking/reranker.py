@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 from typing import List, Sequence
 
-from config.models.rag.rag_models import DocumentChunk
+from rag.rag_models import DocumentChunk
 from rag.reranking.base_reranker import BaseReranker
 
 

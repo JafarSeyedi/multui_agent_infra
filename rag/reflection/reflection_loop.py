@@ -1,5 +1,5 @@
 from typing import List
-from config.models.rag.rag_models import RetrievedDocument
+from rag.rag_models import RetrievedDocument
 
 
 class ReflectionLoop:

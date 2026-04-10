@@ -4,7 +4,7 @@ import math
 from collections import Counter, defaultdict
 from typing import Dict, List
 
-from config.models.rag.rag_models import DocumentChunk
+from rag.rag_models import DocumentChunk
 
 from .retriever_result import RetrievalResult
 from .base_retriever import BaseRetriever

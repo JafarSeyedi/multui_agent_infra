@@ -7,7 +7,7 @@ import asyncio
 import logging
 from typing import Dict
 from .base import MessageBus, HandlerType
-from agents.orchestration.models import AgentMessage
+from agents.interaction.interaction_models import AgentMessage
 
 logger = logging.getLogger(__name__)
 

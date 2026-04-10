@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
-from config.models.rag.rag_models import Document, DocumentChunk
+from rag.rag_models import Document, DocumentChunk
 from rag.services.chunking import Chunker
 from rag.services.embedding import EmbeddingModel
 from rag.graph.graph_retriever import GraphRetriever

@@ -7,7 +7,7 @@ import logging
 from typing import Dict, Set, Any
 from aiokafka import AIOKafkaProducer, AIOKafkaConsumer  # type: ignore[import-untyped]
 from .base import MessageBus, HandlerType
-from agents.orchestration.models import AgentMessage
+from agents.interaction.interaction_models import AgentMessage
 
 logger = logging.getLogger(__name__)
 

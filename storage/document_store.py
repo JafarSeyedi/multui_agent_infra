@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Dict, List, Optional
 
-from config.models.rag.rag_models import Document, DocumentChunk
+from rag.rag_models import Document, DocumentChunk
 
 from .base_storage import StorageAdapter
 from .base_storage import BaseStorage

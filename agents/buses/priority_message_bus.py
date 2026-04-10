@@ -7,7 +7,7 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any, Dict, List
 from .base import MessageBus, HandlerType
-from agents.orchestration.models import AgentMessage
+from agents.interaction.interaction_models import AgentMessage
 
 logger = logging.getLogger(__name__)
 

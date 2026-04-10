@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from typing import Awaitable, Callable, Optional
-from agents.orchestration.models import AgentMessage
+from agents.interaction.interaction_models import AgentMessage
 
 HandlerType = Callable[[AgentMessage], Awaitable[Optional[AgentMessage]]]
 
@@ -33,3 +33,4 @@ class MessageBus(ABC):
     async def stop(self) -> None:
         """Clean up bus resources."""
         ...
+

@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any, Dict, Optional
+from storage.base_storage import StorageAdapter
+from storage.vector.base import VectorDBAdapter
 
-from agents.base_agent import BaseAgent
-from config.models.agent_io.content_agents_1_8 import RewriteChange, TextRewriteInput, TextRewriteOutput
+from agents.base_agents.base_agent import BaseAgent
+from .models.content_agents_1_8 import RewriteChange, TextRewriteInput, TextRewriteOutput
 
 
 class TextRewriterAgent(BaseAgent):
@@ -11,6 +14,17 @@ class TextRewriterAgent(BaseAgent):
     agent_version = "1.0.0"
     InputModel = TextRewriteInput
     OutputModel = TextRewriteOutput
+    def __init__(
+        self,
+        agent_id: str,
+        agent_name: str,
+        llm,
+        vector_db: Optional[VectorDBAdapter] = None,
+        storage: Optional[StorageAdapter] = None,
+        metadata: Optional[dict[str, Any]] = None,
+    ):
+        super().__init__(agent_id, agent_name, vector_db, storage, metadata)
+        self.llm = llm
 
     async def execute(self, input_model: TextRewriteInput) -> TextRewriteOutput:
         rewritten = await self._rewrite_text(input_model)
@@ -23,7 +37,7 @@ class TextRewriterAgent(BaseAgent):
                     reason=f"Adapted for grade level {input_model.grade_level}",
                 )
             ],
-            results = [],
+            agent_name = self.agent_name,
             readability_score = self._estimate_readability(rewritten),
             created_at = datetime.utcnow(),
         )

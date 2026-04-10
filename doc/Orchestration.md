@@ -515,7 +515,7 @@ broadcast_task_completed
 - فقط همان agent
 - نتیجه کلی مختل نمی‌شود
 
-## 📌 نمونه OrchestrationRequest
+## 📌 نمونه InteractionRequest
 ```python
 {
  "scenario": "broadcast",
@@ -626,7 +626,7 @@ routes:
 }
 ```
 
-## نمونه OrchestrationRequest
+## نمونه InteractionRequest
 ```python
 {
  "scenario": "conditional",
@@ -954,7 +954,7 @@ stop_if_perfect
 quality_threshold
 ```
 
-## نمونه OrchestrationRequest
+## نمونه InteractionRequest
 ```python
 {
  "scenario": "self_refine",
@@ -1083,7 +1083,7 @@ context["topic"]
 
 ## ویژگی‌های مهم این پیاده‌سازی:
 
-- از OrchestrationRequest, OrchestrationResult, TaskResult, TaskDefinition موجود استفاده می‌کند.
+- از InteractionRequest, InteractionResult, TaskResult, TaskDefinition موجود استفاده می‌کند.
 - با الگوی بقیه‌ی استراتژی‌ها در استفاده از سازگار است.:
   - self.agent_registry.get(task.agent_name)
   - await agent.execute(payload)
@@ -1185,7 +1185,7 @@ Verifier
 ### 4️⃣ conversation replay systems
 برای تست رفتار agentها.
 
-# Supervisor/ManagerStrategy
+# Supervisor/CoordinatorStrategy
 
 یک agent «مدیر» (supervisor) که:
 وظایف را بین agentهای دیگر تقسیم می‌کند،

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from config.models.rag.rag_models import DocumentChunk
+from rag.rag_models import DocumentChunk
 from rag.services.embedding import EmbeddingModel
 from storage.vector.base import VectorDBAdapter
 

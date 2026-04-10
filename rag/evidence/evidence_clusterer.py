@@ -7,7 +7,7 @@ from typing import Any, Dict, List
 import numpy as np
 from sklearn.cluster import KMeans  # type: ignore[import-untyped]
 
-from config.models.rag.rag_models import RetrievedDocument
+from rag.rag_models import RetrievedDocument
 
 
 class EvidenceClusterer:

@@ -1,6 +1,6 @@
 from typing import List
 from .base import BaseCompressor
-from config.models.rag.rag_models import DocumentChunk
+from rag.rag_models import DocumentChunk
 
 
 class LLMCompressor(BaseCompressor):

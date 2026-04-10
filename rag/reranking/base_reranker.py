@@ -1,6 +1,6 @@
 # storage/vector/base_reranker.py
 from abc import ABC, abstractmethod
-from config.models.rag.rag_models import DocumentChunk
+from rag.rag_models import DocumentChunk
 from typing import Sequence, List
 
 class BaseReranker(ABC):

@@ -2,7 +2,7 @@ import numpy as np
 from typing import List
 
 from .base import BaseCompressor
-from config.models.rag.rag_models import DocumentChunk
+from rag.rag_models import DocumentChunk
 from rag.services.embedding import EmbeddingModel
 
 

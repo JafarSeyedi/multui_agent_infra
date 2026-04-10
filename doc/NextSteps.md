@@ -16,7 +16,7 @@ Remaining Work
 
 - Add the rest of the remaining behavioral data-layer models if you want them separated beyond the current system models, especially deeper content lifecycle and memory-domain models.
 - Build a full production `MessageBus` implementation backed by Redis Pub/Sub / Streams instead of only the in-memory local bus.
-- Implement the `OrchestratorAgent` and multi-agent workflow runner on top of `AgentRegistry`, `PipelineStep`, and `AgentMessage`.
+- Implement the `InteractionAgent` and multi-agent workflow runner on top of `AgentRegistry`, `PipelineStep`, and `AgentMessage`.
 - Add `LLMService` and `PromptTemplateEngine` abstractions so agents stop talking directly to provider-specific LLM methods.
 - Expand the first agent set beyond `TextRewriterAgent` and wire more of the existing agent I/O schemas to concrete implementations.
 - Add formal tests for `BaseAgent`, `AgentRegistry`, message bus flows, and end-to-end agent execution logging.
@@ -215,7 +215,7 @@ class AgentRegistry:
 text
 agents/content/text_rewriter.py
 python
-from agents.base_agent import BaseAgent
+from agents.base_agents.base_agent import BaseAgent
 from config.models.agent_io.content_agents import TextRewriteInput, TextRewriteOutput
 
 
@@ -753,3 +753,8 @@ Tools
 RAG
 System
 و اینکه چه لایه‌ای اجازه import از چه لایه‌ای را دارد
+
+
+review and uniformization of:
+orchestration models
+orchestration event_modles

@@ -1,16 +1,16 @@
 # tests/agents/unit/test_agent_registry.py
 import pytest
 
-from agents.agent_registry import AgentRegistry
-from agents.base_agent import BaseAgent
-from agents.orchestration.models import OrchestrationRequest, OrchestrationResult
+from agents.base_agents.agent_registry import AgentRegistry
+from agents.base_agents.base_agent import BaseAgent
+from agents.base_agents.models import AgentInput, AgentOutput
 
 
-class SimpleInput(OrchestrationRequest):
+class SimpleInput(AgentInput):
     text: str
 
 
-class SimpleOutput(OrchestrationResult):
+class SimpleOutput(AgentOutput):
     text: str
 
 
@@ -20,7 +20,7 @@ class SimpleAgent(BaseAgent):
     OutputModel = SimpleOutput
 
     async def execute(self, input_model: SimpleInput) -> SimpleOutput:
-        return SimpleOutput(text= input_model.text.upper(), results=[])
+        return SimpleOutput(text= input_model.text.upper(), agent_name=self.agent_name)
 
 
 @pytest.fixture(autouse=True)

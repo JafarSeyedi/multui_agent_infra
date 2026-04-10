@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict
 
-from config.models.rag.rag_models import DocumentChunk
+from rag.rag_models import DocumentChunk
 
 
 @dataclass

@@ -1,16 +1,16 @@
 # 📐 Architecture Report
 
 > تولید شده توسط `tools/analyze_architecture.py`  
-> تاریخ: 2026-04-10 00:33:07  
+> تاریخ: 2026-04-11 00:25:51  
 ---
 
 ## 📊 آمار کلی
 
 | معیار | مقدار |
 |-------|-------|
-| فایل‌های Python | 256 |
-| کلاس‌ها | 507 |
-| توابع سطح بالا | 81 |
+| فایل‌های Python | 233 |
+| کلاس‌ها | 492 |
+| توابع سطح بالا | 63 |
 | فایل‌های با خطا | 0 |
 
 ---
@@ -20,16 +20,13 @@
 ```
 📦 project/
   ├── 📁 agents/
+  │   ├── 📁 base_agents/
   │   ├── 📁 buses/
   │   ├── 📁 content/
-  │   └── 📁 orchestration/
-  │       ├── 📁 backends/
-  │       └── 📁 interaction/
+  │   │   └── 📁 models/
+  │   └── 📁 interaction/
+  │       └── 📁 backends/
   ├── 📁 config/
-  │   └── 📁 models/
-  │       ├── 📁 agent_io/
-  │       ├── 📁 rag/
-  │       └── 📁 system/
   ├── 📁 migrations/
   ├── 📁 rag/
   │   ├── 📁 agentic/
@@ -64,10 +61,10 @@
   ├── 📁 tests/
   │   └── 📁 agents/
   │       ├── 📁 agents_unit/
+  │       ├── 📁 interaction/
+  │       │   ├── 📁 interaction_performance/
+  │       │   └── 📁 interaction_unit/
   │       └── 📁 orchestration/
-  │           ├── 📁 interaction/
-  │           │   ├── 📁 interaction_performance/
-  │           │   └── 📁 interaction_unit/
   │           ├── 📁 orchestration_performance/
   │           └── 📁 orchestration_unit/
   └── 📁 tools/
@@ -80,6 +77,12 @@
 ```
 📦 project/
   ├── 📁 agents/
+  │   ├── 📁 base_agents/
+  │   │   ├── 📄 __init__.py
+  │   │   ├── 📄 agent_registry.py
+  │   │   ├── 📄 base_agent.py
+  │   │   ├── 📄 models.py
+  │   │   └── 📄 interaction_agent.py
   │   ├── 📁 buses/
   │   │   ├── 📄 __init__.py
   │   │   ├── 📄 base.py
@@ -92,39 +95,7 @@
   │   │   ├── 📄 request_reply_bus.py
   │   │   └── 📄 topic_message_bus.py
   │   ├── 📁 content/
-  │   │   ├── 📄 __init__.py
-  │   │   └── 📄 text_rewriter.py
-  │   ├── 📁 orchestration/
-  │   │   ├── 📁 backends/
-  │   │   │   ├── 📄 __init__.py
-  │   │   │   ├── 📄 autogen_backend.py
-  │   │   │   ├── 📄 base_backend.py
-  │   │   │   └── 📄 native_backend.py
-  │   │   ├── 📁 interaction/
-  │   │   │   ├── 📄 __init__.py
-  │   │   │   ├── 📄 base_strategy.py
-  │   │   │   ├── 📄 broadcast_strategy.py
-  │   │   │   ├── 📄 conditional_strategy.py
-  │   │   │   ├── 📄 dag_strategy.py
-  │   │   │   ├── 📄 debate_strategy.py
-  │   │   │   ├── 📄 ensemble_strategy.py
-  │   │   │   ├── 📄 event_driven_strategy.py
-  │   │   │   ├── 📄 group_chat_strategy.py
-  │   │   │   ├── 📄 manager_strategy.py
-  │   │   │   ├── 📄 memory_augmented_strategy.py
-  │   │   │   ├── 📄 pipeline_strategy.py
-  │   │   │   ├── 📄 round_robin_strategy.py
-  │   │   │   ├── 📄 self_refine_strategy.py
-  │   │   │   └── 📄 strategy_registry.py
-  │   │   ├── 📄 __init__.py
-  │   │   ├── 📄 models.py
-  │   │   └── 📄 orchestrator_agent.py
-  │   ├── 📄 __init__.py
-  │   ├── 📄 agent_registry.py
-  │   └── 📄 base_agent.py
-  ├── 📁 config/
-  │   ├── 📁 models/
-  │   │   ├── 📁 agent_io/
+  │   │   ├── 📁 models/
   │   │   │   ├── 📄 __init__.py
   │   │   │   ├── 📄 analytics_agents_31_40.py
   │   │   │   ├── 📄 assessment_agents_21_30.py
@@ -139,16 +110,26 @@
   │   │   │   ├── 📄 orchestration_agents_61_75.py
   │   │   │   ├── 📄 personalization_agents_15_20.py
   │   │   │   └── 📄 teaching_agents_9_14.py
-  │   │   ├── 📁 rag/
-  │   │   │   ├── 📄 __init__.py
-  │   │   │   └── 📄 rag_models.py
-  │   │   ├── 📁 system/
-  │   │   │   ├── 📄 __init__.py
-  │   │   │   ├── 📄 event_models.py
-  │   │   │   ├── 📄 execution_models.py
-  │   │   │   └── 📄 versioning_models.py
-  │   │   └── 📄 __init__.py
-  │   ├── 📄 __init__.py
+  │   │   ├── 📄 __init__.py
+  │   │   └── 📄 text_rewriter.py
+  │   └── 📁 interaction/
+  │       ├── 📁 backends/
+  │       │   ├── 📄 __init__.py
+  │       │   ├── 📄 autogen_backend.py
+  │       │   ├── 📄 base_backend.py
+  │       │   └── 📄 native_backend.py
+  │       ├── 📄 __init__.py
+  │       ├── 📄 base_strategy.py
+  │       ├── 📄 broadcast_strategy.py
+  │       ├── 📄 coordinator_strategy.py
+  │       ├── 📄 debate_strategy.py
+  │       ├── 📄 ensemble_strategy.py
+  │       ├── 📄 group_chat_strategy.py
+  │       ├── 📄 interaction_models.py
+  │       ├── 📄 round_robin_strategy.py
+  │       ├── 📄 self_refine_strategy.py
+  │       └── 📄 strategy_registry.py
+  ├── 📁 config/
   │   └── 📄 settings.py
   ├── 📁 migrations/
   │   ├── 📄 __init__.py
@@ -302,6 +283,7 @@
   │   │   ├── 📄 fusion_trainer.py
   │   │   └── 📄 reranker_trainer.py
   │   ├── 📄 __init__.py
+  │   ├── 📄 rag_models.py
   │   └── 📄 vector_service.py
   ├── 📁 storage/
   │   ├── 📁 backends/
@@ -337,47 +319,37 @@
   │   │   │   ├── 📄 test_agent_registry.py
   │   │   │   ├── 📄 test_base_agent.py
   │   │   │   └── 📄 test_message_bus.py
+  │   │   ├── 📁 interaction/
+  │   │   │   ├── 📁 interaction_performance/
+  │   │   │   │   ├── 📄 __init__.py
+  │   │   │   │   ├── 📄 conftest_performance.py
+  │   │   │   │   ├── 📄 test_broadcast_strategy_performance.py
+  │   │   │   │   ├── 📄 test_coordinator_strategy_performance.py
+  │   │   │   │   ├── 📄 test_debate_strategy_performance.py
+  │   │   │   │   ├── 📄 test_ensemble_strategy_performance.py
+  │   │   │   │   ├── 📄 test_group_chat_strategy_performance.py
+  │   │   │   │   └── 📄 test_self_refine_strategy_performance.py
+  │   │   │   ├── 📁 interaction_unit/
+  │   │   │   │   ├── 📄 __init__.py
+  │   │   │   │   ├── 📄 conftest.py
+  │   │   │   │   ├── 📄 test_broadcast_strategy.py
+  │   │   │   │   ├── 📄 test_coordinator_strategy.py
+  │   │   │   │   ├── 📄 test_debate_strategy.py
+  │   │   │   │   ├── 📄 test_ensemble_strategy.py
+  │   │   │   │   ├── 📄 test_group_chat_strategy.py
+  │   │   │   │   └── 📄 test_self_refine_strategy.py
+  │   │   │   └── 📄 __init__.py
   │   │   ├── 📁 orchestration/
-  │   │   │   ├── 📁 interaction/
-  │   │   │   │   ├── 📁 interaction_performance/
-  │   │   │   │   │   ├── 📄 __init__.py
-  │   │   │   │   │   ├── 📄 conftest_performance.py
-  │   │   │   │   │   ├── 📄 test_broadcast_strategy_performance.py
-  │   │   │   │   │   ├── 📄 test_conditional_strategy_performance.py
-  │   │   │   │   │   ├── 📄 test_dag_strategy_performance.py
-  │   │   │   │   │   ├── 📄 test_debate_strategy_performance.py
-  │   │   │   │   │   ├── 📄 test_ensemble_strategy_performance.py
-  │   │   │   │   │   ├── 📄 test_event_driven_strategy_performance.py
-  │   │   │   │   │   ├── 📄 test_group_chat_strategy_performance.py
-  │   │   │   │   │   ├── 📄 test_manager_strategy_performance.py
-  │   │   │   │   │   ├── 📄 test_memory_augmented_strategy_performance.py
-  │   │   │   │   │   ├── 📄 test_pipeline_strategy_performance.py
-  │   │   │   │   │   └── 📄 test_self_refine_strategy_performance.py
-  │   │   │   │   ├── 📁 interaction_unit/
-  │   │   │   │   │   ├── 📄 __init__.py
-  │   │   │   │   │   ├── 📄 conftest.py
-  │   │   │   │   │   ├── 📄 test_broadcast_strategy.py
-  │   │   │   │   │   ├── 📄 test_conditional_strategy.py
-  │   │   │   │   │   ├── 📄 test_dag_strategy.py
-  │   │   │   │   │   ├── 📄 test_debate_strategy.py
-  │   │   │   │   │   ├── 📄 test_ensemble_strategy.py
-  │   │   │   │   │   ├── 📄 test_event_driven_strategy.py
-  │   │   │   │   │   ├── 📄 test_group_chat_strategy.py
-  │   │   │   │   │   ├── 📄 test_manager_strategy.py
-  │   │   │   │   │   ├── 📄 test_memory_augmented_strategy.py
-  │   │   │   │   │   ├── 📄 test_pipeline_strategy.py
-  │   │   │   │   │   └── 📄 test_self_refine_strategy.py
-  │   │   │   │   └── 📄 __init__.py
   │   │   │   ├── 📁 orchestration_performance/
   │   │   │   │   ├── 📄 __init__.py
   │   │   │   │   ├── 📄 test_native_orchestration_backend_performance.py
-  │   │   │   │   └── 📄 test_orchestrator_agent_performance.py
+  │   │   │   │   └── 📄 test_interaction_agent_performance.py
   │   │   │   ├── 📁 orchestration_unit/
   │   │   │   │   ├── 📄 __init__.py
   │   │   │   │   ├── 📄 test_autogen_orchestration_backend.py
   │   │   │   │   ├── 📄 test_models.py
   │   │   │   │   ├── 📄 test_native_orchestration_backend.py
-  │   │   │   │   └── 📄 test_orchestrator_agent.py
+  │   │   │   │   └── 📄 test_interaction_agent.py
   │   │   │   └── 📄 __init__.py
   │   │   └── 📄 __init__.py
   │   └── 📄 __init__.py
@@ -385,7 +357,6 @@
       ├── 📄 __init__.py
       ├── 📄 analyze_architecture.py
       ├── 📄 code_auditor.py
-      ├── 📄 convert_agents_to_jsons.py
       └── 📄 generate_inits.py
 ```
 
@@ -397,8 +368,12 @@
 
 | فایل | کلاس | والدین | متدها |
 |------|------|--------|-------|
-| `agents/agent_registry.py` | `AgentRegistry` | `—` | `__init__, register, get, run` |
-| `agents/base_agent.py` | `BaseAgent` | `Generic[TInput, TOutput]` | `__init__, run, run_sync, execute, _validate_input, _validate_output ...` |
+| `agents/base_agents/agent_registry.py` | `AgentRegistry` | `—` | `__init__, register, get, run` |
+| `agents/base_agents/base_agent.py` | `BaseAgent` | `Generic[TInput, TOutput]` | `__init__, run, run_sync, execute, _validate_input, _validate_output ...` |
+| `agents/base_agents/models.py` | `AgentInput` | `BaseModel` | `` |
+| `agents/base_agents/models.py` | `AgentOutput` | `BaseModel` | `` |
+| `agents/base_agents/models.py` | `AgentExecutionRecord` | `BaseModel` | `` |
+| `agents/base_agents/interaction_agent.py` | `InteractionAgent` | `BaseAgent` | `__init__, run` |
 | `agents/buses/base.py` | `MessageBus` | `ABC` | `publish, subscribe, unsubscribe, start, stop` |
 | `agents/buses/durable_message_bus.py` | `DurableMessageBus` | `MessageBus` | `__init__, subscribe, unsubscribe, publish, _consume` |
 | `agents/buses/in_memory_message_bus.py` | `InMemoryMessageBus` | `MessageBus` | `__init__, subscribe, unsubscribe, publish` |
@@ -409,322 +384,300 @@
 | `agents/buses/redis_pub_sub_bus.py` | `RedisMessageBus` | `MessageBus` | `__init__, start, stop, subscribe, unsubscribe, publish ...` |
 | `agents/buses/request_reply_bus.py` | `RequestReplyBus` | `MessageBus` | `__init__, subscribe, unsubscribe, publish, request` |
 | `agents/buses/topic_message_bus.py` | `TopicMessageBus` | `MessageBus` | `__init__, subscribe, unsubscribe, publish` |
-| `agents/content/text_rewriter.py` | `TextRewriterAgent` | `BaseAgent` | `execute, _rewrite_text, _fallback_rewrite, _estimate_readability` |
-| `agents/orchestration/backends/autogen_backend.py` | `AutoGenOrchestrationBackend` | `BaseOrchestrationBackend` | `__init__, _autogen_available, is_available, execute, _execute_with_autogen_group_chat` |
-| `agents/orchestration/backends/base_backend.py` | `BaseOrchestrationBackend` | `ABC` | `execute` |
-| `agents/orchestration/backends/native_backend.py` | `NativeOrchestrationBackend` | `BaseOrchestrationBackend` | `__init__, _build_strategy, execute` |
-| `agents/orchestration/interaction/base_strategy.py` | `InteractionStrategy` | `ABC` | `__init__, execute, _emit` |
-| `agents/orchestration/interaction/broadcast_strategy.py` | `BroadcastStrategy` | `InteractionStrategy` | `execute, _execute_task, _normalize_gather_results, _aggregate_outputs` |
-| `agents/orchestration/interaction/conditional_strategy.py` | `ConditionalStrategy` | `InteractionStrategy` | `execute, _select_next_task` |
-| `agents/orchestration/interaction/dag_strategy.py` | `DAGStrategy` | `InteractionStrategy` | `execute, _validate_dag, _execute_task, visit` |
-| `agents/orchestration/interaction/debate_strategy.py` | `DebateStrategy` | `InteractionStrategy` | `execute` |
-| `agents/orchestration/interaction/ensemble_strategy.py` | `EnsembleStrategy` | `InteractionStrategy` | `__init__, execute, _aggregate_votes, _publish_vote, _normalize_output` |
-| `agents/orchestration/interaction/event_driven_strategy.py` | `EventDrivenStrategy` | `InteractionStrategy` | `execute, _build_event_map, _execute_listener, _extract_events` |
-| `agents/orchestration/interaction/group_chat_strategy.py` | `GroupChatStrategy` | `InteractionStrategy` | `__init__, execute, _init_messages, _resolve_participants, _extract_message, _extract_context_update ...` |
-| `agents/orchestration/interaction/manager_strategy.py` | `ManagerStrategy` | `InteractionStrategy` | `__init__, execute, _run_validation, _aggregate, _publish_turn_message, _normalize_output` |
-| `agents/orchestration/interaction/memory_augmented_strategy.py` | `MemoryAugmentedStrategy` | `InteractionStrategy` | `__init__, execute, _prioritize_tasks, _publish_memory_update, _normalize_output` |
-| `agents/orchestration/interaction/pipeline_strategy.py` | `PipelineStrategy` | `InteractionStrategy` | `execute, _execute_task` |
-| `agents/orchestration/interaction/round_robin_strategy.py` | `RoundRobinStrategy` | `InteractionStrategy` | `__init__, execute, _normalize_output` |
-| `agents/orchestration/interaction/self_refine_strategy.py` | `SelfRefineStrategy` | `InteractionStrategy` | `execute, _safe_execute, _extract_score` |
-| `agents/orchestration/interaction/strategy_registry.py` | `InteractionStrategyRegistry` | `Generic[TStrategy]` | `__init__, register, unregister, get, require, list_scenarios ...` |
-| `agents/orchestration/models.py` | `TaskDefinition` | `BaseModel` | `` |
-| `agents/orchestration/models.py` | `OrchestrationRequest` | `BaseModel` | `` |
-| `agents/orchestration/models.py` | `TaskResult` | `BaseModel` | `` |
-| `agents/orchestration/models.py` | `OrchestrationResult` | `BaseModel` | `` |
-| `agents/orchestration/models.py` | `AgentMessage` | `BaseModel` | `` |
-| `agents/orchestration/models.py` | `PipelineStep` | `BaseModel` | `` |
-| `agents/orchestration/models.py` | `AgentInteraction` | `BaseModel` | `` |
-| `agents/orchestration/models.py` | `ConversationTurn` | `BaseModel` | `` |
-| `agents/orchestration/orchestrator_agent.py` | `OrchestratorAgent` | `BaseAgent` | `__init__, run` |
-| `config/models/agent_io/analytics_agents_31_40.py` | `StudentBehaviorAnalysisInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/analytics_agents_31_40.py` | `BehaviorPattern` | `BaseModel` | `` |
-| `config/models/agent_io/analytics_agents_31_40.py` | `StudentBehaviorAnalysisOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/analytics_agents_31_40.py` | `EngagementDetectionInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/analytics_agents_31_40.py` | `EngagementDetectionOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/analytics_agents_31_40.py` | `MotivationAnalysisInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/analytics_agents_31_40.py` | `MotivationAnalysisOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/analytics_agents_31_40.py` | `DropoutRiskPredictionInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/analytics_agents_31_40.py` | `DropoutRiskPredictionOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/analytics_agents_31_40.py` | `StudyPatternMiningInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/analytics_agents_31_40.py` | `StudyPattern` | `BaseModel` | `` |
-| `config/models/agent_io/analytics_agents_31_40.py` | `StudyPatternMiningOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/analytics_agents_31_40.py` | `PerformanceTrendAnalysisInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/analytics_agents_31_40.py` | `PerformanceTrend` | `BaseModel` | `` |
-| `config/models/agent_io/analytics_agents_31_40.py` | `PerformanceTrendAnalysisOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/analytics_agents_31_40.py` | `LearningOutcomePredictionInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/analytics_agents_31_40.py` | `LearningOutcomePredictionOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/analytics_agents_31_40.py` | `ClassroomAnalyticsInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/analytics_agents_31_40.py` | `ClassroomAnalyticsOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/analytics_agents_31_40.py` | `CohortComparisonInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/analytics_agents_31_40.py` | `CohortComparisonOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/analytics_agents_31_40.py` | `TeacherDashboardAggregationInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/analytics_agents_31_40.py` | `TeacherDashboardAggregationOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/assessment_agents_21_30.py` | `QuizBuilderInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/assessment_agents_21_30.py` | `QuizQuestion` | `BaseModel` | `` |
-| `config/models/agent_io/assessment_agents_21_30.py` | `QuizBuilderOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/assessment_agents_21_30.py` | `AnswerEvaluationInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/assessment_agents_21_30.py` | `AnswerEvaluationOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/assessment_agents_21_30.py` | `FeedbackGenerationInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/assessment_agents_21_30.py` | `FeedbackGenerationOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/assessment_agents_21_30.py` | `RubricGenerationInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/assessment_agents_21_30.py` | `RubricCriterion` | `BaseModel` | `` |
-| `config/models/agent_io/assessment_agents_21_30.py` | `RubricGenerationOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/assessment_agents_21_30.py` | `MisconceptionAnalysisInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/assessment_agents_21_30.py` | `MisconceptionPattern` | `BaseModel` | `` |
-| `config/models/agent_io/assessment_agents_21_30.py` | `MisconceptionAnalysisOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/assessment_agents_21_30.py` | `SkillMasteryInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/assessment_agents_21_30.py` | `SkillMasteryOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/assessment_agents_21_30.py` | `LearningGapInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/assessment_agents_21_30.py` | `LearningGap` | `BaseModel` | `` |
-| `config/models/agent_io/assessment_agents_21_30.py` | `LearningGapOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/assessment_agents_21_30.py` | `KnowledgeGraphUpdateInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/assessment_agents_21_30.py` | `KnowledgeGraphUpdateOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/assessment_agents_21_30.py` | `ConceptDifficultyInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/assessment_agents_21_30.py` | `ConceptDifficultyOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/assessment_agents_21_30.py` | `CurriculumMappingInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/assessment_agents_21_30.py` | `CurriculumMapping` | `BaseModel` | `` |
-| `config/models/agent_io/assessment_agents_21_30.py` | `CurriculumMappingOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/common.py` | `ConfidenceScore` | `BaseModel` | `` |
-| `config/models/agent_io/common.py` | `ScoreRange` | `BaseModel` | `` |
-| `config/models/agent_io/common.py` | `Evidence` | `BaseModel` | `` |
-| `config/models/agent_io/common.py` | `ReasoningTrace` | `BaseModel` | `` |
-| `config/models/agent_io/common.py` | `Recommendation` | `BaseModel` | `` |
-| `config/models/agent_io/common.py` | `ActionSuggestion` | `BaseModel` | `` |
-| `config/models/agent_io/common.py` | `ConceptReference` | `BaseModel` | `` |
-| `config/models/agent_io/common.py` | `ResourceReference` | `BaseModel` | `` |
-| `config/models/agent_io/common.py` | `DetectedIssue` | `BaseModel` | `` |
-| `config/models/agent_io/common.py` | `Pattern` | `BaseModel` | `` |
-| `config/models/agent_io/common.py` | `Prediction` | `BaseModel` | `` |
-| `config/models/agent_io/common.py` | `TimeWindow` | `BaseModel` | `` |
-| `config/models/agent_io/content_agents_1_8.py` | `TextRewriteInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/content_agents_1_8.py` | `RewriteChange` | `BaseModel` | `` |
-| `config/models/agent_io/content_agents_1_8.py` | `TextRewriteOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/content_agents_1_8.py` | `ContentValidationInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/content_agents_1_8.py` | `ValidationIssue` | `BaseModel` | `` |
-| `config/models/agent_io/content_agents_1_8.py` | `ContentValidationOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/content_agents_1_8.py` | `CitationGenerationInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/content_agents_1_8.py` | `CitationEntry` | `BaseModel` | `` |
-| `config/models/agent_io/content_agents_1_8.py` | `CitationGenerationOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/content_agents_1_8.py` | `GlossaryBuilderInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/content_agents_1_8.py` | `GlossaryTerm` | `BaseModel` | `` |
-| `config/models/agent_io/content_agents_1_8.py` | `GlossaryBuilderOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/content_agents_1_8.py` | `DynamicUpdateInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/content_agents_1_8.py` | `ContentUpdateSuggestion` | `BaseModel` | `` |
-| `config/models/agent_io/content_agents_1_8.py` | `DynamicUpdateOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/content_agents_1_8.py` | `NarrativeBuilderInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/content_agents_1_8.py` | `NarrativeElement` | `BaseModel` | `` |
-| `config/models/agent_io/content_agents_1_8.py` | `NarrativeBuilderOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/content_agents_1_8.py` | `StructuringInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/content_agents_1_8.py` | `LessonSection` | `BaseModel` | `` |
-| `config/models/agent_io/content_agents_1_8.py` | `StructuringOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/content_agents_1_8.py` | `PrerequisiteInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/content_agents_1_8.py` | `PrerequisiteItem` | `BaseModel` | `` |
-| `config/models/agent_io/content_agents_1_8.py` | `PrerequisiteOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/content_generation_agents_91_100.py` | `ExampleGeneratorInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/content_generation_agents_91_100.py` | `ExampleGeneratorOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/content_generation_agents_91_100.py` | `ExerciseCreatorInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/content_generation_agents_91_100.py` | `ExerciseCreatorOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/content_generation_agents_91_100.py` | `StoryLessonCreatorInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/content_generation_agents_91_100.py` | `StoryLessonCreatorOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/content_generation_agents_91_100.py` | `ConceptExplanationInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/content_generation_agents_91_100.py` | `ConceptExplanationOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/content_generation_agents_91_100.py` | `PracticeQuestionGeneratorInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/content_generation_agents_91_100.py` | `PracticeQuestionGeneratorOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/content_generation_agents_91_100.py` | `AdaptiveQuestionGeneratorInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/content_generation_agents_91_100.py` | `AdaptiveQuestionGeneratorOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/content_generation_agents_91_100.py` | `ExplanationRewriterInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/content_generation_agents_91_100.py` | `ExplanationRewriterOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/content_generation_agents_91_100.py` | `SummaryGeneratorInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/content_generation_agents_91_100.py` | `SummaryGeneratorOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/content_generation_agents_91_100.py` | `ContentSimplifierInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/content_generation_agents_91_100.py` | `ContentSimplifierOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/content_generation_agents_91_100.py` | `AssessmentQuestionGeneratorInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/content_generation_agents_91_100.py` | `AssessmentQuestionGeneratorOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/curriculum_agents_46_60.py` | `ConceptGraphBuilderInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/curriculum_agents_46_60.py` | `ConceptGraphBuilderOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/curriculum_agents_46_60.py` | `ConceptRelationExtractorInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/curriculum_agents_46_60.py` | `ConceptRelationExtractorOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/curriculum_agents_46_60.py` | `PrerequisiteInferenceInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/curriculum_agents_46_60.py` | `PrerequisiteInferenceOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/curriculum_agents_46_60.py` | `CurriculumPlannerInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/curriculum_agents_46_60.py` | `CurriculumPlannerOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/curriculum_agents_46_60.py` | `LessonSequencePlannerInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/curriculum_agents_46_60.py` | `LessonSequencePlannerOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/curriculum_agents_46_60.py` | `LearningPathGeneratorInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/curriculum_agents_46_60.py` | `LearningPathGeneratorOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/curriculum_agents_46_60.py` | `PersonalizedCurriculumInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/curriculum_agents_46_60.py` | `PersonalizedCurriculumOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/curriculum_agents_46_60.py` | `SkillGapCurriculumAdapterInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/curriculum_agents_46_60.py` | `SkillGapCurriculumAdapterOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/curriculum_agents_46_60.py` | `DifficultyBalancerInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/curriculum_agents_46_60.py` | `DifficultyBalancerOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/curriculum_agents_46_60.py` | `StudyStrategyPlannerInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/curriculum_agents_46_60.py` | `StudyStrategyPlannerOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/curriculum_agents_46_60.py` | `ReviewSchedulerInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/curriculum_agents_46_60.py` | `ReviewSchedulerOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/curriculum_agents_46_60.py` | `RemediationPlannerInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/curriculum_agents_46_60.py` | `RemediationPlannerOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/curriculum_agents_46_60.py` | `EnrichmentPlannerInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/curriculum_agents_46_60.py` | `EnrichmentPlannerOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/curriculum_agents_46_60.py` | `ConceptReinforcementInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/curriculum_agents_46_60.py` | `ConceptReinforcementOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/curriculum_agents_46_60.py` | `LongTermLearningPlannerInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/curriculum_agents_46_60.py` | `LongTermLearningPlannerOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/evaluation_agents_41_45.py` | `EvaluationCriterion` | `BaseModel` | `` |
-| `config/models/agent_io/evaluation_agents_41_45.py` | `EvaluationScore` | `BaseModel` | `` |
-| `config/models/agent_io/evaluation_agents_41_45.py` | `EvaluationIssue` | `BaseModel` | `` |
-| `config/models/agent_io/evaluation_agents_41_45.py` | `AlignmentResult` | `BaseModel` | `` |
-| `config/models/agent_io/evaluation_agents_41_45.py` | `ConsistencyError` | `BaseModel` | `` |
-| `config/models/agent_io/evaluation_agents_41_45.py` | `CoverageGap` | `BaseModel` | `` |
-| `config/models/agent_io/evaluation_agents_41_45.py` | `QuestionQualityEvaluationInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/evaluation_agents_41_45.py` | `QuestionQualityEvaluationOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/evaluation_agents_41_45.py` | `ExplanationQualityEvaluationInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/evaluation_agents_41_45.py` | `ExplanationQualityEvaluationOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/evaluation_agents_41_45.py` | `PedagogicalAlignmentInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/evaluation_agents_41_45.py` | `PedagogicalAlignmentOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/evaluation_agents_41_45.py` | `ConsistencyEvaluationInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/evaluation_agents_41_45.py` | `ConsistencyEvaluationOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/evaluation_agents_41_45.py` | `CurriculumCoverageInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/evaluation_agents_41_45.py` | `CurriculumCoverageOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/learning_objects.py` | `StudentProfile` | `BaseModel` | `` |
-| `config/models/agent_io/learning_objects.py` | `InstructorProfile` | `BaseModel` | `` |
-| `config/models/agent_io/learning_objects.py` | `VAKRStyle` | `str, Enum` | `` |
-| `config/models/agent_io/learning_objects.py` | `PacePreference` | `str, Enum` | `` |
-| `config/models/agent_io/learning_objects.py` | `AbstractionLevel` | `str, Enum` | `` |
-| `config/models/agent_io/learning_objects.py` | `FeedbackPreference` | `str, Enum` | `` |
-| `config/models/agent_io/learning_objects.py` | `LearningStyle` | `BaseModel` | `` |
-| `config/models/agent_io/learning_objects.py` | `LearningObjective` | `BaseModel` | `` |
-| `config/models/agent_io/learning_objects.py` | `Lesson` | `BaseModel` | `` |
-| `config/models/agent_io/learning_objects.py` | `ConceptNode` | `BaseModel` | `` |
-| `config/models/agent_io/learning_objects.py` | `GlossaryEntry` | `BaseModel` | `` |
-| `config/models/agent_io/learning_objects.py` | `Question` | `BaseModel` | `` |
-| `config/models/agent_io/learning_objects.py` | `StudentAnswer` | `BaseModel` | `` |
-| `config/models/agent_io/learning_objects.py` | `AssessmentResult` | `BaseModel` | `` |
-| `config/models/agent_io/learning_objects.py` | `Assignment` | `BaseModel` | `` |
-| `config/models/agent_io/learning_objects.py` | `LearningEvent` | `BaseModel` | `` |
-| `config/models/agent_io/learning_objects.py` | `SkillPerformance` | `BaseModel` | `` |
-| `config/models/agent_io/learning_objects.py` | `LearningProgress` | `BaseModel` | `` |
-| `config/models/agent_io/learning_objects.py` | `LearningResource` | `BaseModel` | `` |
-| `config/models/agent_io/memory_agents_76_90.py` | `KnowledgeIngestionInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/memory_agents_76_90.py` | `KnowledgeIngestionOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/memory_agents_76_90.py` | `DocumentChunkingInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/memory_agents_76_90.py` | `DocumentChunkingOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/memory_agents_76_90.py` | `EmbeddingGeneratorInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/memory_agents_76_90.py` | `EmbeddingGeneratorOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/memory_agents_76_90.py` | `SemanticIndexerInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/memory_agents_76_90.py` | `SemanticIndexerOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/memory_agents_76_90.py` | `VectorSearchInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/memory_agents_76_90.py` | `VectorSearchOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/memory_agents_76_90.py` | `HybridRetrievalInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/memory_agents_76_90.py` | `HybridRetrievalOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/memory_agents_76_90.py` | `ContextBuilderInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/memory_agents_76_90.py` | `ContextBuilderOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/memory_agents_76_90.py` | `MemoryConsolidationInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/memory_agents_76_90.py` | `MemoryConsolidationOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/memory_agents_76_90.py` | `EpisodicMemoryInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/memory_agents_76_90.py` | `EpisodicMemoryOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/memory_agents_76_90.py` | `StudentKnowledgeMemoryInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/memory_agents_76_90.py` | `StudentKnowledgeMemoryOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/memory_agents_76_90.py` | `KnowledgeUpdaterInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/memory_agents_76_90.py` | `KnowledgeUpdaterOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/memory_agents_76_90.py` | `KnowledgeConflictResolverInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/memory_agents_76_90.py` | `KnowledgeConflictResolverOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/memory_agents_76_90.py` | `RetrievalRankerInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/memory_agents_76_90.py` | `RetrievalRankerOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/memory_agents_76_90.py` | `ContextRelevanceEvaluatorInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/memory_agents_76_90.py` | `ContextRelevanceEvaluatorOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/memory_agents_76_90.py` | `KnowledgeSummarizerInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/memory_agents_76_90.py` | `KnowledgeSummarizerOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/multimodal_agents_101_110.py` | `TextToSpeechInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/multimodal_agents_101_110.py` | `TextToSpeechOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/multimodal_agents_101_110.py` | `SpeechToTextInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/multimodal_agents_101_110.py` | `SpeechToTextOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/multimodal_agents_101_110.py` | `VisualIllustrationInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/multimodal_agents_101_110.py` | `VisualIllustrationOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/multimodal_agents_101_110.py` | `BoardDrawingInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/multimodal_agents_101_110.py` | `BoardDrawingOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/multimodal_agents_101_110.py` | `EmotionAnalysisInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/multimodal_agents_101_110.py` | `EmotionAnalysisOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/multimodal_agents_101_110.py` | `EngagementDetectorInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/multimodal_agents_101_110.py` | `EngagementDetectorOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/multimodal_agents_101_110.py` | `VisualFeedbackInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/multimodal_agents_101_110.py` | `VisualFeedbackOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/multimodal_agents_101_110.py` | `GestureRecognitionInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/multimodal_agents_101_110.py` | `GestureRecognitionOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/multimodal_agents_101_110.py` | `AudioFeedbackInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/multimodal_agents_101_110.py` | `AudioFeedbackOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/multimodal_agents_101_110.py` | `InteractiveLessonOrchestratorInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/multimodal_agents_101_110.py` | `InteractiveLessonOrchestratorOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/orchestration_agents_61_75.py` | `LearningSessionPlannerInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/orchestration_agents_61_75.py` | `LearningSessionPlannerOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/orchestration_agents_61_75.py` | `AgentWorkflowPlannerInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/orchestration_agents_61_75.py` | `AgentWorkflowPlannerOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/orchestration_agents_61_75.py` | `TaskDecomposerInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/orchestration_agents_61_75.py` | `TaskDecomposerOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/orchestration_agents_61_75.py` | `AgentSelectorInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/orchestration_agents_61_75.py` | `AgentSelectorOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/orchestration_agents_61_75.py` | `ContextManagerInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/orchestration_agents_61_75.py` | `ContextManagerOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/orchestration_agents_61_75.py` | `WorkflowStateTrackerInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/orchestration_agents_61_75.py` | `WorkflowStateTrackerOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/orchestration_agents_61_75.py` | `FailureRecoveryInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/orchestration_agents_61_75.py` | `FailureRecoveryOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/orchestration_agents_61_75.py` | `RetryStrategyInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/orchestration_agents_61_75.py` | `RetryStrategyOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/orchestration_agents_61_75.py` | `ShortTermMemoryInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/orchestration_agents_61_75.py` | `ShortTermMemoryOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/orchestration_agents_61_75.py` | `LongTermMemoryInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/orchestration_agents_61_75.py` | `LongTermMemoryOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/orchestration_agents_61_75.py` | `WorkflowOptimizerInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/orchestration_agents_61_75.py` | `WorkflowOptimizerOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/orchestration_agents_61_75.py` | `CostEfficiencyAnalyzerInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/orchestration_agents_61_75.py` | `CostEfficiencyAnalyzerOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/orchestration_agents_61_75.py` | `AgentPerformanceMonitorInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/orchestration_agents_61_75.py` | `AgentPerformanceMonitorOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/orchestration_agents_61_75.py` | `SystemHealthEvaluatorInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/orchestration_agents_61_75.py` | `SystemHealthEvaluatorOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/personalization_agents_15_20.py` | `DialogueTutorInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/personalization_agents_15_20.py` | `TutorResponse` | `BaseModel` | `` |
-| `config/models/agent_io/personalization_agents_15_20.py` | `DialogueTutorOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/personalization_agents_15_20.py` | `StyleAdaptationInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/personalization_agents_15_20.py` | `AdaptedContent` | `BaseModel` | `` |
-| `config/models/agent_io/personalization_agents_15_20.py` | `StyleAdaptationOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/personalization_agents_15_20.py` | `ProgressAnalysisInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/personalization_agents_15_20.py` | `ProgressAnalysisOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/personalization_agents_15_20.py` | `LearningPathCreationInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/personalization_agents_15_20.py` | `LearningStep` | `BaseModel` | `` |
-| `config/models/agent_io/personalization_agents_15_20.py` | `LearningPathCreationOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/personalization_agents_15_20.py` | `ResourceRecommendationInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/personalization_agents_15_20.py` | `RecommendedResource` | `BaseModel` | `` |
-| `config/models/agent_io/personalization_agents_15_20.py` | `ResourceRecommendationOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/personalization_agents_15_20.py` | `InteractionStyleAnalysisInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/personalization_agents_15_20.py` | `InteractionPattern` | `BaseModel` | `` |
-| `config/models/agent_io/personalization_agents_15_20.py` | `InteractionStyleAnalysisOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/teaching_agents_9_14.py` | `QuestionRefineInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/teaching_agents_9_14.py` | `QuestionRefineOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/teaching_agents_9_14.py` | `QuestionGenerationInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/teaching_agents_9_14.py` | `QuestionGenerationOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/teaching_agents_9_14.py` | `HintGenerationInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/teaching_agents_9_14.py` | `HintGenerationOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/teaching_agents_9_14.py` | `ExplanationGenerationInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/teaching_agents_9_14.py` | `ExplanationGenerationOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/teaching_agents_9_14.py` | `DifficultyAdaptationInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/teaching_agents_9_14.py` | `DifficultyAdaptationOutput` | `OrchestrationResult` | `` |
-| `config/models/agent_io/teaching_agents_9_14.py` | `MisconceptionDetectionInput` | `OrchestrationRequest` | `` |
-| `config/models/agent_io/teaching_agents_9_14.py` | `Misconception` | `OrchestrationResult` | `` |
-| `config/models/agent_io/teaching_agents_9_14.py` | `MisconceptionDetectionOutput` | `OrchestrationResult` | `` |
-| `config/models/rag/rag_models.py` | `Document` | `BaseModel` | `` |
-| `config/models/rag/rag_models.py` | `DocumentChunk` | `BaseModel` | `` |
-| `config/models/rag/rag_models.py` | `RetrievedDocument` | `BaseModel` | `` |
-| `config/models/system/event_models.py` | `PipelineEvent` | `BaseModel` | `` |
-| `config/models/system/event_models.py` | `StudentStateEvent` | `BaseModel` | `` |
-| `config/models/system/event_models.py` | `RuntimeErrorLog` | `BaseModel` | `` |
-| `config/models/system/event_models.py` | `MemorySnapshot` | `BaseModel` | `` |
-| `config/models/system/event_models.py` | `SystemEvent` | `BaseModel` | `` |
-| `config/models/system/execution_models.py` | `AgentExecutionRecord` | `BaseModel` | `` |
-| `config/models/system/execution_models.py` | `TaskExecutionRecord` | `BaseModel` | `` |
-| `config/models/system/execution_models.py` | `WorkflowExecutionRecord` | `BaseModel` | `` |
-| `config/models/system/versioning_models.py` | `ContentVersion` | `BaseModel` | `` |
+| `agents/content/models/analytics_agents_31_40.py` | `StudentBehaviorAnalysisInput` | `AgentInput` | `` |
+| `agents/content/models/analytics_agents_31_40.py` | `BehaviorPattern` | `BaseModel` | `` |
+| `agents/content/models/analytics_agents_31_40.py` | `StudentBehaviorAnalysisOutput` | `AgentOutput` | `` |
+| `agents/content/models/analytics_agents_31_40.py` | `EngagementDetectionInput` | `AgentInput` | `` |
+| `agents/content/models/analytics_agents_31_40.py` | `EngagementDetectionOutput` | `AgentOutput` | `` |
+| `agents/content/models/analytics_agents_31_40.py` | `MotivationAnalysisInput` | `AgentInput` | `` |
+| `agents/content/models/analytics_agents_31_40.py` | `MotivationAnalysisOutput` | `AgentOutput` | `` |
+| `agents/content/models/analytics_agents_31_40.py` | `DropoutRiskPredictionInput` | `AgentInput` | `` |
+| `agents/content/models/analytics_agents_31_40.py` | `DropoutRiskPredictionOutput` | `AgentOutput` | `` |
+| `agents/content/models/analytics_agents_31_40.py` | `StudyPatternMiningInput` | `AgentInput` | `` |
+| `agents/content/models/analytics_agents_31_40.py` | `StudyPattern` | `BaseModel` | `` |
+| `agents/content/models/analytics_agents_31_40.py` | `StudyPatternMiningOutput` | `AgentOutput` | `` |
+| `agents/content/models/analytics_agents_31_40.py` | `PerformanceTrendAnalysisInput` | `AgentInput` | `` |
+| `agents/content/models/analytics_agents_31_40.py` | `PerformanceTrend` | `BaseModel` | `` |
+| `agents/content/models/analytics_agents_31_40.py` | `PerformanceTrendAnalysisOutput` | `AgentOutput` | `` |
+| `agents/content/models/analytics_agents_31_40.py` | `LearningOutcomePredictionInput` | `AgentInput` | `` |
+| `agents/content/models/analytics_agents_31_40.py` | `LearningOutcomePredictionOutput` | `AgentOutput` | `` |
+| `agents/content/models/analytics_agents_31_40.py` | `ClassroomAnalyticsInput` | `AgentInput` | `` |
+| `agents/content/models/analytics_agents_31_40.py` | `ClassroomAnalyticsOutput` | `AgentOutput` | `` |
+| `agents/content/models/analytics_agents_31_40.py` | `CohortComparisonInput` | `AgentInput` | `` |
+| `agents/content/models/analytics_agents_31_40.py` | `CohortComparisonOutput` | `AgentOutput` | `` |
+| `agents/content/models/analytics_agents_31_40.py` | `TeacherDashboardAggregationInput` | `AgentInput` | `` |
+| `agents/content/models/analytics_agents_31_40.py` | `TeacherDashboardAggregationOutput` | `AgentOutput` | `` |
+| `agents/content/models/assessment_agents_21_30.py` | `QuizBuilderInput` | `AgentInput` | `` |
+| `agents/content/models/assessment_agents_21_30.py` | `QuizQuestion` | `BaseModel` | `` |
+| `agents/content/models/assessment_agents_21_30.py` | `QuizBuilderOutput` | `AgentOutput` | `` |
+| `agents/content/models/assessment_agents_21_30.py` | `AnswerEvaluationInput` | `AgentInput` | `` |
+| `agents/content/models/assessment_agents_21_30.py` | `AnswerEvaluationOutput` | `AgentOutput` | `` |
+| `agents/content/models/assessment_agents_21_30.py` | `FeedbackGenerationInput` | `AgentInput` | `` |
+| `agents/content/models/assessment_agents_21_30.py` | `FeedbackGenerationOutput` | `AgentOutput` | `` |
+| `agents/content/models/assessment_agents_21_30.py` | `RubricGenerationInput` | `AgentInput` | `` |
+| `agents/content/models/assessment_agents_21_30.py` | `RubricCriterion` | `BaseModel` | `` |
+| `agents/content/models/assessment_agents_21_30.py` | `RubricGenerationOutput` | `AgentOutput` | `` |
+| `agents/content/models/assessment_agents_21_30.py` | `MisconceptionAnalysisInput` | `AgentInput` | `` |
+| `agents/content/models/assessment_agents_21_30.py` | `MisconceptionPattern` | `BaseModel` | `` |
+| `agents/content/models/assessment_agents_21_30.py` | `MisconceptionAnalysisOutput` | `AgentOutput` | `` |
+| `agents/content/models/assessment_agents_21_30.py` | `SkillMasteryInput` | `AgentInput` | `` |
+| `agents/content/models/assessment_agents_21_30.py` | `SkillMasteryOutput` | `AgentOutput` | `` |
+| `agents/content/models/assessment_agents_21_30.py` | `LearningGapInput` | `AgentInput` | `` |
+| `agents/content/models/assessment_agents_21_30.py` | `LearningGap` | `BaseModel` | `` |
+| `agents/content/models/assessment_agents_21_30.py` | `LearningGapOutput` | `AgentOutput` | `` |
+| `agents/content/models/assessment_agents_21_30.py` | `KnowledgeGraphUpdateInput` | `AgentInput` | `` |
+| `agents/content/models/assessment_agents_21_30.py` | `KnowledgeGraphUpdateOutput` | `AgentOutput` | `` |
+| `agents/content/models/assessment_agents_21_30.py` | `ConceptDifficultyInput` | `AgentInput` | `` |
+| `agents/content/models/assessment_agents_21_30.py` | `ConceptDifficultyOutput` | `AgentOutput` | `` |
+| `agents/content/models/assessment_agents_21_30.py` | `CurriculumMappingInput` | `AgentInput` | `` |
+| `agents/content/models/assessment_agents_21_30.py` | `CurriculumMapping` | `BaseModel` | `` |
+| `agents/content/models/assessment_agents_21_30.py` | `CurriculumMappingOutput` | `AgentOutput` | `` |
+| `agents/content/models/common.py` | `ContentVersion` | `BaseModel` | `` |
+| `agents/content/models/common.py` | `ConfidenceScore` | `BaseModel` | `` |
+| `agents/content/models/common.py` | `ScoreRange` | `BaseModel` | `` |
+| `agents/content/models/common.py` | `Evidence` | `BaseModel` | `` |
+| `agents/content/models/common.py` | `ReasoningTrace` | `BaseModel` | `` |
+| `agents/content/models/common.py` | `Recommendation` | `BaseModel` | `` |
+| `agents/content/models/common.py` | `ActionSuggestion` | `BaseModel` | `` |
+| `agents/content/models/common.py` | `ConceptReference` | `BaseModel` | `` |
+| `agents/content/models/common.py` | `ResourceReference` | `BaseModel` | `` |
+| `agents/content/models/common.py` | `DetectedIssue` | `BaseModel` | `` |
+| `agents/content/models/common.py` | `Pattern` | `BaseModel` | `` |
+| `agents/content/models/common.py` | `Prediction` | `BaseModel` | `` |
+| `agents/content/models/common.py` | `TimeWindow` | `BaseModel` | `` |
+| `agents/content/models/content_agents_1_8.py` | `TextRewriteInput` | `AgentInput` | `` |
+| `agents/content/models/content_agents_1_8.py` | `RewriteChange` | `BaseModel` | `` |
+| `agents/content/models/content_agents_1_8.py` | `TextRewriteOutput` | `AgentOutput` | `` |
+| `agents/content/models/content_agents_1_8.py` | `ContentValidationInput` | `AgentInput` | `` |
+| `agents/content/models/content_agents_1_8.py` | `ValidationIssue` | `BaseModel` | `` |
+| `agents/content/models/content_agents_1_8.py` | `ContentValidationOutput` | `AgentOutput` | `` |
+| `agents/content/models/content_agents_1_8.py` | `CitationGenerationInput` | `AgentInput` | `` |
+| `agents/content/models/content_agents_1_8.py` | `CitationEntry` | `BaseModel` | `` |
+| `agents/content/models/content_agents_1_8.py` | `CitationGenerationOutput` | `AgentOutput` | `` |
+| `agents/content/models/content_agents_1_8.py` | `GlossaryBuilderInput` | `AgentInput` | `` |
+| `agents/content/models/content_agents_1_8.py` | `GlossaryTerm` | `BaseModel` | `` |
+| `agents/content/models/content_agents_1_8.py` | `GlossaryBuilderOutput` | `AgentOutput` | `` |
+| `agents/content/models/content_agents_1_8.py` | `DynamicUpdateInput` | `AgentInput` | `` |
+| `agents/content/models/content_agents_1_8.py` | `ContentUpdateSuggestion` | `BaseModel` | `` |
+| `agents/content/models/content_agents_1_8.py` | `DynamicUpdateOutput` | `AgentOutput` | `` |
+| `agents/content/models/content_agents_1_8.py` | `NarrativeBuilderInput` | `AgentInput` | `` |
+| `agents/content/models/content_agents_1_8.py` | `NarrativeElement` | `BaseModel` | `` |
+| `agents/content/models/content_agents_1_8.py` | `NarrativeBuilderOutput` | `AgentOutput` | `` |
+| `agents/content/models/content_agents_1_8.py` | `StructuringInput` | `AgentInput` | `` |
+| `agents/content/models/content_agents_1_8.py` | `LessonSection` | `BaseModel` | `` |
+| `agents/content/models/content_agents_1_8.py` | `StructuringOutput` | `AgentOutput` | `` |
+| `agents/content/models/content_agents_1_8.py` | `PrerequisiteInput` | `AgentInput` | `` |
+| `agents/content/models/content_agents_1_8.py` | `PrerequisiteItem` | `BaseModel` | `` |
+| `agents/content/models/content_agents_1_8.py` | `PrerequisiteOutput` | `AgentOutput` | `` |
+| `agents/content/models/content_generation_agents_91_100.py` | `ExampleGeneratorInput` | `AgentInput` | `` |
+| `agents/content/models/content_generation_agents_91_100.py` | `ExampleGeneratorOutput` | `AgentOutput` | `` |
+| `agents/content/models/content_generation_agents_91_100.py` | `ExerciseCreatorInput` | `AgentInput` | `` |
+| `agents/content/models/content_generation_agents_91_100.py` | `ExerciseCreatorOutput` | `AgentOutput` | `` |
+| `agents/content/models/content_generation_agents_91_100.py` | `StoryLessonCreatorInput` | `AgentInput` | `` |
+| `agents/content/models/content_generation_agents_91_100.py` | `StoryLessonCreatorOutput` | `AgentOutput` | `` |
+| `agents/content/models/content_generation_agents_91_100.py` | `ConceptExplanationInput` | `AgentInput` | `` |
+| `agents/content/models/content_generation_agents_91_100.py` | `ConceptExplanationOutput` | `AgentOutput` | `` |
+| `agents/content/models/content_generation_agents_91_100.py` | `PracticeQuestionGeneratorInput` | `AgentInput` | `` |
+| `agents/content/models/content_generation_agents_91_100.py` | `PracticeQuestionGeneratorOutput` | `AgentOutput` | `` |
+| `agents/content/models/content_generation_agents_91_100.py` | `AdaptiveQuestionGeneratorInput` | `AgentInput` | `` |
+| `agents/content/models/content_generation_agents_91_100.py` | `AdaptiveQuestionGeneratorOutput` | `AgentOutput` | `` |
+| `agents/content/models/content_generation_agents_91_100.py` | `ExplanationRewriterInput` | `AgentInput` | `` |
+| `agents/content/models/content_generation_agents_91_100.py` | `ExplanationRewriterOutput` | `AgentOutput` | `` |
+| `agents/content/models/content_generation_agents_91_100.py` | `SummaryGeneratorInput` | `AgentInput` | `` |
+| `agents/content/models/content_generation_agents_91_100.py` | `SummaryGeneratorOutput` | `AgentOutput` | `` |
+| `agents/content/models/content_generation_agents_91_100.py` | `ContentSimplifierInput` | `AgentInput` | `` |
+| `agents/content/models/content_generation_agents_91_100.py` | `ContentSimplifierOutput` | `AgentOutput` | `` |
+| `agents/content/models/content_generation_agents_91_100.py` | `AssessmentQuestionGeneratorInput` | `AgentInput` | `` |
+| `agents/content/models/content_generation_agents_91_100.py` | `AssessmentQuestionGeneratorOutput` | `AgentOutput` | `` |
+| `agents/content/models/curriculum_agents_46_60.py` | `ConceptGraphBuilderInput` | `AgentInput` | `` |
+| `agents/content/models/curriculum_agents_46_60.py` | `ConceptGraphBuilderOutput` | `AgentOutput` | `` |
+| `agents/content/models/curriculum_agents_46_60.py` | `ConceptRelationExtractorInput` | `AgentInput` | `` |
+| `agents/content/models/curriculum_agents_46_60.py` | `ConceptRelationExtractorOutput` | `AgentOutput` | `` |
+| `agents/content/models/curriculum_agents_46_60.py` | `PrerequisiteInferenceInput` | `AgentInput` | `` |
+| `agents/content/models/curriculum_agents_46_60.py` | `PrerequisiteInferenceOutput` | `AgentOutput` | `` |
+| `agents/content/models/curriculum_agents_46_60.py` | `CurriculumPlannerInput` | `AgentInput` | `` |
+| `agents/content/models/curriculum_agents_46_60.py` | `CurriculumPlannerOutput` | `AgentOutput` | `` |
+| `agents/content/models/curriculum_agents_46_60.py` | `LessonSequencePlannerInput` | `AgentInput` | `` |
+| `agents/content/models/curriculum_agents_46_60.py` | `LessonSequencePlannerOutput` | `AgentOutput` | `` |
+| `agents/content/models/curriculum_agents_46_60.py` | `LearningPathGeneratorInput` | `AgentInput` | `` |
+| `agents/content/models/curriculum_agents_46_60.py` | `LearningPathGeneratorOutput` | `AgentOutput` | `` |
+| `agents/content/models/curriculum_agents_46_60.py` | `PersonalizedCurriculumInput` | `AgentInput` | `` |
+| `agents/content/models/curriculum_agents_46_60.py` | `PersonalizedCurriculumOutput` | `AgentOutput` | `` |
+| `agents/content/models/curriculum_agents_46_60.py` | `SkillGapCurriculumAdapterInput` | `AgentInput` | `` |
+| `agents/content/models/curriculum_agents_46_60.py` | `SkillGapCurriculumAdapterOutput` | `AgentOutput` | `` |
+| `agents/content/models/curriculum_agents_46_60.py` | `DifficultyBalancerInput` | `AgentInput` | `` |
+| `agents/content/models/curriculum_agents_46_60.py` | `DifficultyBalancerOutput` | `AgentOutput` | `` |
+| `agents/content/models/curriculum_agents_46_60.py` | `StudyStrategyPlannerInput` | `AgentInput` | `` |
+| `agents/content/models/curriculum_agents_46_60.py` | `StudyStrategyPlannerOutput` | `AgentOutput` | `` |
+| `agents/content/models/curriculum_agents_46_60.py` | `ReviewSchedulerInput` | `AgentInput` | `` |
+| `agents/content/models/curriculum_agents_46_60.py` | `ReviewSchedulerOutput` | `AgentOutput` | `` |
+| `agents/content/models/curriculum_agents_46_60.py` | `RemediationPlannerInput` | `AgentInput` | `` |
+| `agents/content/models/curriculum_agents_46_60.py` | `RemediationPlannerOutput` | `AgentOutput` | `` |
+| `agents/content/models/curriculum_agents_46_60.py` | `EnrichmentPlannerInput` | `AgentInput` | `` |
+| `agents/content/models/curriculum_agents_46_60.py` | `EnrichmentPlannerOutput` | `AgentOutput` | `` |
+| `agents/content/models/curriculum_agents_46_60.py` | `ConceptReinforcementInput` | `AgentInput` | `` |
+| `agents/content/models/curriculum_agents_46_60.py` | `ConceptReinforcementOutput` | `AgentOutput` | `` |
+| `agents/content/models/curriculum_agents_46_60.py` | `LongTermLearningPlannerInput` | `AgentInput` | `` |
+| `agents/content/models/curriculum_agents_46_60.py` | `LongTermLearningPlannerOutput` | `AgentOutput` | `` |
+| `agents/content/models/evaluation_agents_41_45.py` | `EvaluationCriterion` | `BaseModel` | `` |
+| `agents/content/models/evaluation_agents_41_45.py` | `EvaluationScore` | `BaseModel` | `` |
+| `agents/content/models/evaluation_agents_41_45.py` | `EvaluationIssue` | `BaseModel` | `` |
+| `agents/content/models/evaluation_agents_41_45.py` | `AlignmentResult` | `BaseModel` | `` |
+| `agents/content/models/evaluation_agents_41_45.py` | `ConsistencyError` | `BaseModel` | `` |
+| `agents/content/models/evaluation_agents_41_45.py` | `CoverageGap` | `BaseModel` | `` |
+| `agents/content/models/evaluation_agents_41_45.py` | `QuestionQualityEvaluationInput` | `AgentInput` | `` |
+| `agents/content/models/evaluation_agents_41_45.py` | `QuestionQualityEvaluationOutput` | `AgentOutput` | `` |
+| `agents/content/models/evaluation_agents_41_45.py` | `ExplanationQualityEvaluationInput` | `AgentInput` | `` |
+| `agents/content/models/evaluation_agents_41_45.py` | `ExplanationQualityEvaluationOutput` | `AgentOutput` | `` |
+| `agents/content/models/evaluation_agents_41_45.py` | `PedagogicalAlignmentInput` | `AgentInput` | `` |
+| `agents/content/models/evaluation_agents_41_45.py` | `PedagogicalAlignmentOutput` | `AgentOutput` | `` |
+| `agents/content/models/evaluation_agents_41_45.py` | `ConsistencyEvaluationInput` | `AgentInput` | `` |
+| `agents/content/models/evaluation_agents_41_45.py` | `ConsistencyEvaluationOutput` | `AgentOutput` | `` |
+| `agents/content/models/evaluation_agents_41_45.py` | `CurriculumCoverageInput` | `AgentInput` | `` |
+| `agents/content/models/evaluation_agents_41_45.py` | `CurriculumCoverageOutput` | `AgentOutput` | `` |
+| `agents/content/models/learning_objects.py` | `StudentProfile` | `BaseModel` | `` |
+| `agents/content/models/learning_objects.py` | `InstructorProfile` | `BaseModel` | `` |
+| `agents/content/models/learning_objects.py` | `VAKRStyle` | `str, Enum` | `` |
+| `agents/content/models/learning_objects.py` | `PacePreference` | `str, Enum` | `` |
+| `agents/content/models/learning_objects.py` | `AbstractionLevel` | `str, Enum` | `` |
+| `agents/content/models/learning_objects.py` | `FeedbackPreference` | `str, Enum` | `` |
+| `agents/content/models/learning_objects.py` | `LearningStyle` | `BaseModel` | `` |
+| `agents/content/models/learning_objects.py` | `LearningObjective` | `BaseModel` | `` |
+| `agents/content/models/learning_objects.py` | `Lesson` | `BaseModel` | `` |
+| `agents/content/models/learning_objects.py` | `ConceptNode` | `BaseModel` | `` |
+| `agents/content/models/learning_objects.py` | `GlossaryEntry` | `BaseModel` | `` |
+| `agents/content/models/learning_objects.py` | `Question` | `BaseModel` | `` |
+| `agents/content/models/learning_objects.py` | `StudentAnswer` | `BaseModel` | `` |
+| `agents/content/models/learning_objects.py` | `AssessmentResult` | `BaseModel` | `` |
+| `agents/content/models/learning_objects.py` | `Assignment` | `BaseModel` | `` |
+| `agents/content/models/learning_objects.py` | `LearningEvent` | `BaseModel` | `` |
+| `agents/content/models/learning_objects.py` | `SkillPerformance` | `BaseModel` | `` |
+| `agents/content/models/learning_objects.py` | `LearningProgress` | `BaseModel` | `` |
+| `agents/content/models/learning_objects.py` | `LearningResource` | `BaseModel` | `` |
+| `agents/content/models/memory_agents_76_90.py` | `KnowledgeIngestionInput` | `AgentInput` | `` |
+| `agents/content/models/memory_agents_76_90.py` | `KnowledgeIngestionOutput` | `AgentOutput` | `` |
+| `agents/content/models/memory_agents_76_90.py` | `DocumentChunkingInput` | `AgentInput` | `` |
+| `agents/content/models/memory_agents_76_90.py` | `DocumentChunkingOutput` | `AgentOutput` | `` |
+| `agents/content/models/memory_agents_76_90.py` | `EmbeddingGeneratorInput` | `AgentInput` | `` |
+| `agents/content/models/memory_agents_76_90.py` | `EmbeddingGeneratorOutput` | `AgentOutput` | `` |
+| `agents/content/models/memory_agents_76_90.py` | `SemanticIndexerInput` | `AgentInput` | `` |
+| `agents/content/models/memory_agents_76_90.py` | `SemanticIndexerOutput` | `AgentOutput` | `` |
+| `agents/content/models/memory_agents_76_90.py` | `VectorSearchInput` | `AgentInput` | `` |
+| `agents/content/models/memory_agents_76_90.py` | `VectorSearchOutput` | `AgentOutput` | `` |
+| `agents/content/models/memory_agents_76_90.py` | `HybridRetrievalInput` | `AgentInput` | `` |
+| `agents/content/models/memory_agents_76_90.py` | `HybridRetrievalOutput` | `AgentOutput` | `` |
+| `agents/content/models/memory_agents_76_90.py` | `ContextBuilderInput` | `AgentInput` | `` |
+| `agents/content/models/memory_agents_76_90.py` | `ContextBuilderOutput` | `AgentOutput` | `` |
+| `agents/content/models/memory_agents_76_90.py` | `MemoryConsolidationInput` | `AgentInput` | `` |
+| `agents/content/models/memory_agents_76_90.py` | `MemoryConsolidationOutput` | `AgentOutput` | `` |
+| `agents/content/models/memory_agents_76_90.py` | `EpisodicMemoryInput` | `AgentInput` | `` |
+| `agents/content/models/memory_agents_76_90.py` | `EpisodicMemoryOutput` | `AgentOutput` | `` |
+| `agents/content/models/memory_agents_76_90.py` | `StudentKnowledgeMemoryInput` | `AgentInput` | `` |
+| `agents/content/models/memory_agents_76_90.py` | `StudentKnowledgeMemoryOutput` | `AgentOutput` | `` |
+| `agents/content/models/memory_agents_76_90.py` | `KnowledgeUpdaterInput` | `AgentInput` | `` |
+| `agents/content/models/memory_agents_76_90.py` | `KnowledgeUpdaterOutput` | `AgentOutput` | `` |
+| `agents/content/models/memory_agents_76_90.py` | `KnowledgeConflictResolverInput` | `AgentInput` | `` |
+| `agents/content/models/memory_agents_76_90.py` | `KnowledgeConflictResolverOutput` | `AgentOutput` | `` |
+| `agents/content/models/memory_agents_76_90.py` | `RetrievalRankerInput` | `AgentInput` | `` |
+| `agents/content/models/memory_agents_76_90.py` | `RetrievalRankerOutput` | `AgentOutput` | `` |
+| `agents/content/models/memory_agents_76_90.py` | `ContextRelevanceEvaluatorInput` | `AgentInput` | `` |
+| `agents/content/models/memory_agents_76_90.py` | `ContextRelevanceEvaluatorOutput` | `AgentOutput` | `` |
+| `agents/content/models/memory_agents_76_90.py` | `KnowledgeSummarizerInput` | `AgentInput` | `` |
+| `agents/content/models/memory_agents_76_90.py` | `KnowledgeSummarizerOutput` | `AgentOutput` | `` |
+| `agents/content/models/multimodal_agents_101_110.py` | `TextToSpeechInput` | `AgentInput` | `` |
+| `agents/content/models/multimodal_agents_101_110.py` | `TextToSpeechOutput` | `AgentOutput` | `` |
+| `agents/content/models/multimodal_agents_101_110.py` | `SpeechToTextInput` | `AgentInput` | `` |
+| `agents/content/models/multimodal_agents_101_110.py` | `SpeechToTextOutput` | `AgentOutput` | `` |
+| `agents/content/models/multimodal_agents_101_110.py` | `VisualIllustrationInput` | `AgentInput` | `` |
+| `agents/content/models/multimodal_agents_101_110.py` | `VisualIllustrationOutput` | `AgentOutput` | `` |
+| `agents/content/models/multimodal_agents_101_110.py` | `BoardDrawingInput` | `AgentInput` | `` |
+| `agents/content/models/multimodal_agents_101_110.py` | `BoardDrawingOutput` | `AgentOutput` | `` |
+| `agents/content/models/multimodal_agents_101_110.py` | `EmotionAnalysisInput` | `AgentInput` | `` |
+| `agents/content/models/multimodal_agents_101_110.py` | `EmotionAnalysisOutput` | `AgentOutput` | `` |
+| `agents/content/models/multimodal_agents_101_110.py` | `EngagementDetectorInput` | `AgentInput` | `` |
+| `agents/content/models/multimodal_agents_101_110.py` | `EngagementDetectorOutput` | `AgentOutput` | `` |
+| `agents/content/models/multimodal_agents_101_110.py` | `VisualFeedbackInput` | `AgentInput` | `` |
+| `agents/content/models/multimodal_agents_101_110.py` | `VisualFeedbackOutput` | `AgentOutput` | `` |
+| `agents/content/models/multimodal_agents_101_110.py` | `GestureRecognitionInput` | `AgentInput` | `` |
+| `agents/content/models/multimodal_agents_101_110.py` | `GestureRecognitionOutput` | `AgentOutput` | `` |
+| `agents/content/models/multimodal_agents_101_110.py` | `AudioFeedbackInput` | `AgentInput` | `` |
+| `agents/content/models/multimodal_agents_101_110.py` | `AudioFeedbackOutput` | `AgentOutput` | `` |
+| `agents/content/models/multimodal_agents_101_110.py` | `InteractiveLessonOrchestratorInput` | `AgentInput` | `` |
+| `agents/content/models/multimodal_agents_101_110.py` | `InteractiveLessonOrchestratorOutput` | `AgentOutput` | `` |
+| `agents/content/models/orchestration_agents_61_75.py` | `LearningSessionPlannerInput` | `AgentInput` | `` |
+| `agents/content/models/orchestration_agents_61_75.py` | `LearningSessionPlannerOutput` | `AgentOutput` | `` |
+| `agents/content/models/orchestration_agents_61_75.py` | `AgentWorkflowPlannerInput` | `AgentInput` | `` |
+| `agents/content/models/orchestration_agents_61_75.py` | `AgentWorkflowPlannerOutput` | `AgentOutput` | `` |
+| `agents/content/models/orchestration_agents_61_75.py` | `TaskDecomposerInput` | `AgentInput` | `` |
+| `agents/content/models/orchestration_agents_61_75.py` | `TaskDecomposerOutput` | `AgentOutput` | `` |
+| `agents/content/models/orchestration_agents_61_75.py` | `AgentSelectorInput` | `AgentInput` | `` |
+| `agents/content/models/orchestration_agents_61_75.py` | `AgentSelectorOutput` | `AgentOutput` | `` |
+| `agents/content/models/orchestration_agents_61_75.py` | `ContextManagerInput` | `AgentInput` | `` |
+| `agents/content/models/orchestration_agents_61_75.py` | `ContextManagerOutput` | `AgentOutput` | `` |
+| `agents/content/models/orchestration_agents_61_75.py` | `WorkflowStateTrackerInput` | `AgentInput` | `` |
+| `agents/content/models/orchestration_agents_61_75.py` | `WorkflowStateTrackerOutput` | `AgentOutput` | `` |
+| `agents/content/models/orchestration_agents_61_75.py` | `FailureRecoveryInput` | `AgentInput` | `` |
+| `agents/content/models/orchestration_agents_61_75.py` | `FailureRecoveryOutput` | `AgentOutput` | `` |
+| `agents/content/models/orchestration_agents_61_75.py` | `RetryStrategyInput` | `AgentInput` | `` |
+| `agents/content/models/orchestration_agents_61_75.py` | `RetryStrategyOutput` | `AgentOutput` | `` |
+| `agents/content/models/orchestration_agents_61_75.py` | `ShortTermMemoryInput` | `AgentInput` | `` |
+| `agents/content/models/orchestration_agents_61_75.py` | `ShortTermMemoryOutput` | `AgentOutput` | `` |
+| `agents/content/models/orchestration_agents_61_75.py` | `LongTermMemoryInput` | `AgentInput` | `` |
+| `agents/content/models/orchestration_agents_61_75.py` | `LongTermMemoryOutput` | `AgentOutput` | `` |
+| `agents/content/models/orchestration_agents_61_75.py` | `WorkflowOptimizerInput` | `AgentInput` | `` |
+| `agents/content/models/orchestration_agents_61_75.py` | `WorkflowOptimizerOutput` | `AgentOutput` | `` |
+| `agents/content/models/orchestration_agents_61_75.py` | `CostEfficiencyAnalyzerInput` | `AgentInput` | `` |
+| `agents/content/models/orchestration_agents_61_75.py` | `CostEfficiencyAnalyzerOutput` | `AgentOutput` | `` |
+| `agents/content/models/orchestration_agents_61_75.py` | `AgentPerformanceMonitorInput` | `AgentInput` | `` |
+| `agents/content/models/orchestration_agents_61_75.py` | `AgentPerformanceMonitorOutput` | `AgentOutput` | `` |
+| `agents/content/models/orchestration_agents_61_75.py` | `SystemHealthEvaluatorInput` | `AgentInput` | `` |
+| `agents/content/models/orchestration_agents_61_75.py` | `SystemHealthEvaluatorOutput` | `AgentOutput` | `` |
+| `agents/content/models/personalization_agents_15_20.py` | `DialogueTutorInput` | `AgentInput` | `` |
+| `agents/content/models/personalization_agents_15_20.py` | `TutorResponse` | `BaseModel` | `` |
+| `agents/content/models/personalization_agents_15_20.py` | `DialogueTutorOutput` | `AgentOutput` | `` |
+| `agents/content/models/personalization_agents_15_20.py` | `StyleAdaptationInput` | `AgentInput` | `` |
+| `agents/content/models/personalization_agents_15_20.py` | `AdaptedContent` | `BaseModel` | `` |
+| `agents/content/models/personalization_agents_15_20.py` | `StyleAdaptationOutput` | `AgentOutput` | `` |
+| `agents/content/models/personalization_agents_15_20.py` | `ProgressAnalysisInput` | `AgentInput` | `` |
+| `agents/content/models/personalization_agents_15_20.py` | `ProgressAnalysisOutput` | `AgentOutput` | `` |
+| `agents/content/models/personalization_agents_15_20.py` | `LearningPathCreationInput` | `AgentInput` | `` |
+| `agents/content/models/personalization_agents_15_20.py` | `LearningStep` | `BaseModel` | `` |
+| `agents/content/models/personalization_agents_15_20.py` | `LearningPathCreationOutput` | `AgentOutput` | `` |
+| `agents/content/models/personalization_agents_15_20.py` | `ResourceRecommendationInput` | `AgentInput` | `` |
+| `agents/content/models/personalization_agents_15_20.py` | `RecommendedResource` | `BaseModel` | `` |
+| `agents/content/models/personalization_agents_15_20.py` | `ResourceRecommendationOutput` | `AgentOutput` | `` |
+| `agents/content/models/personalization_agents_15_20.py` | `InteractionStyleAnalysisInput` | `AgentInput` | `` |
+| `agents/content/models/personalization_agents_15_20.py` | `InteractionPattern` | `BaseModel` | `` |
+| `agents/content/models/personalization_agents_15_20.py` | `InteractionStyleAnalysisOutput` | `AgentOutput` | `` |
+| `agents/content/models/teaching_agents_9_14.py` | `QuestionRefineInput` | `AgentInput` | `` |
+| `agents/content/models/teaching_agents_9_14.py` | `QuestionRefineOutput` | `AgentOutput` | `` |
+| `agents/content/models/teaching_agents_9_14.py` | `QuestionGenerationInput` | `AgentInput` | `` |
+| `agents/content/models/teaching_agents_9_14.py` | `QuestionGenerationOutput` | `AgentOutput` | `` |
+| `agents/content/models/teaching_agents_9_14.py` | `HintGenerationInput` | `AgentInput` | `` |
+| `agents/content/models/teaching_agents_9_14.py` | `HintGenerationOutput` | `AgentOutput` | `` |
+| `agents/content/models/teaching_agents_9_14.py` | `ExplanationGenerationInput` | `AgentInput` | `` |
+| `agents/content/models/teaching_agents_9_14.py` | `ExplanationGenerationOutput` | `AgentOutput` | `` |
+| `agents/content/models/teaching_agents_9_14.py` | `DifficultyAdaptationInput` | `AgentInput` | `` |
+| `agents/content/models/teaching_agents_9_14.py` | `DifficultyAdaptationOutput` | `AgentOutput` | `` |
+| `agents/content/models/teaching_agents_9_14.py` | `MisconceptionDetectionInput` | `AgentInput` | `` |
+| `agents/content/models/teaching_agents_9_14.py` | `Misconception` | `AgentOutput` | `` |
+| `agents/content/models/teaching_agents_9_14.py` | `MisconceptionDetectionOutput` | `AgentOutput` | `` |
+| `agents/content/text_rewriter.py` | `TextRewriterAgent` | `BaseAgent` | `__init__, execute, _rewrite_text, _fallback_rewrite, _estimate_readability` |
+| `agents/interaction/backends/autogen_backend.py` | `AutoGenOrchestrationBackend` | `BaseOrchestrationBackend` | `__init__, _autogen_available, is_available, execute, _execute_with_autogen_group_chat` |
+| `agents/interaction/backends/base_backend.py` | `BaseOrchestrationBackend` | `ABC` | `execute` |
+| `agents/interaction/backends/native_backend.py` | `NativeOrchestrationBackend` | `BaseOrchestrationBackend` | `__init__, _build_strategy, execute` |
+| `agents/interaction/base_strategy.py` | `InteractionStrategy` | `—` | `__init__, execute, _emit, _build_input, _run_agent` |
+| `agents/interaction/broadcast_strategy.py` | `BroadcastStrategy` | `InteractionStrategy` | `execute, _execute_agent, _normalize_gather_results, _aggregate_outputs` |
+| `agents/interaction/coordinator_strategy.py` | `CoordinatorStrategy` | `InteractionStrategy` | `__init__, execute, _run_validation, _aggregate, _publish_turn_message` |
+| `agents/interaction/debate_strategy.py` | `DebateStrategy` | `InteractionStrategy` | `execute` |
+| `agents/interaction/ensemble_strategy.py` | `EnsembleStrategy` | `InteractionStrategy` | `__init__, execute, _aggregate_votes, _publish_vote, _normalize_output` |
+| `agents/interaction/group_chat_strategy.py` | `GroupChatStrategy` | `InteractionStrategy` | `__init__, execute, _init_messages, _resolve_participants, _extract_message, _extract_context_update ...` |
+| `agents/interaction/interaction_models.py` | `InteractionRequest` | `BaseModel` | `` |
+| `agents/interaction/interaction_models.py` | `InteractionResult` | `BaseModel` | `` |
+| `agents/interaction/interaction_models.py` | `AgentMessage` | `BaseModel` | `` |
+| `agents/interaction/round_robin_strategy.py` | `RoundRobinStrategy` | `InteractionStrategy` | `__init__, execute` |
+| `agents/interaction/self_refine_strategy.py` | `SelfRefineStrategy` | `InteractionStrategy` | `execute, _extract_score` |
+| `agents/interaction/strategy_registry.py` | `InteractionStrategyRegistry` | `Generic[TStrategy]` | `__init__, register, unregister, get, require, list_scenarios ...` |
 | `rag/agentic/agent_v2.py` | `RetrievalAgentV2` | `—` | `__init__, run` |
 | `rag/agentic/evidence_tracker.py` | `EvidenceTracker` | `—` | `__init__, add, needs_more` |
 | `rag/agentic/multihop_reasoner.py` | `MultiHopReasoner` | `—` | `__init__, generate_followup` |
@@ -748,6 +701,9 @@
 | `rag/llm/openai_llm.py` | `OpenAILLM` | `BaseLLM` | `__init__, ainvoke, _stream_impl, astream` |
 | `rag/planner/adaptive_planner.py` | `AdaptiveRetrievalPlanner` | `—` | `__init__, plan` |
 | `rag/planner/retrieval_plan.py` | `RetrievalPlan` | `BaseModel` | `` |
+| `rag/rag_models.py` | `Document` | `BaseModel` | `` |
+| `rag/rag_models.py` | `DocumentChunk` | `BaseModel` | `` |
+| `rag/rag_models.py` | `RetrievedDocument` | `BaseModel` | `` |
 | `rag/reflection/reflection_critic.py` | `RetrievalCritic` | `—` | `__init__, evaluate` |
 | `rag/reflection/reflection_loop.py` | `ReflectionLoop` | `—` | `__init__, improve_query, run` |
 | `rag/reranking/base_reranker.py` | `BaseReranker` | `ABC` | `rerank` |
@@ -868,29 +824,29 @@
 | `storage/vector/base.py` | `VectorDBAdapter` | `ABC` | `create_index, upsert, batch_upsert, query, delete, search ...` |
 | `storage/vector/index_config.py` | `HNSWConfig` | `—` | `` |
 | `storage/vector/index_config.py` | `IVFConfig` | `—` | `` |
-| `tests/agents/agents_unit/test_agent_registry.py` | `SimpleInput` | `OrchestrationRequest` | `` |
-| `tests/agents/agents_unit/test_agent_registry.py` | `SimpleOutput` | `OrchestrationResult` | `` |
+| `tests/agents/agents_unit/test_agent_registry.py` | `SimpleInput` | `AgentInput` | `` |
+| `tests/agents/agents_unit/test_agent_registry.py` | `SimpleOutput` | `AgentOutput` | `` |
 | `tests/agents/agents_unit/test_agent_registry.py` | `SimpleAgent` | `BaseAgent` | `execute` |
-| `tests/agents/agents_unit/test_base_agent.py` | `InputModel` | `OrchestrationRequest` | `` |
-| `tests/agents/agents_unit/test_base_agent.py` | `OutputModel` | `OrchestrationResult` | `` |
+| `tests/agents/agents_unit/test_base_agent.py` | `InputModel` | `AgentInput` | `` |
+| `tests/agents/agents_unit/test_base_agent.py` | `OutputModel` | `AgentOutput` | `` |
 | `tests/agents/agents_unit/test_base_agent.py` | `EchoAgent` | `BaseAgent[InputModel, OutputModel]` | `execute` |
 | `tests/agents/agents_unit/test_base_agent.py` | `FailingAgent` | `EchoAgent` | `execute` |
-| `tests/agents/orchestration/interaction/interaction_unit/conftest.py` | `TestAgent` | `—` | `__init__, execute` |
-| `tests/agents/orchestration/interaction/interaction_unit/conftest.py` | `TestRegistry` | `—` | `__init__, register, execute` |
-| `tests/agents/orchestration/interaction/interaction_unit/conftest.py` | `DummyMessageBus` | `MessageBus` | `__init__, publish, subscribe, unsubscribe` |
+| `tests/agents/interaction/interaction_unit/conftest.py` | `TestAgent` | `—` | `__init__, execute` |
+| `tests/agents/interaction/interaction_unit/conftest.py` | `TestRegistry` | `—` | `__init__, register, execute` |
+| `tests/agents/interaction/interaction_unit/conftest.py` | `DummyMessageBus1` | `MessageBus` | `__init__, publish, subscribe, unsubscribe` |
 | `tests/agents/orchestration/orchestration_performance/test_native_orchestration_backend_performance.py` | `DummyOutput` | `—` | `__init__, model_dump` |
 | `tests/agents/orchestration/orchestration_performance/test_native_orchestration_backend_performance.py` | `SimpleRegistry` | `—` | `execute` |
-| `tests/agents/orchestration/orchestration_performance/test_orchestrator_agent_performance.py` | `DummyBackend` | `BaseOrchestrationBackend` | `__init__, execute, model_dump` |
-| `tests/agents/orchestration/orchestration_performance/test_orchestrator_agent_performance.py` | `Result` | `OrchestrationResult` | `model_dump` |
-| `tests/agents/orchestration/orchestration_unit/test_autogen_orchestration_backend.py` | `DummyRegistry` | `—` | `execute` |
-| `tests/agents/orchestration/orchestration_unit/test_autogen_orchestration_backend.py` | `DummyMessageBus` | `MessageBus` | `publish, subscribe, unsubscribe` |
+| `tests/agents/orchestration/orchestration_performance/test_interaction_agent_performance.py` | `DummyBackend` | `BaseOrchestrationBackend` | `__init__, execute, model_dump` |
+| `tests/agents/orchestration/orchestration_performance/test_interaction_agent_performance.py` | `Result` | `InteractionResult` | `model_dump` |
+| `tests/agents/orchestration/orchestration_unit/test_autogen_orchestration_backend.py` | `DummyRegistry1` | `—` | `execute` |
+| `tests/agents/orchestration/orchestration_unit/test_autogen_orchestration_backend.py` | `DummyMessageBus2` | `MessageBus` | `publish, subscribe, unsubscribe` |
 | `tests/agents/orchestration/orchestration_unit/test_autogen_orchestration_backend.py` | `DummyResult` | `—` | `__init__, execute` |
 | `tests/agents/orchestration/orchestration_unit/test_autogen_orchestration_backend.py` | `SimpleRequest` | `—` | `__init__` |
 | `tests/agents/orchestration/orchestration_unit/test_native_orchestration_backend.py` | `DummyOutput` | `—` | `__init__, model_dump` |
-| `tests/agents/orchestration/orchestration_unit/test_native_orchestration_backend.py` | `DummyRegistry` | `—` | `__init__, execute` |
+| `tests/agents/orchestration/orchestration_unit/test_native_orchestration_backend.py` | `DummyRegistry2` | `—` | `__init__, execute` |
 | `tests/agents/orchestration/orchestration_unit/test_native_orchestration_backend.py` | `DummyMessageBus` | `MessageBus` | `__init__, publish, subscribe, unsubscribe` |
-| `tests/agents/orchestration/orchestration_unit/test_orchestrator_agent.py` | `DummyBackend` | `BaseOrchestrationBackend` | `__init__, execute, model_dump` |
-| `tests/agents/orchestration/orchestration_unit/test_orchestrator_agent.py` | `Result` | `OrchestrationResult` | `model_dump` |
+| `tests/agents/orchestration/orchestration_unit/test_interaction_agent.py` | `DummyBackend` | `BaseOrchestrationBackend` | `__init__, execute, model_dump` |
+| `tests/agents/orchestration/orchestration_unit/test_interaction_agent.py` | `Result` | `InteractionResult` | `model_dump` |
 | `tools/analyze_architecture.py` | `ClassInfo` | `—` | `` |
 | `tools/analyze_architecture.py` | `FileInfo` | `—` | `` |
 | `tools/analyze_architecture.py` | `ASTParser` | `—` | `parse, _extract, _parse_class, _is_top_level, _name` |
@@ -911,6 +867,10 @@
 
 ```
 Generic[TInput, TOutput]  →  BaseAgent
+BaseModel  →  AgentInput
+BaseModel  →  AgentOutput
+BaseModel  →  AgentExecutionRecord
+BaseAgent  →  InteractionAgent
 ABC  →  MessageBus
 MessageBus  →  DurableMessageBus
 MessageBus  →  InMemoryMessageBus
@@ -920,81 +880,55 @@ MessageBus  →  RabbitMQMessageBus
 MessageBus  →  RedisMessageBus
 MessageBus  →  RequestReplyBus
 MessageBus  →  TopicMessageBus
-BaseAgent  →  TextRewriterAgent
-BaseOrchestrationBackend  →  AutoGenOrchestrationBackend
-ABC  →  BaseOrchestrationBackend
-BaseOrchestrationBackend  →  NativeOrchestrationBackend
-ABC  →  InteractionStrategy
-InteractionStrategy  →  BroadcastStrategy
-InteractionStrategy  →  ConditionalStrategy
-InteractionStrategy  →  DAGStrategy
-InteractionStrategy  →  DebateStrategy
-InteractionStrategy  →  EnsembleStrategy
-InteractionStrategy  →  EventDrivenStrategy
-InteractionStrategy  →  GroupChatStrategy
-InteractionStrategy  →  ManagerStrategy
-InteractionStrategy  →  MemoryAugmentedStrategy
-InteractionStrategy  →  PipelineStrategy
-InteractionStrategy  →  RoundRobinStrategy
-InteractionStrategy  →  SelfRefineStrategy
-Generic[TStrategy]  →  InteractionStrategyRegistry
-BaseModel  →  TaskDefinition
-BaseModel  →  OrchestrationRequest
-BaseModel  →  TaskResult
-BaseModel  →  OrchestrationResult
-BaseModel  →  AgentMessage
-BaseModel  →  PipelineStep
-BaseModel  →  AgentInteraction
-BaseModel  →  ConversationTurn
-BaseAgent  →  OrchestratorAgent
-OrchestrationRequest  →  StudentBehaviorAnalysisInput
+AgentInput  →  StudentBehaviorAnalysisInput
 BaseModel  →  BehaviorPattern
-OrchestrationResult  →  StudentBehaviorAnalysisOutput
-OrchestrationRequest  →  EngagementDetectionInput
-OrchestrationResult  →  EngagementDetectionOutput
-OrchestrationRequest  →  MotivationAnalysisInput
-OrchestrationResult  →  MotivationAnalysisOutput
-OrchestrationRequest  →  DropoutRiskPredictionInput
-OrchestrationResult  →  DropoutRiskPredictionOutput
-OrchestrationRequest  →  StudyPatternMiningInput
+AgentOutput  →  StudentBehaviorAnalysisOutput
+AgentInput  →  EngagementDetectionInput
+AgentOutput  →  EngagementDetectionOutput
+AgentInput  →  MotivationAnalysisInput
+AgentOutput  →  MotivationAnalysisOutput
+AgentInput  →  DropoutRiskPredictionInput
+AgentOutput  →  DropoutRiskPredictionOutput
+AgentInput  →  StudyPatternMiningInput
 BaseModel  →  StudyPattern
-OrchestrationResult  →  StudyPatternMiningOutput
-OrchestrationRequest  →  PerformanceTrendAnalysisInput
+AgentOutput  →  StudyPatternMiningOutput
+AgentInput  →  PerformanceTrendAnalysisInput
 BaseModel  →  PerformanceTrend
-OrchestrationResult  →  PerformanceTrendAnalysisOutput
-OrchestrationRequest  →  LearningOutcomePredictionInput
-OrchestrationResult  →  LearningOutcomePredictionOutput
-OrchestrationRequest  →  ClassroomAnalyticsInput
-OrchestrationResult  →  ClassroomAnalyticsOutput
-OrchestrationRequest  →  CohortComparisonInput
-OrchestrationResult  →  CohortComparisonOutput
-OrchestrationRequest  →  TeacherDashboardAggregationInput
-OrchestrationResult  →  TeacherDashboardAggregationOutput
-OrchestrationRequest  →  QuizBuilderInput
+AgentOutput  →  PerformanceTrendAnalysisOutput
+AgentInput  →  LearningOutcomePredictionInput
+AgentOutput  →  LearningOutcomePredictionOutput
+AgentInput  →  ClassroomAnalyticsInput
+AgentOutput  →  ClassroomAnalyticsOutput
+AgentInput  →  CohortComparisonInput
+AgentOutput  →  CohortComparisonOutput
+AgentInput  →  TeacherDashboardAggregationInput
+AgentOutput  →  TeacherDashboardAggregationOutput
+AgentInput  →  QuizBuilderInput
 BaseModel  →  QuizQuestion
-OrchestrationResult  →  QuizBuilderOutput
-OrchestrationRequest  →  AnswerEvaluationInput
-OrchestrationResult  →  AnswerEvaluationOutput
-OrchestrationRequest  →  FeedbackGenerationInput
-OrchestrationResult  →  FeedbackGenerationOutput
-OrchestrationRequest  →  RubricGenerationInput
+AgentOutput  →  QuizBuilderOutput
+AgentInput  →  AnswerEvaluationInput
+AgentOutput  →  AnswerEvaluationOutput
+AgentInput  →  FeedbackGenerationInput
+AgentOutput  →  FeedbackGenerationOutput
+AgentInput  →  RubricGenerationInput
 BaseModel  →  RubricCriterion
-OrchestrationResult  →  RubricGenerationOutput
-OrchestrationRequest  →  MisconceptionAnalysisInput
+AgentOutput  →  RubricGenerationOutput
+AgentInput  →  MisconceptionAnalysisInput
 BaseModel  →  MisconceptionPattern
-OrchestrationResult  →  MisconceptionAnalysisOutput
-OrchestrationRequest  →  SkillMasteryInput
-OrchestrationResult  →  SkillMasteryOutput
-OrchestrationRequest  →  LearningGapInput
+AgentOutput  →  MisconceptionAnalysisOutput
+AgentInput  →  SkillMasteryInput
+AgentOutput  →  SkillMasteryOutput
+AgentInput  →  LearningGapInput
 BaseModel  →  LearningGap
-OrchestrationResult  →  LearningGapOutput
-OrchestrationRequest  →  KnowledgeGraphUpdateInput
-OrchestrationResult  →  KnowledgeGraphUpdateOutput
-OrchestrationRequest  →  ConceptDifficultyInput
-OrchestrationResult  →  ConceptDifficultyOutput
-OrchestrationRequest  →  CurriculumMappingInput
+AgentOutput  →  LearningGapOutput
+AgentInput  →  KnowledgeGraphUpdateInput
+AgentOutput  →  KnowledgeGraphUpdateOutput
+AgentInput  →  ConceptDifficultyInput
+AgentOutput  →  ConceptDifficultyOutput
+AgentInput  →  CurriculumMappingInput
 BaseModel  →  CurriculumMapping
-OrchestrationResult  →  CurriculumMappingOutput
+AgentOutput  →  CurriculumMappingOutput
+BaseModel  →  ContentVersion
 BaseModel  →  ConfidenceScore
 BaseModel  →  ScoreRange
 BaseModel  →  Evidence
@@ -1007,96 +941,96 @@ BaseModel  →  DetectedIssue
 BaseModel  →  Pattern
 BaseModel  →  Prediction
 BaseModel  →  TimeWindow
-OrchestrationRequest  →  TextRewriteInput
+AgentInput  →  TextRewriteInput
 BaseModel  →  RewriteChange
-OrchestrationResult  →  TextRewriteOutput
-OrchestrationRequest  →  ContentValidationInput
+AgentOutput  →  TextRewriteOutput
+AgentInput  →  ContentValidationInput
 BaseModel  →  ValidationIssue
-OrchestrationResult  →  ContentValidationOutput
-OrchestrationRequest  →  CitationGenerationInput
+AgentOutput  →  ContentValidationOutput
+AgentInput  →  CitationGenerationInput
 BaseModel  →  CitationEntry
-OrchestrationResult  →  CitationGenerationOutput
-OrchestrationRequest  →  GlossaryBuilderInput
+AgentOutput  →  CitationGenerationOutput
+AgentInput  →  GlossaryBuilderInput
 BaseModel  →  GlossaryTerm
-OrchestrationResult  →  GlossaryBuilderOutput
-OrchestrationRequest  →  DynamicUpdateInput
+AgentOutput  →  GlossaryBuilderOutput
+AgentInput  →  DynamicUpdateInput
 BaseModel  →  ContentUpdateSuggestion
-OrchestrationResult  →  DynamicUpdateOutput
-OrchestrationRequest  →  NarrativeBuilderInput
+AgentOutput  →  DynamicUpdateOutput
+AgentInput  →  NarrativeBuilderInput
 BaseModel  →  NarrativeElement
-OrchestrationResult  →  NarrativeBuilderOutput
-OrchestrationRequest  →  StructuringInput
+AgentOutput  →  NarrativeBuilderOutput
+AgentInput  →  StructuringInput
 BaseModel  →  LessonSection
-OrchestrationResult  →  StructuringOutput
-OrchestrationRequest  →  PrerequisiteInput
+AgentOutput  →  StructuringOutput
+AgentInput  →  PrerequisiteInput
 BaseModel  →  PrerequisiteItem
-OrchestrationResult  →  PrerequisiteOutput
-OrchestrationRequest  →  ExampleGeneratorInput
-OrchestrationResult  →  ExampleGeneratorOutput
-OrchestrationRequest  →  ExerciseCreatorInput
-OrchestrationResult  →  ExerciseCreatorOutput
-OrchestrationRequest  →  StoryLessonCreatorInput
-OrchestrationResult  →  StoryLessonCreatorOutput
-OrchestrationRequest  →  ConceptExplanationInput
-OrchestrationResult  →  ConceptExplanationOutput
-OrchestrationRequest  →  PracticeQuestionGeneratorInput
-OrchestrationResult  →  PracticeQuestionGeneratorOutput
-OrchestrationRequest  →  AdaptiveQuestionGeneratorInput
-OrchestrationResult  →  AdaptiveQuestionGeneratorOutput
-OrchestrationRequest  →  ExplanationRewriterInput
-OrchestrationResult  →  ExplanationRewriterOutput
-OrchestrationRequest  →  SummaryGeneratorInput
-OrchestrationResult  →  SummaryGeneratorOutput
-OrchestrationRequest  →  ContentSimplifierInput
-OrchestrationResult  →  ContentSimplifierOutput
-OrchestrationRequest  →  AssessmentQuestionGeneratorInput
-OrchestrationResult  →  AssessmentQuestionGeneratorOutput
-OrchestrationRequest  →  ConceptGraphBuilderInput
-OrchestrationResult  →  ConceptGraphBuilderOutput
-OrchestrationRequest  →  ConceptRelationExtractorInput
-OrchestrationResult  →  ConceptRelationExtractorOutput
-OrchestrationRequest  →  PrerequisiteInferenceInput
-OrchestrationResult  →  PrerequisiteInferenceOutput
-OrchestrationRequest  →  CurriculumPlannerInput
-OrchestrationResult  →  CurriculumPlannerOutput
-OrchestrationRequest  →  LessonSequencePlannerInput
-OrchestrationResult  →  LessonSequencePlannerOutput
-OrchestrationRequest  →  LearningPathGeneratorInput
-OrchestrationResult  →  LearningPathGeneratorOutput
-OrchestrationRequest  →  PersonalizedCurriculumInput
-OrchestrationResult  →  PersonalizedCurriculumOutput
-OrchestrationRequest  →  SkillGapCurriculumAdapterInput
-OrchestrationResult  →  SkillGapCurriculumAdapterOutput
-OrchestrationRequest  →  DifficultyBalancerInput
-OrchestrationResult  →  DifficultyBalancerOutput
-OrchestrationRequest  →  StudyStrategyPlannerInput
-OrchestrationResult  →  StudyStrategyPlannerOutput
-OrchestrationRequest  →  ReviewSchedulerInput
-OrchestrationResult  →  ReviewSchedulerOutput
-OrchestrationRequest  →  RemediationPlannerInput
-OrchestrationResult  →  RemediationPlannerOutput
-OrchestrationRequest  →  EnrichmentPlannerInput
-OrchestrationResult  →  EnrichmentPlannerOutput
-OrchestrationRequest  →  ConceptReinforcementInput
-OrchestrationResult  →  ConceptReinforcementOutput
-OrchestrationRequest  →  LongTermLearningPlannerInput
-OrchestrationResult  →  LongTermLearningPlannerOutput
+AgentOutput  →  PrerequisiteOutput
+AgentInput  →  ExampleGeneratorInput
+AgentOutput  →  ExampleGeneratorOutput
+AgentInput  →  ExerciseCreatorInput
+AgentOutput  →  ExerciseCreatorOutput
+AgentInput  →  StoryLessonCreatorInput
+AgentOutput  →  StoryLessonCreatorOutput
+AgentInput  →  ConceptExplanationInput
+AgentOutput  →  ConceptExplanationOutput
+AgentInput  →  PracticeQuestionGeneratorInput
+AgentOutput  →  PracticeQuestionGeneratorOutput
+AgentInput  →  AdaptiveQuestionGeneratorInput
+AgentOutput  →  AdaptiveQuestionGeneratorOutput
+AgentInput  →  ExplanationRewriterInput
+AgentOutput  →  ExplanationRewriterOutput
+AgentInput  →  SummaryGeneratorInput
+AgentOutput  →  SummaryGeneratorOutput
+AgentInput  →  ContentSimplifierInput
+AgentOutput  →  ContentSimplifierOutput
+AgentInput  →  AssessmentQuestionGeneratorInput
+AgentOutput  →  AssessmentQuestionGeneratorOutput
+AgentInput  →  ConceptGraphBuilderInput
+AgentOutput  →  ConceptGraphBuilderOutput
+AgentInput  →  ConceptRelationExtractorInput
+AgentOutput  →  ConceptRelationExtractorOutput
+AgentInput  →  PrerequisiteInferenceInput
+AgentOutput  →  PrerequisiteInferenceOutput
+AgentInput  →  CurriculumPlannerInput
+AgentOutput  →  CurriculumPlannerOutput
+AgentInput  →  LessonSequencePlannerInput
+AgentOutput  →  LessonSequencePlannerOutput
+AgentInput  →  LearningPathGeneratorInput
+AgentOutput  →  LearningPathGeneratorOutput
+AgentInput  →  PersonalizedCurriculumInput
+AgentOutput  →  PersonalizedCurriculumOutput
+AgentInput  →  SkillGapCurriculumAdapterInput
+AgentOutput  →  SkillGapCurriculumAdapterOutput
+AgentInput  →  DifficultyBalancerInput
+AgentOutput  →  DifficultyBalancerOutput
+AgentInput  →  StudyStrategyPlannerInput
+AgentOutput  →  StudyStrategyPlannerOutput
+AgentInput  →  ReviewSchedulerInput
+AgentOutput  →  ReviewSchedulerOutput
+AgentInput  →  RemediationPlannerInput
+AgentOutput  →  RemediationPlannerOutput
+AgentInput  →  EnrichmentPlannerInput
+AgentOutput  →  EnrichmentPlannerOutput
+AgentInput  →  ConceptReinforcementInput
+AgentOutput  →  ConceptReinforcementOutput
+AgentInput  →  LongTermLearningPlannerInput
+AgentOutput  →  LongTermLearningPlannerOutput
 BaseModel  →  EvaluationCriterion
 BaseModel  →  EvaluationScore
 BaseModel  →  EvaluationIssue
 BaseModel  →  AlignmentResult
 BaseModel  →  ConsistencyError
 BaseModel  →  CoverageGap
-OrchestrationRequest  →  QuestionQualityEvaluationInput
-OrchestrationResult  →  QuestionQualityEvaluationOutput
-OrchestrationRequest  →  ExplanationQualityEvaluationInput
-OrchestrationResult  →  ExplanationQualityEvaluationOutput
-OrchestrationRequest  →  PedagogicalAlignmentInput
-OrchestrationResult  →  PedagogicalAlignmentOutput
-OrchestrationRequest  →  ConsistencyEvaluationInput
-OrchestrationResult  →  ConsistencyEvaluationOutput
-OrchestrationRequest  →  CurriculumCoverageInput
-OrchestrationResult  →  CurriculumCoverageOutput
+AgentInput  →  QuestionQualityEvaluationInput
+AgentOutput  →  QuestionQualityEvaluationOutput
+AgentInput  →  ExplanationQualityEvaluationInput
+AgentOutput  →  ExplanationQualityEvaluationOutput
+AgentInput  →  PedagogicalAlignmentInput
+AgentOutput  →  PedagogicalAlignmentOutput
+AgentInput  →  ConsistencyEvaluationInput
+AgentOutput  →  ConsistencyEvaluationOutput
+AgentInput  →  CurriculumCoverageInput
+AgentOutput  →  CurriculumCoverageOutput
 BaseModel  →  StudentProfile
 BaseModel  →  InstructorProfile
 str  →  VAKRStyle
@@ -1120,126 +1054,129 @@ BaseModel  →  LearningEvent
 BaseModel  →  SkillPerformance
 BaseModel  →  LearningProgress
 BaseModel  →  LearningResource
-OrchestrationRequest  →  KnowledgeIngestionInput
-OrchestrationResult  →  KnowledgeIngestionOutput
-OrchestrationRequest  →  DocumentChunkingInput
-OrchestrationResult  →  DocumentChunkingOutput
-OrchestrationRequest  →  EmbeddingGeneratorInput
-OrchestrationResult  →  EmbeddingGeneratorOutput
-OrchestrationRequest  →  SemanticIndexerInput
-OrchestrationResult  →  SemanticIndexerOutput
-OrchestrationRequest  →  VectorSearchInput
-OrchestrationResult  →  VectorSearchOutput
-OrchestrationRequest  →  HybridRetrievalInput
-OrchestrationResult  →  HybridRetrievalOutput
-OrchestrationRequest  →  ContextBuilderInput
-OrchestrationResult  →  ContextBuilderOutput
-OrchestrationRequest  →  MemoryConsolidationInput
-OrchestrationResult  →  MemoryConsolidationOutput
-OrchestrationRequest  →  EpisodicMemoryInput
-OrchestrationResult  →  EpisodicMemoryOutput
-OrchestrationRequest  →  StudentKnowledgeMemoryInput
-OrchestrationResult  →  StudentKnowledgeMemoryOutput
-OrchestrationRequest  →  KnowledgeUpdaterInput
-OrchestrationResult  →  KnowledgeUpdaterOutput
-OrchestrationRequest  →  KnowledgeConflictResolverInput
-OrchestrationResult  →  KnowledgeConflictResolverOutput
-OrchestrationRequest  →  RetrievalRankerInput
-OrchestrationResult  →  RetrievalRankerOutput
-OrchestrationRequest  →  ContextRelevanceEvaluatorInput
-OrchestrationResult  →  ContextRelevanceEvaluatorOutput
-OrchestrationRequest  →  KnowledgeSummarizerInput
-OrchestrationResult  →  KnowledgeSummarizerOutput
-OrchestrationRequest  →  TextToSpeechInput
-OrchestrationResult  →  TextToSpeechOutput
-OrchestrationRequest  →  SpeechToTextInput
-OrchestrationResult  →  SpeechToTextOutput
-OrchestrationRequest  →  VisualIllustrationInput
-OrchestrationResult  →  VisualIllustrationOutput
-OrchestrationRequest  →  BoardDrawingInput
-OrchestrationResult  →  BoardDrawingOutput
-OrchestrationRequest  →  EmotionAnalysisInput
-OrchestrationResult  →  EmotionAnalysisOutput
-OrchestrationRequest  →  EngagementDetectorInput
-OrchestrationResult  →  EngagementDetectorOutput
-OrchestrationRequest  →  VisualFeedbackInput
-OrchestrationResult  →  VisualFeedbackOutput
-OrchestrationRequest  →  GestureRecognitionInput
-OrchestrationResult  →  GestureRecognitionOutput
-OrchestrationRequest  →  AudioFeedbackInput
-OrchestrationResult  →  AudioFeedbackOutput
-OrchestrationRequest  →  InteractiveLessonOrchestratorInput
-OrchestrationResult  →  InteractiveLessonOrchestratorOutput
-OrchestrationRequest  →  LearningSessionPlannerInput
-OrchestrationResult  →  LearningSessionPlannerOutput
-OrchestrationRequest  →  AgentWorkflowPlannerInput
-OrchestrationResult  →  AgentWorkflowPlannerOutput
-OrchestrationRequest  →  TaskDecomposerInput
-OrchestrationResult  →  TaskDecomposerOutput
-OrchestrationRequest  →  AgentSelectorInput
-OrchestrationResult  →  AgentSelectorOutput
-OrchestrationRequest  →  ContextManagerInput
-OrchestrationResult  →  ContextManagerOutput
-OrchestrationRequest  →  WorkflowStateTrackerInput
-OrchestrationResult  →  WorkflowStateTrackerOutput
-OrchestrationRequest  →  FailureRecoveryInput
-OrchestrationResult  →  FailureRecoveryOutput
-OrchestrationRequest  →  RetryStrategyInput
-OrchestrationResult  →  RetryStrategyOutput
-OrchestrationRequest  →  ShortTermMemoryInput
-OrchestrationResult  →  ShortTermMemoryOutput
-OrchestrationRequest  →  LongTermMemoryInput
-OrchestrationResult  →  LongTermMemoryOutput
-OrchestrationRequest  →  WorkflowOptimizerInput
-OrchestrationResult  →  WorkflowOptimizerOutput
-OrchestrationRequest  →  CostEfficiencyAnalyzerInput
-OrchestrationResult  →  CostEfficiencyAnalyzerOutput
-OrchestrationRequest  →  AgentPerformanceMonitorInput
-OrchestrationResult  →  AgentPerformanceMonitorOutput
-OrchestrationRequest  →  SystemHealthEvaluatorInput
-OrchestrationResult  →  SystemHealthEvaluatorOutput
-OrchestrationRequest  →  DialogueTutorInput
+AgentInput  →  KnowledgeIngestionInput
+AgentOutput  →  KnowledgeIngestionOutput
+AgentInput  →  DocumentChunkingInput
+AgentOutput  →  DocumentChunkingOutput
+AgentInput  →  EmbeddingGeneratorInput
+AgentOutput  →  EmbeddingGeneratorOutput
+AgentInput  →  SemanticIndexerInput
+AgentOutput  →  SemanticIndexerOutput
+AgentInput  →  VectorSearchInput
+AgentOutput  →  VectorSearchOutput
+AgentInput  →  HybridRetrievalInput
+AgentOutput  →  HybridRetrievalOutput
+AgentInput  →  ContextBuilderInput
+AgentOutput  →  ContextBuilderOutput
+AgentInput  →  MemoryConsolidationInput
+AgentOutput  →  MemoryConsolidationOutput
+AgentInput  →  EpisodicMemoryInput
+AgentOutput  →  EpisodicMemoryOutput
+AgentInput  →  StudentKnowledgeMemoryInput
+AgentOutput  →  StudentKnowledgeMemoryOutput
+AgentInput  →  KnowledgeUpdaterInput
+AgentOutput  →  KnowledgeUpdaterOutput
+AgentInput  →  KnowledgeConflictResolverInput
+AgentOutput  →  KnowledgeConflictResolverOutput
+AgentInput  →  RetrievalRankerInput
+AgentOutput  →  RetrievalRankerOutput
+AgentInput  →  ContextRelevanceEvaluatorInput
+AgentOutput  →  ContextRelevanceEvaluatorOutput
+AgentInput  →  KnowledgeSummarizerInput
+AgentOutput  →  KnowledgeSummarizerOutput
+AgentInput  →  TextToSpeechInput
+AgentOutput  →  TextToSpeechOutput
+AgentInput  →  SpeechToTextInput
+AgentOutput  →  SpeechToTextOutput
+AgentInput  →  VisualIllustrationInput
+AgentOutput  →  VisualIllustrationOutput
+AgentInput  →  BoardDrawingInput
+AgentOutput  →  BoardDrawingOutput
+AgentInput  →  EmotionAnalysisInput
+AgentOutput  →  EmotionAnalysisOutput
+AgentInput  →  EngagementDetectorInput
+AgentOutput  →  EngagementDetectorOutput
+AgentInput  →  VisualFeedbackInput
+AgentOutput  →  VisualFeedbackOutput
+AgentInput  →  GestureRecognitionInput
+AgentOutput  →  GestureRecognitionOutput
+AgentInput  →  AudioFeedbackInput
+AgentOutput  →  AudioFeedbackOutput
+AgentInput  →  InteractiveLessonOrchestratorInput
+AgentOutput  →  InteractiveLessonOrchestratorOutput
+AgentInput  →  LearningSessionPlannerInput
+AgentOutput  →  LearningSessionPlannerOutput
+AgentInput  →  AgentWorkflowPlannerInput
+AgentOutput  →  AgentWorkflowPlannerOutput
+AgentInput  →  TaskDecomposerInput
+AgentOutput  →  TaskDecomposerOutput
+AgentInput  →  AgentSelectorInput
+AgentOutput  →  AgentSelectorOutput
+AgentInput  →  ContextManagerInput
+AgentOutput  →  ContextManagerOutput
+AgentInput  →  WorkflowStateTrackerInput
+AgentOutput  →  WorkflowStateTrackerOutput
+AgentInput  →  FailureRecoveryInput
+AgentOutput  →  FailureRecoveryOutput
+AgentInput  →  RetryStrategyInput
+AgentOutput  →  RetryStrategyOutput
+AgentInput  →  ShortTermMemoryInput
+AgentOutput  →  ShortTermMemoryOutput
+AgentInput  →  LongTermMemoryInput
+AgentOutput  →  LongTermMemoryOutput
+AgentInput  →  WorkflowOptimizerInput
+AgentOutput  →  WorkflowOptimizerOutput
+AgentInput  →  CostEfficiencyAnalyzerInput
+AgentOutput  →  CostEfficiencyAnalyzerOutput
+AgentInput  →  AgentPerformanceMonitorInput
+AgentOutput  →  AgentPerformanceMonitorOutput
+AgentInput  →  SystemHealthEvaluatorInput
+AgentOutput  →  SystemHealthEvaluatorOutput
+AgentInput  →  DialogueTutorInput
 BaseModel  →  TutorResponse
-OrchestrationResult  →  DialogueTutorOutput
-OrchestrationRequest  →  StyleAdaptationInput
+AgentOutput  →  DialogueTutorOutput
+AgentInput  →  StyleAdaptationInput
 BaseModel  →  AdaptedContent
-OrchestrationResult  →  StyleAdaptationOutput
-OrchestrationRequest  →  ProgressAnalysisInput
-OrchestrationResult  →  ProgressAnalysisOutput
-OrchestrationRequest  →  LearningPathCreationInput
+AgentOutput  →  StyleAdaptationOutput
+AgentInput  →  ProgressAnalysisInput
+AgentOutput  →  ProgressAnalysisOutput
+AgentInput  →  LearningPathCreationInput
 BaseModel  →  LearningStep
-OrchestrationResult  →  LearningPathCreationOutput
-OrchestrationRequest  →  ResourceRecommendationInput
+AgentOutput  →  LearningPathCreationOutput
+AgentInput  →  ResourceRecommendationInput
 BaseModel  →  RecommendedResource
-OrchestrationResult  →  ResourceRecommendationOutput
-OrchestrationRequest  →  InteractionStyleAnalysisInput
+AgentOutput  →  ResourceRecommendationOutput
+AgentInput  →  InteractionStyleAnalysisInput
 BaseModel  →  InteractionPattern
-OrchestrationResult  →  InteractionStyleAnalysisOutput
-OrchestrationRequest  →  QuestionRefineInput
-OrchestrationResult  →  QuestionRefineOutput
-OrchestrationRequest  →  QuestionGenerationInput
-OrchestrationResult  →  QuestionGenerationOutput
-OrchestrationRequest  →  HintGenerationInput
-OrchestrationResult  →  HintGenerationOutput
-OrchestrationRequest  →  ExplanationGenerationInput
-OrchestrationResult  →  ExplanationGenerationOutput
-OrchestrationRequest  →  DifficultyAdaptationInput
-OrchestrationResult  →  DifficultyAdaptationOutput
-OrchestrationRequest  →  MisconceptionDetectionInput
-OrchestrationResult  →  Misconception
-OrchestrationResult  →  MisconceptionDetectionOutput
-BaseModel  →  Document
-BaseModel  →  DocumentChunk
-BaseModel  →  RetrievedDocument
-BaseModel  →  PipelineEvent
-BaseModel  →  StudentStateEvent
-BaseModel  →  RuntimeErrorLog
-BaseModel  →  MemorySnapshot
-BaseModel  →  SystemEvent
-BaseModel  →  AgentExecutionRecord
-BaseModel  →  TaskExecutionRecord
-BaseModel  →  WorkflowExecutionRecord
-BaseModel  →  ContentVersion
+AgentOutput  →  InteractionStyleAnalysisOutput
+AgentInput  →  QuestionRefineInput
+AgentOutput  →  QuestionRefineOutput
+AgentInput  →  QuestionGenerationInput
+AgentOutput  →  QuestionGenerationOutput
+AgentInput  →  HintGenerationInput
+AgentOutput  →  HintGenerationOutput
+AgentInput  →  ExplanationGenerationInput
+AgentOutput  →  ExplanationGenerationOutput
+AgentInput  →  DifficultyAdaptationInput
+AgentOutput  →  DifficultyAdaptationOutput
+AgentInput  →  MisconceptionDetectionInput
+AgentOutput  →  Misconception
+AgentOutput  →  MisconceptionDetectionOutput
+BaseAgent  →  TextRewriterAgent
+BaseOrchestrationBackend  →  AutoGenOrchestrationBackend
+ABC  →  BaseOrchestrationBackend
+BaseOrchestrationBackend  →  NativeOrchestrationBackend
+InteractionStrategy  →  BroadcastStrategy
+InteractionStrategy  →  CoordinatorStrategy
+InteractionStrategy  →  DebateStrategy
+InteractionStrategy  →  EnsembleStrategy
+InteractionStrategy  →  GroupChatStrategy
+BaseModel  →  InteractionRequest
+BaseModel  →  InteractionResult
+BaseModel  →  AgentMessage
+InteractionStrategy  →  RoundRobinStrategy
+InteractionStrategy  →  SelfRefineStrategy
+Generic[TStrategy]  →  InteractionStrategyRegistry
 BaseCompressor  →  EmbeddingCompressor
 BaseCompressor  →  LLMCompressor
 BaseModel  →  GraphNode
@@ -1249,6 +1186,9 @@ Protocol  →  AsyncLLM
 BaseLLM  →  OllamaLLM
 BaseLLM  →  OpenAILLM
 BaseModel  →  RetrievalPlan
+BaseModel  →  Document
+BaseModel  →  DocumentChunk
+BaseModel  →  RetrievedDocument
 ABC  →  BaseReranker
 BaseReranker  →  Reranker
 Protocol  →  LLMProtocol
@@ -1305,20 +1245,20 @@ VectorDBAdapter  →  PineconeAdapter
 VectorDBAdapter  →  QdrantAdapter
 VectorDBAdapter  →  WeaviateAdapter
 ABC  →  VectorDBAdapter
-OrchestrationRequest  →  SimpleInput
-OrchestrationResult  →  SimpleOutput
+AgentInput  →  SimpleInput
+AgentOutput  →  SimpleOutput
 BaseAgent  →  SimpleAgent
-OrchestrationRequest  →  InputModel
-OrchestrationResult  →  OutputModel
+AgentInput  →  InputModel
+AgentOutput  →  OutputModel
 BaseAgent[InputModel, OutputModel]  →  EchoAgent
 EchoAgent  →  FailingAgent
+MessageBus  →  DummyMessageBus1
+BaseOrchestrationBackend  →  DummyBackend
+InteractionResult  →  Result
+MessageBus  →  DummyMessageBus2
 MessageBus  →  DummyMessageBus
 BaseOrchestrationBackend  →  DummyBackend
-OrchestrationResult  →  Result
-MessageBus  →  DummyMessageBus
-MessageBus  →  DummyMessageBus
-BaseOrchestrationBackend  →  DummyBackend
-OrchestrationResult  →  Result
+InteractionResult  →  Result
 ```
 
 ---
@@ -1327,10 +1267,8 @@ OrchestrationResult  →  Result
 
 - **`MessageBus`** (`agents/buses/base.py`)
   - متدها: `publish`, `subscribe`, `unsubscribe`, `start`, `stop`
-- **`BaseOrchestrationBackend`** (`agents/orchestration/backends/base_backend.py`)
+- **`BaseOrchestrationBackend`** (`agents/interaction/backends/base_backend.py`)
   - متدها: `execute`
-- **`InteractionStrategy`** (`agents/orchestration/interaction/base_strategy.py`)
-  - متدها: `__init__`, `execute`, `_emit`
 - **`BaseLLM`** (`rag/llm/base_llm.py`)
   - متدها: `ainvoke`, `astream`
 - **`BaseReranker`** (`rag/reranking/base_reranker.py`)
@@ -1363,6 +1301,7 @@ OrchestrationResult  →  Result
 - `config/settings.py`
 
 ### 🟠 کلاس‌های بدون Base Class (احتمال عدم رعایت interface مشترک)
+- `InteractionStrategy` در `agents/interaction/base_strategy.py`
 - `VectorService` در `rag/vector_service.py`
 
 ---
