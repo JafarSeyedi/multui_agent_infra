@@ -1,0 +1,846 @@
+{
+  "name": "onboarding_workflow",
+  "version": "2.0",
+  "description": "Complete onboarding workflow for new team members - account setup, training, mentorship assignment, environment configuration, and integration tracking",
+  
+  "variables": {
+    "onboarding_phases": {
+      "preparation": {"status": "pending", "completed": false, "progress": 0},
+      "account_setup": {"status": "pending", "completed": false, "progress": 0},
+      "environment": {"status": "pending", "completed": false, "progress": 0},
+      "training": {"status": "pending", "completed": false, "progress": 0},
+      "mentorship": {"status": "pending", "completed": false, "progress": 0},
+      "integration": {"status": "pending", "completed": false, "progress": 0},
+      "evaluation": {"status": "pending", "completed": false, "progress": 0}
+    },
+    "new_member": {
+      "id": null,
+      "name": null,
+      "email": null,
+      "role": null,
+      "department": null,
+      "start_date": null,
+      "skills": [],
+      "experience_level": null
+    },
+    "mentor": {
+      "id": null,
+      "name": null,
+      "availability": null
+    },
+    "training_plan": {
+      "modules": [],
+      "current_module": 0,
+      "completion_percentage": 0,
+      "estimated_duration_days": 14,
+      "actual_duration_days": 0
+    },
+    "tasks_completed": [],
+    "pending_tasks": [],
+    "access_requests": [],
+    "equipment_requests": [],
+    "onboarding_duration_days": 0,
+    "target_duration_days": 14,
+    "satisfaction_score": 0,
+    "readiness_score": 0
+  },
+  
+  "tasks": [
+    {
+      "id": "initiate_onboarding",
+      "name": "Initiate Onboarding Process",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "new_member_id": "{{input.new_member_id}}",
+        "new_member_name": "{{input.new_member_name}}",
+        "new_member_email": "{{input.new_member_email}}",
+        "role": "{{input.role}}",
+        "department": "{{input.department}}",
+        "start_date": "{{input.start_date}}",
+        "experience_level": "{{input.experience_level}}"
+      },
+      "timeout": 30
+    },
+    
+    {
+      "id": "validate_onboarding_data",
+      "name": "Validate Onboarding Data",
+      "type": "quality",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "required_fields": ["name", "email", "role", "start_date"],
+        "email_format": "email",
+        "start_date_future": true,
+        "role_exists_in_system": true
+      },
+      "depends_on": ["initiate_onboarding"]
+    },
+    
+    {
+      "id": "human_verify_details",
+      "name": "Human Verify Onboarding Details",
+      "type": "human",
+      "parameters": {
+        "type": "approval",
+        "title": "Verify New Member Onboarding Details",
+        "description": "Please verify the new member information is correct",
+        "required_skills": ["hr_management", "team_leadership"],
+        "priority": 0,
+        "timeout_hours": 24,
+        "data": {
+          "new_member": "{{initiate_onboarding.output}}",
+          "validation_results": "{{validate_onboarding_data.output}}"
+        },
+        "approval_required": true
+      },
+      "depends_on": ["validate_onboarding_data"]
+    },
+    
+    {
+      "id": "assign_mentor",
+      "name": "Assign Mentor",
+      "type": "analysis",
+      "component": "assignment_engine",
+      "method": "find_best_mentor",
+      "parameters": {
+        "new_member_role": "{{initiate_onboarding.output.role}}",
+        "required_skills": ["mentoring", "technical_leadership", "communication"],
+        "availability": true,
+        "current_workload": "{{input.mentor_workload_limit}}",
+        "preferred_mentors": "{{input.preferred_mentors}}"
+      },
+      "depends_on": ["human_verify_details"],
+      "timeout": 60
+    },
+    
+    {
+      "id": "mentor_accept_assignment",
+      "name": "Mentor Accept Assignment",
+      "type": "human",
+      "parameters": {
+        "type": "approval",
+        "title": "Mentor Assignment Confirmation",
+        "description": "Please confirm your availability to mentor the new team member",
+        "required_skills": ["mentoring"],
+        "priority": 1,
+        "timeout_hours": 48,
+        "data": {
+          "new_member": "{{initiate_onboarding.output}}",
+          "expected_duration_days": "{{variables.training_plan.estimated_duration_days}}",
+          "mentoring_guidelines": "{{input.mentoring_guidelines}}"
+        },
+        "approval_required": true,
+        "assignee": "{{assign_mentor.output.mentor_id}}"
+      },
+      "depends_on": ["assign_mentor"]
+    },
+    
+    {
+      "id": "create_accounts",
+      "name": "Create System Accounts",
+      "type": "function",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "systems": [
+          "git_repository",
+          "ci_cd_pipeline",
+          "project_management",
+          "documentation",
+          "communication_slack",
+          "email",
+          "vpn",
+          "ide_license"
+        ],
+        "user_info": "{{initiate_onboarding.output}}",
+        "access_levels": {
+          "git_repository": "read",
+          "ci_cd_pipeline": "view",
+          "project_management": "developer",
+          "documentation": "contributor"
+        }
+      },
+      "depends_on": ["mentor_accept_assignment"],
+      "timeout": 180
+    },
+    
+    {
+      "id": "request_equipment",
+      "name": "Request Equipment",
+      "type": "human",
+      "parameters": {
+        "type": "approval",
+        "title": "Equipment Request",
+        "description": "Please review and approve equipment requests for new member",
+        "required_skills": ["it_admin", "budget_management"],
+        "priority": 1,
+        "timeout_hours": 24,
+        "data": {
+          "equipment": "{{input.required_equipment}}",
+          "new_member": "{{initiate_onboarding.output}}",
+          "budget_code": "{{input.budget_code}}"
+        },
+        "approval_required": true
+      },
+      "depends_on": ["create_accounts"]
+    },
+    
+    {
+      "id": "setup_development_environment",
+      "name": "Setup Development Environment",
+      "type": "function",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "new_member": "{{initiate_onboarding.output}}",
+        "environment_type": "development",
+        "tools": [
+          "python",
+          "docker",
+          "kubernetes_cli",
+          "terraform",
+          "aws_cli",
+          "vscode_extensions",
+          "pre_commit_hooks"
+        ],
+        "clone_repositories": "{{input.repositories}}",
+        "setup_script": "{{input.setup_script}}",
+        "create_workspace": true
+      },
+      "depends_on": ["request_equipment"],
+      "timeout": 600
+    },
+    
+    {
+      "id": "verify_environment",
+      "name": "Verify Environment Setup",
+      "type": "quality",
+      "component": "test_runner",
+      "method": "verify_environment",
+      "parameters": {
+        "checks": [
+          "python_version",
+          "docker_running",
+          "repo_cloned",
+          "dependencies_installed",
+          "tests_pass",
+          "linter_configured"
+        ],
+        "new_member_workspace": "{{setup_development_environment.output.workspace_path}}"
+      },
+      "depends_on": ["setup_development_environment"],
+      "timeout": 120
+    },
+    
+    {
+      "id": "create_training_plan",
+      "name": "Create Personalized Training Plan",
+      "type": "generation",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "role": "{{initiate_onboarding.output.role}}",
+        "experience_level": "{{initiate_onboarding.output.experience_level}}",
+        "existing_skills": "{{initiate_onboarding.output.skills}}",
+        "training_modules": {
+          "core": [
+            "project_overview",
+            "architecture_basics",
+            "coding_standards",
+            "testing_framework",
+            "ci_cd_pipeline",
+            "code_review_process"
+          ],
+          "role_specific": {
+            "developer": ["api_development", "database", "microservices"],
+            "devops": ["infrastructure", "monitoring", "deployment"],
+            "qa": ["test_automation", "performance_testing", "security_testing"],
+            "frontend": ["react", "state_management", "styling"]
+          },
+          "advanced": [
+            "system_design",
+            "performance_optimization",
+            "security_best_practices"
+          ]
+        },
+        "estimated_duration": "{{variables.training_plan.estimated_duration_days}}"
+      },
+      "depends_on": ["verify_environment"],
+      "timeout": 120
+    },
+    
+    {
+      "id": "human_review_training_plan",
+      "name": "Human Review Training Plan",
+      "type": "human",
+      "parameters": {
+        "type": "review",
+        "title": "Review Training Plan",
+        "description": "Please review and approve the personalized training plan",
+        "required_skills": ["training", "technical_leadership"],
+        "priority": 1,
+        "timeout_hours": 24,
+        "data": {
+          "training_plan": "{{create_training_plan.output}}",
+          "modules": "{{create_training_plan.output.modules}}",
+          "estimated_duration": "{{create_training_plan.output.estimated_duration}}",
+          "assessment_criteria": "{{create_training_plan.output.assessments}}"
+        },
+        "approval_required": true,
+        "allow_modifications": true
+      },
+      "depends_on": ["create_training_plan"]
+    },
+    
+    {
+      "id": "schedule_training_sessions",
+      "name": "Schedule Training Sessions",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "modules": "{{human_review_training_plan.output.approved_modules}}",
+        "start_date": "{{initiate_onboarding.output.start_date}}",
+        "working_hours": ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00"],
+        "session_duration_minutes": 60,
+        "max_sessions_per_day": 3,
+        "create_calendar_events": true,
+        "calendar_system": "{{input.calendar_system}}"
+      },
+      "depends_on": ["human_review_training_plan"],
+      "timeout": 120
+    },
+    
+    {
+      "id": "deliver_training_module",
+      "name": "Deliver Training Module",
+      "type": "human",
+      "parameters": {
+        "type": "training",
+        "title": "Training Module: {{schedule_training_sessions.output.current_module.name}}",
+        "description": "Complete training module and assessment",
+        "required_skills": ["learning", "comprehension"],
+        "priority": 2,
+        "timeout_hours": 24,
+        "data": {
+          "module": "{{schedule_training_sessions.output.current_module}}",
+          "materials": "{{schedule_training_sessions.output.current_module.materials}}",
+          "assessment": "{{schedule_training_sessions.output.current_module.assessment}}",
+          "practical_exercise": "{{schedule_training_sessions.output.current_module.exercise}}"
+        },
+        "interaction_type": "training"
+      },
+      "depends_on": ["schedule_training_sessions"]
+    },
+    
+    {
+      "id": "assess_module_completion",
+      "name": "Assess Module Completion",
+      "type": "quality",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "assessment_results": "{{deliver_training_module.output.assessment}}",
+        "practical_results": "{{deliver_training_module.output.exercise}}",
+        "passing_score": 80,
+        "module_id": "{{schedule_training_sessions.output.current_module.id}}"
+      },
+      "depends_on": ["deliver_training_module"],
+      "timeout": 60
+    },
+    
+    {
+      "id": "provide_module_feedback",
+      "name": "Provide Module Feedback",
+      "type": "human",
+      "parameters": {
+        "type": "feedback",
+        "title": "Training Module Feedback",
+        "description": "Please provide feedback on the training module",
+        "required_skills": ["communication", "analysis"],
+        "priority": 2,
+        "timeout_hours": 24,
+        "data": {
+          "module": "{{schedule_training_sessions.output.current_module.name}}",
+          "assessment_score": "{{assess_module_completion.output.score}}",
+          "difficulty_rating": "{{deliver_training_module.output.difficulty}}",
+          "clarity_rating": "{{deliver_training_module.output.clarity}}",
+          "suggestions": "{{deliver_training_module.output.feedback}}"
+        },
+        "interaction_type": "feedback"
+      },
+      "depends_on": ["assess_module_completion"]
+    },
+    
+    {
+      "id": "check_training_progress",
+      "name": "Check Training Progress",
+      "type": "condition",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "completed_modules": "{{schedule_training_sessions.output.completed_modules}}",
+        "total_modules": "{{schedule_training_sessions.output.total_modules}}",
+        "all_complete": "{{completed_modules}} >= {{total_modules}}"
+      },
+      "depends_on": ["provide_module_feedback"]
+    },
+    
+    {
+      "id": "next_training_module",
+      "name": "Move to Next Module",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "increment_module": true,
+        "next_module": "{{schedule_training_sessions.output.modules[variables.training_plan.current_module + 1]}}",
+        "update_schedule": true
+      },
+      "depends_on": ["check_training_progress"],
+      "condition": "{{check_training_progress.output}} == false"
+    },
+    
+    {
+      "id": "loop_next_module",
+      "name": "Continue to Next Module",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "goto": "deliver_training_module",
+        "updated_tracking": "{{next_training_module.output}}"
+      },
+      "depends_on": ["next_training_module"]
+    },
+    
+    {
+      "id": "final_assessment",
+      "name": "Final Comprehensive Assessment",
+      "type": "human",
+      "parameters": {
+        "type": "assessment",
+        "title": "Final Onboarding Assessment",
+        "description": "Complete final assessment to demonstrate readiness",
+        "required_skills": ["comprehensive", "applied_knowledge"],
+        "priority": 0,
+        "timeout_hours": 48,
+        "data": {
+          "practical_task": "{{input.final_assessment_task}}",
+          "code_review_required": true,
+          "documentation_required": true,
+          "time_limit_hours": 8
+        },
+        "interaction_type": "assessment"
+      },
+      "depends_on": ["check_training_progress"],
+      "condition": "{{check_training_progress.output}} == true"
+    },
+    
+    {
+      "id": "evaluate_final_assessment",
+      "name": "Evaluate Final Assessment",
+      "type": "quality",
+      "component": "code_review_skill",
+      "method": "evaluate_assessment",
+      "parameters": {
+        "submission": "{{final_assessment.output}}",
+        "rubric": "{{input.assessment_rubric}}",
+        "check_criteria": [
+          "code_quality",
+          "documentation",
+          "testing",
+          "architecture",
+          "problem_solving"
+        ],
+        "passing_score": 80
+      },
+      "depends_on": ["final_assessment"],
+      "timeout": 300
+    },
+    
+    {
+      "id": "human_review_assessment",
+      "name": "Human Review Assessment",
+      "type": "human",
+      "parameters": {
+        "type": "review",
+        "title": "Review Final Assessment",
+        "description": "Please review the final assessment submission",
+        "required_skills": ["technical_leadership", "code_review"],
+        "priority": 0,
+        "timeout_hours": 24,
+        "data": {
+          "assessment": "{{final_assessment.output}}",
+          "ai_evaluation": "{{evaluate_final_assessment.output}}",
+          "recommendation": "{{evaluate_final_assessment.output.recommendation}}"
+        },
+        "approval_required": true
+      },
+      "depends_on": ["evaluate_final_assessment"]
+    },
+    
+    {
+      "id": "assign_first_task",
+      "name": "Assign First Real Task",
+      "type": "planning",
+      "component": "assignment_engine",
+      "method": "assign_first_task",
+      "parameters": {
+        "new_member_id": "{{initiate_onboarding.output.id}}",
+        "task_complexity": "beginner",
+        "task_categories": ["bug_fix", "documentation", "test_improvement"],
+        "estimated_duration_hours": 4,
+        "requires_mentor_support": true
+      },
+      "depends_on": ["human_review_assessment"],
+      "timeout": 60
+    },
+    
+    {
+      "id": "mentor_support_task",
+      "name": "Mentor Support for First Task",
+      "type": "human",
+      "parameters": {
+        "type": "mentoring",
+        "title": "Support New Member on First Task",
+        "description": "Provide guidance and support for the first task",
+        "required_skills": ["mentoring", "technical_guidance"],
+        "priority": 1,
+        "timeout_hours": 24,
+        "data": {
+          "task": "{{assign_first_task.output}}",
+          "new_member": "{{initiate_onboarding.output.name}}",
+          "support_type": "code_review"
+        },
+        "interaction_type": "mentoring",
+        "assignee": "{{assign_mentor.output.mentor_id}}"
+      },
+      "depends_on": ["assign_first_task"]
+    },
+    
+    {
+      "id": "complete_first_task",
+      "name": "Complete First Task",
+      "type": "human",
+      "parameters": {
+        "type": "task",
+        "title": "Complete First Assigned Task",
+        "description": "Complete your first real task with mentor support",
+        "required_skills": ["problem_solving", "implementation"],
+        "priority": 1,
+        "timeout_hours": 48,
+        "data": {
+          "task_description": "{{assign_first_task.output.description}}",
+          "acceptance_criteria": "{{assign_first_task.output.criteria}}",
+          "mentor": "{{assign_mentor.output.mentor_name}}"
+        },
+        "interaction_type": "task_execution"
+      },
+      "depends_on": ["mentor_support_task"]
+    },
+    
+    {
+      "id": "review_first_task",
+      "name": "Review First Task Completion",
+      "type": "quality",
+      "component": "code_review_skill",
+      "method": "review_task",
+      "parameters": {
+        "submission": "{{complete_first_task.output}}",
+        "criteria": "{{assign_first_task.output.criteria}}",
+        "mentor_id": "{{assign_mentor.output.mentor_id}}"
+      },
+      "depends_on": ["complete_first_task"],
+      "timeout": 120
+    },
+    
+    {
+      "id": "calculate_readiness_score",
+      "name": "Calculate Onboarding Readiness Score",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "metrics": {
+          "training_completion": "{{check_training_progress.output}}",
+          "assessment_score": "{{evaluate_final_assessment.output.score}}",
+          "task_completion": "{{review_first_task.output.passed}}",
+          "mentor_feedback": "{{mentor_support_task.output.feedback_rating}}",
+          "self_assessment": "{{final_assessment.output.self_rating}}"
+        },
+        "weights": {
+          "training_completion": 0.2,
+          "assessment_score": 0.3,
+          "task_completion": 0.3,
+          "mentor_feedback": 0.1,
+          "self_assessment": 0.1
+        },
+        "readiness_threshold": 75
+      },
+      "depends_on": ["review_first_task"]
+    },
+    
+    {
+      "id": "human_readiness_review",
+      "name": "Human Readiness Review",
+      "type": "human",
+      "parameters": {
+        "type": "review",
+        "title": "Onboarding Readiness Review",
+        "description": "Review new member readiness for independent work",
+        "required_skills": ["team_leadership", "performance_evaluation"],
+        "priority": 0,
+        "timeout_hours": 24,
+        "data": {
+          "new_member": "{{initiate_onboarding.output}}",
+          "readiness_score": "{{calculate_readiness_score.output.score}}",
+          "training_summary": "{{schedule_training_sessions.output.summary}}",
+          "assessment_results": "{{evaluate_final_assessment.output}}",
+          "mentor_feedback": "{{mentor_support_task.output}}",
+          "recommendations": "{{calculate_readiness_score.output.recommendations}}"
+        },
+        "approval_required": true
+      },
+      "depends_on": ["calculate_readiness_score"]
+    },
+    
+    {
+      "id": "create_onboarding_report",
+      "name": "Create Onboarding Report",
+      "type": "generation",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "workflow_name": "onboarding_workflow",
+        "new_member": "{{initiate_onboarding.output}}",
+        "mentor": "{{assign_mentor.output}}",
+        "duration_days": "{{variables.onboarding_duration_days}}",
+        "completion_metrics": {
+          "training_modules_completed": "{{schedule_training_sessions.output.completed_modules}}",
+          "assessment_score": "{{evaluate_final_assessment.output.score}}",
+          "readiness_score": "{{calculate_readiness_score.output.score}}",
+          "tasks_completed": "{{variables.tasks_completed.length}}",
+          "satisfaction_score": "{{variables.satisfaction_score}}"
+        },
+        "feedback_summary": {
+          "mentor": "{{mentor_support_task.output.feedback}}",
+          "self": "{{final_assessment.output.feedback}}",
+          "training": "{{provide_module_feedback.output}}"
+        },
+        "recommendations": {
+          "future_training": "{{calculate_readiness_score.output.training_recommendations}}",
+          "integration_plan": "{{calculate_readiness_score.output.integration_plan}}"
+        },
+        "output_format": "html"
+      },
+      "depends_on": ["human_readiness_review"],
+      "timeout": 120
+    },
+    
+    {
+      "id": "update_team_roster",
+      "name": "Update Team Roster and Permissions",
+      "type": "function",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "new_member": "{{initiate_onboarding.output}}",
+        "update_systems": [
+          "team_dashboard",
+          "calendar_invites",
+          "slack_channels",
+          "email_groups",
+          "code_review_assignment"
+        ],
+        "permissions": {
+          "git_repository": "write",
+          "ci_cd": "trigger",
+          "deployment": "development_only"
+        }
+      },
+      "depends_on": ["human_readiness_review"],
+      "timeout": 120
+    },
+    
+    {
+      "id": "schedule_checkpoints",
+      "name": "Schedule 30/60/90 Day Checkpoints",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "start_date": "{{initiate_onboarding.output.start_date}}",
+        "checkpoints": [
+          {"days": 30, "type": "initial_review", "duration_minutes": 60},
+          {"days": 60, "type": "progress_review", "duration_minutes": 60},
+          {"days": 90, "type": "performance_review", "duration_minutes": 90}
+        ],
+        "participants": [
+          "{{initiate_onboarding.output.id}}",
+          "{{assign_mentor.output.mentor_id}}",
+          "{{input.manager_id}}"
+        ],
+        "create_calendar_events": true
+      },
+      "depends_on": ["update_team_roster"],
+      "timeout": 60
+    },
+    
+    {
+      "id": "collect_onboarding_feedback",
+      "name": "Collect Onboarding Feedback",
+      "type": "human",
+      "parameters": {
+        "type": "feedback",
+        "title": "Onboarding Experience Feedback",
+        "description": "Please provide feedback on the onboarding experience",
+        "required_skills": ["reflection", "communication"],
+        "priority": 2,
+        "timeout_hours": 72,
+        "data": {
+          "questions": [
+            "How effective was the training?",
+            "Was the mentorship helpful?",
+            "What could be improved?",
+            "Were you well prepared for your first task?",
+            "Any suggestions for future onboarding?"
+          ],
+          "rating_scales": {
+            "training_effectiveness": 1,
+            "mentorship_quality": 1,
+            "environment_setup": 1,
+            "documentation_quality": 1,
+            "overall_satisfaction": 1
+          }
+        },
+        "interaction_type": "feedback",
+        "assignee": "{{initiate_onboarding.output.id}}"
+      },
+      "depends_on": ["schedule_checkpoints"],
+      "timeout": 604800
+    },
+    
+    {
+      "id": "collect_mentor_feedback",
+      "name": "Collect Mentor Feedback",
+      "type": "human",
+      "parameters": {
+        "type": "feedback",
+        "title": "Mentor Feedback on New Member",
+        "description": "Please provide feedback on the new member's integration",
+        "required_skills": ["observation", "evaluation"],
+        "priority": 2,
+        "timeout_hours": 48,
+        "data": {
+          "questions": [
+            "How well did the new member integrate?",
+            "Technical skill assessment",
+            "Communication effectiveness",
+            "Areas for improvement",
+            "Recommendation for team integration"
+          ],
+          "rating_scales": {
+            "technical_proficiency": 1,
+            "team_collaboration": 1,
+            "learning_ability": 1,
+            "initiative": 1,
+            "cultural_fit": 1
+          }
+        },
+        "interaction_type": "feedback",
+        "assignee": "{{assign_mentor.output.mentor_id}}"
+      },
+      "depends_on": ["schedule_checkpoints"],
+      "timeout": 3600
+    },
+    
+    {
+      "id": "update_skill_registry",
+      "name": "Update Skill Registry",
+      "type": "transform",
+      "component": "skill_registry",
+      "method": "register_new_member_skills",
+      "parameters": {
+        "member_id": "{{initiate_onboarding.output.id}}",
+        "skills": "{{initiate_onboarding.output.skills}}",
+        "proficiency_levels": "{{final_assessment.output.skill_levels}}",
+        "training_completed": "{{schedule_training_sessions.output.completed_modules}}",
+        "certifications": "{{input.certifications}}"
+      },
+      "depends_on": ["human_readiness_review"],
+      "timeout": 60
+    },
+    
+    {
+      "id": "generate_certificate",
+      "name": "Generate Onboarding Certificate",
+      "type": "generation",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "new_member_name": "{{initiate_onboarding.output.name}}",
+        "completion_date": "{{context.current_time}}",
+        "modules_completed": "{{schedule_training_sessions.output.completed_modules}}",
+        "assessment_score": "{{evaluate_final_assessment.output.score}}",
+        "certificate_template": "{{input.certificate_template}}",
+        "output_format": "pdf"
+      },
+      "depends_on": ["update_skill_registry"],
+      "timeout": 60
+    },
+    
+    {
+      "id": "notify_team",
+      "name": "Notify Team of Onboarding Completion",
+      "type": "notify",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "type": "workflow_completed",
+        "message": "Onboarding completed for {{initiate_onboarding.output.name}}",
+        "channels": ["slack", "email", "dashboard"],
+        "recipients": ["team", "management", "mentor"],
+        "data": {
+          "workflow": "onboarding_workflow",
+          "new_member": "{{initiate_onboarding.output}}",
+          "duration_days": "{{variables.onboarding_duration_days}}",
+          "readiness_score": "{{calculate_readiness_score.output.score}}",
+          "report_url": "{{create_onboarding_report.output.url}}",
+          "certificate_url": "{{generate_certificate.output.url}}"
+        }
+      },
+      "depends_on": ["generate_certificate", "create_onboarding_report"]
+    },
+    
+    {
+      "id": "archive_onboarding_data",
+      "name": "Archive Onboarding Data",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "data": {
+          "new_member": "{{initiate_onboarding.output}}",
+          "mentor": "{{assign_mentor.output}}",
+          "training_plan": "{{create_training_plan.output}}",
+          "assessment_results": "{{evaluate_final_assessment.output}}",
+          "feedback": {
+            "new_member": "{{collect_onboarding_feedback.output}}",
+            "mentor": "{{collect_mentor_feedback.output}}"
+          },
+          "certificate": "{{generate_certificate.output}}",
+          "report": "{{create_onboarding_report.output}}"
+        },
+        "archive_location": "{{input.archive_path}}/onboarding/{{initiate_onboarding.output.id}}",
+        "retention_years": 7,
+        "compress": true,
+        "encrypt": true
+      },
+      "depends_on": ["notify_team"]
+    }
+  ]
+}

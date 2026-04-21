@@ -1,0 +1,667 @@
+{
+  "name": "approval_workflow",
+  "version": "2.0",
+  "description": "Complete approval workflow - multi-stage approval management, stakeholder coordination, compliance checking, and audit trail",
+  
+  "variables": {
+    "approval_config": {
+      "approval_type": "standard",
+      "require_all_approvals": true,
+      "allow_parallel_approvals": true,
+      "auto_approve_threshold": 90,
+      "escalation_timeout_hours": 24,
+      "reminder_interval_hours": 8
+    },
+    "approval_stages": [
+      {
+        "name": "technical_review",
+        "status": "pending",
+        "approvers": [],
+        "required_approvals": 2,
+        "timeout_hours": 48,
+        "order": 1
+      },
+      {
+        "name": "security_review",
+        "status": "pending",
+        "approvers": [],
+        "required_approvals": 1,
+        "timeout_hours": 48,
+        "order": 2
+      },
+      {
+        "name": "legal_review",
+        "status": "pending",
+        "approvers": [],
+        "required_approvals": 1,
+        "timeout_hours": 72,
+        "order": 3,
+        "condition": "{{requires_legal_review}}"
+      },
+      {
+        "name": "compliance_review",
+        "status": "pending",
+        "approvers": [],
+        "required_approvals": 1,
+        "timeout_hours": 72,
+        "order": 4,
+        "condition": "{{requires_compliance_review}}"
+      },
+      {
+        "name": "financial_review",
+        "status": "pending",
+        "approvers": [],
+        "required_approvals": 1,
+        "timeout_hours": 72,
+        "order": 5,
+        "condition": "{{requires_financial_review}}"
+      },
+      {
+        "name": "executive_approval",
+        "status": "pending",
+        "approvers": [],
+        "required_approvals": 1,
+        "timeout_hours": 48,
+        "order": 6,
+        "condition": "{{requires_executive_approval}}"
+      }
+    ],
+    "approval_status": {
+      "current_stage": 0,
+      "overall_status": "pending",
+      "approved_count": 0,
+      "rejected_count": 0,
+      "pending_count": 0
+    },
+    "approval_history": [],
+    "comments": [],
+    "attachments": [],
+    "escalation_history": [],
+    "compliance_checks": {
+      "soc2": false,
+      "gdpr": false,
+      "hipaa": false,
+      "pci": false,
+      "iso27001": false
+    }
+  },
+  
+  "tasks": [
+    {
+      "id": "receive_approval_request",
+      "name": "Receive Approval Request",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "request_id": "{{input.request_id}}",
+        "request_type": "{{input.request_type}}",
+        "requester": "{{input.requester}}",
+        "title": "{{input.title}}",
+        "description": "{{input.description}}",
+        "priority": "{{input.priority}}",
+        "due_date": "{{input.due_date}}",
+        "metadata": "{{input.metadata}}"
+      },
+      "timeout": 60
+    },
+    
+    {
+      "id": "validate_request",
+      "name": "Validate Approval Request",
+      "type": "quality",
+      "component": null,
+      "method": "validate_request",
+      "parameters": {
+        "request": "{{receive_approval_request.output}}",
+        "required_fields": ["title", "description", "requester", "request_type"],
+        "validate_permissions": true,
+        "check_duplicates": true
+      },
+      "depends_on": ["receive_approval_request"],
+      "timeout": 60
+    },
+    
+    {
+      "id": "determine_approval_requirements",
+      "name": "Determine Approval Requirements",
+      "type": "analysis",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "request_type": "{{input.request_type}}",
+        "impact_assessment": "{{input.impact_assessment}}",
+        "risk_level": "{{input.risk_level}}",
+        "budget_impact": "{{input.budget_impact}}",
+        "regulatory_requirements": "{{input.regulatory_requirements}}"
+      },
+      "depends_on": ["validate_request"],
+      "timeout": 120
+    },
+    
+    {
+      "id": "identify_approvers",
+      "name": "Identify Required Approvers",
+      "type": "analysis",
+      "component": "assignment_engine",
+      "method": "identify_approvers",
+      "parameters": {
+        "approval_requirements": "{{determine_approval_requirements.output}}",
+        "request_type": "{{input.request_type}}",
+        "department": "{{input.department}}",
+        "project_phase": "{{input.project_phase}}",
+        "exclude_requester": true
+      },
+      "depends_on": ["determine_approval_requirements"],
+      "timeout": 90
+    },
+    
+    {
+      "id": "configure_approval_stages",
+      "name": "Configure Approval Stages",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "base_stages": "{{approval_stages}}",
+        "dynamic_stages": "{{identify_approvers.output.required_stages}}",
+        "order_by_priority": true,
+        "apply_conditions": true
+      },
+      "depends_on": ["identify_approvers"],
+      "timeout": 60
+    },
+    
+    {
+      "id": "calculate_risk_score",
+      "name": "Calculate Risk Score",
+      "type": "analysis",
+      "component": "impact_analyzer",
+      "method": "calculate_risk",
+      "parameters": {
+        "request_details": "{{receive_approval_request.output}}",
+        "impact_assessment": "{{input.impact_assessment}}",
+        "risk_factors": ["technical", "financial", "reputational", "compliance", "operational"],
+        "risk_weights": [0.25, 0.20, 0.15, 0.25, 0.15]
+      },
+      "depends_on": ["validate_request"],
+      "timeout": 120
+    },
+    
+    {
+      "id": "auto_approve_low_risk",
+      "name": "Auto-Approve Low Risk Requests",
+      "type": "condition",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "risk_score": "{{calculate_risk_score.output.score}}",
+        "auto_approve_threshold": "{{approval_config.auto_approve_threshold}}",
+        "request_type": "{{input.request_type}}",
+        "auto_approve_types": ["documentation", "minor_change", "non_production"]
+      },
+      "depends_on": ["calculate_risk_score"]
+    },
+    
+    {
+      "id": "auto_approve",
+      "name": "Auto-Approve Request",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "request_id": "{{input.request_id}}",
+        "reason": "Low risk score ({{calculate_risk_score.output.score}}%)",
+        "approver": "system",
+        "timestamp": "{{context.current_time}}",
+        "bypass_human_review": true
+      },
+      "depends_on": ["auto_approve_low_risk"],
+      "condition": "{{auto_approve_low_risk.output}} == true"
+    },
+    
+    {
+      "id": "initialize_approval_tracking",
+      "name": "Initialize Approval Tracking",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "request_id": "{{input.request_id}}",
+        "stages": "{{configure_approval_stages.output.stages}}",
+        "start_time": "{{context.current_time}}",
+        "create_audit_trail": true
+      },
+      "depends_on": ["configure_approval_stages"],
+      "timeout": 60
+    },
+    
+    {
+      "id": "notify_approvers",
+      "name": "Notify Approvers",
+      "type": "notify",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "type": "approval_request",
+        "message": "Approval required: {{input.title}}",
+        "channels": ["email", "slack", "event_bus"],
+        "recipients": "{{identify_approvers.output.approvers}}",
+        "data": {
+          "request_id": "{{input.request_id}}",
+          "title": "{{input.title}}",
+          "description": "{{input.description}}",
+          "requester": "{{input.requester}}",
+          "due_date": "{{input.due_date}}",
+          "risk_score": "{{calculate_risk_score.output.score}}",
+          "approval_url": "{{generate_approval_url()}}"
+        },
+        "priority": "high",
+        "require_acknowledgment": true
+      },
+      "depends_on": ["initialize_approval_tracking"],
+      "condition": "{{auto_approve_low_risk.output}} == false"
+    },
+    
+    {
+      "id": "stage_technical_review",
+      "name": "Technical Review Approval",
+      "type": "human",
+      "parameters": {
+        "type": "approval",
+        "title": "Technical Review: {{input.title}}",
+        "description": "Please review the technical aspects of this request",
+        "required_skills": ["technical_leadership", "architecture_review"],
+        "priority": "{{input.priority == 'critical' ? 0 : 1}}",
+        "timeout_hours": "{{approval_stages[0].timeout_hours}}",
+        "data": {
+          "request": {
+            "id": "{{input.request_id}}",
+            "title": "{{input.title}}",
+            "description": "{{input.description}}",
+            "requester": "{{input.requester}}",
+            "technical_details": "{{input.technical_details}}"
+          },
+          "impact_assessment": "{{input.impact_assessment}}",
+          "risk_score": "{{calculate_risk_score.output}}",
+          "dependencies": "{{input.dependencies}}",
+          "alternatives": "{{input.alternatives}}"
+        },
+        "approval_required": true,
+        "allow_comments": true,
+        "allow_attachments": true,
+        "approvers": "{{identify_approvers.output.technical_approvers}}",
+        "min_approvals": "{{approval_stages[0].required_approvals}}"
+      },
+      "depends_on": ["notify_approvers"],
+      "condition": "{{configure_approval_stages.output.has_technical_review}} == true"
+    },
+    
+    {
+      "id": "stage_security_review",
+      "name": "Security Review Approval",
+      "type": "human",
+      "parameters": {
+        "type": "approval",
+        "title": "Security Review: {{input.title}}",
+        "description": "Please review the security implications",
+        "required_skills": ["security_architecture", "compliance"],
+        "priority": "{{input.priority == 'critical' ? 0 : 1}}",
+        "timeout_hours": "{{approval_stages[1].timeout_hours}}",
+        "data": {
+          "security_analysis": "{{input.security_analysis}}",
+          "vulnerability_scan": "{{input.vulnerability_scan}}",
+          "compliance_requirements": "{{input.compliance_requirements}}",
+          "data_classification": "{{input.data_classification}}"
+        },
+        "approval_required": true,
+        "allow_comments": true,
+        "approvers": "{{identify_approvers.output.security_approvers}}",
+        "min_approvals": "{{approval_stages[1].required_approvals}}"
+      },
+      "depends_on": ["notify_approvers"],
+      "condition": "{{configure_approval_stages.output.has_security_review}} == true"
+    },
+    
+    {
+      "id": "stage_legal_review",
+      "name": "Legal Review Approval",
+      "type": "human",
+      "parameters": {
+        "type": "approval",
+        "title": "Legal Review: {{input.title}}",
+        "description": "Please review legal implications and contractual obligations",
+        "required_skills": ["legal_compliance", "contract_review"],
+        "priority": 1,
+        "timeout_hours": "{{approval_stages[2].timeout_hours}}",
+        "data": {
+          "contracts": "{{input.contracts}}",
+          "legal_requirements": "{{input.legal_requirements}}",
+          "regulatory_impact": "{{input.regulatory_impact}}",
+          "liability_assessment": "{{input.liability_assessment}}"
+        },
+        "approval_required": true,
+        "allow_comments": true,
+        "approvers": "{{identify_approvers.output.legal_approvers}}",
+        "min_approvals": "{{approval_stages[2].required_approvals}}"
+      },
+      "depends_on": ["notify_approvers"],
+      "condition": "{{configure_approval_stages.output.has_legal_review}} == true"
+    },
+    
+    {
+      "id": "stage_compliance_review",
+      "name": "Compliance Review Approval",
+      "type": "human",
+      "parameters": {
+        "type": "approval",
+        "title": "Compliance Review: {{input.title}}",
+        "description": "Please review compliance with standards and regulations",
+        "required_skills": ["compliance", "audit"],
+        "priority": 1,
+        "timeout_hours": "{{approval_stages[3].timeout_hours}}",
+        "data": {
+          "compliance_frameworks": "{{input.compliance_frameworks}}",
+          "audit_requirements": "{{input.audit_requirements}}",
+          "controls_implementation": "{{input.controls_implementation}}",
+          "evidence_documents": "{{input.evidence_documents}}"
+        },
+        "approval_required": true,
+        "allow_comments": true,
+        "allow_attachments": true,
+        "approvers": "{{identify_approvers.output.compliance_approvers}}",
+        "min_approvals": "{{approval_stages[3].required_approvals}}"
+      },
+      "depends_on": ["notify_approvers"],
+      "condition": "{{configure_approval_stages.output.has_compliance_review}} == true"
+    },
+    
+    {
+      "id": "stage_financial_review",
+      "name": "Financial Review Approval",
+      "type": "human",
+      "parameters": {
+        "type": "approval",
+        "title": "Financial Review: {{input.title}}",
+        "description": "Please review budget impact and financial implications",
+        "required_skills": ["financial_analysis", "budget_management"],
+        "priority": 1,
+        "timeout_hours": "{{approval_stages[4].timeout_hours}}",
+        "data": {
+          "budget_impact": "{{input.budget_impact}}",
+          "cost_analysis": "{{input.cost_analysis}}",
+          "roi_calculation": "{{input.roi_calculation}}",
+          "funding_source": "{{input.funding_source}}"
+        },
+        "approval_required": true,
+        "allow_comments": true,
+        "approvers": "{{identify_approvers.output.financial_approvers}}",
+        "min_approvals": "{{approval_stages[4].required_approvals}}"
+      },
+      "depends_on": ["notify_approvers"],
+      "condition": "{{configure_approval_stages.output.has_financial_review}} == true"
+    },
+    
+    {
+      "id": "stage_executive_approval",
+      "name": "Executive Approval",
+      "type": "human",
+      "parameters": {
+        "type": "approval",
+        "title": "Executive Approval: {{input.title}}",
+        "description": "Final executive review and approval",
+        "required_skills": ["executive_decision", "strategic_planning"],
+        "priority": 0,
+        "timeout_hours": "{{approval_stages[5].timeout_hours}}",
+        "data": {
+          "all_previous_approvals": "{{collect_approval_status.output}}",
+          "executive_summary": "{{input.executive_summary}}",
+          "strategic_alignment": "{{input.strategic_alignment}}",
+          "risk_assessment": "{{calculate_risk_score.output}}"
+        },
+        "approval_required": true,
+        "allow_comments": true,
+        "approvers": "{{identify_approvers.output.executive_approvers}}",
+        "min_approvals": "{{approval_stages[5].required_approvals}}"
+      },
+      "depends_on": ["collect_approval_status"],
+      "condition": "{{configure_approval_stages.output.has_executive_approval}} == true"
+    },
+    
+    {
+      "id": "collect_approval_status",
+      "name": "Collect Approval Status",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "stages": [
+          "{{stage_technical_review.output}}",
+          "{{stage_security_review.output}}",
+          "{{stage_legal_review.output}}",
+          "{{stage_compliance_review.output}}",
+          "{{stage_financial_review.output}}"
+        ],
+        "check_sequential_order": "{{approval_config.require_all_approvals}}",
+        "calculate_progress": true
+      },
+      "depends_on": [
+        "stage_technical_review",
+        "stage_security_review",
+        "stage_legal_review",
+        "stage_compliance_review",
+        "stage_financial_review"
+      ]
+    },
+    
+    {
+      "id": "check_approval_timeout",
+      "name": "Check Approval Timeout",
+      "type": "condition",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "current_stage": "{{approval_status.current_stage}}",
+        "stage_start_time": "{{approval_stages[approval_status.current_stage].start_time}}",
+        "timeout_hours": "{{approval_stages[approval_status.current_stage].timeout_hours}}",
+        "current_time": "{{context.current_time}}"
+      },
+      "depends_on": ["collect_approval_status"]
+    },
+    
+    {
+      "id": "escalate_approval",
+      "name": "Escalate Approval",
+      "type": "human",
+      "parameters": {
+        "type": "approval",
+        "title": "ESCALATED: {{input.title}}",
+        "description": "This approval has timed out and requires immediate attention",
+        "required_skills": ["management", "emergency_response"],
+        "priority": 0,
+        "timeout_hours": "{{approval_config.escalation_timeout_hours}}",
+        "data": {
+          "original_request": "{{receive_approval_request.output}}",
+          "current_stage": "{{approval_status.current_stage}}",
+          "original_approvers": "{{identify_approvers.output.approvers}}",
+          "timeout_duration": "{{check_approval_timeout.output.duration}}"
+        },
+        "approval_required": true,
+        "escalation": true,
+        "approvers": "{{identify_approvers.output.escalation_approvers}}"
+      },
+      "depends_on": ["check_approval_timeout"],
+      "condition": "{{check_approval_timeout.output.timed_out}} == true"
+    },
+    
+    {
+      "id": "send_reminders",
+      "name": "Send Approval Reminders",
+      "type": "notify",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "type": "reminder",
+        "message": "Reminder: Approval required for {{input.title}}",
+        "channels": ["email", "slack"],
+        "recipients": "{{approval_stages[approval_status.current_stage].pending_approvers}}",
+        "frequency": "{{approval_config.reminder_interval_hours}}",
+        "max_reminders": 3
+      },
+      "depends_on": ["collect_approval_status"],
+      "condition": "{{approval_status.pending_count}} > 0"
+    },
+    
+    {
+      "id": "check_overall_approval",
+      "name": "Check Overall Approval Status",
+      "type": "condition",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "all_approved": "{{collect_approval_status.output.all_approved}}",
+        "any_rejected": "{{collect_approval_status.output.any_rejected}}",
+        "approval_config": "{{approval_config}}"
+      },
+      "depends_on": ["collect_approval_status", "stage_executive_approval"]
+    },
+    
+    {
+      "id": "handle_rejection",
+      "name": "Handle Approval Rejection",
+      "type": "human",
+      "parameters": {
+        "type": "feedback",
+        "title": "Approval Rejected: {{input.title}}",
+        "description": "Your request has been rejected. Please review the feedback.",
+        "required_skills": ["communication"],
+        "priority": 0,
+        "timeout_hours": 72,
+        "data": {
+          "rejection_reason": "{{collect_approval_status.output.rejection_reason}}",
+          "rejected_by": "{{collect_approval_status.output.rejected_by}}",
+          "rejected_stage": "{{collect_approval_status.output.rejected_stage}}",
+          "feedback_comments": "{{collect_approval_status.output.comments}}"
+        },
+        "interaction_type": "rejection_notification",
+        "assignee": "{{input.requester}}"
+      },
+      "depends_on": ["check_overall_approval"],
+      "condition": "{{check_overall_approval.output.any_rejected}} == true"
+    },
+    
+    {
+      "id": "generate_approval_certificate",
+      "name": "Generate Approval Certificate",
+      "type": "generation",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "request_id": "{{input.request_id}}",
+        "request_title": "{{input.title}}",
+        "approvers": "{{collect_approval_status.output.approvers}}",
+        "approval_date": "{{context.current_time}}",
+        "approval_hash": "{{generate_hash()}}",
+        "compliance_checks_passed": "{{compliance_checks}}",
+        "certificate_format": "pdf"
+      },
+      "depends_on": ["check_overall_approval"],
+      "condition": "{{check_overall_approval.output.all_approved}} == true",
+      "timeout": 120
+    },
+    
+    {
+      "id": "update_approval_records",
+      "name": "Update Approval Records",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "request_id": "{{input.request_id}}",
+        "final_status": "approved",
+        "approval_timestamp": "{{context.current_time}}",
+        "approvers": "{{collect_approval_status.output.approvers}}",
+        "certificate_id": "{{generate_approval_certificate.output.certificate_id}}",
+        "update_systems": ["jira", "confluence", "sharepoint"]
+      },
+      "depends_on": ["generate_approval_certificate"]
+    },
+    
+    {
+      "id": "notify_approval_result",
+      "name": "Notify Approval Result",
+      "type": "notify",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "type": "approval_result",
+        "message": "Approval {{check_overall_approval.output.all_approved ? 'GRANTED' : 'REJECTED'}}: {{input.title}}",
+        "channels": ["email", "slack", "event_bus"],
+        "recipients": ["{{input.requester}}", "{{identify_approvers.output.approvers}}"],
+        "data": {
+          "request_id": "{{input.request_id}}",
+          "status": "{{check_overall_approval.output.all_approved ? 'approved' : 'rejected'}}",
+          "approvers": "{{collect_approval_status.output.approvers}}",
+          "certificate_url": "{{generate_approval_certificate.output.url}}",
+          "approval_hash": "{{generate_approval_certificate.output.hash}}"
+        }
+      },
+      "depends_on": ["update_approval_records", "handle_rejection"]
+    },
+    
+    {
+      "id": "archive_approval_data",
+      "name": "Archive Approval Data",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "approval_data": {
+          "request": "{{receive_approval_request.output}}",
+          "approvers": "{{identify_approvers.output}}",
+          "stages": "{{collect_approval_status.output}}",
+          "certificate": "{{generate_approval_certificate.output}}",
+          "timeline": {
+            "requested": "{{receive_approval_request.timestamp}}",
+            "approved": "{{context.current_time}}"
+          }
+        },
+        "archive_location": "{{input.archive_path}}/approvals/{{input.request_id}}",
+        "retention_years": 7,
+        "encrypt": true,
+        "compliance_ready": true
+      },
+      "depends_on": ["notify_approval_result"],
+      "timeout": 120
+    },
+    
+    {
+      "id": "generate_audit_report",
+      "name": "Generate Audit Report",
+      "type": "generation",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "workflow_name": "approval_workflow",
+        "request_id": "{{input.request_id}}",
+        "audit_data": {
+          "request_details": "{{receive_approval_request.output}}",
+          "approval_chain": "{{collect_approval_status.output.approval_chain}}",
+          "timestamps": {
+            "requested": "{{receive_approval_request.timestamp}}",
+            "each_stage": "{{collect_approval_status.output.stage_timestamps}}",
+            "completed": "{{context.current_time}}"
+          },
+          "approvers": "{{collect_approval_status.output.approvers}}",
+          "comments": "{{approval_history}}",
+          "escalations": "{{escalation_history}}"
+        },
+        "output_format": "pdf",
+        "include_digital_signatures": true,
+        "compliance_standards": ["SOC2", "ISO27001"]
+      },
+      "depends_on": ["archive_approval_data"],
+      "timeout": 180
+    }
+  ]
+}

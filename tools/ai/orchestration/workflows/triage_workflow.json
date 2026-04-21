@@ -1,0 +1,591 @@
+{
+  "name": "triage_workflow",
+  "version": "2.0",
+  "description": "Complete triage workflow for bugs, issues, and incoming work items - categorize, prioritize, assign, and route to appropriate handlers",
+  
+  "variables": {
+    "triage_queue": [],
+    "categorized_items": {
+      "critical": [],
+      "high": [],
+      "medium": [],
+      "low": []
+    },
+    "assigned_items": [],
+    "escalated_items": [],
+    "duplicate_items": [],
+    "current_item_index": 0,
+    "total_items": 0,
+    "auto_triage_threshold": 0.8,
+    "escalation_threshold": 0.9
+  },
+  
+  "tasks": [
+    {
+      "id": "collect_incoming_items",
+      "name": "Collect Incoming Items from All Sources",
+      "type": "analysis",
+      "component": "work_queue",
+      "method": "get_pending_items",
+      "parameters": {
+        "queue_types": ["bug_triage", "human_task", "high_priority", "standard"],
+        "status": ["pending"],
+        "limit": 50,
+        "include_metadata": true
+      },
+      "timeout": 30
+    },
+    
+    {
+      "id": "collect_feedback_reports",
+      "name": "Collect Feedback and Issue Reports",
+      "type": "analysis",
+      "component": "feedback_collector",
+      "method": "get_feedback_by_type",
+      "parameters": {
+        "types": ["issue_report", "bug_report", "critical_issue"],
+        "status": ["submitted", "acknowledged"],
+        "limit": 50,
+        "include_details": true
+      },
+      "depends_on": [],
+      "timeout": 30
+    },
+    
+    {
+      "id": "merge_triage_items",
+      "name": "Merge and Deduplicate Triage Items",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "sources": {
+          "work_queue": "{{collect_incoming_items.output.items}}",
+          "feedback": "{{collect_feedback_reports.output.feedback}}"
+        },
+        "deduplication_window_days": 7,
+        "similarity_threshold": 0.85,
+        "merge_strategy": "keep_most_recent"
+      },
+      "depends_on": ["collect_incoming_items", "collect_feedback_reports"]
+    },
+    
+    {
+      "id": "parse_item_details",
+      "name": "Parse and Extract Item Details",
+      "type": "analysis",
+      "component": "error_analyzer",
+      "method": "parse_error_details",
+      "parameters": {
+        "items": "{{merge_triage_items.output.unique_items}}",
+        "extract_fields": ["severity", "component", "stack_trace", "reproduction_steps", "environment"],
+        "use_llm_for_understanding": true
+      },
+      "depends_on": ["merge_triage_items"],
+      "timeout": 120
+    },
+    
+    {
+      "id": "categorize_by_type",
+      "name": "Categorize Items by Type",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "items": "{{parse_item_details.output.parsed_items}}",
+        "categories": [
+          "bug",
+          "feature_request",
+          "performance_issue",
+          "security_vulnerability",
+          "documentation",
+          "question",
+          "infrastructure",
+          "build_failure",
+          "test_failure"
+        ],
+        "auto_categorize": true,
+        "confidence_threshold": 0.7
+      },
+      "depends_on": ["parse_item_details"]
+    },
+    
+    {
+      "id": "analyze_stack_trace",
+      "name": "Analyze Stack Traces (if present)",
+      "type": "analysis",
+      "component": "stack_trace_parser",
+      "method": "parse_and_analyze",
+      "parameters": {
+        "items": "{{categorize_by_type.output.items_with_stack_traces}}",
+        "extract_root_cause": true,
+        "identify_affected_files": true,
+        "suggest_fix_location": true
+      },
+      "depends_on": ["categorize_by_type"],
+      "timeout": 90
+    },
+    
+    {
+      "id": "assess_severity",
+      "name": "Assess Severity Level",
+      "type": "analysis",
+      "component": "impact_analyzer",
+      "method": "assess_severity",
+      "parameters": {
+        "items": "{{categorize_by_type.output.all_items}}",
+        "criteria": {
+          "user_impact": ["blocker", "critical", "major", "minor", "trivial"],
+          "business_impact": ["revenue", "reputation", "compliance", "productivity"],
+          "frequency": ["always", "often", "sometimes", "rarely"],
+          "workaround_available": true
+        },
+        "severity_levels": ["critical", "high", "medium", "low", "trivial"]
+      },
+      "depends_on": ["analyze_stack_trace"]
+    },
+    
+    {
+      "id": "calculate_priority_score",
+      "name": "Calculate Priority Score",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "items_with_severity": "{{assess_severity.output}}",
+        "formula": "(severity_weight * 0.4) + (business_impact * 0.3) + (frequency * 0.2) + (user_impact * 0.1)",
+        "weights": {
+          "critical": 100,
+          "high": 75,
+          "medium": 50,
+          "low": 25,
+          "trivial": 10
+        },
+        "add_bonus_for_blocker": 20
+      },
+      "depends_on": ["assess_severity"]
+    },
+    
+    {
+      "id": "detect_duplicates",
+      "name": "Detect Duplicate Issues",
+      "type": "analysis",
+      "component": "semantic_chunker",
+      "method": "find_similar_items",
+      "parameters": {
+        "items": "{{calculate_priority_score.output}}",
+        "similarity_method": "embeddings",
+        "similarity_threshold": 0.85,
+        "check_existing_issues": true,
+        "existing_issues_source": "{{input.existing_issues_db}}"
+      },
+      "depends_on": ["calculate_priority_score"],
+      "timeout": 180
+    },
+    
+    {
+      "id": "group_related_items",
+      "name": "Group Related Items",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "items": "{{detect_duplicates.output.unique_items}}",
+        "group_by": ["component", "root_cause", "affected_feature"],
+        "create_epic_groups": true,
+        "min_group_size": 2
+      },
+      "depends_on": ["detect_duplicates"]
+    },
+    
+    {
+      "id": "suggest_assignee",
+      "name": "Suggest Best Assignee",
+      "type": "analysis",
+      "component": "assignment_engine",
+      "method": "find_best_assignee",
+      "parameters": {
+        "items": "{{group_related_items.output.grouped_items}}",
+        "required_skills": ["debugging", "{{item.category}}_expertise"],
+        "load_balancing": true,
+        "consider_current_workload": true,
+        "limit_candidates": 5
+      },
+      "depends_on": ["group_related_items"],
+      "timeout": 60
+    },
+    
+    {
+      "id": "estimate_fix_effort",
+      "name": "Estimate Fix Effort",
+      "type": "analysis",
+      "component": "impact_analyzer",
+      "method": "estimate_fix_effort",
+      "parameters": {
+        "items": "{{suggest_assignee.output}}",
+        "complexity_factors": ["code_complexity", "test_coverage", "dependencies", "risk"],
+        "effort_units": "person_hours",
+        "confidence_interval": 0.8
+      },
+      "depends_on": ["suggest_assignee"],
+      "timeout": 90
+    },
+    
+    {
+      "id": "determine_sla",
+      "name": "Determine SLA Requirements",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "items": "{{estimate_fix_effort.output}}",
+        "sla_policies": {
+          "critical": {"response_hours": 1, "fix_hours": 4, "escalate_after": 2},
+          "high": {"response_hours": 4, "fix_hours": 24, "escalate_after": 8},
+          "medium": {"response_hours": 24, "fix_hours": 72, "escalate_after": 48},
+          "low": {"response_hours": 72, "fix_hours": 168, "escalate_after": 120},
+          "trivial": {"response_hours": 168, "fix_hours": 336, "escalate_after": 240}
+        }
+      },
+      "depends_on": ["estimate_fix_effort"]
+    },
+    
+    {
+      "id": "auto_assign_simple_items",
+      "name": "Auto-Assign Simple Items",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "items": "{{determine_sla.output}}",
+        "auto_assign_threshold": 0.8,
+        "confidence_score": "{{parse_item_details.output.confidence}}",
+        "simple_categories": ["documentation", "question", "trivial_bug"]
+      },
+      "depends_on": ["determine_sla"]
+    },
+    
+    {
+      "id": "escalation_check",
+      "name": "Check if Escalation Needed",
+      "type": "condition",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "condition": "{{assess_severity.output.severity}} == 'critical' or {{calculate_priority_score.output.score}} >= {{variables.escalation_threshold}}"
+      },
+      "depends_on": ["auto_assign_simple_items"]
+    },
+    
+    {
+      "id": "escalate_to_leadership",
+      "name": "Escalate to Technical Leadership",
+      "type": "human",
+      "parameters": {
+        "type": "approval",
+        "title": "Critical Issue Escalation",
+        "description": "Critical issue requires immediate leadership attention",
+        "required_skills": ["technical_leadership", "incident_management"],
+        "priority": 0,
+        "timeout_hours": 1,
+        "data": {
+          "item": "{{auto_assign_simple_items.output.current_item}}",
+          "severity": "{{assess_severity.output.severity}}",
+          "priority_score": "{{calculate_priority_score.output.score}}",
+          "suggested_action": "{{suggest_assignee.output.recommendation}}",
+          "sla": "{{determine_sla.output.sla}}"
+        },
+        "approval_required": true,
+        "notification_channels": ["slack", "pagerduty", "email"]
+      },
+      "depends_on": ["escalation_check"],
+      "condition": "{{escalation_check.output}} == true"
+    },
+    
+    {
+      "id": "human_triage_review",
+      "name": "Human Triage Review",
+      "type": "human",
+      "parameters": {
+        "type": "review",
+        "title": "Triage Review Required",
+        "description": "Please review and confirm triage decisions",
+        "required_skills": ["triage", "technical_analysis"],
+        "priority": 0,
+        "timeout_hours": 4,
+        "data": {
+          "items": "{{auto_assign_simple_items.output.requires_review}}",
+          "auto_assigned": "{{auto_assign_simple_items.output.auto_assigned}}",
+          "categorization": "{{categorize_by_type.output}}",
+          "severity_assessment": "{{assess_severity.output}}",
+          "suggested_assignees": "{{suggest_assignee.output}}",
+          "effort_estimates": "{{estimate_fix_effort.output}}"
+        },
+        "allow_bulk_approve": true,
+        "allow_modifications": true
+      },
+      "depends_on": ["auto_assign_simple_items"],
+      "condition": "{{auto_assign_simple_items.output.has_items_for_review}} == true"
+    },
+    
+    {
+      "id": "create_work_items",
+      "name": "Create Work Items in Queue",
+      "type": "transform",
+      "component": "work_queue",
+      "method": "enqueue_batch",
+      "parameters": {
+        "items": "{{human_triage_review.output.approved_items}}",
+        "queue_mapping": {
+          "critical": "high_priority",
+          "high": "high_priority",
+          "medium": "standard",
+          "low": "low_priority",
+          "trivial": "background"
+        },
+        "set_expiry_based_on_sla": true
+      },
+      "depends_on": ["human_triage_review", "escalate_to_leadership"]
+    },
+    
+    {
+      "id": "update_tracking_system",
+      "name": "Update External Tracking System",
+      "type": "function",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "system": "{{input.tracking_system}}",
+        "operation": "create_issues",
+        "items": "{{create_work_items.output.created_items}}",
+        "sync_fields": ["title", "description", "priority", "assignee", "labels", "milestone"]
+      },
+      "depends_on": ["create_work_items"]
+    },
+    
+    {
+      "id": "notify_assignees",
+      "name": "Notify Assigned Team Members",
+      "type": "notify",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "type": "assignment_notification",
+        "message": "New issue assigned to you",
+        "channels": ["slack", "email"],
+        "data": {
+          "assignments": "{{create_work_items.output.assignments}}",
+          "sla_deadlines": "{{determine_sla.output.deadlines}}"
+        },
+        "template": "issue_assignment"
+      },
+      "depends_on": ["update_tracking_system"]
+    },
+    
+    {
+      "id": "generate_triage_report",
+      "name": "Generate Triage Report",
+      "type": "generation",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "workflow_name": "triage_workflow",
+        "statistics": {
+          "total_items_received": "{{variables.total_items}}",
+          "critical_items": "{{categorized_items.critical.length}}",
+          "high_items": "{{categorized_items.high.length}}",
+          "medium_items": "{{categorized_items.medium.length}}",
+          "low_items": "{{categorized_items.low.length}}",
+          "duplicates_found": "{{duplicate_items.length}}",
+          "auto_assigned": "{{auto_assign_simple_items.output.auto_assigned_count}}",
+          "escalated": "{{escalated_items.length}}"
+        },
+        "metrics": {
+          "average_triage_time_minutes": "{{context.average_triage_time}}",
+          "items_per_category": "{{categorize_by_type.output.counts}}",
+          "assignee_workload": "{{suggest_assignee.output.workload_distribution}}",
+          "sla_compliance": "{{determine_sla.output.sla_compliance_forecast}}"
+        },
+        "recommendations": {
+          "process_improvements": "{{analyze_triage_patterns.output.recommendations}}",
+          "resource_allocation": "{{estimate_fix_effort.output.resource_needs}}",
+          "training_needs": "{{categorize_by_type.output.skill_gaps}}"
+        }
+      },
+      "depends_on": ["notify_assignees"]
+    },
+    
+    {
+      "id": "update_dashboard",
+      "name": "Update Triage Dashboard",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "dashboard_type": "real_time",
+        "data": {
+          "queue_status": "{{create_work_items.output.queue_status}}",
+          "pending_triage": "{{variables.triage_queue.length}}",
+          "in_progress": "{{create_work_items.output.in_progress_count}}",
+          "completed_today": "{{create_work_items.output.completed_today}}",
+          "heat_map": "{{categorize_by_type.output.heat_map}}"
+        },
+        "update_interval_seconds": 30
+      },
+      "depends_on": ["generate_triage_report"]
+    },
+    
+    {
+      "id": "analyze_triage_patterns",
+      "name": "Analyze Triage Patterns for ML Improvement",
+      "type": "analysis",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "historical_data": "{{input.historical_triage_data}}",
+        "current_batch": "{{categorize_by_type.output}}",
+        "ml_model": "triage_classifier",
+        "update_model": true,
+        "confidence_threshold": 0.9
+      },
+      "depends_on": ["generate_triage_report"],
+      "timeout": 300
+    },
+    
+    {
+      "id": "check_for_critical_patterns",
+      "name": "Check for Critical Patterns",
+      "type": "analysis",
+      "component": "bottleneck_detector",
+      "method": "detect_patterns",
+      "parameters": {
+        "items": "{{categorize_by_type.output.all_items}}",
+        "patterns": ["same_component_multiple_issues", "recurring_root_cause", "time_based_spike"],
+        "alert_threshold": 3,
+        "time_window_hours": 24
+      },
+      "depends_on": ["analyze_triage_patterns"]
+    },
+    
+    {
+      "id": "alert_on_patterns",
+      "name": "Alert on Critical Patterns",
+      "type": "notify",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "type": "pattern_alert",
+        "message": "Critical pattern detected in triage",
+        "channels": ["slack", "email", "pagerduty"],
+        "condition": "{{check_for_critical_patterns.output.has_patterns}} == true",
+        "data": {
+          "patterns": "{{check_for_critical_patterns.output.patterns}}",
+          "affected_items": "{{check_for_critical_patterns.output.affected_items}}",
+          "recommendations": "{{check_for_critical_patterns.output.recommendations}}"
+        }
+      },
+      "depends_on": ["check_for_critical_patterns"]
+    },
+    
+    {
+      "id": "schedule_followup",
+      "name": "Schedule Follow-up for Non-Urgent Items",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "items": "{{create_work_items.output.low_priority_items}}",
+        "schedule_based_on": "priority",
+        "reminder_intervals": {"medium": 24, "low": 48, "trivial": 72},
+        "create_calendar_events": true
+      },
+      "depends_on": ["create_work_items"]
+    },
+    
+    {
+      "id": "archive_processed_items",
+      "name": "Archive Processed Triage Items",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "items": {
+          "completed": "{{create_work_items.output.processed_items}}",
+          "duplicates": "{{duplicate_items}}"
+        },
+        "archive_location": "{{input.archive_path}}",
+        "retention_days": 90,
+        "create_searchable_index": true,
+        "compress": true
+      },
+      "depends_on": ["schedule_followup", "alert_on_patterns"]
+    },
+    
+    {
+      "id": "update_triage_metrics",
+      "name": "Update Triage Performance Metrics",
+      "type": "transform",
+      "component": "performance_tracker",
+      "method": "record_metrics",
+      "parameters": {
+        "metrics": {
+          "triage_time_seconds": "{{context.triage_duration}}",
+          "items_per_hour": "{{variables.total_items}} / {{context.duration_hours}}",
+          "accuracy_score": "{{human_triage_review.output.accuracy}}",
+          "auto_triage_rate": "{{auto_assign_simple_items.output.rate}}",
+          "escalation_rate": "{{escalated_items.length}} / {{variables.total_items}}"
+        },
+        "tags": {
+          "workflow": "triage",
+          "version": "2.0",
+          "source": "{{input.source}}"
+        }
+      },
+      "depends_on": ["archive_processed_items"]
+    },
+    
+    {
+      "id": "generate_sla_report",
+      "name": "Generate SLA Compliance Report",
+      "type": "generation",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "report_type": "sla_compliance",
+        "items": "{{create_work_items.output}}",
+        "sla_metrics": {
+          "response_time_compliance": "{{determine_sla.output.response_compliance}}",
+          "fix_time_compliance": "{{determine_sla.output.fix_compliance}}",
+          "escalation_rate": "{{escalated_items.length}} / {{variables.total_items}}",
+          "missed_slas": "{{determine_sla.output.missed_slas}}"
+        },
+        "visualization_format": "html"
+      },
+      "depends_on": ["update_triage_metrics"]
+    },
+    
+    {
+      "id": "final_notification",
+      "name": "Final Triage Completion Notification",
+      "type": "notify",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "type": "workflow_completed",
+        "message": "Triage workflow completed successfully",
+        "channels": ["log", "event_bus", "dashboard"],
+        "data": {
+          "workflow": "triage_workflow",
+          "summary": "{{generate_triage_report.output.summary}}",
+          "items_processed": "{{variables.total_items}}",
+          "assigned_items": "{{variables.assigned_items.length}}",
+          "escalated_items": "{{escalated_items.length}}",
+          "duplicates_found": "{{duplicate_items.length}}",
+          "sla_report": "{{generate_sla_report.output.url}}",
+          "dashboard_url": "{{update_dashboard.output.url}}"
+        }
+      },
+      "depends_on": ["generate_sla_report"]
+    }
+  ]
+}

@@ -1,0 +1,672 @@
+{
+  "name": "code_review_workflow",
+  "version": "2.0",
+  "description": "Complete code review workflow - automated analysis, multi-reviewer coordination, quality gates, security scanning, and approval tracking",
+  
+  "variables": {
+    "review_config": {
+      "required_reviewers": 2,
+      "min_approvals": 2,
+      "review_timeout_hours": 48,
+      "allow_self_approval": false,
+      "require_ci_passed": true
+    },
+    "code_analysis": {
+      "complexity_score": 0,
+      "maintainability_score": 0,
+      "security_score": 0,
+      "coverage_score": 0,
+      "duplication_score": 0,
+      "overall_score": 0
+    },
+    "review_status": {
+      "automated_review": "pending",
+      "style_review": "pending",
+      "security_review": "pending",
+      "performance_review": "pending",
+      "architecture_review": "pending",
+      "reviewers_assigned": [],
+      "approvals_received": [],
+      "changes_requested": [],
+      "final_status": "pending"
+    },
+    "review_comments": [],
+    "action_items": [],
+    "critical_issues": [],
+    "suggestions": []
+  },
+  
+  "tasks": [
+    {
+      "id": "receive_code_review_request",
+      "name": "Receive Code Review Request",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "pull_request_id": "{{input.pull_request_id}}",
+        "source_branch": "{{input.source_branch}}",
+        "target_branch": "{{input.target_branch}}",
+        "author": "{{input.author}}",
+        "title": "{{input.title}}",
+        "description": "{{input.description}}",
+        "changed_files": "{{input.changed_files}}",
+        "repository": "{{input.repository}}"
+      },
+      "timeout": 60
+    },
+    
+    {
+      "id": "fetch_code_changes",
+      "name": "Fetch Code Changes",
+      "type": "analysis",
+      "component": "project_scanner",
+      "method": "fetch_diff",
+      "parameters": {
+        "repository": "{{input.repository}}",
+        "source_branch": "{{input.source_branch}}",
+        "target_branch": "{{input.target_branch}}",
+        "include_full_context": true
+      },
+      "depends_on": ["receive_code_review_request"],
+      "timeout": 180
+    },
+    
+    {
+      "id": "analyze_code_metrics",
+      "name": "Analyze Code Metrics",
+      "type": "quality",
+      "component": "complexity_validator",
+      "method": "analyze_metrics",
+      "parameters": {
+        "code": "{{fetch_code_changes.output.code}}",
+        "metrics": [
+          "cyclomatic_complexity",
+          "cognitive_complexity",
+          "maintainability_index",
+          "lines_of_code",
+          "comment_density"
+        ],
+        "thresholds": {
+          "max_cyclomatic_complexity": 10,
+          "max_cognitive_complexity": 15,
+          "min_maintainability_index": 70
+        }
+      },
+      "depends_on": ["fetch_code_changes"],
+      "timeout": 180
+    },
+    
+    {
+      "id": "run_static_analysis",
+      "name": "Run Static Analysis",
+      "type": "quality",
+      "component": "ruff_validator",
+      "method": "run_static_analysis",
+      "parameters": {
+        "code": "{{fetch_code_changes.output.code}}",
+        "rules": ["E", "F", "W", "C901", "N", "UP", "B", "SIM", "RET", "ARG", "PIE", "RSE"],
+        "severity_levels": ["error", "warning", "info"],
+        "fail_on_error": false
+      },
+      "depends_on": ["fetch_code_changes"],
+      "timeout": 120
+    },
+    
+    {
+      "id": "run_type_checking",
+      "name": "Run Type Checking",
+      "type": "quality",
+      "component": "mypy_validator",
+      "method": "run_type_checking",
+      "parameters": {
+        "code": "{{fetch_code_changes.output.code}}",
+        "strict": true,
+        "ignore_missing_imports": false,
+        "warn_return_any": true,
+        "warn_unused_configs": true
+      },
+      "depends_on": ["fetch_code_changes"],
+      "timeout": 180
+    },
+    
+    {
+      "id": "analyze_test_coverage",
+      "name": "Analyze Test Coverage",
+      "type": "quality",
+      "component": "coverage_analyzer",
+      "method": "analyze_coverage",
+      "parameters": {
+        "code": "{{fetch_code_changes.output.code}}",
+        "tests": "{{input.test_files}}",
+        "min_coverage": 80,
+        "coverage_type": "line_branch"
+      },
+      "depends_on": ["fetch_code_changes"],
+      "timeout": 240
+    },
+    
+    {
+      "id": "run_security_scan",
+      "name": "Run Security Scan",
+      "type": "quality",
+      "component": "security_validator",
+      "method": "scan_code",
+      "parameters": {
+        "code": "{{fetch_code_changes.output.code}}",
+        "scan_rules": [
+          "sql_injection",
+          "xss",
+          "command_injection",
+          "hardcoded_secrets",
+          "weak_crypto",
+          "path_traversal",
+          "insecure_deserialization",
+          "log_injection"
+        ],
+        "severity_threshold": "medium"
+      },
+      "depends_on": ["fetch_code_changes"],
+      "timeout": 300
+    },
+    
+    {
+      "id": "analyze_performance",
+      "name": "Analyze Performance",
+      "type": "quality",
+      "component": "performance_validator",
+      "method": "analyze_performance",
+      "parameters": {
+        "code": "{{fetch_code_changes.output.code}}",
+        "check_algorithms": true,
+        "detect_n_plus_one": true,
+        "check_memory_usage": true,
+        "performance_budget_ms": 100
+      },
+      "depends_on": ["fetch_code_changes"],
+      "timeout": 180
+    },
+    
+    {
+      "id": "analyze_dependencies",
+      "name": "Analyze Dependencies",
+      "type": "analysis",
+      "component": "dependency_validator",
+      "method": "analyze_dependencies",
+      "parameters": {
+        "code": "{{fetch_code_changes.output.code}}",
+        "check_circular_imports": true,
+        "check_layer_violations": true,
+        "check_version_compatibility": true
+      },
+      "depends_on": ["fetch_code_changes"],
+      "timeout": 120
+    },
+    
+    {
+      "id": "calculate_overall_score",
+      "name": "Calculate Overall Quality Score",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "metrics": {
+          "complexity": "{{analyze_code_metrics.output.score}}",
+          "static_analysis": "{{run_static_analysis.output.score}}",
+          "type_checking": "{{run_type_checking.output.score}}",
+          "coverage": "{{analyze_test_coverage.output.score}}",
+          "security": "{{run_security_scan.output.score}}",
+          "performance": "{{analyze_performance.output.score}}",
+          "dependencies": "{{analyze_dependencies.output.score}}"
+        },
+        "weights": {
+          "complexity": 15,
+          "static_analysis": 15,
+          "type_checking": 10,
+          "coverage": 15,
+          "security": 20,
+          "performance": 15,
+          "dependencies": 10
+        },
+        "passing_threshold": 75
+      },
+      "depends_on": [
+        "analyze_code_metrics",
+        "run_static_analysis",
+        "run_type_checking",
+        "analyze_test_coverage",
+        "run_security_scan",
+        "analyze_performance",
+        "analyze_dependencies"
+      ]
+    },
+    
+    {
+      "id": "identify_critical_issues",
+      "name": "Identify Critical Issues",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "security_issues": "{{run_security_scan.output.critical_issues}}",
+        "type_errors": "{{run_type_checking.output.errors}}",
+        "test_failures": "{{analyze_test_coverage.output.failures}}",
+        "complexity_violations": "{{analyze_code_metrics.output.violations}}"
+      },
+      "depends_on": [
+        "run_security_scan",
+        "run_type_checking",
+        "analyze_test_coverage",
+        "analyze_code_metrics"
+      ]
+    },
+    
+    {
+      "id": "generate_auto_review",
+      "name": "Generate Automated Review Comments",
+      "type": "generation",
+      "component": "llm_client",
+      "method": "generate_review_comments",
+      "parameters": {
+        "code_diff": "{{fetch_code_changes.output.diff}}",
+        "analysis_results": {
+          "metrics": "{{analyze_code_metrics.output}}",
+          "static_issues": "{{run_static_analysis.output.issues}}",
+          "security_issues": "{{run_security_scan.output.issues}}",
+          "performance_issues": "{{analyze_performance.output.issues}}",
+          "dependency_issues": "{{analyze_dependencies.output.issues}}"
+        },
+        "overall_score": "{{calculate_overall_score.output}}",
+        "max_comments": 30,
+        "comment_categories": ["critical", "major", "minor", "suggestion"]
+      },
+      "depends_on": ["calculate_overall_score"],
+      "timeout": 180
+    },
+    
+    {
+      "id": "determine_reviewers",
+      "name": "Determine Required Reviewers",
+      "type": "analysis",
+      "component": "assignment_engine",
+      "method": "select_reviewers",
+      "parameters": {
+        "changed_files": "{{fetch_code_changes.output.changed_files}}",
+        "author": "{{input.author}}",
+        "required_skills": ["code_review", "{{extract_language()}}"],
+        "min_reviewers": "{{review_config.required_reviewers}}",
+        "exclude_author": "{{review_config.allow_self_approval == false}}",
+        "load_balancing": true
+      },
+      "depends_on": ["fetch_code_changes"],
+      "timeout": 60
+    },
+    
+    {
+      "id": "assign_reviewers",
+      "name": "Assign Reviewers",
+      "type": "function",
+      "component": "git_utils",
+      "method": "assign_reviewers",
+      "parameters": {
+        "pull_request_id": "{{input.pull_request_id}}",
+        "reviewers": "{{determine_reviewers.output.reviewers}}",
+        "notify": true
+      },
+      "depends_on": ["determine_reviewers"],
+      "timeout": 30
+    },
+    
+    {
+      "id": "schedule_review_deadline",
+      "name": "Schedule Review Deadline",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "deadline_hours": "{{review_config.review_timeout_hours}}",
+        "notify_reviewers": true,
+        "create_calendar_events": true
+      },
+      "depends_on": ["assign_reviewers"]
+    },
+    
+    {
+      "id": "technical_review",
+      "name": "Technical Code Review",
+      "type": "human",
+      "parameters": {
+        "type": "review",
+        "title": "Technical Code Review",
+        "description": "Review code for correctness, logic, and implementation",
+        "required_skills": ["code_review", "programming"],
+        "priority": 1,
+        "timeout_hours": "{{review_config.review_timeout_hours}}",
+        "data": {
+          "pull_request": {
+            "id": "{{input.pull_request_id}}",
+            "title": "{{input.title}}",
+            "description": "{{input.description}}",
+            "author": "{{input.author}}"
+          },
+          "code_diff": "{{fetch_code_changes.output.diff}}",
+          "auto_review_comments": "{{generate_auto_review.output.comments}}",
+          "quality_metrics": {
+            "overall_score": "{{calculate_overall_score.output.overall}}",
+            "complexity": "{{analyze_code_metrics.output}}",
+            "coverage": "{{analyze_test_coverage.output}}",
+            "security": "{{run_security_scan.output}}"
+          },
+          "critical_issues": "{{identify_critical_issues.output}}"
+        },
+        "interaction_type": "code_review",
+        "review_type": "technical",
+        "allow_approve": true,
+        "allow_request_changes": true,
+        "allow_comment": true
+      },
+      "depends_on": ["generate_auto_review", "schedule_review_deadline"],
+      "assignee": "{{determine_reviewers.output.reviewers[0]}}"
+    },
+    
+    {
+      "id": "security_review",
+      "name": "Security Code Review",
+      "type": "human",
+      "parameters": {
+        "type": "review",
+        "title": "Security Code Review",
+        "description": "Review code for security vulnerabilities",
+        "required_skills": ["security_review", "secure_coding"],
+        "priority": 0,
+        "timeout_hours": "{{review_config.review_timeout_hours}}",
+        "data": {
+          "security_scan_results": "{{run_security_scan.output}}",
+          "code_diff": "{{fetch_code_changes.output.diff}}",
+          "auto_review_comments": "{{generate_auto_review.output.security_comments}}",
+          "critical_issues": "{{identify_critical_issues.output.security_issues}}"
+        },
+        "interaction_type": "code_review",
+        "review_type": "security",
+        "allow_approve": true,
+        "allow_request_changes": true
+      },
+      "depends_on": ["generate_auto_review", "schedule_review_deadline"],
+      "assignee": "{{determine_reviewers.output.security_reviewer}}"
+    },
+    
+    {
+      "id": "performance_review",
+      "name": "Performance Code Review",
+      "type": "human",
+      "parameters": {
+        "type": "review",
+        "title": "Performance Code Review",
+        "description": "Review code for performance implications",
+        "required_skills": ["performance_review", "optimization"],
+        "priority": 2,
+        "timeout_hours": "{{review_config.review_timeout_hours}}",
+        "data": {
+          "performance_analysis": "{{analyze_performance.output}}",
+          "code_diff": "{{fetch_code_changes.output.diff}}",
+          "auto_review_comments": "{{generate_auto_review.output.performance_comments}}"
+        },
+        "interaction_type": "code_review",
+        "review_type": "performance",
+        "allow_approve": true,
+        "allow_request_changes": true
+      },
+      "depends_on": ["generate_auto_review", "schedule_review_deadline"],
+      "assignee": "{{determine_reviewers.output.performance_reviewer}}"
+    },
+    
+    {
+      "id": "architecture_review",
+      "name": "Architecture Code Review",
+      "type": "human",
+      "parameters": {
+        "type": "review",
+        "title": "Architecture Code Review",
+        "description": "Review code for architectural alignment",
+        "required_skills": ["architecture_review", "system_design"],
+        "priority": 1,
+        "timeout_hours": "{{review_config.review_timeout_hours}}",
+        "data": {
+          "code_diff": "{{fetch_code_changes.output.diff}}",
+          "architecture_rules": "{{input.architecture_rules}}",
+          "design_documents": "{{input.design_documents}}"
+        },
+        "interaction_type": "code_review",
+        "review_type": "architecture",
+        "allow_approve": true,
+        "allow_request_changes": true
+      },
+      "depends_on": ["generate_auto_review", "schedule_review_deadline"],
+      "assignee": "{{determine_reviewers.output.architecture_reviewer}}"
+    },
+    
+    {
+      "id": "consolidate_reviews",
+      "name": "Consolidate Review Feedback",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "technical_feedback": "{{technical_review.output}}",
+        "security_feedback": "{{security_review.output}}",
+        "performance_feedback": "{{performance_review.output}}",
+        "architecture_feedback": "{{architecture_review.output}}",
+        "auto_comments": "{{generate_auto_review.output.comments}}",
+        "consolidate_comments": true,
+        "categorize_feedback": true,
+        "prioritize_action_items": true
+      },
+      "depends_on": ["technical_review", "security_review", "performance_review", "architecture_review"],
+      "timeout": 120
+    },
+    
+    {
+      "id": "check_approval_status",
+      "name": "Check Approval Status",
+      "type": "condition",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "approvals": "{{consolidate_reviews.output.approvals}}",
+        "required_approvals": "{{review_config.min_approvals}}",
+        "changes_requested": "{{consolidate_reviews.output.changes_requested}}",
+        "blocking_issues": "{{identify_critical_issues.output.has_blocking}}"
+      },
+      "depends_on": ["consolidate_reviews"]
+    },
+    
+    {
+      "id": "request_changes",
+      "name": "Request Code Changes",
+      "type": "function",
+      "component": "git_utils",
+      "method": "request_changes",
+      "parameters": {
+        "pull_request_id": "{{input.pull_request_id}}",
+        "feedback": "{{consolidate_reviews.output.action_items}}",
+        "requested_changes": "{{consolidate_reviews.output.changes_requested}}",
+        "notify_author": true
+      },
+      "depends_on": ["check_approval_status"],
+      "condition": "{{check_approval_status.output.changes_requested}} == true"
+    },
+    
+    {
+      "id": "wait_for_updates",
+      "name": "Wait for Code Updates",
+      "type": "human",
+      "parameters": {
+        "type": "interaction",
+        "title": "Code Changes Requested",
+        "description": "Please update code based on review feedback",
+        "required_skills": ["programming"],
+        "priority": 1,
+        "timeout_hours": 72,
+        "data": {
+          "requested_changes": "{{consolidate_reviews.output.action_items}}",
+          "review_comments": "{{consolidate_reviews.output.comments}}",
+          "pull_request_url": "{{input.pull_request_url}}"
+        },
+        "interaction_type": "code_update",
+        "assignee": "{{input.author}}"
+      },
+      "depends_on": ["request_changes"]
+    },
+    
+    {
+      "id": "revalidate_updates",
+      "name": "Revalidate Updated Code",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "updated_code": "{{wait_for_updates.output.updated_code}}",
+        "rerun_analysis": true,
+        "check_requested_changes": true
+      },
+      "depends_on": ["wait_for_updates"],
+      "timeout": 180
+    },
+    
+    {
+      "id": "approve_pr",
+      "name": "Approve Pull Request",
+      "type": "function",
+      "component": "git_utils",
+      "method": "approve_pr",
+      "parameters": {
+        "pull_request_id": "{{input.pull_request_id}}",
+        "approvers": "{{consolidate_reviews.output.approvers}}",
+        "summary": "Code review completed. Quality score: {{calculate_overall_score.output.overall}}%",
+        "notify": true
+      },
+      "depends_on": ["check_approval_status", "revalidate_updates"],
+      "condition": "{{check_approval_status.output.approved}} == true"
+    },
+    
+    {
+      "id": "generate_review_report",
+      "name": "Generate Code Review Report",
+      "type": "generation",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "workflow_name": "code_review_workflow",
+        "pull_request_id": "{{input.pull_request_id}}",
+        "review_metrics": {
+          "quality_score": "{{calculate_overall_score.output}}",
+          "complexity": "{{analyze_code_metrics.output}}",
+          "coverage": "{{analyze_test_coverage.output}}",
+          "security": "{{run_security_scan.output}}",
+          "performance": "{{analyze_performance.output}}"
+        },
+        "review_summary": {
+          "reviewers": "{{determine_reviewers.output.reviewers}}",
+          "approvals": "{{consolidate_reviews.output.approvals}}",
+          "changes_requested": "{{consolidate_reviews.output.changes_requested}}",
+          "comments_count": "{{consolidate_reviews.output.comments.length}}"
+        },
+        "action_items": "{{consolidate_reviews.output.action_items}}",
+        "critical_issues": "{{identify_critical_issues.output}}",
+        "recommendations": "{{generate_auto_review.output.recommendations}}",
+        "output_format": "html",
+        "include_diffs": true,
+        "include_comments": true
+      },
+      "depends_on": ["approve_pr", "request_changes"],
+      "timeout": 180
+    },
+    
+    {
+      "id": "post_report_to_pr",
+      "name": "Post Report to Pull Request",
+      "type": "function",
+      "component": "git_utils",
+      "method": "post_pr_comment",
+      "parameters": {
+        "pull_request_id": "{{input.pull_request_id}}",
+        "comment": "## Code Review Report\n\n**Quality Score:** {{calculate_overall_score.output.overall}}%\n\n**Summary:**\n- ✅ Automated analysis completed\n- 👥 {{determine_reviewers.output.reviewers.length}} reviewers assigned\n- 💬 {{consolidate_reviews.output.comments.length}} comments\n- 📊 [Full Report]({{generate_review_report.output.url}})",
+        "report_url": "{{generate_review_report.output.url}}"
+      },
+      "depends_on": ["generate_review_report"],
+      "timeout": 30
+    },
+    
+    {
+      "id": "update_ci_status",
+      "name": "Update CI Status",
+      "type": "function",
+      "component": "git_utils",
+      "method": "update_ci_status",
+      "parameters": {
+        "pull_request_id": "{{input.pull_request_id}}",
+        "status": "{{approve_pr.output.approved ? 'success' : 'pending'}}",
+        "context": "code-review",
+        "description": "Code review completed: {{calculate_overall_score.output.overall}}% quality score"
+      },
+      "depends_on": ["post_report_to_pr"],
+      "timeout": 30
+    },
+    
+    {
+      "id": "notify_completion",
+      "name": "Notify Review Completion",
+      "type": "notify",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "type": "workflow_completed",
+        "message": "Code review completed for PR #{{input.pull_request_id}}",
+        "channels": ["slack", "email", "event_bus"],
+        "recipients": ["{{input.author}}", "{{determine_reviewers.output.reviewers}}"],
+        "data": {
+          "pull_request_id": "{{input.pull_request_id}}",
+          "decision": "{{approve_pr.output.approved ? 'APPROVED' : 'CHANGES_REQUESTED'}}",
+          "quality_score": "{{calculate_overall_score.output.overall}}",
+          "report_url": "{{generate_review_report.output.url}}",
+          "comments_count": "{{consolidate_reviews.output.comments.length}}"
+        }
+      },
+      "depends_on": ["update_ci_status"]
+    },
+    
+    {
+      "id": "archive_review_data",
+      "name": "Archive Code Review Data",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "review_data": {
+          "pull_request": {
+            "id": "{{input.pull_request_id}}",
+            "title": "{{input.title}}",
+            "author": "{{input.author}}",
+            "timestamp": "{{context.current_time}}"
+          },
+          "analysis": {
+            "metrics": "{{analyze_code_metrics.output}}",
+            "security": "{{run_security_scan.output}}",
+            "performance": "{{analyze_performance.output}}"
+          },
+          "review": {
+            "reviewers": "{{determine_reviewers.output.reviewers}}",
+            "comments": "{{consolidate_reviews.output.comments}}",
+            "approvals": "{{consolidate_reviews.output.approvals}}",
+            "report": "{{generate_review_report.output}}"
+          }
+        },
+        "archive_location": "{{input.archive_path}}/code_reviews/{{input.pull_request_id}}",
+        "retention_days": 365,
+        "compress": true,
+        "encrypt": false
+      },
+      "depends_on": ["notify_completion"]
+    }
+  ]
+}

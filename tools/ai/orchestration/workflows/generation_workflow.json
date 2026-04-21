@@ -1,0 +1,913 @@
+{
+  "name": "generation_workflow",
+  "version": "3.0",
+  "description": "Complete code generation workflow with iterative refinement, validation, testing, documentation, embeddings, and human supervision until requirements are fully met",
+  
+  "variables": {
+    "generation_phases": {
+      "requirements": {"status": "pending", "completed": false},
+      "design": {"status": "pending", "completed": false},
+      "implementation": {"status": "pending", "completed": false},
+      "testing": {"status": "pending", "completed": false},
+      "documentation": {"status": "pending", "completed": false},
+      "validation": {"status": "pending", "completed": false},
+      "deployment": {"status": "pending", "completed": false}
+    },
+    "iteration_config": {
+      "current_iteration": 0,
+      "max_iterations": 10,
+      "quality_threshold": 90,
+      "improvement_threshold": 5,
+      "convergence_window": 3
+    },
+    "quality_metrics": {
+      "code_quality": 0,
+      "test_coverage": 0,
+      "doc_completeness": 0,
+      "performance_score": 0,
+      "security_score": 0,
+      "maintainability_score": 0,
+      "overall_score": 0
+    },
+    "generation_artifacts": {
+      "code": {},
+      "tests": {},
+      "documentation": {},
+      "embeddings": {},
+      "chunks": {},
+      "validation_reports": []
+    },
+    "requirement_coverage": {
+      "total": 0,
+      "covered": 0,
+      "partial": 0,
+      "uncovered": 0,
+      "coverage_percentage": 0
+    },
+    "human_feedback": [],
+    "improvement_history": []
+  },
+  
+  "tasks": [
+    {
+      "id": "collect_requirements",
+      "name": "Collect and Analyze Requirements",
+      "type": "analysis",
+      "component": "project_scanner",
+      "method": "analyze_requirements",
+      "parameters": {
+        "requirement_sources": "{{input.requirement_sources}}",
+        "extract_functional": true,
+        "extract_non_functional": true,
+        "extract_constraints": true,
+        "extract_acceptance_criteria": true,
+        "prioritize_requirements": true,
+        "output_format": "structured"
+      },
+      "timeout": 180
+    },
+    
+    {
+      "id": "validate_requirements",
+      "name": "Validate Requirements Completeness",
+      "type": "quality",
+      "component": "architecture_validator",
+      "method": "validate_requirements",
+      "parameters": {
+        "requirements": "{{collect_requirements.output}}",
+        "validation_criteria": [
+          "completeness",
+          "consistency",
+          "feasibility",
+          "testability",
+          "unambiguity",
+          "measurability"
+        ],
+        "min_completeness_score": 85
+      },
+      "depends_on": ["collect_requirements"],
+      "timeout": 120
+    },
+    
+    {
+      "id": "human_review_requirements",
+      "name": "Human Review: Requirements",
+      "type": "human",
+      "parameters": {
+        "type": "review",
+        "title": "Requirements Review",
+        "description": "Please review the collected requirements for accuracy and completeness",
+        "required_skills": ["requirements_analysis", "domain_knowledge"],
+        "priority": 0,
+        "timeout_hours": 24,
+        "data": {
+          "requirements": "{{collect_requirements.output}}",
+          "validation_results": "{{validate_requirements.output}}",
+          "gaps": "{{validate_requirements.output.gaps}}",
+          "suggestions": "{{validate_requirements.output.suggestions}}"
+        },
+        "approval_required": true,
+        "allow_modifications": true
+      },
+      "depends_on": ["validate_requirements"]
+    },
+    
+    {
+      "id": "decompose_requirements",
+      "name": "Decompose Requirements into Tasks",
+      "type": "planning",
+      "component": "task_decomposer",
+      "method": "decompose_requirements",
+      "parameters": {
+        "requirements": "{{human_review_requirements.output.approved_requirements}}",
+        "decomposition_strategy": "functional",
+        "max_task_size_hours": 8,
+        "min_task_size_hours": 1,
+        "identify_dependencies": true,
+        "create_work_breakdown_structure": true
+      },
+      "depends_on": ["human_review_requirements"],
+      "timeout": 180
+    },
+    
+    {
+      "id": "analyze_existing_codebase",
+      "name": "Analyze Existing Codebase",
+      "type": "analysis",
+      "component": "project_scanner",
+      "method": "scan_project",
+      "parameters": {
+        "project_path": "{{input.project_path}}",
+        "scan_depth": "deep",
+        "analyze_imports": true,
+        "analyze_patterns": true,
+        "identify_reusable_components": true,
+        "detect_code_smells": true
+      },
+      "depends_on": ["decompose_requirements"],
+      "timeout": 300
+    },
+    
+    {
+      "id": "build_context_embeddings",
+      "name": "Build Code Context Embeddings",
+      "type": "analysis",
+      "component": "batch_encoder",
+      "method": "encode_codebase",
+      "parameters": {
+        "files": "{{analyze_existing_codebase.output.files}}",
+        "chunk_size": 500,
+        "overlap": 50,
+        "model": "deepseek-coder",
+        "include_metadata": true,
+        "store_embeddings": true
+      },
+      "depends_on": ["analyze_existing_codebase"],
+      "timeout": 600
+    },
+    
+    {
+      "id": "chunk_codebase",
+      "name": "Chunk Codebase for Processing",
+      "type": "analysis",
+      "component": "code_chunker",
+      "method": "chunk_by_semantic",
+      "parameters": {
+        "files": "{{analyze_existing_codebase.output.files}}",
+        "chunk_strategy": "semantic",
+        "max_chunk_size": 1000,
+        "min_chunk_size": 100,
+        "preserve_imports": true,
+        "preserve_docstrings": true
+      },
+      "depends_on": ["analyze_existing_codebase"],
+      "timeout": 300
+    },
+    
+    {
+      "id": "design_architecture",
+      "name": "Design System Architecture",
+      "type": "planning",
+      "component": "module_architect",
+      "method": "design_architecture",
+      "parameters": {
+        "requirements": "{{human_review_requirements.output.approved_requirements}}",
+        "existing_codebase": "{{analyze_existing_codebase.output}}",
+        "architecture_pattern": "{{input.architecture_pattern}}",
+        "design_principles": ["modularity", "testability", "scalability", "maintainability"],
+        "output_format": "detailed"
+      },
+      "depends_on": ["chunk_codebase", "build_context_embeddings"],
+      "timeout": 300
+    },
+    
+    {
+      "id": "human_review_design",
+      "name": "Human Review: Architecture Design",
+      "type": "human",
+      "parameters": {
+        "type": "review",
+        "title": "Architecture Design Review",
+        "description": "Please review the proposed architecture design",
+        "required_skills": ["architecture", "system_design"],
+        "priority": 0,
+        "timeout_hours": 24,
+        "data": {
+          "architecture": "{{design_architecture.output}}",
+          "module_diagram": "{{design_architecture.output.diagram}}",
+          "dependencies": "{{design_architecture.output.dependencies}}",
+          "api_design": "{{design_architecture.output.api}}"
+        },
+        "approval_required": true
+      },
+      "depends_on": ["design_architecture"]
+    },
+    
+    {
+      "id": "generate_code_for_task",
+      "name": "Generate Code for Current Task",
+      "type": "generation",
+      "component": "function_generator",
+      "method": "generate_implementation",
+      "parameters": {
+        "task": "{{decompose_requirements.output.tasks[variables.current_iteration]}}",
+        "architecture": "{{design_architecture.output}}",
+        "context": "{{build_context_embeddings.output}}",
+        "existing_code": "{{analyze_existing_codebase.output}}",
+        "style_guide": "{{input.style_guide}}",
+        "include_type_hints": true,
+        "include_error_handling": true,
+        "include_logging": true
+      },
+      "depends_on": ["human_review_design"],
+      "timeout": 300
+    },
+    
+    {
+      "id": "generate_tests",
+      "name": "Generate Unit Tests",
+      "type": "generation",
+      "component": "test_generator",
+      "method": "generate_tests",
+      "parameters": {
+        "code": "{{generate_code_for_task.output.code}}",
+        "test_framework": "pytest",
+        "coverage_target": 90,
+        "generate_edge_cases": true,
+        "generate_mocks": true,
+        "generate_fixtures": true,
+        "include_parameterized_tests": true
+      },
+      "depends_on": ["generate_code_for_task"],
+      "timeout": 180
+    },
+    
+    {
+      "id": "generate_integration_tests",
+      "name": "Generate Integration Tests",
+      "type": "generation",
+      "component": "test_generator",
+      "method": "generate_integration_tests",
+      "parameters": {
+        "code": "{{generate_code_for_task.output.code}}",
+        "dependencies": "{{design_architecture.output.dependencies}}",
+        "test_scenarios": ["happy_path", "error_cases", "boundary_conditions"]
+      },
+      "depends_on": ["generate_tests"],
+      "timeout": 180
+    },
+    
+    {
+      "id": "generate_documentation",
+      "name": "Generate Code Documentation",
+      "type": "generation",
+      "component": "docstring_generator",
+      "method": "generate_documentation",
+      "parameters": {
+        "code": "{{generate_code_for_task.output.code}}",
+        "doc_format": "google",
+        "include_examples": true,
+        "include_usage": true,
+        "include_api_reference": true,
+        "generate_readme": "{{variables.current_iteration == 0}}"
+      },
+      "depends_on": ["generate_code_for_task"],
+      "timeout": 120
+    },
+    
+    {
+      "id": "run_syntax_validation",
+      "name": "Run Syntax Validation",
+      "type": "quality",
+      "component": "mypy_validator",
+      "method": "validate_syntax",
+      "parameters": {
+        "code": "{{generate_code_for_task.output.code}}",
+        "strict": true,
+        "python_version": "{{input.python_version}}"
+      },
+      "depends_on": ["generate_code_for_task"],
+      "timeout": 60
+    },
+    
+    {
+      "id": "run_linting",
+      "name": "Run Linting",
+      "type": "quality",
+      "component": "ruff_validator",
+      "method": "lint_code",
+      "parameters": {
+        "code": "{{generate_code_for_task.output.code}}",
+        "rules": ["E", "F", "W", "C901", "N", "UP", "B", "SIM"],
+        "auto_fix": true
+      },
+      "depends_on": ["run_syntax_validation"],
+      "timeout": 60
+    },
+    
+    {
+      "id": "run_tests",
+      "name": "Execute Generated Tests",
+      "type": "quality",
+      "component": "test_runner",
+      "method": "run_tests",
+      "parameters": {
+        "test_code": "{{generate_tests.output.test_code}}",
+        "integration_tests": "{{generate_integration_tests.output.test_code}}",
+        "parallel": true,
+        "fail_fast": false,
+        "capture_output": true
+      },
+      "depends_on": ["generate_tests", "generate_integration_tests"],
+      "timeout": 300
+    },
+    
+    {
+      "id": "calculate_coverage",
+      "name": "Calculate Test Coverage",
+      "type": "quality",
+      "component": "coverage_analyzer",
+      "method": "analyze_coverage",
+      "parameters": {
+        "code": "{{generate_code_for_task.output.code}}",
+        "test_results": "{{run_tests.output}}",
+        "coverage_type": "line_branch"
+      },
+      "depends_on": ["run_tests"],
+      "timeout": 90
+    },
+    
+    {
+      "id": "run_security_scan",
+      "name": "Run Security Scan",
+      "type": "quality",
+      "component": "security_validator",
+      "method": "scan_code",
+      "parameters": {
+        "code": "{{generate_code_for_task.output.code}}",
+        "scan_rules": [
+          "sql_injection",
+          "xss",
+          "command_injection",
+          "hardcoded_secrets",
+          "weak_crypto"
+        ],
+        "severity_threshold": "medium"
+      },
+      "depends_on": ["run_linting"],
+      "timeout": 120
+    },
+    
+    {
+      "id": "run_performance_check",
+      "name": "Run Performance Check",
+      "type": "quality",
+      "component": "performance_validator",
+      "method": "analyze_performance",
+      "parameters": {
+        "code": "{{generate_code_for_task.output.code}}",
+        "complexity_analysis": true,
+        "memory_analysis": true,
+        "benchmark": "{{input.benchmark_required}}"
+      },
+      "depends_on": ["run_tests"],
+      "timeout": 180
+    },
+    
+    {
+      "id": "calculate_quality_score",
+      "name": "Calculate Quality Score",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "metrics": {
+          "syntax_pass": "{{run_syntax_validation.output.passed}}",
+          "linting_score": "{{run_linting.output.score}}",
+          "test_pass_rate": "{{run_tests.output.pass_rate}}",
+          "coverage": "{{calculate_coverage.output.percentage}}",
+          "security_score": "{{run_security_scan.output.score}}",
+          "performance_score": "{{run_performance_check.output.score}}"
+        },
+        "weights": {
+          "syntax": 15,
+          "linting": 10,
+          "tests": 25,
+          "coverage": 20,
+          "security": 20,
+          "performance": 10
+        }
+      },
+      "depends_on": [
+        "run_syntax_validation",
+        "run_linting",
+        "run_tests",
+        "calculate_coverage",
+        "run_security_scan",
+        "run_performance_check"
+      ]
+    },
+    
+    {
+      "id": "check_requirement_coverage",
+      "name": "Check Requirement Coverage",
+      "type": "analysis",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "requirements": "{{human_review_requirements.output.approved_requirements}}",
+        "generated_code": "{{generate_code_for_task.output.code}}",
+        "tests": "{{generate_tests.output.test_code}}",
+        "documentation": "{{generate_documentation.output}}",
+        "coverage_analysis": true
+      },
+      "depends_on": ["generate_code_for_task", "generate_tests", "generate_documentation"],
+      "timeout": 120
+    },
+    
+    {
+      "id": "identify_gaps",
+      "name": "Identify Gaps and Improvements",
+      "type": "analysis",
+      "component": "impact_analyzer",
+      "method": "analyze_gaps",
+      "parameters": {
+        "requirements": "{{human_review_requirements.output.approved_requirements}}",
+        "coverage": "{{check_requirement_coverage.output}}",
+        "quality_metrics": "{{calculate_quality_score.output}}",
+        "test_failures": "{{run_tests.output.failures}}",
+        "security_issues": "{{run_security_scan.output.issues}}",
+        "performance_bottlenecks": "{{run_performance_check.output.bottlenecks}}"
+      },
+      "depends_on": ["check_requirement_coverage", "calculate_quality_score"],
+      "timeout": 120
+    },
+    
+    {
+      "id": "generate_improvement_plan",
+      "name": "Generate Improvement Plan",
+      "type": "generation",
+      "component": "iterative_refiner",
+      "method": "create_improvement_plan",
+      "parameters": {
+        "gaps": "{{identify_gaps.output}}",
+        "current_code": "{{generate_code_for_task.output.code}}",
+        "current_tests": "{{generate_tests.output.test_code}}",
+        "quality_target": "{{variables.iteration_config.quality_threshold}}"
+      },
+      "depends_on": ["identify_gaps"],
+      "timeout": 180
+    },
+    
+    {
+      "id": "human_review_progress",
+      "name": "Human Review: Generation Progress",
+      "type": "human",
+      "parameters": {
+        "type": "review",
+        "title": "Code Generation Progress Review",
+        "description": "Please review the generated code and provide feedback",
+        "required_skills": ["code_review", "quality_assurance"],
+        "priority": 1,
+        "timeout_hours": 12,
+        "data": {
+          "iteration": "{{variables.iteration_config.current_iteration}}",
+          "generated_code": "{{generate_code_for_task.output.code}}",
+          "tests": "{{generate_tests.output.test_code}}",
+          "documentation": "{{generate_documentation.output}}",
+          "quality_score": "{{calculate_quality_score.output.overall}}",
+          "coverage": "{{calculate_coverage.output.percentage}}",
+          "gaps": "{{identify_gaps.output.summary}}",
+          "improvement_plan": "{{generate_improvement_plan.output}}"
+        },
+        "interaction_type": "code_review",
+        "allow_comments": true,
+        "suggest_improvements": true
+      },
+      "depends_on": ["generate_improvement_plan"]
+    },
+    
+    {
+      "id": "apply_improvements",
+      "name": "Apply Improvements",
+      "type": "refinement",
+      "component": "iterative_refiner",
+      "method": "apply_improvements",
+      "parameters": {
+        "code": "{{generate_code_for_task.output.code}}",
+        "tests": "{{generate_tests.output.test_code}}",
+        "improvement_plan": "{{generate_improvement_plan.output}}",
+        "human_feedback": "{{human_review_progress.output.feedback}}",
+        "preserve_functionality": true
+      },
+      "depends_on": ["human_review_progress"],
+      "timeout": 300
+    },
+    
+    {
+      "id": "regenerate_tests",
+      "name": "Regenerate Tests After Improvements",
+      "type": "generation",
+      "component": "test_generator",
+      "method": "regenerate_tests",
+      "parameters": {
+        "improved_code": "{{apply_improvements.output.code}}",
+        "original_tests": "{{generate_tests.output.test_code}}",
+        "update_existing": true,
+        "add_missing_coverage": true
+      },
+      "depends_on": ["apply_improvements"],
+      "timeout": 180
+    },
+    
+    {
+      "id": "validate_improvements",
+      "name": "Validate Improvements",
+      "type": "quality",
+      "component": "test_runner",
+      "method": "run_validation",
+      "parameters": {
+        "code": "{{apply_improvements.output.code}}",
+        "tests": "{{regenerate_tests.output.test_code}}",
+        "run_full_suite": true
+      },
+      "depends_on": ["regenerate_tests"],
+      "timeout": 300
+    },
+    
+    {
+      "id": "calculate_improvement_metrics",
+      "name": "Calculate Improvement Metrics",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "previous_quality": "{{calculate_quality_score.output.overall}}",
+        "new_quality": "{{validate_improvements.output.quality_score}}",
+        "improvement": "{{new_quality - previous_quality}}",
+        "coverage_gain": "{{validate_improvements.output.coverage - calculate_coverage.output.percentage}}"
+      },
+      "depends_on": ["validate_improvements"]
+    },
+    
+    {
+      "id": "check_convergence",
+      "name": "Check Convergence",
+      "type": "condition",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "quality_score": "{{validate_improvements.output.quality_score}}",
+        "threshold": "{{variables.iteration_config.quality_threshold}}",
+        "improvement": "{{calculate_improvement_metrics.output.improvement}}",
+        "improvement_threshold": "{{variables.iteration_config.improvement_threshold}}",
+        "converged": "{{quality_score}} >= {{threshold}} or {{improvement}} < {{improvement_threshold}}"
+      },
+      "depends_on": ["calculate_improvement_metrics"]
+    },
+    
+    {
+      "id": "increment_iteration",
+      "name": "Increment Iteration Counter",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "operation": "increment",
+        "variable": "current_iteration",
+        "record_history": {
+          "iteration": "{{variables.iteration_config.current_iteration}}",
+          "quality": "{{validate_improvements.output.quality_score}}",
+          "coverage": "{{validate_improvements.output.coverage}}",
+          "improvements": "{{apply_improvements.output.changes}}"
+        }
+      },
+      "depends_on": ["check_convergence"],
+      "condition": "{{check_convergence.output}} == false and {{variables.iteration_config.current_iteration}} < {{variables.iteration_config.max_iterations}}"
+    },
+    
+    {
+      "id": "loop_continue",
+      "name": "Continue Generation Loop",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "goto": "generate_code_for_task",
+        "updated_context": {
+          "code": "{{apply_improvements.output.code}}",
+          "tests": "{{regenerate_tests.output.test_code}}",
+          "documentation": "{{generate_documentation.output}}"
+        }
+      },
+      "depends_on": ["increment_iteration"]
+    },
+    
+    {
+      "id": "final_code_assembly",
+      "name": "Assemble Final Code",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "all_tasks": "{{decompose_requirements.output.tasks}}",
+        "generated_code": "{{apply_improvements.output.code}}",
+        "integration_points": "{{design_architecture.output.integration_points}}",
+        "resolve_conflicts": true,
+        "optimize_imports": true
+      },
+      "depends_on": ["check_convergence"],
+      "condition": "{{check_convergence.output}} == true"
+    },
+    
+    {
+      "id": "generate_api_documentation",
+      "name": "Generate API Documentation",
+      "type": "generation",
+      "component": "api_doc_generator",
+      "method": "generate_api_docs",
+      "parameters": {
+        "code": "{{final_code_assembly.output.code}}",
+        "format": "markdown",
+        "include_examples": true,
+        "include_authentication": true,
+        "include_rate_limits": true
+      },
+      "depends_on": ["final_code_assembly"],
+      "timeout": 180
+    },
+    
+    {
+      "id": "generate_user_guide",
+      "name": "Generate User Guide",
+      "type": "generation",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "code": "{{final_code_assembly.output.code}}",
+        "api_docs": "{{generate_api_documentation.output}}",
+        "requirements": "{{human_review_requirements.output.approved_requirements}}",
+        "sections": ["installation", "quick_start", "configuration", "usage", "examples", "troubleshooting"]
+      },
+      "depends_on": ["generate_api_documentation"],
+      "timeout": 180
+    },
+    
+    {
+      "id": "generate_changelog",
+      "name": "Generate Changelog",
+      "type": "generation",
+      "component": "changelog_generator",
+      "method": "generate_changelog",
+      "parameters": {
+        "improvement_history": "{{variables.improvement_history}}",
+        "version": "{{input.version}}",
+        "format": "keepachangelog"
+      },
+      "depends_on": ["final_code_assembly"],
+      "timeout": 60
+    },
+    
+    {
+      "id": "create_embeddings_final",
+      "name": "Create Final Code Embeddings",
+      "type": "analysis",
+      "component": "batch_encoder",
+      "method": "encode_final_code",
+      "parameters": {
+        "code": "{{final_code_assembly.output.code}}",
+        "chunks": "{{chunk_codebase.output}}",
+        "model": "deepseek-coder",
+        "store_in_vector_db": true,
+        "create_search_index": true
+      },
+      "depends_on": ["final_code_assembly"],
+      "timeout": 300
+    },
+    
+    {
+      "id": "run_final_validation",
+      "name": "Run Final Validation Suite",
+      "type": "quality",
+      "component": "test_runner",
+      "method": "run_comprehensive_suite",
+      "parameters": {
+        "code": "{{final_code_assembly.output.code}}",
+        "tests": "{{regenerate_tests.output.test_code}}",
+        "integration_tests": "{{generate_integration_tests.output.test_code}}",
+        "performance_tests": "{{input.performance_tests}}",
+        "security_tests": "{{input.security_tests}}"
+      },
+      "depends_on": ["final_code_assembly", "regenerate_tests"],
+      "timeout": 600
+    },
+    
+    {
+      "id": "calculate_final_quality",
+      "name": "Calculate Final Quality Score",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "test_results": "{{run_final_validation.output}}",
+        "coverage": "{{calculate_coverage.output}}",
+        "security": "{{run_security_scan.output}}",
+        "performance": "{{run_performance_check.output}}",
+        "documentation": {
+          "api_completeness": "{{generate_api_documentation.output.completeness}}",
+          "user_guide_completeness": "{{generate_user_guide.output.completeness}}"
+        }
+      },
+      "depends_on": ["run_final_validation", "generate_api_documentation", "generate_user_guide"]
+    },
+    
+    {
+      "id": "human_final_approval",
+      "name": "Human Final Approval",
+      "type": "human",
+      "parameters": {
+        "type": "approval",
+        "title": "Final Code Generation Approval",
+        "description": "Please review and approve the final generated code",
+        "required_skills": ["technical_leadership", "quality_assurance"],
+        "priority": 0,
+        "timeout_hours": 48,
+        "data": {
+          "code_summary": {
+            "files": "{{final_code_assembly.output.files.length}}",
+            "lines": "{{final_code_assembly.output.total_lines}}",
+            "complexity": "{{calculate_final_quality.output.complexity}}"
+          },
+          "quality_metrics": {
+            "overall_score": "{{calculate_final_quality.output.overall}}",
+            "test_coverage": "{{calculate_final_quality.output.coverage}}",
+            "test_pass_rate": "{{run_final_validation.output.pass_rate}}",
+            "security_score": "{{calculate_final_quality.output.security}}",
+            "performance_score": "{{calculate_final_quality.output.performance}}",
+            "documentation_score": "{{calculate_final_quality.output.documentation}}"
+          },
+          "requirement_coverage": {
+            "percentage": "{{check_requirement_coverage.output.coverage_percentage}}",
+            "covered": "{{check_requirement_coverage.output.covered}}",
+            "uncovered": "{{check_requirement_coverage.output.uncovered}}"
+          },
+          "artifacts": {
+            "code_url": "{{final_code_assembly.output.url}}",
+            "docs_url": "{{generate_api_documentation.output.url}}",
+            "test_report": "{{run_final_validation.output.report_url}}"
+          }
+        },
+        "approval_required": true
+      },
+      "depends_on": ["calculate_final_quality"]
+    },
+    
+    {
+      "id": "create_git_release",
+      "name": "Create Git Release",
+      "type": "function",
+      "component": "git_utils",
+      "method": "create_release",
+      "parameters": {
+        "tag": "v{{input.version}}",
+        "branch": "main",
+        "message": "Release v{{input.version}}: {{human_review_requirements.output.approved_requirements.summary}}",
+        "artifacts": {
+          "code": "{{final_code_assembly.output.files}}",
+          "docs": "{{generate_api_documentation.output.files}}",
+          "tests": "{{regenerate_tests.output.files}}"
+        },
+        "create_github_release": true
+      },
+      "depends_on": ["human_final_approval"],
+      "timeout": 120
+    },
+    
+    {
+      "id": "generate_comprehensive_report",
+      "name": "Generate Comprehensive Report",
+      "type": "generation",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "workflow_name": "generation_workflow",
+        "version": "{{input.version}}",
+        "iterations": "{{variables.iteration_config.current_iteration}}",
+        "metrics": {
+          "quality": "{{calculate_final_quality.output}}",
+          "coverage": "{{calculate_coverage.output}}",
+          "test_results": "{{run_final_validation.output.summary}}",
+          "security": "{{run_security_scan.output.summary}}",
+          "performance": "{{run_performance_check.output.summary}}"
+        },
+        "requirement_coverage": "{{check_requirement_coverage.output}}",
+        "improvement_history": "{{variables.improvement_history}}",
+        "human_feedback": "{{human_feedback}}",
+        "artifacts": {
+          "code": "{{final_code_assembly.output}}",
+          "documentation": {
+            "api": "{{generate_api_documentation.output}}",
+            "user_guide": "{{generate_user_guide.output}}",
+            "changelog": "{{generate_changelog.output}}"
+          },
+          "embeddings": "{{create_embeddings_final.output}}"
+        },
+        "output_format": "html",
+        "include_diagrams": true,
+        "include_executive_summary": true
+      },
+      "depends_on": ["create_git_release"],
+      "timeout": 300
+    },
+    
+    {
+      "id": "deploy_to_staging",
+      "name": "Deploy to Staging Environment",
+      "type": "function",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "environment": "staging",
+        "code": "{{final_code_assembly.output.code}}",
+        "configuration": "{{input.staging_config}}",
+        "run_smoke_tests": true,
+        "health_check_endpoint": "/health"
+      },
+      "depends_on": ["human_final_approval"],
+      "timeout": 600
+    },
+    
+    {
+      "id": "notify_stakeholders",
+      "name": "Notify Stakeholders",
+      "type": "notify",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "type": "workflow_completed",
+        "message": "Code generation workflow completed successfully",
+        "channels": ["slack", "email", "dashboard", "event_bus"],
+        "recipients": "{{input.stakeholders}}",
+        "data": {
+          "workflow": "generation_workflow",
+          "version": "{{input.version}}",
+          "quality_score": "{{calculate_final_quality.output.overall}}",
+          "coverage": "{{calculate_final_quality.output.coverage}}",
+          "requirement_coverage": "{{check_requirement_coverage.output.coverage_percentage}}",
+          "iterations": "{{variables.iteration_config.current_iteration}}",
+          "report_url": "{{generate_comprehensive_report.output.url}}",
+          "release_url": "{{create_git_release.output.url}}",
+          "staging_url": "{{deploy_to_staging.output.url}}"
+        }
+      },
+      "depends_on": ["generate_comprehensive_report", "deploy_to_staging"]
+    },
+    
+    {
+      "id": "archive_generation_artifacts",
+      "name": "Archive Generation Artifacts",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "artifacts": {
+          "code": "{{final_code_assembly.output}}",
+          "tests": "{{regenerate_tests.output}}",
+          "documentation": {
+            "api": "{{generate_api_documentation.output}}",
+            "user_guide": "{{generate_user_guide.output}}",
+            "changelog": "{{generate_changelog.output}}"
+          },
+          "embeddings": "{{create_embeddings_final.output}}",
+          "reports": "{{generate_comprehensive_report.output}}",
+          "metrics": "{{calculate_final_quality.output}}"
+        },
+        "archive_location": "{{input.archive_path}}/generation/{{input.version}}",
+        "retention_days": 365,
+        "compress": true,
+        "encrypt": "{{input.encrypt_artifacts}}"
+      },
+      "depends_on": ["notify_stakeholders"]
+    }
+  ]
+}

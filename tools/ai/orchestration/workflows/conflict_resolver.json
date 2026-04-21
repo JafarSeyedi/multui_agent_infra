@@ -1,0 +1,569 @@
+{
+  "name": "conflict_resolver_workflow",
+  "version": "2.0",
+  "description": "Complete conflict resolution workflow - intelligent merge conflict detection, analysis, resolution strategies, human oversight, and validation",
+  
+  "variables": {
+    "conflict_analysis": {
+      "total_conflicts": 0,
+      "conflict_files": [],
+      "conflict_types": {
+        "syntax": 0,
+        "semantic": 0,
+        "structural": 0,
+        "dependency": 0,
+        "logic": 0
+      },
+      "complexity_score": 0,
+      "auto_resolvable": 0
+    },
+    "resolution_strategies": {
+      "keep_source": [],
+      "keep_target": [],
+      "merge_both": [],
+      "custom_resolution": []
+    },
+    "resolution_status": {
+      "auto_resolved": 0,
+      "manual_resolved": 0,
+      "pending_resolution": 0,
+      "blocked": 0
+    },
+    "validation_results": {
+      "syntax_check": "pending",
+      "test_pass": "pending",
+      "integration_check": "pending"
+    },
+    "conflict_context": {
+      "source_branch": null,
+      "target_branch": null,
+      "conflicting_commits": [],
+      "authors": [],
+      "timestamps": []
+    }
+  },
+  
+  "tasks": [
+    {
+      "id": "receive_conflict_data",
+      "name": "Receive Merge Conflict Data",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "source_branch": "{{input.source_branch}}",
+        "target_branch": "{{input.target_branch}}",
+        "merge_base": "{{input.merge_base}}",
+        "conflict_files": "{{input.conflict_files}}",
+        "repository": "{{input.repository}}",
+        "pull_request_id": "{{input.pull_request_id}}"
+      },
+      "timeout": 60
+    },
+    
+    {
+      "id": "parse_conflict_markers",
+      "name": "Parse Conflict Markers",
+      "type": "analysis",
+      "component": null,
+      "method": "parse_conflicts",
+      "parameters": {
+        "files": "{{receive_conflict_data.output.conflict_files}}",
+        "conflict_markers": ["<<<<<<<", "=======", ">>>>>>>"],
+        "extract_conflict_blocks": true,
+        "extract_metadata": true
+      },
+      "depends_on": ["receive_conflict_data"],
+      "timeout": 180
+    },
+    
+    {
+      "id": "load_source_version",
+      "name": "Load Source Branch Version",
+      "type": "analysis",
+      "component": "project_scanner",
+      "method": "load_file_versions",
+      "parameters": {
+        "repository": "{{input.repository}}",
+        "branch": "{{input.source_branch}}",
+        "files": "{{parse_conflict_markers.output.conflict_files}}",
+        "include_history": true
+      },
+      "depends_on": ["parse_conflict_markers"],
+      "timeout": 180
+    },
+    
+    {
+      "id": "load_target_version",
+      "name": "Load Target Branch Version",
+      "type": "analysis",
+      "component": "project_scanner",
+      "method": "load_file_versions",
+      "parameters": {
+        "repository": "{{input.repository}}",
+        "branch": "{{input.target_branch}}",
+        "files": "{{parse_conflict_markers.output.conflict_files}}",
+        "include_history": true
+      },
+      "depends_on": ["parse_conflict_markers"],
+      "timeout": 180
+    },
+    
+    {
+      "id": "load_merge_base_version",
+      "name": "Load Merge Base Version",
+      "type": "analysis",
+      "component": "project_scanner",
+      "method": "load_file_versions",
+      "parameters": {
+        "repository": "{{input.repository}}",
+        "commit": "{{input.merge_base}}",
+        "files": "{{parse_conflict_markers.output.conflict_files}}"
+      },
+      "depends_on": ["parse_conflict_markers"],
+      "timeout": 180
+    },
+    
+    {
+      "id": "classify_conflicts",
+      "name": "Classify Conflict Types",
+      "type": "analysis",
+      "component": "ast_analyzer",
+      "method": "classify_conflicts",
+      "parameters": {
+        "source_code": "{{load_source_version.output.files_content}}",
+        "target_code": "{{load_target_version.output.files_content}}",
+        "base_code": "{{load_merge_base_version.output.files_content}}",
+        "conflict_blocks": "{{parse_conflict_markers.output.conflict_blocks}}",
+        "classify_by": ["syntax", "semantic", "structural", "dependency", "logic"]
+      },
+      "depends_on": ["load_source_version", "load_target_version", "load_merge_base_version"],
+      "timeout": 300
+    },
+    
+    {
+      "id": "analyze_conflict_complexity",
+      "name": "Analyze Conflict Complexity",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "conflict_types": "{{classify_conflicts.output.conflict_types}}",
+        "conflict_sizes": "{{parse_conflict_markers.output.block_sizes}}",
+        "affected_lines": "{{parse_conflict_markers.output.affected_lines}}",
+        "complexity_formula": "(syntax_weight * 1 + semantic_weight * 3 + structural_weight * 5 + dependency_weight * 4 + logic_weight * 4) / total_conflicts"
+      },
+      "depends_on": ["classify_conflicts"]
+    },
+    
+    {
+      "id": "analyze_dependencies",
+      "name": "Analyze Conflict Dependencies",
+      "type": "analysis",
+      "component": "dependency_validator",
+      "method": "analyze_conflict_dependencies",
+      "parameters": {
+        "conflict_files": "{{parse_conflict_markers.output.conflict_files}}",
+        "source_code": "{{load_source_version.output.files_content}}",
+        "target_code": "{{load_target_version.output.files_content}}",
+        "build_dependency_graph": true,
+        "identify_cascading_conflicts": true
+      },
+      "depends_on": ["load_source_version", "load_target_version"],
+      "timeout": 240
+    },
+    
+    {
+      "id": "determine_auto_resolvable",
+      "name": "Determine Auto-Resolvable Conflicts",
+      "type": "condition",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "conflicts": "{{classify_conflicts.output.conflicts}}",
+        "auto_resolvable_patterns": [
+          "import_additions",
+          "whitespace_changes",
+          "comment_changes",
+          "non_overlapping_edits",
+          "renamed_variables"
+        ],
+        "auto_resolvable_threshold": 0.8
+      },
+      "depends_on": ["classify_conflicts", "analyze_conflict_complexity"]
+    },
+    
+    {
+      "id": "auto_resolve_simple",
+      "name": "Auto-Resolve Simple Conflicts",
+      "type": "transform",
+      "component": null,
+      "method": "auto_resolve",
+      "parameters": {
+        "conflicts": "{{determine_auto_resolvable.output.auto_resolvable}}",
+        "strategies": {
+          "import_additions": "merge_both",
+          "whitespace_changes": "keep_both",
+          "comment_changes": "keep_both",
+          "non_overlapping_edits": "merge_sequential",
+          "renamed_variables": "use_new_name"
+        },
+        "source_code": "{{load_source_version.output.files_content}}",
+        "target_code": "{{load_target_version.output.files_content}}",
+        "base_code": "{{load_merge_base_version.output.files_content}}"
+      },
+      "depends_on": ["determine_auto_resolvable"],
+      "timeout": 180
+    },
+    
+    {
+      "id": "generate_resolution_strategies",
+      "name": "Generate Resolution Strategies",
+      "type": "generation",
+      "component": "llm_client",
+      "method": "generate_resolution_strategies",
+      "parameters": {
+        "conflicts": "{{classify_conflicts.output.complex_conflicts}}",
+        "source_context": "{{load_source_version.output.context}}",
+        "target_context": "{{load_target_version.output.context}}",
+        "conflict_analysis": "{{analyze_conflict_complexity.output}}",
+        "generate_strategies": ["keep_source", "keep_target", "merge_both", "custom"]
+      },
+      "depends_on": ["classify_conflicts", "analyze_conflict_complexity"],
+      "timeout": 300
+    },
+    
+    {
+      "id": "evaluate_strategies",
+      "name": "Evaluate Resolution Strategies",
+      "type": "analysis",
+      "component": "impact_analyzer",
+      "method": "evaluate_strategies",
+      "parameters": {
+        "strategies": "{{generate_resolution_strategies.output}}",
+        "source_code": "{{load_source_version.output.files_content}}",
+        "target_code": "{{load_target_version.output.files_content}}",
+        "evaluation_criteria": ["correctness", "preserves_intent", "minimal_changes", "maintainability"]
+      },
+      "depends_on": ["generate_resolution_strategies"],
+      "timeout": 180
+    },
+    
+    {
+      "id": "select_best_strategy",
+      "name": "Select Best Resolution Strategy",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "evaluated_strategies": "{{evaluate_strategies.output}}",
+        "selection_criteria": "highest_score",
+        "tie_breaker": "preserves_intent"
+      },
+      "depends_on": ["evaluate_strategies"]
+    },
+    
+    {
+      "id": "apply_resolution",
+      "name": "Apply Conflict Resolution",
+      "type": "transform",
+      "component": null,
+      "method": "apply_resolution",
+      "parameters": {
+        "auto_resolved": "{{auto_resolve_simple.output.resolved_files}}",
+        "strategy_selected": "{{select_best_strategy.output}}",
+        "conflict_files": "{{parse_conflict_markers.output.conflict_files}}",
+        "create_resolved_version": true
+      },
+      "depends_on": ["auto_resolve_simple", "select_best_strategy"],
+      "timeout": 240
+    },
+    
+    {
+      "id": "validate_resolution_syntax",
+      "name": "Validate Resolution Syntax",
+      "type": "quality",
+      "component": "mypy_validator",
+      "method": "validate_syntax",
+      "parameters": {
+        "resolved_code": "{{apply_resolution.output.resolved_files}}",
+        "strict_mode": true,
+        "python_version": "{{input.python_version}}"
+      },
+      "depends_on": ["apply_resolution"],
+      "timeout": 180
+    },
+    
+    {
+      "id": "validate_resolution_tests",
+      "name": "Run Tests on Resolution",
+      "type": "quality",
+      "component": "test_runner",
+      "method": "run_affected_tests",
+      "parameters": {
+        "resolved_code": "{{apply_resolution.output.resolved_files}}",
+        "test_files": "{{input.test_files}}",
+        "affected_by_conflicts": true,
+        "timeout_per_test": 30
+      },
+      "depends_on": ["validate_resolution_syntax"],
+      "timeout": 300
+    },
+    
+    {
+      "id": "analyze_semantic_correctness",
+      "name": "Analyze Semantic Correctness",
+      "type": "analysis",
+      "component": "impact_analyzer",
+      "method": "analyze_semantic_impact",
+      "parameters": {
+        "original_intent_source": "{{load_source_version.output.intent}}",
+        "original_intent_target": "{{load_target_version.output.intent}}",
+        "resolved_code": "{{apply_resolution.output.resolved_files}}",
+        "verify_functional_equivalence": true
+      },
+      "depends_on": ["apply_resolution"],
+      "timeout": 240
+    },
+    
+    {
+      "id": "calculate_resolution_confidence",
+      "name": "Calculate Resolution Confidence",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "syntax_valid": "{{validate_resolution_syntax.output.passed}}",
+        "tests_pass": "{{validate_resolution_tests.output.pass_rate}}",
+        "semantic_score": "{{analyze_semantic_correctness.output.similarity_score}}",
+        "confidence_formula": "(syntax_valid * 30 + tests_pass * 40 + semantic_score * 30) / 100"
+      },
+      "depends_on": ["validate_resolution_syntax", "validate_resolution_tests", "analyze_semantic_correctness"]
+    },
+    
+    {
+      "id": "check_auto_merge_threshold",
+      "name": "Check Auto-Merge Threshold",
+      "type": "condition",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "confidence_score": "{{calculate_resolution_confidence.output.score}}",
+        "auto_merge_threshold": 85,
+        "no_manual_conflicts": "{{determine_auto_resolvable.output.all_resolved}}",
+        "tests_pass": "{{validate_resolution_tests.output.pass_rate == 100}}"
+      },
+      "depends_on": ["calculate_resolution_confidence"]
+    },
+    
+    {
+      "id": "human_conflict_review",
+      "name": "Human Conflict Resolution Review",
+      "type": "human",
+      "parameters": {
+        "type": "review",
+        "title": "Conflict Resolution Review",
+        "description": "Please review the proposed conflict resolution",
+        "required_skills": ["code_review", "conflict_resolution", "domain_knowledge"],
+        "priority": "{{calculate_resolution_confidence.output.score < 70 ? 0 : 1}}",
+        "timeout_hours": "{{calculate_resolution_confidence.output.score < 70 ? 12 : 24}}",
+        "data": {
+          "conflict_summary": {
+            "total_conflicts": "{{parse_conflict_markers.output.total_conflicts}}",
+            "auto_resolved": "{{auto_resolve_simple.output.resolved_count}}",
+            "manual_resolved": "{{apply_resolution.output.manual_resolved_count}}"
+          },
+          "conflict_details": "{{classify_conflicts.output.conflicts}}",
+          "resolution_strategies": "{{select_best_strategy.output}}",
+          "resolved_code_diff": "{{apply_resolution.output.diff}}",
+          "validation_results": {
+            "syntax": "{{validate_resolution_syntax.output}}",
+            "tests": "{{validate_resolution_tests.output}}",
+            "semantic": "{{analyze_semantic_correctness.output}}",
+            "confidence": "{{calculate_resolution_confidence.output}}"
+          },
+          "affected_files": "{{parse_conflict_markers.output.conflict_files}}",
+          "dependencies": "{{analyze_dependencies.output}}"
+        },
+        "interaction_type": "conflict_resolution",
+        "allow_approve": true,
+        "allow_modify": true,
+        "allow_reject": true
+      },
+      "depends_on": ["calculate_resolution_confidence"],
+      "condition": "{{check_auto_merge_threshold.output}} == false"
+    },
+    
+    {
+      "id": "process_human_feedback",
+      "name": "Process Human Resolution Feedback",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "decision": "{{human_conflict_review.output.decision}}",
+        "modified_resolution": "{{human_conflict_review.output.resolved_code}}",
+        "comments": "{{human_conflict_review.output.comments}}",
+        "approval_status": "{{human_conflict_review.output.approved}}"
+      },
+      "depends_on": ["human_conflict_review"],
+      "condition": "{{check_auto_merge_threshold.output}} == false"
+    },
+    
+    {
+      "id": "apply_human_changes",
+      "name": "Apply Human-Approved Changes",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "human_resolution": "{{process_human_feedback.output.modified_resolution}}",
+        "original_resolution": "{{apply_resolution.output.resolved_files}}",
+        "merge_human_changes": true
+      },
+      "depends_on": ["process_human_feedback"],
+      "condition": "{{process_human_feedback.output.approved}} == true and {{process_human_feedback.output.modified}} == true"
+    },
+    
+    {
+      "id": "revalidate_human_changes",
+      "name": "Revalidate Human Changes",
+      "type": "quality",
+      "component": "test_runner",
+      "method": "validate_changes",
+      "parameters": {
+        "resolved_code": "{{apply_human_changes.output.resolved_files}}",
+        "run_full_validation": true
+      },
+      "depends_on": ["apply_human_changes"],
+      "timeout": 300
+    },
+    
+    {
+      "id": "generate_resolution_report",
+      "name": "Generate Conflict Resolution Report",
+      "type": "generation",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "workflow_name": "conflict_resolver_workflow",
+        "conflict_statistics": {
+          "total": "{{parse_conflict_markers.output.total_conflicts}}",
+          "auto_resolved": "{{auto_resolve_simple.output.resolved_count}}",
+          "manual_resolved": "{{apply_resolution.output.manual_resolved_count}}",
+          "complexity_score": "{{analyze_conflict_complexity.output.score}}"
+        },
+        "resolution_details": {
+          "strategies_used": "{{select_best_strategy.output}}",
+          "files_affected": "{{parse_conflict_markers.output.conflict_files}}",
+          "resolution_confidence": "{{calculate_resolution_confidence.output}}"
+        },
+        "validation_summary": {
+          "syntax_valid": "{{validate_resolution_syntax.output.passed}}",
+          "tests_passed": "{{validate_resolution_tests.output.summary}}",
+          "semantic_integrity": "{{analyze_semantic_correctness.output}}"
+        },
+        "human_involvement": {
+          "required": "{{check_auto_merge_threshold.output}} == false",
+          "approved": "{{process_human_feedback.output.approved}}",
+          "feedback": "{{process_human_feedback.output.comments}}"
+        },
+        "output_format": "html",
+        "include_diffs": true
+      },
+      "depends_on": ["revalidate_human_changes", "validate_resolution_tests"],
+      "timeout": 180
+    },
+    
+    {
+      "id": "commit_resolution",
+      "name": "Commit Resolution to Branch",
+      "type": "function",
+      "component": "git_utils",
+      "method": "commit_resolution",
+      "parameters": {
+        "branch": "{{input.source_branch}}",
+        "resolved_files": "{{apply_resolution.output.resolved_files}}",
+        "commit_message": "Resolve merge conflicts: {{parse_conflict_markers.output.total_conflicts}} conflicts resolved\n\nAuto-resolved: {{auto_resolve_simple.output.resolved_count}}\nManual resolution: {{apply_resolution.output.manual_resolved_count}}\n\nResolution strategy: {{select_best_strategy.output}}",
+        "co_authors": "{{parse_conflict_markers.output.authors}}"
+      },
+      "depends_on": ["generate_resolution_report"],
+      "timeout": 60
+    },
+    
+    {
+      "id": "update_pr_status",
+      "name": "Update Pull Request Status",
+      "type": "function",
+      "component": "git_utils",
+      "method": "update_pr_status",
+      "parameters": {
+        "pull_request_id": "{{input.pull_request_id}}",
+        "status": "success",
+        "context": "conflict-resolver",
+        "description": "Conflicts resolved with {{calculate_resolution_confidence.output.score}}% confidence"
+      },
+      "depends_on": ["commit_resolution"],
+      "timeout": 30
+    },
+    
+    {
+      "id": "notify_resolution",
+      "name": "Notify Conflict Resolution",
+      "type": "notify",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "type": "workflow_completed",
+        "message": "Merge conflicts resolved for PR #{{input.pull_request_id}}",
+        "channels": ["slack", "event_bus"],
+        "recipients": ["{{input.author}}", "{{input.reviewers}}"],
+        "data": {
+          "pull_request_id": "{{input.pull_request_id}}",
+          "conflicts_resolved": "{{parse_conflict_markers.output.total_conflicts}}",
+          "resolution_confidence": "{{calculate_resolution_confidence.output.score}}",
+          "report_url": "{{generate_resolution_report.output.url}}",
+          "commit": "{{commit_resolution.output.commit_hash}}"
+        }
+      },
+      "depends_on": ["update_pr_status"]
+    },
+    
+    {
+      "id": "archive_conflict_data",
+      "name": "Archive Conflict Resolution Data",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "resolution_data": {
+          "conflicts": "{{parse_conflict_markers.output}}",
+          "resolution": "{{apply_resolution.output}}",
+          "strategies": "{{select_best_strategy.output}}",
+          "report": "{{generate_resolution_report.output}}",
+          "metrics": "{{calculate_resolution_confidence.output}}"
+        },
+        "archive_location": "{{input.archive_path}}/conflict_resolutions/{{input.pull_request_id}}",
+        "retention_days": 365,
+        "compress": true
+      },
+      "depends_on": ["notify_resolution"]
+    },
+    
+    {
+      "id": "learn_resolution_pattern",
+      "name": "Learn from Resolution",
+      "type": "analysis",
+      "component": null,
+      "method": "update_ml_model",
+      "parameters": {
+        "conflict_pattern": "{{classify_conflicts.output}}",
+        "resolution_strategy": "{{select_best_strategy.output}}",
+        "success_metrics": "{{calculate_resolution_confidence.output}}",
+        "update_model": true
+      },
+      "depends_on": ["archive_conflict_data"],
+      "timeout": 120
+    }
+  ]
+}

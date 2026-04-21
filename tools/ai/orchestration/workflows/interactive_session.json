@@ -1,0 +1,734 @@
+{
+  "name": "interactive_session_workflow",
+  "version": "2.0",
+  "description": "Complete interactive session workflow - real-time human-AI interaction, context management, session persistence, and intelligent response handling",
+  
+  "variables": {
+    "session_config": {
+      "session_id": null,
+      "session_type": "interactive",
+      "status": "initializing",
+      "start_time": null,
+      "last_activity": null,
+      "timeout_minutes": 30,
+      "max_duration_minutes": 480,
+      "context_window": 100
+    },
+    "interaction_state": {
+      "current_turn": 0,
+      "pending_queries": [],
+      "processed_queries": [],
+      "context_history": [],
+      "active_workflows": [],
+      "waiting_for_response": false
+    },
+    "user_context": {
+      "user_id": null,
+      "user_name": null,
+      "permissions": [],
+      "preferences": {},
+      "current_focus": null,
+      "recent_actions": []
+    },
+    "response_metrics": {
+      "total_interactions": 0,
+      "avg_response_time_ms": 0,
+      "success_rate": 100,
+      "user_satisfaction": 0,
+      "intent_distribution": {}
+    },
+    "session_quality": {
+      "clarity_score": 0,
+      "relevance_score": 0,
+      "completeness_score": 0,
+      "overall_score": 0
+    }
+  },
+  
+  "tasks": [
+    {
+      "id": "initialize_session",
+      "name": "Initialize Interactive Session",
+      "type": "transform",
+      "component": "session_manager",
+      "method": "create_session",
+      "parameters": {
+        "session_type": "interactive",
+        "user_id": "{{input.user_id}}",
+        "user_name": "{{input.user_name}}",
+        "auth_level": "{{input.auth_level}}",
+        "client_info": {
+          "ip": "{{input.client_ip}}",
+          "user_agent": "{{input.user_agent}}",
+          "platform": "{{input.platform}}"
+        },
+        "timeout_minutes": "{{variables.session_config.timeout_minutes}}",
+        "metadata": {
+          "purpose": "{{input.purpose}}",
+          "context": "{{input.initial_context}}"
+        }
+      },
+      "timeout": 30
+    },
+    
+    {
+      "id": "load_user_context",
+      "name": "Load User Context and Preferences",
+      "type": "analysis",
+      "component": "context_manager",
+      "method": "get_user_context",
+      "parameters": {
+        "user_id": "{{input.user_id}}",
+        "load_preferences": true,
+        "load_history": true,
+        "load_active_sessions": true,
+        "history_limit": 50
+      },
+      "depends_on": ["initialize_session"],
+      "timeout": 60
+    },
+    
+    {
+      "id": "setup_event_listeners",
+      "name": "Setup Event Listeners",
+      "type": "transform",
+      "component": "event_bus",
+      "method": "subscribe_to_events",
+      "parameters": {
+        "session_id": "{{initialize_session.output.session_id}}",
+        "events": [
+          "user_input_received",
+          "session_timeout_warning",
+          "context_updated",
+          "workflow_status_changed"
+        ],
+        "callback_endpoint": "interactive_session_handler"
+      },
+      "depends_on": ["initialize_session"],
+      "timeout": 30
+    },
+    
+    {
+      "id": "send_welcome_message",
+      "name": "Send Welcome Message",
+      "type": "notify",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "type": "session_welcome",
+        "message": "Welcome to the Interactive Session! I'm your AI assistant. How can I help you today?",
+        "channels": ["websocket", "event_bus"],
+        "session_id": "{{initialize_session.output.session_id}}",
+        "data": {
+          "capabilities": [
+            "code_generation",
+            "code_review",
+            "debugging",
+            "documentation",
+            "workflow_execution",
+            "task_planning",
+            "data_analysis"
+          ],
+          "session_id": "{{initialize_session.output.session_id}}",
+          "timeout_minutes": "{{variables.session_config.timeout_minutes}}"
+        }
+      },
+      "depends_on": ["setup_event_listeners", "load_user_context"]
+    },
+    
+    {
+      "id": "wait_for_user_input",
+      "name": "Wait for User Input",
+      "type": "human",
+      "parameters": {
+        "type": "interaction",
+        "title": "User Input Required",
+        "description": "Please enter your query or command",
+        "required_skills": ["communication"],
+        "priority": 0,
+        "timeout_minutes": "{{variables.session_config.timeout_minutes}}",
+        "data": {
+          "context": "{{load_user_context.output}}",
+          "suggested_actions": [
+            "Generate code",
+            "Review code",
+            "Debug issue",
+            "Create documentation",
+            "Run workflow",
+            "Plan task",
+            "Analyze data",
+            "Get help"
+          ],
+          "session_state": "{{interaction_state}}"
+        },
+        "interaction_type": "text_input",
+        "session_id": "{{initialize_session.output.session_id}}"
+      },
+      "depends_on": ["send_welcome_message"]
+    },
+    
+    {
+      "id": "parse_user_intent",
+      "name": "Parse User Intent",
+      "type": "analysis",
+      "component": "llm_client",
+      "method": "parse_intent",
+      "parameters": {
+        "user_input": "{{wait_for_user_input.output.text}}",
+        "context": "{{load_user_context.output}}",
+        "session_history": "{{interaction_state.context_history}}",
+        "intent_categories": [
+          "code_generation",
+          "code_review",
+          "debugging",
+          "documentation",
+          "workflow_execution",
+          "task_planning",
+          "data_analysis",
+          "explanation",
+          "question",
+          "command"
+        ],
+        "extract_entities": true,
+        "confidence_threshold": 0.7
+      },
+      "depends_on": ["wait_for_user_input"],
+      "timeout": 30
+    },
+    
+    {
+      "id": "update_interaction_history",
+      "name": "Update Interaction History",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "user_input": "{{wait_for_user_input.output.text}}",
+        "intent": "{{parse_user_intent.output.intent}}",
+        "entities": "{{parse_user_intent.output.entities}}",
+        "timestamp": "{{context.current_time}}",
+        "session_id": "{{initialize_session.output.session_id}}"
+      },
+      "depends_on": ["parse_user_intent"]
+    },
+    
+    {
+      "id": "check_permissions",
+      "name": "Check User Permissions",
+      "type": "condition",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "user_permissions": "{{load_user_context.output.permissions}}",
+        "required_permission": "{{parse_user_intent.output.required_permission}}",
+        "intent": "{{parse_user_intent.output.intent}}",
+        "has_permission": true
+      },
+      "depends_on": ["parse_user_intent", "load_user_context"]
+    },
+    
+    {
+      "id": "handle_unauthorized",
+      "name": "Handle Unauthorized Request",
+      "type": "notify",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "type": "error",
+        "message": "You don't have permission to perform this action",
+        "channels": ["websocket"],
+        "session_id": "{{initialize_session.output.session_id}}",
+        "data": {
+          "required_permission": "{{parse_user_intent.output.required_permission}}",
+          "suggested_actions": ["request_access", "contact_admin"]
+        }
+      },
+      "depends_on": ["check_permissions"],
+      "condition": "{{check_permissions.output}} == false"
+    },
+    
+    {
+      "id": "route_to_handler",
+      "name": "Route to Appropriate Handler",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "intent": "{{parse_user_intent.output.intent}}",
+        "confidence": "{{parse_user_intent.output.confidence}}",
+        "routing_map": {
+          "code_generation": "handle_code_generation",
+          "code_review": "handle_code_review",
+          "debugging": "handle_debugging",
+          "documentation": "handle_documentation",
+          "workflow_execution": "handle_workflow_execution",
+          "task_planning": "handle_task_planning",
+          "data_analysis": "handle_data_analysis",
+          "explanation": "handle_explanation",
+          "question": "handle_question",
+          "command": "handle_command"
+        }
+      },
+      "depends_on": ["check_permissions"],
+      "condition": "{{check_permissions.output}} == true"
+    },
+    
+    {
+      "id": "handle_code_generation",
+      "name": "Handle Code Generation Request",
+      "type": "generation",
+      "component": "function_generator",
+      "method": "generate_code_from_description",
+      "parameters": {
+        "description": "{{parse_user_intent.output.entities.code_description}}",
+        "language": "{{parse_user_intent.output.entities.language}}",
+        "context": "{{load_user_context.output.current_project}}",
+        "style_guide": "{{load_user_context.output.preferences.style_guide}}",
+        "include_tests": "{{parse_user_intent.output.entities.include_tests}}",
+        "include_docs": true
+      },
+      "depends_on": ["route_to_handler"],
+      "timeout": 120
+    },
+    
+    {
+      "id": "handle_code_review",
+      "name": "Handle Code Review Request",
+      "type": "quality",
+      "component": "code_review_skill",
+      "method": "review_code",
+      "parameters": {
+        "code": "{{parse_user_intent.output.entities.code}}",
+        "file_path": "{{parse_user_intent.output.entities.file_path}}",
+        "review_focus": "{{parse_user_intent.output.entities.review_focus}}",
+        "check_style": true,
+        "check_security": true,
+        "check_performance": true,
+        "check_maintainability": true
+      },
+      "depends_on": ["route_to_handler"],
+      "timeout": 180
+    },
+    
+    {
+      "id": "handle_debugging",
+      "name": "Handle Debugging Request",
+      "type": "analysis",
+      "component": "error_analyzer",
+      "method": "analyze_error",
+      "parameters": {
+        "error_message": "{{parse_user_intent.output.entities.error}}",
+        "stack_trace": "{{parse_user_intent.output.entities.stack_trace}}",
+        "code_context": "{{parse_user_intent.output.entities.code_context}}",
+        "environment": "{{parse_user_intent.output.entities.environment}}"
+      },
+      "depends_on": ["route_to_handler"],
+      "timeout": 120
+    },
+    
+    {
+      "id": "handle_documentation",
+      "name": "Handle Documentation Request",
+      "type": "generation",
+      "component": "docstring_generator",
+      "method": "generate_documentation",
+      "parameters": {
+        "target": "{{parse_user_intent.output.entities.target}}",
+        "doc_type": "{{parse_user_intent.output.entities.doc_type}}",
+        "format": "{{load_user_context.output.preferences.doc_format}}",
+        "include_examples": true
+      },
+      "depends_on": ["route_to_handler"],
+      "timeout": 90
+    },
+    
+    {
+      "id": "handle_workflow_execution",
+      "name": "Handle Workflow Execution Request",
+      "type": "orchestration",
+      "component": "workflow_executor",
+      "method": "execute_workflow",
+      "parameters": {
+        "workflow_name": "{{parse_user_intent.output.entities.workflow}}",
+        "parameters": "{{parse_user_intent.output.entities.parameters}}",
+        "session_id": "{{initialize_session.output.session_id}}",
+        "async_execution": "{{parse_user_intent.output.entities.async}}",
+        "notify_on_completion": true
+      },
+      "depends_on": ["route_to_handler"],
+      "timeout": 300
+    },
+    
+    {
+      "id": "handle_task_planning",
+      "name": "Handle Task Planning Request",
+      "type": "planning",
+      "component": "task_decomposer",
+      "method": "decompose_task",
+      "parameters": {
+        "task_description": "{{parse_user_intent.output.entities.task}}",
+        "constraints": "{{parse_user_intent.output.entities.constraints}}",
+        "available_resources": "{{load_user_context.output.available_resources}}",
+        "output_format": "detailed"
+      },
+      "depends_on": ["route_to_handler"],
+      "timeout": 120
+    },
+    
+    {
+      "id": "handle_data_analysis",
+      "name": "Handle Data Analysis Request",
+      "type": "analysis",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "data_source": "{{parse_user_intent.output.entities.data_source}}",
+        "analysis_type": "{{parse_user_intent.output.entities.analysis_type}}",
+        "query": "{{parse_user_intent.output.entities.query}}",
+        "visualization": "{{parse_user_intent.output.entities.visualization}}"
+      },
+      "depends_on": ["route_to_handler"],
+      "timeout": 180
+    },
+    
+    {
+      "id": "handle_explanation",
+      "name": "Handle Explanation Request",
+      "type": "analysis",
+      "component": "llm_client",
+      "method": "explain_concept",
+      "parameters": {
+        "concept": "{{parse_user_intent.output.entities.concept}}",
+        "context": "{{load_user_context.output}}",
+        "detail_level": "{{parse_user_intent.output.entities.detail_level}}",
+        "audience_level": "{{load_user_context.output.experience_level}}"
+      },
+      "depends_on": ["route_to_handler"],
+      "timeout": 60
+    },
+    
+    {
+      "id": "handle_question",
+      "name": "Handle General Question",
+      "type": "analysis",
+      "component": "llm_client",
+      "method": "answer_question",
+      "parameters": {
+        "question": "{{parse_user_intent.output.text}}",
+        "context": "{{load_user_context.output}}",
+        "knowledge_base": ["documentation", "codebase", "best_practices"],
+        "cite_sources": true
+      },
+      "depends_on": ["route_to_handler"],
+      "timeout": 60
+    },
+    
+    {
+      "id": "handle_command",
+      "name": "Handle System Command",
+      "type": "function",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "command": "{{parse_user_intent.output.entities.command}}",
+        "arguments": "{{parse_user_intent.output.entities.arguments}}",
+        "allowed_commands": ["status", "help", "clear", "save", "export", "exit"]
+      },
+      "depends_on": ["route_to_handler"],
+      "timeout": 30
+    },
+    
+    {
+      "id": "generate_response",
+      "name": "Generate User Response",
+      "type": "generation",
+      "component": "llm_client",
+      "method": "format_response",
+      "parameters": {
+        "handler_output": "{{handle_code_generation.output}} || {{handle_code_review.output}} || {{handle_debugging.output}} || {{handle_documentation.output}} || {{handle_workflow_execution.output}} || {{handle_task_planning.output}} || {{handle_data_analysis.output}} || {{handle_explanation.output}} || {{handle_question.output}} || {{handle_command.output}}",
+        "intent": "{{parse_user_intent.output.intent}}",
+        "format": "markdown",
+        "include_code_blocks": true,
+        "include_suggestions": true,
+        "include_follow_up": true
+      },
+      "depends_on": [
+        "handle_code_generation",
+        "handle_code_review",
+        "handle_debugging",
+        "handle_documentation",
+        "handle_workflow_execution",
+        "handle_task_planning",
+        "handle_data_analysis",
+        "handle_explanation",
+        "handle_question",
+        "handle_command"
+      ],
+      "timeout": 60
+    },
+    
+    {
+      "id": "send_response_to_user",
+      "name": "Send Response to User",
+      "type": "notify",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "type": "response",
+        "message": "{{generate_response.output.text}}",
+        "channels": ["websocket"],
+        "session_id": "{{initialize_session.output.session_id}}",
+        "data": {
+          "response_id": "{{generate_response.output.id}}",
+          "intent": "{{parse_user_intent.output.intent}}",
+          "confidence": "{{parse_user_intent.output.confidence}}",
+          "metadata": {
+            "response_time_ms": "{{generate_response.output.duration_ms}}",
+            "tokens_used": "{{generate_response.output.tokens}}",
+            "suggested_followups": "{{generate_response.output.followups}}"
+          }
+        }
+      },
+      "depends_on": ["generate_response"]
+    },
+    
+    {
+      "id": "collect_response_feedback",
+      "name": "Collect Response Feedback",
+      "type": "human",
+      "parameters": {
+        "type": "feedback",
+        "title": "Rate this Response",
+        "description": "How helpful was this response?",
+        "required_skills": ["evaluation"],
+        "priority": 3,
+        "timeout_minutes": 2,
+        "data": {
+          "response": "{{generate_response.output.text}}",
+          "rating_options": ["helpful", "somewhat_helpful", "not_helpful"],
+          "feedback_optional": true
+        },
+        "interaction_type": "quick_feedback",
+        "session_id": "{{initialize_session.output.session_id}}"
+      },
+      "depends_on": ["send_response_to_user"]
+    },
+    
+    {
+      "id": "update_response_metrics",
+      "name": "Update Response Metrics",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "response_time": "{{generate_response.output.duration_ms}}",
+        "feedback": "{{collect_response_feedback.output.rating}}",
+        "intent": "{{parse_user_intent.output.intent}}",
+        "success": "{{collect_response_feedback.output.helpful}}"
+      },
+      "depends_on": ["collect_response_feedback"]
+    },
+    
+    {
+      "id": "check_session_timeout",
+      "name": "Check Session Timeout",
+      "type": "condition",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "last_activity": "{{variables.session_config.last_activity}}",
+        "timeout_minutes": "{{variables.session_config.timeout_minutes}}",
+        "current_time": "{{context.current_time}}",
+        "should_timeout": "{{current_time - last_activity}} > {{timeout_minutes}}"
+      },
+      "depends_on": ["update_response_metrics"]
+    },
+    
+    {
+      "id": "session_timeout_warning",
+      "name": "Send Timeout Warning",
+      "type": "notify",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "type": "warning",
+        "message": "Session will timeout in {{variables.session_config.timeout_minutes}} minutes due to inactivity",
+        "channels": ["websocket"],
+        "session_id": "{{initialize_session.output.session_id}}"
+      },
+      "depends_on": ["check_session_timeout"],
+      "condition": "{{check_session_timeout.output}} == false"
+    },
+    
+    {
+      "id": "extend_session",
+      "name": "Extend Session Timeout",
+      "type": "transform",
+      "component": "session_manager",
+      "method": "extend_session",
+      "parameters": {
+        "session_id": "{{initialize_session.output.session_id}}",
+        "additional_minutes": "{{variables.session_config.timeout_minutes}}"
+      },
+      "depends_on": ["session_timeout_warning"]
+    },
+    
+    {
+      "id": "check_continue_session",
+      "name": "Check if User Wants to Continue",
+      "type": "condition",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "user_choice": "{{collect_response_feedback.output.continue}}",
+        "continue_session": "{{user_choice}} == 'continue'"
+      },
+      "depends_on": ["update_response_metrics"]
+    },
+    
+    {
+      "id": "loop_continue",
+      "name": "Continue Session Loop",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "goto": "wait_for_user_input",
+        "increment_turn": true,
+        "update_context": {
+          "last_response": "{{generate_response.output}}",
+          "user_feedback": "{{collect_response_feedback.output}}"
+        }
+      },
+      "depends_on": ["check_continue_session"],
+      "condition": "{{check_continue_session.output}} == true"
+    },
+    
+    {
+      "id": "calculate_session_metrics",
+      "name": "Calculate Session Quality Metrics",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "interactions": "{{variables.response_metrics.total_interactions}}",
+        "avg_response_time": "{{variables.response_metrics.avg_response_time_ms}}",
+        "success_rate": "{{variables.response_metrics.success_rate}}",
+        "user_satisfaction": "{{variables.response_metrics.user_satisfaction}}",
+        "clarity_score": "{{calculate_clarity()}}",
+        "relevance_score": "{{calculate_relevance()}}",
+        "completeness_score": "{{calculate_completeness()}}"
+      },
+      "depends_on": ["loop_continue"],
+      "condition": "{{check_continue_session.output}} == false"
+    },
+    
+    {
+      "id": "generate_session_report",
+      "name": "Generate Session Report",
+      "type": "generation",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "workflow_name": "interactive_session_workflow",
+        "session_id": "{{initialize_session.output.session_id}}",
+        "session_duration_minutes": "{{calculate_session_duration()}}",
+        "total_interactions": "{{variables.response_metrics.total_interactions}}",
+        "metrics": {
+          "avg_response_time_ms": "{{variables.response_metrics.avg_response_time_ms}}",
+          "success_rate": "{{variables.response_metrics.success_rate}}",
+          "user_satisfaction": "{{variables.response_metrics.user_satisfaction}}",
+          "intent_distribution": "{{variables.response_metrics.intent_distribution}}"
+        },
+        "quality_scores": {
+          "clarity": "{{variables.session_quality.clarity_score}}",
+          "relevance": "{{variables.session_quality.relevance_score}}",
+          "completeness": "{{variables.session_quality.completeness_score}}",
+          "overall": "{{variables.session_quality.overall_score}}"
+        },
+        "topics_covered": "{{extract_topics()}}",
+        "user_feedback_summary": "{{collect_response_feedback.output.aggregate}}",
+        "output_format": "html"
+      },
+      "depends_on": ["calculate_session_metrics"],
+      "timeout": 90
+    },
+    
+    {
+      "id": "save_session_state",
+      "name": "Save Session State",
+      "type": "transform",
+      "component": "session_persistence",
+      "method": "save_session_state",
+      "parameters": {
+        "session_id": "{{initialize_session.output.session_id}}",
+        "session_data": {
+          "config": "{{variables.session_config}}",
+          "interaction_state": "{{interaction_state}}",
+          "user_context": "{{load_user_context.output}}",
+          "response_metrics": "{{variables.response_metrics}}",
+          "session_quality": "{{variables.session_quality}}",
+          "report": "{{generate_session_report.output}}"
+        },
+        "compress": true
+      },
+      "depends_on": ["generate_session_report"],
+      "timeout": 60
+    },
+    
+    {
+      "id": "close_session",
+      "name": "Close Interactive Session",
+      "type": "transform",
+      "component": "session_manager",
+      "method": "close_session",
+      "parameters": {
+        "session_id": "{{initialize_session.output.session_id}}",
+        "reason": "user_exit",
+        "save_state": true
+      },
+      "depends_on": ["save_session_state"]
+    },
+    
+    {
+      "id": "send_farewell",
+      "name": "Send Farewell Message",
+      "type": "notify",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "type": "session_end",
+        "message": "Session ended. Thank you for using the Interactive Session!\n\nSession report has been saved. You can access it at: {{generate_session_report.output.url}}",
+        "channels": ["websocket"],
+        "session_id": "{{initialize_session.output.session_id}}",
+        "data": {
+          "report_url": "{{generate_session_report.output.url}}",
+          "session_duration": "{{calculate_session_duration()}}",
+          "interactions": "{{variables.response_metrics.total_interactions}}",
+          "reopen_command": "/start_session"
+        }
+      },
+      "depends_on": ["close_session"]
+    },
+    
+    {
+      "id": "archive_session_data",
+      "name": "Archive Session Data",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "session_data": {
+          "session": "{{save_session_state.output}}",
+          "report": "{{generate_session_report.output}}",
+          "interactions": "{{interaction_state.processed_queries}}"
+        },
+        "archive_location": "{{input.archive_path}}/sessions/{{initialize_session.output.session_id}}",
+        "retention_days": 90,
+        "compress": true,
+        "encrypt": "{{input.encrypt_sessions}}"
+      },
+      "depends_on": ["send_farewell"]
+    }
+  ]
+}

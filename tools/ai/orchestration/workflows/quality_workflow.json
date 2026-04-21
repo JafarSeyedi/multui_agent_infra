@@ -1,0 +1,630 @@
+{
+  "name": "quality_workflow",
+  "version": "3.0",
+  "description": "Complete quality assurance workflow - static analysis, testing, security scanning, performance profiling, and quality gate enforcement",
+  
+  "variables": {
+    "quality_gates": {
+      "syntax": {"passed": false, "threshold": 100},
+      "linting": {"passed": false, "threshold": 90},
+      "type_checking": {"passed": false, "threshold": 100},
+      "test_coverage": {"passed": false, "threshold": 80},
+      "test_pass_rate": {"passed": false, "threshold": 100},
+      "security": {"passed": false, "threshold": 95},
+      "performance": {"passed": false, "threshold": 85},
+      "complexity": {"passed": false, "threshold": 80},
+      "documentation": {"passed": false, "threshold": 70},
+      "dependency": {"passed": false, "threshold": 90}
+    },
+    "overall_quality_score": 0,
+    "quality_status": "pending",
+    "issues_found": [],
+    "critical_issues": [],
+    "auto_fixable_issues": [],
+    "quality_report": null,
+    "current_phase": "static_analysis"
+  },
+  
+  "tasks": [
+    {
+      "id": "initialize_quality_check",
+      "name": "Initialize Quality Check",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "target_files": "{{input.target_files}}",
+        "project_path": "{{input.project_path}}",
+        "quality_profile": "{{input.quality_profile}}",
+        "strict_mode": "{{input.strict_mode}}",
+        "auto_fix_enabled": "{{input.auto_fix_enabled}}"
+      },
+      "timeout": 30
+    },
+    
+    {
+      "id": "syntax_validation",
+      "name": "Syntax Validation",
+      "type": "quality",
+      "component": "mypy_validator",
+      "method": "validate_syntax",
+      "parameters": {
+        "files": "{{initialize_quality_check.output.target_files}}",
+        "python_version": "{{input.python_version}}",
+        "ignore_patterns": ["test_*", "*_test.py"],
+        "strict": true
+      },
+      "depends_on": ["initialize_quality_check"],
+      "timeout": 120
+    },
+    
+    {
+      "id": "linting",
+      "name": "Linting with Ruff",
+      "type": "quality",
+      "component": "ruff_validator",
+      "method": "lint_files",
+      "parameters": {
+        "files": "{{initialize_quality_check.output.target_files}}",
+        "select_rules": ["E", "F", "W", "C901", "N", "UP", "B", "SIM", "RET", "ARG"],
+        "ignore_rules": ["E501"],
+        "fix": "{{input.auto_fix_enabled}}",
+        "format": "json"
+      },
+      "depends_on": ["syntax_validation"],
+      "timeout": 90
+    },
+    
+    {
+      "id": "type_checking",
+      "name": "Static Type Checking",
+      "type": "quality",
+      "component": "mypy_validator",
+      "method": "run_type_checking",
+      "parameters": {
+        "files": "{{initialize_quality_check.output.target_files}}",
+        "config_file": "{{input.mypy_config}}",
+        "strict_optional": true,
+        "warn_return_any": true,
+        "warn_unused_configs": true,
+        "disallow_untyped_defs": true
+      },
+      "depends_on": ["linting"],
+      "timeout": 180
+    },
+    
+    {
+      "id": "complexity_analysis",
+      "name": "Code Complexity Analysis",
+      "type": "quality",
+      "component": "complexity_validator",
+      "method": "analyze_complexity",
+      "parameters": {
+        "files": "{{initialize_quality_check.output.target_files}}",
+        "max_cyclomatic_complexity": 10,
+        "max_cognitive_complexity": 15,
+        "max_nesting_depth": 4,
+        "max_parameter_count": 5,
+        "max_method_length": 50
+      },
+      "depends_on": ["type_checking"],
+      "timeout": 120
+    },
+    
+    {
+      "id": "dependency_validation",
+      "name": "Dependency Validation",
+      "type": "quality",
+      "component": "dependency_validator",
+      "method": "validate_dependencies",
+      "parameters": {
+        "files": "{{initialize_quality_check.output.target_files}}",
+        "check_circular_imports": true,
+        "check_layer_violations": true,
+        "layer_rules": {
+          "presentation": ["domain", "application"],
+          "application": ["domain"],
+          "domain": [],
+          "infrastructure": ["domain"]
+        },
+        "forbidden_dependencies": ["tests->production", "utils->business_logic"]
+      },
+      "depends_on": ["complexity_analysis"],
+      "timeout": 90
+    },
+    
+    {
+      "id": "architecture_validation",
+      "name": "Architecture Validation",
+      "type": "quality",
+      "component": "architecture_validator",
+      "method": "validate_architecture",
+      "parameters": {
+        "files": "{{initialize_quality_check.output.target_files}}",
+        "architecture_pattern": "{{input.architecture_pattern}}",
+        "validate_modules": true,
+        "check_naming_conventions": true,
+        "enforce_design_patterns": "{{input.design_patterns}}"
+      },
+      "depends_on": ["dependency_validation"],
+      "timeout": 120
+    },
+    
+    {
+      "id": "documentation_quality",
+      "name": "Documentation Quality Check",
+      "type": "quality",
+      "component": "docstring_validator",
+      "method": "validate_docstrings",
+      "parameters": {
+        "files": "{{initialize_quality_check.output.target_files}}",
+        "require_docstrings": ["public", "module", "class", "method"],
+        "docstring_format": "google",
+        "check_parameter_docs": true,
+        "check_return_docs": true,
+        "check_raise_docs": true
+      },
+      "depends_on": ["architecture_validation"],
+      "timeout": 90
+    },
+    
+    {
+      "id": "naming_conventions",
+      "name": "Naming Convention Check",
+      "type": "quality",
+      "component": "naming_spellcheck_validator",
+      "method": "validate_naming",
+      "parameters": {
+        "files": "{{initialize_quality_check.output.target_files}}",
+        "conventions": {
+          "class": "PascalCase",
+          "function": "snake_case",
+          "variable": "snake_case",
+          "constant": "UPPER_SNAKE_CASE",
+          "private": "_leading_underscore"
+        },
+        "spell_check": true,
+        "dictionary": "technical"
+      },
+      "depends_on": ["documentation_quality"],
+      "timeout": 90
+    },
+    
+    {
+      "id": "security_scanning",
+      "name": "Security Vulnerability Scan",
+      "type": "quality",
+      "component": "security_validator",
+      "method": "scan_for_vulnerabilities",
+      "parameters": {
+        "files": "{{initialize_quality_check.output.target_files}}",
+        "scan_rules": [
+          "sql_injection",
+          "xss",
+          "command_injection",
+          "path_traversal",
+          "hardcoded_secrets",
+          "insecure_deserialization",
+          "weak_crypto",
+          "log_injection"
+        ],
+        "severity_threshold": "medium",
+        "check_dependencies": true,
+        "check_sast": true
+      },
+      "depends_on": ["naming_conventions"],
+      "timeout": 300
+    },
+    
+    {
+      "id": "performance_analysis",
+      "name": "Performance Analysis",
+      "type": "quality",
+      "component": "performance_validator",
+      "method": "analyze_performance",
+      "parameters": {
+        "files": "{{initialize_quality_check.output.target_files}}",
+        "check_algorithms": true,
+        "detect_n_plus_one": true,
+        "check_memory_usage": true,
+        "check_database_queries": true,
+        "performance_budget_ms": 100,
+        "complexity_threshold": "O(n^2)"
+      },
+      "depends_on": ["security_scanning"],
+      "timeout": 180
+    },
+    
+    {
+      "id": "test_analysis",
+      "name": "Test Coverage Analysis",
+      "type": "quality",
+      "component": "coverage_analyzer",
+      "method": "analyze_coverage",
+      "parameters": {
+        "source_files": "{{initialize_quality_check.output.target_files}}",
+        "test_files": "{{input.test_files}}",
+        "min_coverage": "{{variables.quality_gates.test_coverage.threshold}}",
+        "coverage_type": "line",
+        "exclude_patterns": ["__init__.py", "*/migrations/*"]
+      },
+      "depends_on": ["performance_analysis"],
+      "timeout": 240
+    },
+    
+    {
+      "id": "run_unit_tests",
+      "name": "Run Unit Tests",
+      "type": "quality",
+      "component": "test_runner",
+      "method": "run_tests",
+      "parameters": {
+        "test_path": "{{input.test_path}}",
+        "test_pattern": "test_*.py",
+        "parallel": true,
+        "workers": 4,
+        "fail_fast": false,
+        "capture_output": true,
+        "verbosity": 1
+      },
+      "depends_on": ["test_analysis"],
+      "timeout": 600
+    },
+    
+    {
+      "id": "run_integration_tests",
+      "name": "Run Integration Tests",
+      "type": "quality",
+      "component": "test_runner",
+      "method": "run_integration_tests",
+      "parameters": {
+        "test_path": "{{input.integration_test_path}}",
+        "setup_database": true,
+        "use_test_containers": true,
+        "timeout_per_test": 30
+      },
+      "depends_on": ["run_unit_tests"],
+      "timeout": 900
+    },
+    
+    {
+      "id": "mutation_testing",
+      "name": "Mutation Testing",
+      "type": "quality",
+      "component": "mutation_tester",
+      "method": "run_mutation_tests",
+      "parameters": {
+        "source_files": "{{initialize_quality_check.output.target_files}}",
+        "test_files": "{{input.test_files}}",
+        "mutators": ["arithmetic", "boolean", "conditional", "return"],
+        "timeout_per_mutant": 5,
+        "max_mutants": 100
+      },
+      "depends_on": ["run_integration_tests"],
+      "timeout": 1800
+    },
+    
+    {
+      "id": "calculate_quality_metrics",
+      "name": "Calculate Quality Metrics",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "syntax_result": "{{syntax_validation.output}}",
+        "linting_result": "{{linting.output}}",
+        "type_check_result": "{{type_checking.output}}",
+        "complexity_result": "{{complexity_analysis.output}}",
+        "dependency_result": "{{dependency_validation.output}}",
+        "architecture_result": "{{architecture_validation.output}}",
+        "documentation_result": "{{documentation_quality.output}}",
+        "naming_result": "{{naming_conventions.output}}",
+        "security_result": "{{security_scanning.output}}",
+        "performance_result": "{{performance_analysis.output}}",
+        "coverage_result": "{{test_analysis.output}}",
+        "unit_test_result": "{{run_unit_tests.output}}",
+        "integration_test_result": "{{run_integration_tests.output}}",
+        "mutation_result": "{{mutation_testing.output}}"
+      },
+      "depends_on": [
+        "syntax_validation", "linting", "type_checking", "complexity_analysis",
+        "dependency_validation", "architecture_validation", "documentation_quality",
+        "naming_conventions", "security_scanning", "performance_analysis",
+        "test_analysis", "run_unit_tests", "run_integration_tests", "mutation_testing"
+      ]
+    },
+    
+    {
+      "id": "evaluate_quality_gates",
+      "name": "Evaluate Quality Gates",
+      "type": "condition",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "metrics": "{{calculate_quality_metrics.output}}",
+        "gates": "{{variables.quality_gates}}",
+        "overall_score_formula": "weighted_average",
+        "weights": {
+          "syntax": 10,
+          "linting": 10,
+          "type_checking": 15,
+          "complexity": 10,
+          "dependency": 5,
+          "architecture": 10,
+          "documentation": 5,
+          "naming": 5,
+          "security": 15,
+          "performance": 5,
+          "test_coverage": 5,
+          "test_pass_rate": 5
+        }
+      },
+      "depends_on": ["calculate_quality_metrics"]
+    },
+    
+    {
+      "id": "collect_auto_fixable_issues",
+      "name": "Collect Auto-Fixable Issues",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "issues": "{{calculate_quality_metrics.output.issues}}",
+        "auto_fixable_categories": [
+          "linting",
+          "formatting",
+          "naming",
+          "docstring_format",
+          "import_organization"
+        ],
+        "confidence_threshold": 0.9
+      },
+      "depends_on": ["evaluate_quality_gates"]
+    },
+    
+    {
+      "id": "auto_fix_issues",
+      "name": "Auto-Fix Issues",
+      "type": "quality",
+      "component": "ruff_validator",
+      "method": "apply_fixes",
+      "parameters": {
+        "files": "{{initialize_quality_check.output.target_files}}",
+        "issues": "{{collect_auto_fixable_issues.output.fixable_issues}}",
+        "fix_strategy": "safe",
+        "create_backup": true,
+        "validate_after_fix": true
+      },
+      "depends_on": ["collect_auto_fixable_issues"],
+      "condition": "{{input.auto_fix_enabled}} == true and {{collect_auto_fixable_issues.output.has_fixable}} == true",
+      "timeout": 300
+    },
+    
+    {
+      "id": "revalidate_after_fix",
+      "name": "Revalidate After Auto-Fix",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "fixed_files": "{{auto_fix_issues.output.modified_files}}",
+        "recheck_gates": ["syntax", "linting", "type_checking", "naming"]
+      },
+      "depends_on": ["auto_fix_issues"]
+    },
+    
+    {
+      "id": "human_quality_review",
+      "name": "Human Quality Review",
+      "type": "human",
+      "parameters": {
+        "type": "review",
+        "title": "Quality Review Required",
+        "description": "Please review the quality assessment and unresolved issues",
+        "required_skills": ["code_review", "quality_assurance", "security"],
+        "priority": 1,
+        "timeout_hours": 24,
+        "data": {
+          "quality_report": "{{calculate_quality_metrics.output}}",
+          "gate_results": "{{evaluate_quality_gates.output}}",
+          "critical_issues": "{{calculate_quality_metrics.output.critical_issues}}",
+          "auto_fixed_issues": "{{auto_fix_issues.output.fixed}}",
+          "unresolved_issues": "{{calculate_quality_metrics.output.unresolved}}",
+          "quality_score": "{{evaluate_quality_gates.output.overall_score}}",
+          "test_results": {
+            "unit": "{{run_unit_tests.output.summary}}",
+            "integration": "{{run_integration_tests.output.summary}}",
+            "mutation": "{{mutation_testing.output.summary}}"
+          }
+        },
+        "allow_override": true,
+        "override_threshold": 95
+      },
+      "depends_on": ["revalidate_after_fix", "evaluate_quality_gates"]
+    },
+    
+    {
+      "id": "generate_quality_report",
+      "name": "Generate Quality Report",
+      "type": "generation",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "workflow_name": "quality_workflow",
+        "quality_metrics": "{{calculate_quality_metrics.output}}",
+        "gate_results": "{{evaluate_quality_gates.output}}",
+        "human_review": "{{human_quality_review.output}}",
+        "auto_fixes": "{{auto_fix_issues.output}}",
+        "report_format": "html",
+        "include_charts": true,
+        "include_recommendations": true,
+        "sections": [
+          "executive_summary",
+          "quality_score",
+          "gate_status",
+          "issues_by_severity",
+          "test_results",
+          "security_findings",
+          "performance_metrics",
+          "recommendations",
+          "improvement_trends"
+        ]
+      },
+      "depends_on": ["human_quality_review"],
+      "timeout": 180
+    },
+    
+    {
+      "id": "create_quality_badge",
+      "name": "Create Quality Badge",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "quality_score": "{{evaluate_quality_gates.output.overall_score}}",
+        "badge_color_mapping": {
+          "excellent": [90, 100],
+          "good": [80, 89],
+          "average": [70, 79],
+          "poor": [60, 69],
+          "critical": [0, 59]
+        },
+        "output_format": "svg",
+        "save_path": "{{input.output_path}}/quality_badge.svg"
+      },
+      "depends_on": ["generate_quality_report"]
+    },
+    
+    {
+      "id": "update_quality_tracking",
+      "name": "Update Quality Tracking System",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "metrics": "{{calculate_quality_metrics.output}}",
+        "historical_data": "{{input.historical_quality_data}}",
+        "store_in_state_manager": true,
+        "track_trends": true,
+        "update_dashboard": true
+      },
+      "depends_on": ["create_quality_badge"]
+    },
+    
+    {
+      "id": "create_improvement_tasks",
+      "name": "Create Improvement Tasks",
+      "type": "transform",
+      "component": "work_queue",
+      "method": "enqueue_batch",
+      "parameters": {
+        "items": "{{calculate_quality_metrics.output.unresolved_issues}}",
+        "queue_type": "standard",
+        "priority_mapping": {
+          "critical": "high_priority",
+          "high": "high_priority",
+          "medium": "standard",
+          "low": "low_priority"
+        },
+        "assign_auto": true,
+        "skill_requirements": ["refactoring", "optimization", "security"]
+      },
+      "depends_on": ["update_quality_tracking"]
+    },
+    
+    {
+      "id": "check_quality_trend",
+      "name": "Check Quality Trend",
+      "type": "analysis",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "current_score": "{{evaluate_quality_gates.output.overall_score}}",
+        "historical_scores": "{{input.historical_quality_scores}}",
+        "lookback_days": 30,
+        "alert_on_decline": true,
+        "decline_threshold": 5
+      },
+      "depends_on": ["update_quality_tracking"]
+    },
+    
+    {
+      "id": "alert_quality_decline",
+      "name": "Alert on Quality Decline",
+      "type": "notify",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "type": "quality_alert",
+        "message": "Quality score has declined significantly",
+        "channels": ["slack", "email"],
+        "condition": "{{check_quality_trend.output.is_declining}} == true",
+        "data": {
+          "current_score": "{{check_quality_trend.output.current_score}}",
+          "previous_score": "{{check_quality_trend.output.previous_score}}",
+          "decline_percentage": "{{check_quality_trend.output.decline_percentage}}",
+          "affected_areas": "{{check_quality_trend.output.declining_areas}}",
+          "report_url": "{{generate_quality_report.output.url}}"
+        }
+      },
+      "depends_on": ["check_quality_trend"]
+    },
+    
+    {
+      "id": "update_ci_status",
+      "name": "Update CI/CD Pipeline Status",
+      "type": "function",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "quality_passed": "{{evaluate_quality_gates.output.all_passed}}",
+        "quality_score": "{{evaluate_quality_gates.output.overall_score}}",
+        "ci_system": "{{input.ci_system}}",
+        "set_status": true,
+        "block_deployment_if_failed": "{{input.block_deployment_on_failure}}"
+      },
+      "depends_on": ["create_improvement_tasks"]
+    },
+    
+    {
+      "id": "notify_stakeholders",
+      "name": "Notify Quality Stakeholders",
+      "type": "notify",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "type": "workflow_completed",
+        "message": "Quality workflow completed",
+        "channels": ["log", "event_bus", "dashboard", "slack"],
+        "recipients": "{{input.stakeholders}}",
+        "data": {
+          "workflow": "quality_workflow",
+          "quality_score": "{{evaluate_quality_gates.output.overall_score}}",
+          "quality_status": "{{evaluate_quality_gates.output.all_passed}} ? 'PASSED' : 'FAILED'",
+          "critical_issues": "{{calculate_quality_metrics.output.critical_issues.length}}",
+          "auto_fixes_applied": "{{auto_fix_issues.output.fixes_applied}}",
+          "report_url": "{{generate_quality_report.output.url}}",
+          "badge_url": "{{create_quality_badge.output.url}}"
+        }
+      },
+      "depends_on": ["update_ci_status", "alert_quality_decline"]
+    },
+    
+    {
+      "id": "archive_quality_report",
+      "name": "Archive Quality Report",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "report": "{{generate_quality_report.output}}",
+        "metrics": "{{calculate_quality_metrics.output}}",
+        "archive_location": "{{input.archive_path}}/quality_reports",
+        "retention_days": 365,
+        "create_index": true,
+        "compress": true
+      },
+      "depends_on": ["notify_stakeholders"]
+    }
+  ]
+}

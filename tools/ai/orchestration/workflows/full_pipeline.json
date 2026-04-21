@@ -1,0 +1,763 @@
+{
+  "name": "full_pipeline_workflow",
+  "version": "3.0",
+  "description": "Complete development pipeline - orchestrates analysis, planning, generation, review, approval, and deployment workflows into a single cohesive pipeline",
+  
+  "variables": {
+    "pipeline_config": {
+      "pipeline_id": null,
+      "name": "complete_development_pipeline",
+      "version": "3.0",
+      "auto_continue": true,
+      "fail_fast": true,
+      "parallel_stages": true,
+      "checkpoint_interval": 5,
+      "max_duration_hours": 168
+    },
+    "pipeline_stages": {
+      "stage_1_analysis": {
+        "name": "Code Analysis",
+        "status": "pending",
+        "workflow": "analysis_workflow",
+        "depends_on": [],
+        "timeout_hours": 4,
+        "retry_count": 0,
+        "max_retries": 2
+      },
+      "stage_2_planning": {
+        "name": "Planning & Design",
+        "status": "pending",
+        "workflow": "planning_workflow",
+        "depends_on": ["stage_1_analysis"],
+        "timeout_hours": 8,
+        "retry_count": 0,
+        "max_retries": 2
+      },
+      "stage_3_generation": {
+        "name": "Code Generation",
+        "status": "pending",
+        "workflow": "generation_workflow",
+        "depends_on": ["stage_2_planning"],
+        "timeout_hours": 12,
+        "retry_count": 0,
+        "max_retries": 3
+      },
+      "stage_4_diff_review": {
+        "name": "Diff Review",
+        "status": "pending",
+        "workflow": "diff_reviewer_workflow",
+        "depends_on": ["stage_3_generation"],
+        "timeout_hours": 4,
+        "retry_count": 0,
+        "max_retries": 2
+      },
+      "stage_5_code_review": {
+        "name": "Code Review",
+        "status": "pending",
+        "workflow": "code_review_workflow",
+        "depends_on": ["stage_4_diff_review"],
+        "timeout_hours": 48,
+        "retry_count": 0,
+        "max_retries": 1
+      },
+      "stage_6_quality": {
+        "name": "Quality Assurance",
+        "status": "pending",
+        "workflow": "quality_workflow",
+        "depends_on": ["stage_5_code_review"],
+        "timeout_hours": 6,
+        "retry_count": 0,
+        "max_retries": 2
+      },
+      "stage_7_refinement": {
+        "name": "Refinement",
+        "status": "pending",
+        "workflow": "refinement_workflow",
+        "depends_on": ["stage_6_quality"],
+        "timeout_hours": 8,
+        "retry_count": 0,
+        "max_retries": 3,
+        "condition": "{{stage_6_quality.output.needs_refinement}}"
+      },
+      "stage_8_conflict_resolution": {
+        "name": "Conflict Resolution",
+        "status": "pending",
+        "workflow": "conflict_resolver_workflow",
+        "depends_on": ["stage_7_refinement"],
+        "timeout_hours": 4,
+        "retry_count": 0,
+        "max_retries": 2,
+        "condition": "{{stage_7_refinement.output.has_conflicts}}"
+      },
+      "stage_9_approval": {
+        "name": "Final Approval",
+        "status": "pending",
+        "workflow": "approval_workflow",
+        "depends_on": ["stage_8_conflict_resolution", "stage_5_code_review"],
+        "timeout_hours": 72,
+        "retry_count": 0,
+        "max_retries": 1
+      },
+      "stage_10_deployment": {
+        "name": "Deployment",
+        "status": "pending",
+        "workflow": "deployment_workflow",
+        "depends_on": ["stage_9_approval"],
+        "timeout_hours": 4,
+        "retry_count": 0,
+        "max_retries": 2
+      }
+    },
+    "pipeline_status": {
+      "current_stage": "stage_1_analysis",
+      "overall_status": "running",
+      "start_time": null,
+      "end_time": null,
+      "completed_stages": [],
+      "failed_stages": [],
+      "skipped_stages": []
+    },
+    "artifacts": {
+      "analysis_report": null,
+      "design_document": null,
+      "generated_code": null,
+      "review_comments": null,
+      "approval_certificate": null,
+      "deployment_log": null
+    },
+    "metrics": {
+      "total_duration_hours": 0,
+      "stages_completed": 0,
+      "quality_score": 0,
+      "deployment_success": false
+    },
+    "notifications": {
+      "on_stage_complete": true,
+      "on_stage_failure": true,
+      "on_pipeline_complete": true,
+      "channels": ["slack", "email", "dashboard"]
+    }
+  },
+  
+  "tasks": [
+    {
+      "id": "initialize_pipeline",
+      "name": "Initialize Full Pipeline",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "pipeline_id": "{{context.pipeline_id}}",
+        "project_name": "{{input.project_name}}",
+        "version": "{{input.version}}",
+        "requirements": "{{input.requirements}}",
+        "config": "{{pipeline_config}}",
+        "stakeholders": "{{input.stakeholders}}"
+      },
+      "timeout": 60
+    },
+    
+    {
+      "id": "validate_prerequisites",
+      "name": "Validate Pipeline Prerequisites",
+      "type": "quality",
+      "component": null,
+      "method": "validate_prerequisites",
+      "parameters": {
+        "required_tools": ["git", "python", "docker", "pytest", "ruff", "mypy"],
+        "required_permissions": ["write_repo", "trigger_ci", "deploy_staging"],
+        "environment_variables": ["PROJECT_PATH", "API_KEY", "DEPLOY_TOKEN"],
+        "disk_space_gb": 10
+      },
+      "depends_on": ["initialize_pipeline"],
+      "timeout": 120
+    },
+    
+    {
+      "id": "execute_stage_analysis",
+      "name": "Execute Analysis Workflow",
+      "type": "workflow",
+      "component": "workflow_executor",
+      "method": "execute_workflow",
+      "parameters": {
+        "workflow_name": "analysis_workflow",
+        "workflow_config": {
+          "project_path": "{{input.project_path}}",
+          "analysis_scope": "comprehensive",
+          "output_format": "html",
+          "stakeholders": "{{input.stakeholders}}"
+        },
+        "execution_mode": "synchronous",
+        "timeout_hours": "{{pipeline_stages.stage_1_analysis.timeout_hours}}"
+      },
+      "depends_on": ["validate_prerequisites"],
+      "timeout": 14400
+    },
+    
+    {
+      "id": "process_analysis_results",
+      "name": "Process Analysis Results",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "analysis_output": "{{execute_stage_analysis.output}}",
+        "extract_metrics": true,
+        "identify_critical_issues": true,
+        "update_pipeline_status": true
+      },
+      "depends_on": ["execute_stage_analysis"],
+      "timeout": 300
+    },
+    
+    {
+      "id": "check_analysis_quality",
+      "name": "Check Analysis Quality Threshold",
+      "type": "condition",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "quality_score": "{{process_analysis_results.output.quality_score}}",
+        "critical_issues": "{{process_analysis_results.output.critical_issues}}",
+        "min_quality_threshold": 60,
+        "max_critical_issues": 5,
+        "can_proceed": "{{quality_score >= 60 and critical_issues <= 5}}"
+      },
+      "depends_on": ["process_analysis_results"]
+    },
+    
+    {
+      "id": "execute_stage_planning",
+      "name": "Execute Planning Workflow",
+      "type": "workflow",
+      "component": "workflow_executor",
+      "method": "execute_workflow",
+      "parameters": {
+        "workflow_name": "planning_workflow",
+        "workflow_config": {
+          "requirements": "{{input.requirements}}",
+          "analysis_results": "{{process_analysis_results.output}}",
+          "architecture_pattern": "{{input.architecture_pattern}}",
+          "timeline_start": "{{context.current_time}}"
+        },
+        "execution_mode": "synchronous",
+        "timeout_hours": "{{pipeline_stages.stage_2_planning.timeout_hours}}"
+      },
+      "depends_on": ["check_analysis_quality"],
+      "condition": "{{check_analysis_quality.output.can_proceed}} == true",
+      "timeout": 28800
+    },
+    
+    {
+      "id": "process_planning_results",
+      "name": "Process Planning Results",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "planning_output": "{{execute_stage_planning.output}}",
+        "extract_tasks": true,
+        "extract_timeline": true,
+        "extract_resources": true,
+        "update_pipeline_status": true
+      },
+      "depends_on": ["execute_stage_planning"],
+      "timeout": 300
+    },
+    
+    {
+      "id": "execute_stage_generation",
+      "name": "Execute Generation Workflow",
+      "type": "workflow",
+      "component": "workflow_executor",
+      "method": "execute_workflow",
+      "parameters": {
+        "workflow_name": "generation_workflow",
+        "workflow_config": {
+          "requirements": "{{input.requirements}}",
+          "design": "{{process_planning_results.output.design}}",
+          "tasks": "{{process_planning_results.output.tasks}}",
+          "project_path": "{{input.project_path}}",
+          "auto_fix_enabled": true
+        },
+        "execution_mode": "synchronous",
+        "timeout_hours": "{{pipeline_stages.stage_3_generation.timeout_hours}}"
+      },
+      "depends_on": ["process_planning_results"],
+      "timeout": 43200
+    },
+    
+    {
+      "id": "process_generation_results",
+      "name": "Process Generation Results",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "generation_output": "{{execute_stage_generation.output}}",
+        "extract_code": true,
+        "extract_tests": true,
+        "extract_documentation": true,
+        "validate_output": true
+      },
+      "depends_on": ["execute_stage_generation"],
+      "timeout": 600
+    },
+    
+    {
+      "id": "execute_stage_diff_review",
+      "name": "Execute Diff Review Workflow",
+      "type": "workflow",
+      "component": "workflow_executor",
+      "method": "execute_workflow",
+      "parameters": {
+        "workflow_name": "diff_reviewer_workflow",
+        "workflow_config": {
+          "source_branch": "{{input.source_branch}}",
+          "target_branch": "{{input.target_branch}}",
+          "diff_content": "{{process_generation_results.output.diff}}",
+          "pull_request_id": "{{context.pull_request_id}}"
+        },
+        "execution_mode": "synchronous",
+        "timeout_hours": "{{pipeline_stages.stage_4_diff_review.timeout_hours}}"
+      },
+      "depends_on": ["process_generation_results"],
+      "timeout": 14400
+    },
+    
+    {
+      "id": "process_diff_results",
+      "name": "Process Diff Review Results",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "diff_output": "{{execute_stage_diff_review.output}}",
+        "extract_conflicts": true,
+        "extract_suggestions": true,
+        "calculate_risk_score": true,
+        "update_pipeline_status": true
+      },
+      "depends_on": ["execute_stage_diff_review"],
+      "timeout": 300
+    },
+    
+    {
+      "id": "execute_stage_code_review",
+      "name": "Execute Code Review Workflow",
+      "type": "workflow",
+      "component": "workflow_executor",
+      "method": "execute_workflow",
+      "parameters": {
+        "workflow_name": "code_review_workflow",
+        "workflow_config": {
+          "pull_request_id": "{{context.pull_request_id}}",
+          "source_branch": "{{input.source_branch}}",
+          "target_branch": "{{input.target_branch}}",
+          "author": "{{input.author}}",
+          "reviewers": "{{input.reviewers}}"
+        },
+        "execution_mode": "synchronous",
+        "timeout_hours": "{{pipeline_stages.stage_5_code_review.timeout_hours}}"
+      },
+      "depends_on": ["process_diff_results"],
+      "timeout": 172800
+    },
+    
+    {
+      "id": "process_code_review_results",
+      "name": "Process Code Review Results",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "review_output": "{{execute_stage_code_review.output}}",
+        "extract_approvals": true,
+        "extract_comments": true,
+        "extract_action_items": true,
+        "calculate_approval_rate": true
+      },
+      "depends_on": ["execute_stage_code_review"],
+      "timeout": 300
+    },
+    
+    {
+      "id": "check_review_approval",
+      "name": "Check Review Approval Status",
+      "type": "condition",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "approvals": "{{process_code_review_results.output.approvals}}",
+        "required_approvals": 2,
+        "changes_requested": "{{process_code_review_results.output.changes_requested}}",
+        "is_approved": "{{approvals >= required_approvals and not changes_requested}}"
+      },
+      "depends_on": ["process_code_review_results"]
+    },
+    
+    {
+      "id": "execute_stage_quality",
+      "name": "Execute Quality Workflow",
+      "type": "workflow",
+      "component": "workflow_executor",
+      "method": "execute_workflow",
+      "parameters": {
+        "workflow_name": "quality_workflow",
+        "workflow_config": {
+          "target_files": "{{process_generation_results.output.files}}",
+          "project_path": "{{input.project_path}}",
+          "quality_profile": "strict",
+          "auto_fix_enabled": true
+        },
+        "execution_mode": "synchronous",
+        "timeout_hours": "{{pipeline_stages.stage_6_quality.timeout_hours}}"
+      },
+      "depends_on": ["check_review_approval"],
+      "condition": "{{check_review_approval.output.is_approved}} == true",
+      "timeout": 21600
+    },
+    
+    {
+      "id": "process_quality_results",
+      "name": "Process Quality Results",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "quality_output": "{{execute_stage_quality.output}}",
+        "extract_quality_score": true,
+        "extract_issues": true,
+        "determine_needs_refinement": true,
+        "update_pipeline_status": true
+      },
+      "depends_on": ["execute_stage_quality"],
+      "timeout": 300
+    },
+    
+    {
+      "id": "check_quality_threshold",
+      "name": "Check Quality Threshold",
+      "type": "condition",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "quality_score": "{{process_quality_results.output.quality_score}}",
+        "passing_threshold": 85,
+        "needs_refinement": "{{quality_score < passing_threshold}}",
+        "quality_passed": "{{quality_score >= passing_threshold}}"
+      },
+      "depends_on": ["process_quality_results"]
+    },
+    
+    {
+      "id": "execute_stage_refinement",
+      "name": "Execute Refinement Workflow",
+      "type": "workflow",
+      "component": "workflow_executor",
+      "method": "execute_workflow",
+      "parameters": {
+        "workflow_name": "refinement_workflow",
+        "workflow_config": {
+          "code": "{{process_generation_results.output.code}}",
+          "quality_issues": "{{process_quality_results.output.issues}}",
+          "target_quality": 90,
+          "max_iterations": 3
+        },
+        "execution_mode": "synchronous",
+        "timeout_hours": "{{pipeline_stages.stage_7_refinement.timeout_hours}}"
+      },
+      "depends_on": ["check_quality_threshold"],
+      "condition": "{{check_quality_threshold.output.needs_refinement}} == true",
+      "timeout": 28800
+    },
+    
+    {
+      "id": "process_refinement_results",
+      "name": "Process Refinement Results",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "refinement_output": "{{execute_stage_refinement.output}}",
+        "extract_refined_code": true,
+        "extract_conflicts": true,
+        "extract_improvements": true,
+        "update_pipeline_status": true
+      },
+      "depends_on": ["execute_stage_refinement"],
+      "timeout": 300
+    },
+    
+    {
+      "id": "check_refinement_conflicts",
+      "name": "Check Refinement Conflicts",
+      "type": "condition",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "has_conflicts": "{{process_refinement_results.output.has_conflicts}}",
+        "conflict_count": "{{process_refinement_results.output.conflict_count}}",
+        "needs_resolution": "{{has_conflicts == true}}"
+      },
+      "depends_on": ["process_refinement_results"]
+    },
+    
+    {
+      "id": "execute_stage_conflict_resolution",
+      "name": "Execute Conflict Resolution Workflow",
+      "type": "workflow",
+      "component": "workflow_executor",
+      "method": "execute_workflow",
+      "parameters": {
+        "workflow_name": "conflict_resolver_workflow",
+        "workflow_config": {
+          "source_branch": "{{input.source_branch}}",
+          "target_branch": "{{input.target_branch}}",
+          "conflict_files": "{{process_refinement_results.output.conflict_files}}"
+        },
+        "execution_mode": "synchronous",
+        "timeout_hours": "{{pipeline_stages.stage_8_conflict_resolution.timeout_hours}}"
+      },
+      "depends_on": ["check_refinement_conflicts"],
+      "condition": "{{check_refinement_conflicts.output.needs_resolution}} == true",
+      "timeout": 14400
+    },
+    
+    {
+      "id": "process_conflict_results",
+      "name": "Process Conflict Resolution Results",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "conflict_output": "{{execute_stage_conflict_resolution.output}}",
+        "extract_resolved_code": true,
+        "extract_resolution_summary": true,
+        "update_pipeline_status": true
+      },
+      "depends_on": ["execute_stage_conflict_resolution"],
+      "timeout": 300
+    },
+    
+    {
+      "id": "execute_stage_approval",
+      "name": "Execute Approval Workflow",
+      "type": "workflow",
+      "component": "workflow_executor",
+      "method": "execute_workflow",
+      "parameters": {
+        "workflow_name": "approval_workflow",
+        "workflow_config": {
+          "request_id": "{{context.pipeline_id}}",
+          "title": "Final Approval for {{input.project_name}} v{{input.version}}",
+          "description": "Pipeline execution completed successfully",
+          "requester": "{{input.author}}",
+          "stakeholders": "{{input.stakeholders}}",
+          "priority": "high"
+        },
+        "execution_mode": "synchronous",
+        "timeout_hours": "{{pipeline_stages.stage_9_approval.timeout_hours}}"
+      },
+      "depends_on": ["process_conflict_results", "process_code_review_results"],
+      "timeout": 259200
+    },
+    
+    {
+      "id": "process_approval_results",
+      "name": "Process Approval Results",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "approval_output": "{{execute_stage_approval.output}}",
+        "extract_approval_status": true,
+        "extract_approval_certificate": true,
+        "extract_conditions": true,
+        "update_pipeline_status": true
+      },
+      "depends_on": ["execute_stage_approval"],
+      "timeout": 300
+    },
+    
+    {
+      "id": "check_final_approval",
+      "name": "Check Final Approval Status",
+      "type": "condition",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "is_approved": "{{process_approval_results.output.approved}}",
+        "approval_conditions_met": "{{process_approval_results.output.conditions_met}}",
+        "can_deploy": "{{is_approved == true and approval_conditions_met == true}}"
+      },
+      "depends_on": ["process_approval_results"]
+    },
+    
+    {
+      "id": "execute_stage_deployment",
+      "name": "Execute Deployment",
+      "type": "function",
+      "component": "git_utils",
+      "method": "deploy",
+      "parameters": {
+        "environment": "production",
+        "version": "{{input.version}}",
+        "artifacts": {
+          "code": "{{process_generation_results.output.code}}",
+          "tests": "{{process_generation_results.output.tests}}",
+          "docs": "{{process_generation_results.output.documentation}}"
+        },
+        "strategy": "blue_green",
+        "rollback_on_failure": true
+      },
+      "depends_on": ["check_final_approval"],
+      "condition": "{{check_final_approval.output.can_deploy}} == true",
+      "timeout": 14400
+    },
+    
+    {
+      "id": "process_deployment_results",
+      "name": "Process Deployment Results",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "deployment_output": "{{execute_stage_deployment.output}}",
+        "extract_deployment_status": true,
+        "extract_deployment_url": true,
+        "extract_health_check": true,
+        "update_pipeline_status": true
+      },
+      "depends_on": ["execute_stage_deployment"],
+      "timeout": 300
+    },
+    
+    {
+      "id": "verify_deployment",
+      "name": "Verify Deployment Success",
+      "type": "quality",
+      "component": "test_runner",
+      "method": "run_smoke_tests",
+      "parameters": {
+        "deployment_url": "{{process_deployment_results.output.deployment_url}}",
+        "test_suite": "smoke",
+        "health_endpoint": "/health",
+        "timeout_seconds": 60
+      },
+      "depends_on": ["process_deployment_results"],
+      "timeout": 300
+    },
+    
+    {
+      "id": "create_release_tag",
+      "name": "Create Release Tag",
+      "type": "function",
+      "component": "git_utils",
+      "method": "create_release",
+      "parameters": {
+        "tag": "v{{input.version}}",
+        "message": "Release v{{input.version}}: {{input.project_name}}",
+        "artifacts": "{{process_generation_results.output}}",
+        "release_notes": "{{generate_release_notes.output}}"
+      },
+      "depends_on": ["verify_deployment"],
+      "timeout": 120
+    },
+    
+    {
+      "id": "generate_pipeline_report",
+      "name": "Generate Pipeline Report",
+      "type": "generation",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "workflow_name": "full_pipeline_workflow",
+        "pipeline_id": "{{context.pipeline_id}}",
+        "execution_summary": {
+          "start_time": "{{pipeline_status.start_time}}",
+          "end_time": "{{context.current_time}}",
+          "total_duration_hours": "{{metrics.total_duration_hours}}",
+          "stages_completed": "{{pipeline_status.completed_stages.length}}",
+          "stages_failed": "{{pipeline_status.failed_stages.length}}"
+        },
+        "stage_results": {
+          "analysis": "{{process_analysis_results.output}}",
+          "planning": "{{process_planning_results.output}}",
+          "generation": "{{process_generation_results.output}}",
+          "code_review": "{{process_code_review_results.output}}",
+          "quality": "{{process_quality_results.output}}",
+          "approval": "{{process_approval_results.output}}",
+          "deployment": "{{process_deployment_results.output}}"
+        },
+        "quality_metrics": {
+          "final_quality_score": "{{process_quality_results.output.quality_score}}",
+          "test_coverage": "{{process_quality_results.output.coverage}}",
+          "security_score": "{{process_quality_results.output.security_score}}"
+        },
+        "deployment_info": {
+          "url": "{{process_deployment_results.output.deployment_url}}",
+          "version": "{{input.version}}",
+          "release_tag": "{{create_release_tag.output.tag}}"
+        },
+        "output_format": "html"
+      },
+      "depends_on": ["create_release_tag"],
+      "timeout": 600
+    },
+    
+    {
+      "id": "notify_pipeline_completion",
+      "name": "Notify Pipeline Completion",
+      "type": "notify",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "type": "pipeline_completed",
+        "message": "Full pipeline completed for {{input.project_name}} v{{input.version}}",
+        "channels": "{{notifications.channels}}",
+        "recipients": "{{input.stakeholders}}",
+        "data": {
+          "pipeline_id": "{{context.pipeline_id}}",
+          "status": "{{verify_deployment.output.success ? 'SUCCESS' : 'FAILED'}}",
+          "quality_score": "{{process_quality_results.output.quality_score}}",
+          "deployment_url": "{{process_deployment_results.output.deployment_url}}",
+          "report_url": "{{generate_pipeline_report.output.url}}",
+          "duration_hours": "{{metrics.total_duration_hours}}"
+        }
+      },
+      "depends_on": ["generate_pipeline_report"],
+      "timeout": 60
+    },
+    
+    {
+      "id": "archive_pipeline_data",
+      "name": "Archive Pipeline Data",
+      "type": "transform",
+      "component": null,
+      "method": null,
+      "parameters": {
+        "pipeline_data": {
+          "config": "{{pipeline_config}}",
+          "stages": "{{pipeline_stages}}",
+          "results": {
+            "analysis": "{{process_analysis_results.output}}",
+            "planning": "{{process_planning_results.output}}",
+            "generation": "{{process_generation_results.output}}",
+            "reviews": "{{process_code_review_results.output}}",
+            "quality": "{{process_quality_results.output}}",
+            "approval": "{{process_approval_results.output}}",
+            "deployment": "{{process_deployment_results.output}}"
+          },
+          "report": "{{generate_pipeline_report.output}}"
+        },
+        "archive_location": "{{input.archive_path}}/pipelines/{{context.pipeline_id}}",
+        "retention_days": 365,
+        "compress": true,
+        "encrypt": true
+      },
+      "depends_on": ["notify_pipeline_completion"],
+      "timeout": 300
+    }
+  ]
+}
