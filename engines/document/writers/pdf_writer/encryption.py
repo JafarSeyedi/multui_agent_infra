@@ -1,0 +1,941 @@
+"""
+ماژول رمزگذاری PDF - پیاده‌سازی حرفه‌ای و کامل
+پشتیبانی از استانداردهای رمزگذاری PDF 1.4 تا 2.0
+"""
+
+import hashlib
+import secrets
+import struct
+import base64
+import os
+import hmac
+from typing import Optional, Tuple, Dict, Any, List, Union
+from dataclasses import dataclass, field
+from enum import IntFlag, Enum
+import time
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives import padding
+from cryptography.hazmat.backends import default_backend
+import warnings
+
+
+class EncryptionAlgorithm(Enum):
+    """الگوریتم‌های رمزگذاری PDF"""
+    RC4_40 = "RC4_40"      # PDF 1.2 - RC4 با کلید 40 بیتی
+    RC4_128 = "RC4_128"    # PDF 1.4 - RC4 با کلید 128 بیتی
+    AES_128 = "AES_128"    # PDF 1.6 - AES با کلید 128 بیتی (CBC)
+    AES_256 = "AES_256"    # PDF 2.0 - AES با کلید 256 بیتی (CBC)
+
+
+class PermissionFlag(IntFlag):
+    """پرچم‌های مجوز دسترسی PDF (مطابق استاندارد ISO 32000)"""
+    # Low-order 12 bits (bits 0-11) are reserved
+    PRINT = 1 << 2          # (Revision 2) Print the document
+    MODIFY = 1 << 3         # (Revision 2) Modify the contents
+    COPY = 1 << 4           # (Revision 2) Copy or extract text and graphics
+    ANNOTATE = 1 << 5       # (Revision 2) Add or modify annotations
+    FORM_FILL = 1 << 8      # (Revision 3) Fill in form fields
+    EXTRACT = 1 << 9        # (Revision 3) Extract text and graphics
+    ASSEMBLE = 1 << 10      # (Revision 3) Assemble the document
+    PRINT_HIGH = 1 << 11    # (Revision 3) Print high quality
+    
+    # PDF 2.0 additional permissions
+    MODIFY_ANNOTATIONS = 1 << 12   # Modify annotations
+    FILL_FORM = 1 << 13            # Fill in existing form fields
+    ACCESSIBILITY = 1 << 14        # Extract for accessibility
+    DOCUMENT_ASSEMBLY = 1 << 15    # Document assembly
+
+
+@dataclass
+class EncryptionOptions:
+    """گزینه‌های رمزگذاری PDF"""
+    algorithm: EncryptionAlgorithm = EncryptionAlgorithm.AES_256
+    user_password: str = ""          # رمز عبور کاربر
+    owner_password: str = ""          # رمز عبور مالک
+    permissions: int = 0              # مجوزها (bit flags)
+    metadata_encrypted: bool = True   # رمزگذاری متادیتا
+    encrypt_attachments: bool = True  # رمزگذاری ضمایم (PDF 2.0)
+    encrypt_form_data: bool = True     # رمزگذاری داده‌های فرم
+    key_length: int = 256             # طول کلید (بیت)
+    revision: int = 5                  # نسخه رمزگذاری (2-5)
+    
+    def __post_init__(self):
+        """اعتبارسنجی و تنظیم مقادیر پیش‌فرض"""
+        # تنظیم رمز مالک اگر مشخص نشده
+        if not self.owner_password and self.user_password:
+            self.owner_password = self._generate_owner_password(self.user_password)
+        elif not self.owner_password:
+            self.owner_password = secrets.token_urlsafe(32)
+        
+        # تنظیم مجوزهای پیش‌فرض
+        if self.permissions == 0:
+            self.permissions = (
+                PermissionFlag.PRINT.value |
+                PermissionFlag.COPY.value |
+                PermissionFlag.ANNOTATE.value |
+                PermissionFlag.FORM_FILL.value |
+                PermissionFlag.EXTRACT.value |
+                PermissionFlag.ACCESSIBILITY.value
+            )
+        
+        # تنظیم طول کلید بر اساس الگوریتم
+        if self.algorithm == EncryptionAlgorithm.RC4_40:
+            self.key_length = 40
+            self.revision = 2
+        elif self.algorithm == EncryptionAlgorithm.RC4_128:
+            self.key_length = 128
+            self.revision = 3
+        elif self.algorithm == EncryptionAlgorithm.AES_128:
+            self.key_length = 128
+            self.revision = 4
+        elif self.algorithm == EncryptionAlgorithm.AES_256:
+            self.key_length = 256
+            self.revision = 5
+        
+        # اعتبارسنجی طول کلید
+        valid_lengths = {40, 128, 256}
+        if self.key_length not in valid_lengths:
+            raise ValueError(f"طول کلید نامعتبر: {self.key_length}. مقادیر مجاز: {valid_lengths}")
+    
+    @staticmethod
+    def _generate_owner_password(user_password: str) -> str:
+        """تولید رمز مالک از رمز کاربر"""
+        salt = secrets.token_bytes(16)
+        combined = user_password.encode('utf-8') + salt
+        hash_obj = hashlib.sha256(combined)
+        return base64.urlsafe_b64encode(hash_obj.digest()[:24]).decode('utf-8')
+
+
+class PDFEncryptor:
+    """رمزگذار PDF حرفه‌ای با پشتیبانی کامل از استانداردها"""
+    
+    # ثابت‌های استاندارد PDF
+    PADDING_STRING = bytes([
+        0x28, 0xBF, 0x4E, 0x5E, 0x4E, 0x75, 0x8A, 0x41,
+        0x64, 0x00, 0x4E, 0x56, 0xFF, 0xFA, 0x01, 0x08,
+        0x2E, 0x2E, 0x00, 0xB6, 0xD0, 0x68, 0x3E, 0x80,
+        0x2F, 0x0C, 0xA9, 0xFE, 0x64, 0x53, 0x69, 0x7A
+    ])
+    
+    def __init__(self, options: EncryptionOptions):
+        self.options = options
+        self.encryption_key = None
+        self.encryption_dict = None
+        self.file_id = None
+        self._backend = default_backend()
+        
+        # ذخیره کلیدهای واسط
+        self._o_key = None
+        self._u_key = None
+        self._ue_key = None
+        self._oe_key = None
+        self._perms_key = None
+        
+    def generate_encryption_key(self, file_id: bytes) -> bytes:
+        """تولید کلید رمزگذاری اصلی بر اساس استاندارد PDF"""
+        self.file_id = file_id
+        
+        if self.options.revision == 5:
+            # الگوریتم SHA-256 برای PDF 2.0
+            return self._generate_key_revision_5()
+        elif self.options.revision == 4:
+            # الگوریتم AES-128 برای PDF 1.7 ExtensionLevel 3
+            return self._generate_key_revision_4()
+        elif self.options.revision == 3:
+            # الگوریتم RC4-128 برای PDF 1.4
+            return self._generate_key_revision_3()
+        elif self.options.revision == 2:
+            # الگوریتم RC4-40 برای PDF 1.2
+            return self._generate_key_revision_2()
+        else:
+            raise ValueError(f"نسخه رمزگذاری نامعتبر: {self.options.revision}")
+    
+    def _generate_key_revision_5(self) -> bytes:
+        """تولید کلید برای رمزگذاری Revision 5 (AES-256)"""
+        # 1. تولید salt‌ها
+        user_salt = secrets.token_bytes(8)
+        owner_salt = secrets.token_bytes(8)
+        user_key_salt = secrets.token_bytes(8)
+        owner_key_salt = secrets.token_bytes(8)
+        
+        # 2. محاسبه کلید کاربر (U)
+        user_password = self._pad_password(self.options.user_password.encode('utf-8'))
+        user_hash = hashlib.sha256(user_password + user_salt).digest()
+        
+        # 3. محاسبه کلید مالک (O)
+        owner_password = self._pad_password(self.options.owner_password.encode('utf-8'))
+        owner_hash = hashlib.sha256(owner_password + owner_salt + user_hash).digest()
+        
+        # 4. تولید کلید رمزگذاری (Encryption Key)
+        encryption_key = secrets.token_bytes(32)  # 256-bit key
+        
+        # 5. رمزگذاری کلید برای کاربر (UE)
+        iv_user = secrets.token_bytes(16)
+        cipher_user = Cipher(
+            algorithms.AES(encryption_key),
+            modes.CBC(iv_user),
+            backend=self._backend
+        )
+        encryptor_user = cipher_user.encryptor()
+        padded_user_key = self._pad_aes(user_hash[:32])
+        ue_key = iv_user + encryptor_user.update(padded_user_key) + encryptor_user.finalize()
+        
+        # 6. رمزگذاری کلید برای مالک (OE)
+        iv_owner = secrets.token_bytes(16)
+        cipher_owner = Cipher(
+            algorithms.AES(encryption_key),
+            modes.CBC(iv_owner),
+            backend=self._backend
+        )
+        encryptor_owner = cipher_owner.encryptor()
+        padded_owner_key = self._pad_aes(owner_hash[:32])
+        oe_key = iv_owner + encryptor_owner.update(padded_owner_key) + encryptor_owner.finalize()
+        
+        # 7. محاسبه مجوزها (Perms)
+        perms = struct.pack('<I', self.options.permissions)
+        perms += b'T' if self.options.metadata_encrypted else b'F'
+        perms += b'adb'  # Additional bytes for PDF 2.0
+        perms += secrets.token_bytes(4)  # Padding
+        
+        # رمزگذاری مجوزها
+        iv_perms = secrets.token_bytes(16)
+        cipher_perms = Cipher(
+            algorithms.AES(encryption_key),
+            modes.CBC(iv_perms),
+            backend=self._backend
+        )
+        encryptor_perms = cipher_perms.encryptor()
+        padded_perms = self._pad_aes(perms)
+        encrypted_perms = iv_perms + encryptor_perms.update(padded_perms) + encryptor_perms.finalize()
+        
+        # ذخیره کلیدهای واسط
+        self._u_key = user_hash
+        self._o_key = owner_hash
+        self._ue_key = ue_key
+        self._oe_key = oe_key
+        self._perms_key = encrypted_perms
+        
+        self.encryption_key = encryption_key
+        return encryption_key
+    
+    def _generate_key_revision_4(self) -> bytes:
+        """تولید کلید برای رمزگذاری Revision 4 (AES-128)"""
+        # 1. Pad passwords
+        user_password = self._pad_password(self.options.user_password.encode('utf-8'))
+        owner_password = self._pad_password(self.options.owner_password.encode('utf-8'))
+        
+        # 2. Compute encryption key (Algorithm 2)
+        key = self._compute_encryption_key_r4(
+            user_password,
+            owner_password,
+            self.options.permissions,
+            self.file_id
+        )
+        
+        # 3. Compute O value (Algorithm 3)
+        o_value = self._compute_o_value_r4(owner_password, user_password, key)
+        
+        # 4. Compute U value (Algorithm 4)
+        u_value = self._compute_u_value_r4(user_password, key)
+        
+        # 5. Compute encryption dictionary
+        self._o_key = o_value
+        self._u_key = u_value
+        
+        self.encryption_key = key
+        return key
+    
+    def _generate_key_revision_3(self) -> bytes:
+        """تولید کلید برای رمزگذاری Revision 3 (RC4-128)"""
+        # 1. Pad passwords
+        user_password = self._pad_password(self.options.user_password.encode('utf-8'))
+        owner_password = self._pad_password(self.options.owner_password.encode('utf-8'))
+        
+        # 2. Compute encryption key (Algorithm 2)
+        key = self._compute_encryption_key_r3(
+            user_password,
+            owner_password,
+            self.options.permissions,
+            self.file_id
+        )
+        
+        # 3. Compute O value (Algorithm 3)
+        o_value = self._compute_o_value_r3(owner_password, user_password, key)
+        
+        # 4. Compute U value (Algorithm 4)
+        u_value = self._compute_u_value_r3(user_password, key)
+        
+        # 5. Compute encryption dictionary
+        self._o_key = o_value
+        self._u_key = u_value
+        
+        self.encryption_key = key
+        return key
+    
+    def _generate_key_revision_2(self) -> bytes:
+        """تولید کلید برای رمزگذاری Revision 2 (RC4-40)"""
+        # Similar to revision 3 but with 40-bit key
+        user_password = self._pad_password(self.options.user_password.encode('utf-8'))
+        owner_password = self._pad_password(self.options.owner_password.encode('utf-8'))
+        
+        # Generate 40-bit key (5 bytes)
+        key = self._compute_encryption_key_r2(
+            user_password,
+            owner_password,
+            self.options.permissions,
+            self.file_id
+        )
+        
+        # Compute O and U values
+        o_value = self._compute_o_value_r2(owner_password, user_password, key)
+        u_value = self._compute_u_value_r2(user_password, key)
+        
+        self._o_key = o_value
+        self._u_key = u_value
+        
+        self.encryption_key = key
+        return key
+    
+    def _compute_encryption_key_r4(self, user_pass: bytes, owner_pass: bytes, 
+                                  permissions: int, file_id: bytes) -> bytes:
+        """محاسبه کلید رمزگذاری برای Revision 4"""
+        # Algorithm 2 from PDF 1.7 ExtensionLevel 3
+        key_length = self.options.key_length // 8
+        
+        # Step 1: Pad passwords
+        padded_user = self._pad_password_32(user_pass)
+        padded_owner = self._pad_password_32(owner_pass)
+        
+        # Step 2: Compute hash
+        hash_input = (
+            padded_user +
+            padded_owner +
+            struct.pack('<I', permissions) +
+            file_id +
+            b'\xFF\xFF\xFF\xFF'  # Metadata flag
+        )
+        
+        # Step 3: Iterate 64 times
+        key = hashlib.md5(hash_input).digest()
+        for i in range(1, 64):
+            key = hashlib.md5(key + hash_input).digest()
+        
+        # Step 4: Truncate to key length
+        return key[:key_length]
+    
+    def _compute_encryption_key_r3(self, user_pass: bytes, owner_pass: bytes,
+                                  permissions: int, file_id: bytes) -> bytes:
+        """محاسبه کلید رمزگذاری برای Revision 3"""
+        # Algorithm 2 from PDF 1.4
+        key_length = 16  # 128-bit for RC4-128
+        
+        # Pad passwords
+        padded_user = self._pad_password_32(user_pass)
+        padded_owner = self._pad_password_32(owner_pass)
+        
+        # Compute hash
+        hash_input = (
+            padded_user +
+            padded_owner +
+            struct.pack('<I', permissions) +
+            file_id
+        )
+        
+        key = hashlib.md5(hash_input).digest()
+        
+        # Iterate 50 times
+        for i in range(1, 50):
+            key = hashlib.md5(key[:key_length]).digest()
+        
+        return key[:key_length]
+    
+    def _compute_encryption_key_r2(self, user_pass: bytes, owner_pass: bytes,
+                                  permissions: int, file_id: bytes) -> bytes:
+        """محاسبه کلید رمزگذاری برای Revision 2"""
+        key_length = 5  # 40-bit for RC4-40
+        
+        # Similar to R3 but with 40-bit key
+        padded_user = self._pad_password_32(user_pass)
+        padded_owner = self._pad_password_32(owner_pass)
+        
+        hash_input = (
+            padded_user +
+            padded_owner +
+            struct.pack('<I', permissions) +
+            file_id
+        )
+        
+        key = hashlib.md5(hash_input).digest()
+        
+        # Iterate 50 times
+        for i in range(1, 50):
+            key = hashlib.md5(key[:key_length]).digest()
+        
+        return key[:key_length]
+    
+    def _compute_o_value_r4(self, owner_pass: bytes, user_pass: bytes, key: bytes) -> bytes:
+        """محاسبه مقدار O برای Revision 4"""
+        # Algorithm 3 for AES-128
+        padded_owner = self._pad_password_32(owner_pass)
+        padded_user = self._pad_password_32(user_pass)
+        
+        # Hash owner password with user password
+        hash_input = padded_owner + padded_user
+        hash_result = hashlib.md5(hash_input).digest()
+        
+        # Iterate 20 times
+        for i in range(1, 20):
+            xor_key = bytes([b ^ i for b in key])
+            hash_result = hashlib.md5(xor_key + hash_result).digest()
+        
+        return hash_result[:32]
+    
+    def _compute_o_value_r3(self, owner_pass: bytes, user_pass: bytes, key: bytes) -> bytes:
+        """محاسبه مقدار O برای Revision 3"""
+        padded_owner = self._pad_password_32(owner_pass)
+        padded_user = self._pad_password_32(user_pass)
+        
+        # MD5 hash
+        hash_result = hashlib.md5(padded_owner).digest()
+        
+        # RC4 encryption with key
+        encrypted = self._rc4_encrypt(hash_result, key)
+        
+        # Iterate 19 times
+        for i in range(1, 20):
+            new_key = bytes([b ^ i for b in key])
+            encrypted = self._rc4_encrypt(encrypted, new_key)
+        
+        return encrypted
+    
+    def _compute_o_value_r2(self, owner_pass: bytes, user_pass: bytes, key: bytes) -> bytes:
+        """محاسبه مقدار O برای Revision 2"""
+        # Similar to R3 but with 40-bit key
+        padded_owner = self._pad_password_32(owner_pass)
+        
+        # MD5 hash
+        hash_result = hashlib.md5(padded_owner).digest()
+        
+        # RC4 encryption with 40-bit key
+        encrypted = self._rc4_encrypt(hash_result, key[:5])
+        
+        # Iterate 19 times
+        for i in range(1, 20):
+            new_key = bytes([b ^ i for b in key[:5]])
+            encrypted = self._rc4_encrypt(encrypted, new_key)
+        
+        return encrypted
+    
+    def _compute_u_value_r4(self, user_pass: bytes, key: bytes) -> bytes:
+        """محاسبه مقدار U برای Revision 4"""
+        # Algorithm 4 for AES-128
+        padded_user = self._pad_password_32(user_pass)
+        
+        # Generate random initialization vector
+        iv = secrets.token_bytes(16)
+        
+        # Encrypt with AES-128
+        cipher = Cipher(
+            algorithms.AES(key),
+            modes.CBC(iv),
+            backend=self._backend
+        )
+        encryptor = cipher.encryptor()
+        
+        # Pad and encrypt
+        padded_data = self._pad_aes(padded_user)
+        encrypted = encryptor.update(padded_data) + encryptor.finalize()
+        
+        return iv + encrypted
+    
+    def _compute_u_value_r3(self, user_pass: bytes, key: bytes) -> bytes:
+        """محاسبه مقدار U برای Revision 3"""
+        # Algorithm 4 for RC4-128
+        padded_user = self._pad_password_32(user_pass)
+        
+        # MD5 hash of padding string
+        padding_hash = hashlib.md5(self.PADDING_STRING).digest()
+        
+        # Combine with file ID
+        hash_input = padding_hash + self.file_id
+        
+        # Encrypt with RC4
+        encrypted = self._rc4_encrypt(hash_input, key)
+        
+        # Pad to 32 bytes
+        result = encrypted + bytes(16)  # 16 zero bytes
+        
+        return result[:32]
+    
+    def _compute_u_value_r2(self, user_pass: bytes, key: bytes) -> bytes:
+        """محاسبه مقدار U برای Revision 2"""
+        # Similar to R3 but with 40-bit key
+        padded_user = self._pad_password_32(user_pass)
+        
+        # MD5 hash of padding string
+        padding_hash = hashlib.md5(self.PADDING_STRING).digest()
+        
+        # Combine with file ID
+        hash_input = padding_hash + self.file_id
+        
+        # Encrypt with 40-bit RC4
+        encrypted = self._rc4_encrypt(hash_input, key[:5])
+        
+        # Pad to 32 bytes
+        result = encrypted + bytes(16)
+        
+        return result[:32]
+    
+    def _pad_password(self, password: bytes) -> bytes:
+        """Pad password to 32 bytes (Algorithm 1)"""
+        if len(password) >= 32:
+            return password[:32]
+        
+        padded = password + self.PADDING_STRING[:32 - len(password)]
+        return padded
+    
+    def _pad_password_32(self, password: bytes) -> bytes:
+        """Pad password to exactly 32 bytes"""
+        return self._pad_password(password)[:32]
+    
+    def _pad_aes(self, data: bytes) -> bytes:
+        """Pad data for AES encryption (PKCS#7)"""
+        padder = padding.PKCS7(128).padder()
+        return padder.update(data) + padder.finalize()
+    
+    def _unpad_aes(self, data: bytes) -> bytes:
+        """Unpad AES encrypted data"""
+        unpadder = padding.PKCS7(128).unpadder()
+        return unpadder.update(data) + unpadder.finalize()
+    
+    def encrypt_data(self, data: bytes, object_num: int, generation_num: int = 0) -> bytes:
+        """رمزگذاری داده‌های آبجکت PDF"""
+        if not self.encryption_key:
+            raise ValueError("کلید رمزگذاری تولید نشده است. ابتدا generate_encryption_key را فراخوانی کنید.")
+        
+        algorithm = self.options.algorithm
+        
+        # تولید کلید مخصوص آبجکت
+        obj_key = self._generate_object_key(object_num, generation_num)
+        
+        if algorithm in [EncryptionAlgorithm.RC4_40, EncryptionAlgorithm.RC4_128]:
+            # رمزگذاری RC4
+            encrypted_data = self._rc4_encrypt(data, obj_key)
+            
+        elif algorithm in [EncryptionAlgorithm.AES_128, EncryptionAlgorithm.AES_256]:
+            # رمزگذاری AES
+            encrypted_data = self._aes_encrypt(data, obj_key)
+            
+        else:
+            raise ValueError(f"الگوریتم رمزگذاری نامعتبر: {algorithm}")
+        
+        return encrypted_data
+    
+    def decrypt_data(self, encrypted_data: bytes, object_num: int, generation_num: int = 0) -> bytes:
+        """رمزگشایی داده‌های آبجکت PDF"""
+        if not self.encryption_key:
+            raise ValueError("کلید رمزگذاری تولید نشده است.")
+        
+        algorithm = self.options.algorithm
+        
+        # تولید کلید مخصوص آبجکت
+        obj_key = self._generate_object_key(object_num, generation_num)
+        
+        if algorithm in [EncryptionAlgorithm.RC4_40, EncryptionAlgorithm.RC4_128]:
+            # رمزگشایی RC4 (RC4 متقارن است)
+            decrypted_data = self._rc4_encrypt(encrypted_data, obj_key)
+            
+        elif algorithm in [EncryptionAlgorithm.AES_128, EncryptionAlgorithm.AES_256]:
+            # رمزگشایی AES
+            decrypted_data = self._aes_decrypt(encrypted_data, obj_key)
+            
+        else:
+            raise ValueError(f"الگوریتم رمزگذاری نامعتبر: {algorithm}")
+        
+        return decrypted_data
+    
+    def _generate_object_key(self, object_num: int, generation_num: int) -> bytes:
+        """تولید کلید برای آبجکت خاص"""
+        if self.options.revision >= 4:
+            # برای AES، کلید اصلی مستقیماً استفاده می‌شود
+            return self.encryption_key
+        else:
+            # برای RC4، کلید با شماره آبجکت ترکیب می‌شود
+            key_input = self.encryption_key + struct.pack('<I', object_num)[:3] + struct.pack('<I', generation_num)[:2]
+            
+            if self.options.revision == 3:
+                # Revision 3: MD5 hash
+                return hashlib.md5(key_input).digest()[:min(16, len(self.encryption_key) + 5)]
+            else:
+                # Revision 2: 40-bit key
+                return hashlib.md5(key_input).digest()[:5]
+    
+    def _rc4_encrypt(self, data: bytes, key: bytes) -> bytes:
+        """پیاده‌سازی بهینه‌شده رمزگذاری RC4"""
+        # پیاده‌سازی سریع RC4 با بهینه‌سازی
+        S = bytearray(256)
+        for i in range(256):
+            S[i] = i
+        
+        j = 0
+        key_len = len(key)
+        key_array = bytearray(key)
+        
+        # Key-scheduling algorithm (KSA)
+        for i in range(256):
+            j = (j + S[i] + key_array[i % key_len]) & 0xFF
+            S[i], S[j] = S[j], S[i]
+        
+        # Pseudo-random generation algorithm (PRGA)
+        i = j = 0
+        result = bytearray(len(data))
+        data_array = bytearray(data)
+        
+        for k in range(len(data)):
+            i = (i + 1) & 0xFF
+            j = (j + S[i]) & 0xFF
+            S[i], S[j] = S[j], S[i]
+            t = (S[i] + S[j]) & 0xFF
+            result[k] = data_array[k] ^ S[t]
+        
+        return bytes(result)
+    
+    def _aes_encrypt(self, data: bytes, key: bytes) -> bytes:
+        """رمزگذاری AES با CBC mode"""
+        # تولید IV تصادفی
+        iv = secrets.token_bytes(16)
+        
+        # ایجاد cipher
+        cipher = Cipher(
+            algorithms.AES(key[:32]),  # استفاده از 32 بایت اول برای AES-256
+            modes.CBC(iv),
+            backend=self._backend
+        )
+        encryptor = cipher.encryptor()
+        
+        # Padding و رمزگذاری
+        padder = padding.PKCS7(128).padder()
+        padded_data = padder.update(data) + padder.finalize()
+        
+        encrypted = encryptor.update(padded_data) + encryptor.finalize()
+        
+        # ترکیب IV با داده رمزگذاری شده
+        return iv + encrypted
+    
+    def _aes_decrypt(self, encrypted_data: bytes, key: bytes) -> bytes:
+        """رمزگشایی AES با CBC mode"""
+        if len(encrypted_data) < 32:  # IV (16) + حداقل یک بلاک (16)
+            raise ValueError("داده رمزگذاری شده بسیار کوتاه است")
+        
+        # استخراج IV
+        iv = encrypted_data[:16]
+        ciphertext = encrypted_data[16:]
+        
+        # ایجاد cipher برای رمزگشایی
+        cipher = Cipher(
+            algorithms.AES(key[:32]),
+            modes.CBC(iv),
+            backend=self._backend
+        )
+        decryptor = cipher.decryptor()
+        
+        # رمزگشایی
+        padded_data = decryptor.update(ciphertext) + decryptor.finalize()
+        
+        # حذف padding
+        unpadder = padding.PKCS7(128).unpadder()
+        return unpadder.update(padded_data) + unpadder.finalize()
+    
+    def create_encryption_dictionary(self, file_id: bytes) -> Dict[str, Any]:
+        """ایجاد دیکشنری رمزگذاری PDF مطابق استاندارد"""
+        if not self.encryption_key:
+            self.generate_encryption_key(file_id)
+        
+        algorithm = self.options.algorithm
+        revision = self.options.revision
+        
+        # ایجاد دیکشنری رمزگذاری پایه
+        encrypt_dict = {
+            'Filter': '/Standard',
+            'V': self._get_encryption_version(),
+            'R': revision,
+            'Length': self.options.key_length,
+            'P': struct.pack('<i', self.options.permissions).hex(),
+            'EncryptMetadata': self.options.metadata_encrypted
+        }
+        
+        # افزودن مقادیر O و U بر اساس revision
+        if revision >= 5:
+            # PDF 2.0 (AES-256)
+            encrypt_dict.update({
+                'O': base64.b64encode(self._o_key).decode('ascii') if self._o_key else '',
+                'U': base64.b64encode(self._u_key).decode('ascii') if self._u_key else '',
+                'OE': base64.b64encode(self._oe_key).decode('ascii') if self._oe_key else '',
+                'UE': base64.b64encode(self._ue_key).decode('ascii') if self._ue_key else '',
+                'Perms': base64.b64encode(self._perms_key).decode('ascii') if self._perms_key else '',
+            })
+            
+            # Crypt filters برای PDF 2.0
+            encrypt_dict['CF'] = {
+                '/StdCF': {
+                    'Type': '/CryptFilter',
+                    'CFM': '/AESV3',
+                    'AuthEvent': '/DocOpen',
+                    'Length': 32  # 256-bit
+                }
+            }
+            encrypt_dict['StmF'] = '/StdCF'
+            encrypt_dict['StrF'] = '/StdCF'
+            
+        elif revision == 4:
+            # PDF 1.7 ExtensionLevel 3 (AES-128)
+            encrypt_dict.update({
+                'O': self._o_key.hex() if self._o_key else '',
+                'U': self._u_key.hex() if self._u_key else '',
+                'Length': 128,
+            })
+            
+            # Crypt filters
+            encrypt_dict['CF'] = {
+                '/StdCF': {
+                    'Type': '/CryptFilter',
+                    'CFM': '/AESV2',
+                    'AuthEvent': '/DocOpen',
+                    'Length': 16  # 128-bit
+                }
+            }
+            encrypt_dict['StmF'] = '/StdCF'
+            encrypt_dict['StrF'] = '/StdCF'
+            
+        elif revision == 3:
+            # PDF 1.4 (RC4-128)
+            encrypt_dict.update({
+                'O': self._o_key.hex() if self._o_key else '',
+                'U': self._u_key.hex() if self._u_key else '',
+                'Length': 128,
+            })
+            
+        elif revision == 2:
+            # PDF 1.2 (RC4-40)
+            encrypt_dict.update({
+                'O': self._o_key.hex() if self._o_key else '',
+                'U': self._u_key.hex() if self._u_key else '',
+                'Length': 40,
+            })
+        
+        # افزودن اطلاعات اضافی برای PDF 2.0
+        if revision >= 5:
+            encrypt_dict['SubFilter'] = '/adbe.pkcs7.s5'
+            encrypt_dict['Recipients'] = []  # برای رمزگذاری عمومی
+        
+        self.encryption_dict = encrypt_dict
+        return encrypt_dict
+    
+    def _get_encryption_version(self) -> int:
+        """تعیین نسخه رمزگذاری بر اساس الگوریتم"""
+        if self.options.algorithm == EncryptionAlgorithm.AES_256:
+            return 5  # PDF 2.0
+        elif self.options.algorithm == EncryptionAlgorithm.AES_128:
+            return 4  # PDF 1.7 ExtensionLevel 3
+        elif self.options.algorithm == EncryptionAlgorithm.RC4_128:
+            return 2  # PDF 1.4
+        elif self.options.algorithm == EncryptionAlgorithm.RC4_40:
+            return 1  # PDF 1.2
+        else:
+            return 2  # پیش‌فرض
+    
+    def validate_password(self, password: str, is_owner: bool = False) -> bool:
+        """اعتبارسنجی رمز عبور"""
+        if not self.encryption_key or not self._u_key or not self._o_key:
+            return False
+        
+        password_bytes = password.encode('utf-8')
+        
+        if is_owner:
+            # اعتبارسنجی رمز مالک
+            if self.options.revision >= 5:
+                # برای PDF 2.0
+                padded_password = self._pad_password_32(password_bytes)
+                test_hash = hashlib.sha256(padded_password + self._o_key[:8]).digest()
+                return hmac.compare_digest(test_hash[:32], self._o_key[:32])
+            else:
+                # برای نسخه‌های قدیمی
+                padded_password = self._pad_password_32(password_bytes)
+                test_key = self._compute_o_value_r3(padded_password, b'', self.encryption_key)
+                return hmac.compare_digest(test_key, self._o_key)
+        else:
+            # اعتبارسنجی رمز کاربر
+            if self.options.revision >= 5:
+                padded_password = self._pad_password_32(password_bytes)
+                test_hash = hashlib.sha256(padded_password + self._u_key[:8]).digest()
+                return hmac.compare_digest(test_hash[:32], self._u_key[:32])
+            else:
+                padded_password = self._pad_password_32(password_bytes)
+                test_key = self._compute_u_value_r3(padded_password, self.encryption_key)
+                return hmac.compare_digest(test_key[:16], self._u_key[:16])
+    
+    def get_encryption_info(self) -> Dict[str, Any]:
+        """دریافت اطلاعات کامل رمزگذاری"""
+        return {
+            'algorithm': self.options.algorithm.value,
+            'key_length': self.options.key_length,
+            'revision': self.options.revision,
+            'permissions': {
+                'print': bool(self.options.permissions & PermissionFlag.PRINT),
+                'modify': bool(self.options.permissions & PermissionFlag.MODIFY),
+                'copy': bool(self.options.permissions & PermissionFlag.COPY),
+                'annotate': bool(self.options.permissions & PermissionFlag.ANNOTATE),
+                'form_fill': bool(self.options.permissions & PermissionFlag.FORM_FILL),
+                'extract': bool(self.options.permissions & PermissionFlag.EXTRACT),
+                'assemble': bool(self.options.permissions & PermissionFlag.ASSEMBLE),
+                'print_high': bool(self.options.permissions & PermissionFlag.PRINT_HIGH),
+                'modify_annotations': bool(self.options.permissions & PermissionFlag.MODIFY_ANNOTATIONS),
+                'accessibility': bool(self.options.permissions & PermissionFlag.ACCESSIBILITY),
+            },
+            'metadata_encrypted': self.options.metadata_encrypted,
+            'encrypt_attachments': self.options.encrypt_attachments,
+            'encrypt_form_data': self.options.encrypt_form_data,
+            'file_id': self.file_id.hex() if self.file_id else None,
+            'encryption_key_length': len(self.encryption_key) * 8 if self.encryption_key else 0,
+        }
+    
+    def get_permission_strings(self) -> List[str]:
+        """دریافت لیست مجوزها به صورت رشته"""
+        permissions = []
+        
+        if self.options.permissions & PermissionFlag.PRINT:
+            permissions.append("چاپ")
+        if self.options.permissions & PermissionFlag.PRINT_HIGH:
+            permissions.append("چاپ با کیفیت بالا")
+        if self.options.permissions & PermissionFlag.MODIFY:
+            permissions.append("تغییر محتوا")
+        if self.options.permissions & PermissionFlag.COPY:
+            permissions.append("کپی")
+        if self.options.permissions & PermissionFlag.ANNOTATE:
+            permissions.append("حاشیه‌نویسی")
+        if self.options.permissions & PermissionFlag.FORM_FILL:
+            permissions.append("پر کردن فرم")
+        if self.options.permissions & PermissionFlag.EXTRACT:
+            permissions.append("استخراج")
+        if self.options.permissions & PermissionFlag.ASSEMBLE:
+            permissions.append("مونتاژ")
+        if self.options.permissions & PermissionFlag.MODIFY_ANNOTATIONS:
+            permissions.append("تغییر حاشیه‌نویسی‌ها")
+        if self.options.permissions & PermissionFlag.ACCESSIBILITY:
+            permissions.append("دسترسی‌پذیری")
+        
+        return permissions
+
+
+class PDFSecurityHandler:
+    """مدیریت امنیت و رمزگذاری PDF"""
+    
+    @staticmethod
+    def create_encryptor(options: EncryptionOptions) -> PDFEncryptor:
+        """ایجاد رمزگذار PDF"""
+        return PDFEncryptor(options)
+    
+    @staticmethod
+    def generate_file_id() -> bytes:
+        """تولید شناسه فایل منحصر به فرد"""
+        # ترکیب timestamp و random bytes
+        timestamp = struct.pack('<Q', int(time.time() * 1000))
+        random_bytes = secrets.token_bytes(16)
+        return hashlib.md5(timestamp + random_bytes).digest()
+    
+    @staticmethod
+    def check_password_strength(password: str) -> Dict[str, Any]:
+        """بررسی قدرت رمز عبور"""
+        score = 0
+        feedback = []
+        
+        # بررسی طول
+        if len(password) >= 12:
+            score += 2
+        elif len(password) >= 8:
+            score += 1
+        else:
+            feedback.append("رمز عبور بسیار کوتاه است (حداقل ۸ کاراکتر)")
+        
+        # بررسی تنوع کاراکترها
+        has_upper = any(c.isupper() for c in password)
+        has_lower = any(c.islower() for c in password)
+        has_digit = any(c.isdigit() for c in password)
+        has_special = any(not c.isalnum() for c in password)
+        
+        if has_upper:
+            score += 1
+        else:
+            feedback.append("اضافه کردن حروف بزرگ")
+        
+        if has_lower:
+            score += 1
+        else:
+            feedback.append("اضافه کردن حروف کوچک")
+        
+        if has_digit:
+            score += 1
+        else:
+            feedback.append("اضافه کردن اعداد")
+        
+        if has_special:
+            score += 1
+        else:
+            feedback.append("اضافه کردن کاراکترهای ویژه")
+        
+        # ارزیابی نهایی
+        if score >= 6:
+            strength = "قوی"
+        elif score >= 4:
+            strength = "متوسط"
+        else:
+            strength = "ضعیف"
+        
+        return {
+            'score': score,
+            'strength': strength,
+            'feedback': feedback,
+            'length': len(password),
+            'has_upper': has_upper,
+            'has_lower': has_lower,
+            'has_digit': has_digit,
+            'has_special': has_special
+        }
+    
+    @staticmethod
+    def get_supported_algorithms() -> List[Dict[str, Any]]:
+        """دریافت لیست الگوریتم‌های پشتیبانی شده"""
+        return [
+            {
+                'algorithm': 'AES_256',
+                'name': 'AES-256',
+                'description': 'رمزگذاری پیشرفته استاندارد 256 بیتی (PDF 2.0)',
+                'key_length': 256,
+                'revision': 5,
+                'security_level': 'بسیار بالا'
+            },
+            {
+                'algorithm': 'AES_128',
+                'name': 'AES-128',
+                'description': 'رمزگذاری پیشرفته استاندارد 128 بیتی (PDF 1.7)',
+                'key_length': 128,
+                'revision': 4,
+                'security_level': 'بالا'
+            },
+            {
+                'algorithm': 'RC4_128',
+                'name': 'RC4-128',
+                'description': 'رمزگذاری RC4 128 بیتی (PDF 1.4)',
+                'key_length': 128,
+                'revision': 3,
+                'security_level': 'متوسط'
+            },
+            {
+                'algorithm': 'RC4_40',
+                'name': 'RC4-40',
+                'description': 'رمزگذاری RC4 40 بیتی (PDF 1.2)',
+                'key_length': 40,
+                'revision': 2,
+                'security_level': 'پایین'
+            }
+        ]
