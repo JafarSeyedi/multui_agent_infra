@@ -2,9 +2,9 @@
 import pytest
 from pydantic import ValidationError
 
-from agents.interaction.interaction_models import InteractionRequest
-from agents.base_agents.models import AgentOutput
-from agents.base_agents.base_agent import BaseAgent
+from engines.interaction.interaction_models import InteractionRequest
+from engines.agents.models import AgentOutput
+from engines.agents.base_agents.base_agent import BaseAgent
 
 
 def test_agent_definition_defaults_are_empty():

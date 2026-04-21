@@ -1024,8 +1024,8 @@ Autonomous self‑evaluation loop
 در فایل main مثلاً:
 
 ```python
-from rag.research.observability.observability_controller import ObservabilityController
-from rag.research.observability.dashboard.api_server import create_dashboard
+from engines.rag.research.observability.observability_controller import ObservabilityController
+from engines.rag.research.observability.dashboard.api_server import create_dashboard
 import uvicorn
 
 obs = ObservabilityController()

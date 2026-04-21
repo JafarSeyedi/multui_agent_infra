@@ -4,9 +4,9 @@ import inspect
 from typing import Any, Callable, Dict, List
 
 import pytest
-from agents.interaction.interaction_models import AgentMessage
-from agents.base_agents.base_agent import BaseAgent
-from agents.buses.base import MessageBus, HandlerType
+from engines.interaction.interaction_models import AgentMessage
+from engines.agents.base_agents.base_agent import BaseAgent
+from engines.buses.base_message_bus import MessageBus, HandlerType
 
 
 class TestAgent:

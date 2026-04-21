@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from agents.interaction.backends.native_backend import NativeOrchestrationBackend
+from engines.interaction.backends.native_backend import NativeOrchestrationBackend
 
 
 class DummyOutput:

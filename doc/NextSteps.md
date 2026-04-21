@@ -115,8 +115,8 @@ from pydantic import BaseModel
 from datetime import datetime
 
 from config.models.system.execution_models import AgentExecutionRecord
-from storage.base_storage import StorageAdapter
-from rag.vector_storage import VectorDBAdapter
+from storage.base_storage import BaseStorage
+from engines.rag.vector_storage import VectorDBAdapter
 
 
 class BaseAgent:
@@ -137,7 +137,7 @@ class BaseAgent:
 
     llm = None
     vector_db: VectorDBAdapter = None
-    storage: StorageAdapter = None
+    storage: BaseStorage = None
 
     def __init__(self, llm=None, vector_db=None, storage=None):
         self.llm = llm
@@ -758,3 +758,31 @@ System
 review and uniformization of:
 orchestration models
 orchestration event_modles
+
+
+
+
+اگر بخواهی:
+
+موتور Parametric CAD Constraints هم می‌سازم (Coincident / Parallel / Tangent / Concentric / Equal…)
+یا یک Auto-Dimensioning Engine
+یا یک AI‑to‑CAD Object Recognition Engine (پردازش تصویر → DWG)
+فقط کافی است بگویی:
+
+بساز. 
+
+
+
+
+
+نسخه Auto‑Detect advanced ZIP inspection بنویسم
+
+(تفکیک XLSX / DOCX / ODT / ODS / PPTX)
+
+یک DocumentLoader بنویسم که:
+
+media type detect کند
+raw load کند
+به پارسر مناسب پاس بدهد
+خروجی را DocumentModel برگرداند
+یا یک Registry Manager با قابلیت افزودن فرمت‌های سفارشی؟

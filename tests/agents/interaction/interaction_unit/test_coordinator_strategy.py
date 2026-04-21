@@ -1,9 +1,9 @@
 # tests/agents/orchestration/interaction/unit/test_coordinator_strategy.py
 
 import pytest
-from agents.interaction.coordinator_strategy import CoordinatorStrategy
-from agents.interaction.interaction_models import InteractionRequest
-from agents.base_agents.base_agent import BaseAgent
+from engines.interaction.coordinator_strategy import CoordinatorStrategy
+from engines.interaction.interaction_models import InteractionRequest
+from engines.agents.base_agents.base_agent import BaseAgent
 
 from tests.agents.interaction.interaction_unit.conftest import TestAgent, make_agent
 

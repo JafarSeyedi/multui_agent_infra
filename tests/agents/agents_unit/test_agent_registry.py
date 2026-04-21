@@ -1,9 +1,9 @@
 # tests/agents/unit/test_agent_registry.py
 import pytest
 
-from agents.base_agents.agent_registry import AgentRegistry
-from agents.base_agents.base_agent import BaseAgent
-from agents.base_agents.models import AgentInput, AgentOutput
+from engines.agents.agent_registry import AgentRegistry
+from engines.agents.base_agents.base_agent import BaseAgent
+from engines.agents.models import AgentInput, AgentOutput
 
 
 class SimpleInput(AgentInput):
@@ -28,7 +28,7 @@ def disable_logging(monkeypatch):
     async def noop(*args, **kwargs):
         pass # intentionally empty
 
-    monkeypatch.setattr("agents.base_agent.BaseAgent._log_execution", noop)
+    monkeypatch.setattr("engines.agents.base_agent.BaseAgent._log_execution", noop)
 
 
 @pytest.mark.asyncio

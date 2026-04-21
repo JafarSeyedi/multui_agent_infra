@@ -2,8 +2,8 @@
 
 import pytest
 
-from agents.interaction.backends.autogen_backend import AutoGenOrchestrationBackend
-from agents.buses.base import MessageBus, HandlerType
+from engines.interaction.backends.autogen_backend import AutoGenOrchestrationBackend
+from engines.buses.base_message_bus import MessageBus, HandlerType
 
 
 class DummyRegistry1:
