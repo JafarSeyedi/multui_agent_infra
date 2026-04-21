@@ -335,6 +335,62 @@ WebSearchTool → HTTP API
 
 
 
+┌──────────────────────────────┐
+│     Orchestration Engine     │
+│                              │
+│ WorkflowEngine               │
+│ TaskExecutor                 │
+│ WorkflowTask                 │
+│ ExecutableTask               │
+└──────────────┬───────────────┘
+               │
+               ▼
+┌──────────────────────────────┐
+│      Interaction Engine      │
+│                              │
+│ InteractionRuntime           │
+│ InteractionStrategy          │
+│ AgentCall                    │
+└──────────────┬───────────────┘
+               │
+               ▼
+┌──────────────────────────────┐
+│          Agent Layer         │
+│                              │
+│ AgentRegistry                │
+│ AgentAdapter                 │
+│ Agent                        │
+└──────────────┬───────────────┘
+               │
+               ▼
+┌──────────────────────────────┐
+│         Tool Layer           │
+│                              │
+│ LLMTool                      │
+│ RAGTool                      │
+│ APITool                      │
+│ LocalTool                    │
+└──────────────┬───────────────┘
+               │
+               ▼
+┌──────────────────────────────┐
+│        Knowledge Layer       │
+│                              │
+│ VectorEngine                 │
+│ GraphEngine                  │
+│ DocumentEngine               │
+└──────────────┬───────────────┘
+               │
+               ▼
+┌──────────────────────────────┐
+│          Storage             │
+│                              │
+│ VectorDB                     │
+│ GraphDB                      │
+│ Redis                        │
+└──────────────────────────────┘
+
+
 ## Python dependencies
 
 ### AutoGen
