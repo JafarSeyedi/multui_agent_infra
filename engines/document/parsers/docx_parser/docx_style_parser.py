@@ -4,7 +4,7 @@ DOCX Style Parser
 Extracts and parses styles from DOCX documents into intermediate models.
 """
 
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Literal, cast
 import xml.etree.ElementTree as ET
 
 from .docx_utils import NS, safe_find, safe_findall, get_attribute, DocxUtils
@@ -45,19 +45,31 @@ class DocxStyleParser:
         
         # Determine style type
         style_type_elem = safe_find(style_elem, './/w:type')
-        style_type = get_attribute(style_type_elem, 'val', 'w') or 'paragraph'
+        style_type: Literal['paragraph', 'character', 'table', 'numbering'] = 'paragraph'
+        if style_type_elem:
+            style_type1 = get_attribute(style_type_elem, 'val', 'w')
+            if style_type1 in ('paragraph', 'character', 'table', 'numbering'):
+                style_type = cast(Literal['paragraph', 'character', 'table', 'numbering'], style_type1)
         
         # Get style name
         name_elem = safe_find(style_elem, './/w:name')
-        name = get_attribute(name_elem, 'val', 'w') or style_id
+        name: Optional[str] = None
+        if name_elem:
+            name = get_attribute(name_elem, 'val', 'w') 
+        if name is None:
+            name = style_id
         
         # Get based on style
         based_on_elem = safe_find(style_elem, './/w:basedOn')
-        based_on = get_attribute(based_on_elem, 'val', 'w')
+        based_on = None
+        if based_on_elem:
+            based_on = get_attribute(based_on_elem, 'val', 'w')
         
         # Get next style
         next_elem = safe_find(style_elem, './/w:next')
-        next_style = get_attribute(next_elem, 'val', 'w')
+        next_style = None
+        if next_elem:
+            next_style = get_attribute(next_elem, 'val', 'w')
         
         # Parse run properties
         run_props = None

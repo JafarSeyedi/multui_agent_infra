@@ -48,6 +48,7 @@ class ElementType(str, Enum):
     CAD = "cad"
     CHART = "chart"
     TEXT_BOX = "text_box"
+    SECTION_BREAK = "section_break"
 
 class BinaryEncoding(str, Enum):
     BASE64 = "base64"
@@ -75,8 +76,8 @@ class BaseDocument(BaseModel):
     
     # متادیتا
     metadata: Dict[str, Any] = Field(default_factory=dict, description="متادیتای سند")
-    created_at: datetime = Field(default_factory=datetime.now, description="تاریخ ایجاد")
-    modified_at: datetime = Field(default_factory=datetime.now, description="تاریخ آخرین تغییر")
+    created_at: datetime = Field(default_factory=datetime.utcnow, description="تاریخ ایجاد")
+    modified_at: datetime = Field(default_factory=datetime.utcnow, description="تاریخ آخرین تغییر")
     
     # محتوای اصلی
     raw_binary: Optional[BinaryPayload] = None
@@ -133,7 +134,7 @@ class BaseDocument(BaseModel):
             return len(self.raw_text.encode('utf-8'))
         return 0
     
-    def get_effective_content(self) -> Union[bytes, str]:
+    def get_effective_content(self) -> Union[bytes, str, None]:
         """بازگرداندن محتوای مؤثر (اولویت با باینری)"""
         if self.raw_binary:
             if self.raw_binary.bytes_content:
@@ -166,5 +167,5 @@ class BinaryPayload(BaseModel):
     
     @property
     def has_content(self) -> bool:
-        return self.bytes_content is not None or self.encoded_data is not None
+        return self.bytes_content is not None or self.data is not None
     

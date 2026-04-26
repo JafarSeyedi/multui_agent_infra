@@ -509,7 +509,7 @@ class OMMLParser:
         if base_elem is not None:
             base = self._parse_math_container(base_elem)
         
-        props = {}
+        props: Dict[str, Any] = {}
         
         # Get left delimiter character
         beg_chr_elem = safe_find(elem, './/m:begChr')
@@ -667,7 +667,7 @@ class OMMLParser:
         if base_elem is not None:
             base = self._parse_math_container(base_elem)
         
-        props = {}
+        props: Dict[str, Any] = {}
         
         # Check what is shown
         show_elem = safe_find(elem, './/m:show')
@@ -773,7 +773,7 @@ class OMMLParser:
         """
         if math_elem is None:
             return ''
-        
+        props = math_elem.properties or {}
         if math_elem.element_type == 'r':
             return math_elem.text or ''
         
@@ -807,7 +807,7 @@ class OMMLParser:
                 '\u22c0': '\\bigwedge',
                 '\u22c1': '\\bigvee',
             }
-            op = op_map.get(math_elem.text, math_elem.text)
+            op = op_map.get(math_elem.text or '', '')
             
             sub = self.to_latex(math_elem.sub) if math_elem.sub else ''
             sup = self.to_latex(math_elem.sup) if math_elem.sup else ''
@@ -836,12 +836,12 @@ class OMMLParser:
                 '\u030d': '\\acute',
                 '\u030e': '\\grave',
             }
-            acc = acc_map.get(math_elem.properties.get('accent_char', ''), '\\hat')
+            acc = acc_map.get(props.get('accent_char', ''), '\\hat')
             return f'{acc}{{{base}}}'
         
         elif math_elem.element_type == 'bar':
             base = self.to_latex(math_elem.base) if math_elem.base else ''
-            pos = math_elem.properties.get('position', 'top')
+            pos = props.get('position', 'top')
             if pos == 'top':
                 return f'\\overline{{{base}}}'
             else:
@@ -849,8 +849,8 @@ class OMMLParser:
         
         elif math_elem.element_type == 'd':
             base = self.to_latex(math_elem.base) if math_elem.base else ''
-            left = math_elem.properties.get('left', '(')
-            right = math_elem.properties.get('right', ')')
+            left = props.get('left', '(')
+            right = props.get('right', ')')
             
             # Escape special LaTeX characters
             left = left.replace('{', '\\{').replace('}', '\\}').replace('[', '[').replace(']', ']')
@@ -865,7 +865,7 @@ class OMMLParser:
         
         elif math_elem.element_type == 'func':
             base = self.to_latex(math_elem.base) if math_elem.base else ''
-            fname = math_elem.properties.get('function_name', '')
+            fname = props.get('function_name', '')
             return f'\\{fname}{{{base}}}'
         
         elif math_elem.element_type == 'sub':
@@ -899,7 +899,7 @@ class OMMLParser:
         
         elif math_elem.element_type == 'groupChr':
             base = self.to_latex(math_elem.base) if math_elem.base else ''
-            pos = math_elem.properties.get('position', 'top')
+            pos = props.get('position', 'top')
             if pos == 'top':
                 return f'\\overbrace{{{base}}}'
             else:

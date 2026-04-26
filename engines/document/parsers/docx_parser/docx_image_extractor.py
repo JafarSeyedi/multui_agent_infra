@@ -7,13 +7,13 @@ Extracts images from the word/media/ directory and maps them to relationship IDs
 import os
 import hashlib
 import base64
-from typing import Dict, List, Optional, Tuple, BinaryIO
+from typing import Any, Dict, List, Optional, Tuple, BinaryIO
 from zipfile import ZipFile
 from pathlib import Path
 from io import BytesIO
 
 from PIL import Image as PILImage
-import PIL.ImageChops
+import PIL.ImageChops as PILImageChops
 
 from .docx_utils import NS, safe_find, safe_findall, xml_to_text
 from ...models.media_types import MediaType, MEDIA_TYPES
@@ -176,25 +176,11 @@ class DOCXImageExtractor:
         for rel_id, props in drawings:
             payload = self.extract_image_by_rel_id(rel_id, props)
             if payload:
-                # Add image dimensions from drawing properties if available
-                if 'width' in props:
-                    payload.metadata = payload.metadata or {}
-                    payload.metadata['width_emu'] = props['width']
-                if 'height' in props:
-                    payload.metadata = payload.metadata or {}
-                    payload.metadata['height_emu'] = props['height']
-                if 'name' in props:
-                    payload.metadata = payload.metadata or {}
-                    payload.metadata['name'] = props['name']
-                if 'description' in props:
-                    payload.metadata = payload.metadata or {}
-                    payload.metadata['description'] = props['description']
-                
                 images[rel_id] = payload
         
         return images
     
-    def get_image_metadata(self, image_data: bytes) -> Dict[str, any]:
+    def get_image_metadata(self, image_data: bytes) -> Dict[str, Any]:
         """
         Extract metadata from image binary data.
         
@@ -204,7 +190,7 @@ class DOCXImageExtractor:
         Returns:
             Dictionary with image metadata (dimensions, format, etc.)
         """
-        metadata = {}
+        metadata: Dict[str, Any] = {}
         
         try:
             with BytesIO(image_data) as img_buffer:
@@ -342,7 +328,7 @@ class DOCXImageExtractor:
             # Default to storing raw bytes
             bytes_content = image_data
         
-        payload = BinaryPayload(
+        return BinaryPayload(
             media_type=media_type,
             encoding=self.encoding,
             bytes_content=bytes_content,
@@ -353,11 +339,6 @@ class DOCXImageExtractor:
             compression_algorithm=None,
             original_size=len(image_data)
         )
-        
-        # Add metadata
-        payload.metadata = metadata
-        
-        return payload
     
     def _detect_mime_type(self, image_data: bytes, source_path: str) -> str:
         """Detect MIME type from image data or file extension."""
@@ -395,9 +376,9 @@ class DOCXImageExtractor:
         # Fallback to binary type
         return MEDIA_TYPES['binary']
     
-    def _detect_basic_image_info(self, image_data: bytes) -> Dict[str, any]:
+    def _detect_basic_image_info(self, image_data: bytes) -> Dict[str, Any]:
         """Detect basic image info without PIL."""
-        metadata = {}
+        metadata: Dict[str, Any] = {}
         
         # Detect format by magic bytes
         if image_data.startswith(b'\x89PNG\r\n\x1a\n'):
@@ -461,9 +442,9 @@ class DOCXImageExtractor:
         
         return None
     
-    def _parse_exif(self, exif_data: Dict) -> Dict[str, any]:
+    def _parse_exif(self, exif_data: Dict[Any, Any]) -> Dict[str, Any]:
         """Parse EXIF data into a simpler dictionary."""
-        parsed = {}
+        parsed: Dict[str, Any] = {}
         
         # Common EXIF tags
         tag_names = {
@@ -530,12 +511,19 @@ class DOCXImageExtractor:
         """
         payload = self.extract_image_by_rel_id(rel_id, relationships)
         
-        if payload and payload.metadata:
-            width = payload.metadata.get('width')
-            height = payload.metadata.get('height')
-            
-            if width and height:
-                return (width, height)
+        if payload:
+            image_bytes = payload.bytes_content
+            if image_bytes is None and payload.data and payload.encoding == BinaryEncoding.BASE64:
+                try:
+                    image_bytes = base64.b64decode(payload.data)
+                except Exception:
+                    image_bytes = None
+            if image_bytes:
+                metadata = self.get_image_metadata(image_bytes)
+                width = metadata.get('width')
+                height = metadata.get('height')
+                if isinstance(width, int) and isinstance(height, int):
+                    return (width, height)
         
         return None
     

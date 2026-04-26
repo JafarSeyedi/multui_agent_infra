@@ -47,7 +47,7 @@ class OutlineItem:
 class OutlineBuilder:
     """سازنده فهرست مطالب PDF"""
     
-    def __init__(self):
+    def __init__(self) -> None:
         self.items: List[OutlineItem] = []
         self.next_object_num = 1
         self.object_map: Dict[str, int] = {}  # نگاشت object_id به شماره آبجکت PDF
@@ -99,7 +99,7 @@ class OutlineBuilder:
     
     def generate_outline_objects(self, page_refs: Dict[int, str]) -> List[Dict[str, Any]]:
         """تولید آبجکت‌های فهرست مطالب PDF"""
-        objects = []
+        objects: List[Dict[str, Any]] = []
         
         if not self.items:
             return objects
@@ -139,20 +139,20 @@ class OutlineBuilder:
             
             first_item_ref = f"{self.object_map.get(first_item.object_id, 0)} 0 R"
             last_item_ref = f"{self.object_map.get(last_item.object_id, 0)} 0 R"
-        
-        outline_dict = {
-            'type': 'outline',
-            'object_num': self.next_object_num,
-            'data': {
+        data: Dict[str, Any]={
                 'Type': '/Outlines',
                 'Count': count
             }
+        outline_dict = {
+            'type': 'outline',
+            'object_num': self.next_object_num,
+            'data': data
         }
         
         if first_item_ref:
-            outline_dict['data']['First'] = first_item_ref
+            data['First'] = first_item_ref
         if last_item_ref:
-            outline_dict['data']['Last'] = last_item_ref
+            data['Last'] = last_item_ref
         
         self.next_object_num += 1
         return outline_dict
@@ -181,40 +181,41 @@ class OutlineBuilder:
     def _create_item_dict(self, item: OutlineItem, 
                          page_refs: Dict[int, str]) -> Dict[str, Any]:
         """ایجاد دیکشنری آیتم"""
-        item_dict = {
-            'type': 'outline_item',
-            'object_num': self.next_object_num,
-            'data': {
+        data: Dict[str, Any] = {
                 'Title': f'({self._escape_pdf_string(item.title)})',
                 'Parent': '',  # بعداً پر می‌شود
                 'Dest': self._create_destination(item, page_refs)
             }
+        item_dict = {
+            'type': 'outline_item',
+            'object_num': self.next_object_num,
+            'data': data
         }
         
         # تنظیم سبک
         if item.style == OutlineStyle.BOLD:
-            item_dict['data']['F'] = 2  # Bold flag
+            data['F'] = 2  # Bold flag
         elif item.style == OutlineStyle.ITALIC:
-            item_dict['data']['F'] = 1  # Italic flag
+            data['F'] = 1  # Italic flag
         
         # تنظیم رنگ
         if item.color:
             r, g, b = item.color
-            item_dict['data']['C'] = f'[{r:.3f} {g:.3f} {b:.3f}]'
+            data['C'] = f'[{r:.3f} {g:.3f} {b:.3f}]'
         
         # تنظیم وضعیت باز/بسته بودن
         if not item.is_open:
-            item_dict['data']['Count'] = 0
+            data['Count'] = 0
         elif item.children:
-            item_dict['data']['Count'] = len(self._flatten_items_from(item))
+            data['Count'] = len(self._flatten_items_from(item))
         
         # تنظیم ارجاعات به فرزندان و همسایه‌ها
         if item.children:
             first_child = item.children[0]
             last_child = item.children[-1]
             
-            item_dict['data']['First'] = f"{self.next_object_num + 1} 0 R"
-            item_dict['data']['Last'] = f"{self.next_object_num + len(item.children)} 0 R"
+            data['First'] = f"{self.next_object_num + 1} 0 R"
+            data['Last'] = f"{self.next_object_num + len(item.children)} 0 R"
         
         self.next_object_num += 1
         return item_dict

@@ -14,7 +14,7 @@ from markdown.treeprocessors import Treeprocessor
 from engines.document.parsers.base import BaseDocumentParser, ParseOptions
 from engines.document.models.base import BaseDocument, ElementType
 from engines.document.models.media_types import MEDIA_TYPES, MediaType
-from engines.document.models.usdm import (
+from ..models.usdm_models import (
     USDMDocument,
     DocumentElement,
     LogicalElement,

@@ -12,26 +12,26 @@ import re
 import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union, Any
+from typing import Dict, List, Optional, Tuple, Union, Any, Set
 from enum import Enum
 
-import pdfplumber
+import pdfplumber  # type: ignore[import-not-found]
 import numpy as np
 from PIL import Image
-import cv2
-import pytesseract
-from pdf2image import convert_from_path
-from camelot import py as camelot_py
+import cv2  # type: ignore[import-not-found]
+import pytesseract  # type: ignore[import-not-found]
+from pdf2image import convert_from_path  # type: ignore[import-not-found]
+from camelot import py as camelot_py  # type: ignore[import-not-found]
 
 try:
-    import fitz  # PyMuPDF
+    import fitz  # type: ignore[import-untyped]  # PyMuPDF
     HAS_PYMUPDF = True
 except ImportError:
     HAS_PYMUPDF = False
     warnings.warn("PyMuPDF (fitz) not installed. Some features may be limited.")
 
 try:
-    import pandas as pd
+    import pandas as pd  # type: ignore[import-untyped]
     HAS_PANDAS = True
 except ImportError:
     HAS_PANDAS = False
@@ -188,9 +188,9 @@ class ContentExtractor:
     """
     
     def __init__(self, 
-                 pdf_path: Optional[str] = None,
+                 pdf_path: str,
                  use_ocr: bool = False,
-                 ocr_languages: List[str] = None,
+                 ocr_languages: Optional[List[str]] = None,
                  table_method: str = "lattice",
                  image_dpi: int = 150):
         """
@@ -247,11 +247,9 @@ class ContentExtractor:
         """
         import time
         start_time = time.time()
+
         
-        if not self.pdf_path:
-            raise ValueError("PDF path not specified")
-        
-        results = {
+        results: Dict[str, Any] = {
             'texts': [],
             'tables': [],
             'images': [],
@@ -369,7 +367,7 @@ class ContentExtractor:
                         
                         if chars:
                             # گروه‌بندی کاراکترها بر اساس خطوط
-                            lines = {}
+                            lines: Dict[int, List[Dict[str, Any]]] = {}
                             for char in chars:
                                 line_key = round(char['top'])
                                 if line_key not in lines:
@@ -634,7 +632,7 @@ class ContentExtractor:
     
     def _extract_images_pdfplumber(self, min_size: Tuple[int, int], max_images_per_page: int):
         """استخراج تصاویر با pdfplumber"""
-        with pdfplumber.open(self.pdf_path) as pdf:
+        with pdfplumber.open(self.pdf_path) as pdf:        
             for page_num, page in enumerate(pdf.pages, 1):
                 images = page.images
                 
@@ -833,18 +831,21 @@ class ContentExtractor:
                 })
                 
                 # اطلاعات اضافی
-                metadata['pdf_version'] = pdf.stream.pdf_version
-                metadata['is_encrypted'] = pdf.stream.is_encrypted
+                # Access attributes from the PDF stream object (pdfplumber's internal PDF object)
+                metadata['pdf_version'] = getattr(pdf.stream, 'pdf_version', None)
+                metadata['is_encrypted'] = getattr(pdf.stream, 'is_encrypted', False)
                 
                 # جمع‌آوری اطلاعات فونت‌ها
-                fonts = set()
+                fonts: Set[str] = set()
                 for page in pdf.pages:
-                    if hasattr(page, 'objects') and 'font' in page.objects:
-                        for font in page.objects['font']:
-                            fonts.add(font.get('basefont', ''))
-                
+                    # pdfplumber provides page.fonts (but mypy may not know it)
+                    page_fonts = getattr(page, 'fonts', [])
+                    for font in page_fonts:
+                        basefont = font.get('basefont', '')
+                        if basefont:
+                            fonts.add(basefont)
                 metadata['fonts'] = list(fonts)
-                
+                                
         except Exception as e:
             print(f"خطا در استخراج متادیتا: {e}")
             metadata['error'] = str(e)
@@ -876,7 +877,7 @@ class ContentExtractor:
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(results, f, ensure_ascii=False, indent=2)
     
-    def export_to_csv(self, output_dir: str):
+    def export_to_csv(self, output_dir: Union[str, Path]):
         """
         خروجی نتایج به فرمت CSV
         

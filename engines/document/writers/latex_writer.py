@@ -9,7 +9,7 @@ import re
 
 from engines.document.writers.base import BaseDocumentWriter, WriteOptions
 from engines.document.models.base import BaseDocument
-from engines.document.models.usdm import (
+from ..models.usdm_models import (
     USDMDocument,
     DocumentElement,
     LogicalElement,
@@ -49,6 +49,8 @@ class LatexWriter(BaseDocumentWriter):
         """
         تبدیل سند به LaTeX (بایت)
         """
+        if self.options is None:
+            raise DocumentWriteError("WriteOptions not initialized")        
         if not isinstance(document, USDMDocument):
             raise DocumentWriteError("سند باید از نوع USDMDocument باشد")
         
@@ -523,10 +525,10 @@ class LatexWriter(BaseDocumentWriter):
     
     def _link_to_latex(self, content: LinkContent) -> str:
         """تبدیل لینک به LaTeX"""
-        if not content or not content.href:
+        if not content or not content.url:
             return ""
         
-        href_escaped = self._escape_latex(content.href)
+        href_escaped = self._escape_latex(content.url)
         
         if content.text and content.text.spans:
             link_text = self._rich_text_to_latex(content.text)
@@ -541,22 +543,23 @@ class LatexWriter(BaseDocumentWriter):
         
         latex_math = content.latex.strip()
         
-        if content.display_mode:
+        if content.display:
             # محیط‌های نمایشی
-            if content.metadata and content.metadata.get("environment") == "align":
-                lines = []
-                lines.append(r"\\begin{align*}")
-                lines.append("  " + latex_math)
-                lines.append(r"\\end{align*}")
-                return "\n".join(lines)
-            elif content.metadata and content.metadata.get("environment") == "equation":
-                lines = []
-                lines.append(r"\\begin{equation*}")
-                lines.append("  " + latex_math)
-                lines.append(r"\\end{equation*}")
-                return "\n".join(lines)
-            else:
-                return r"\\[" + latex_math + r"\\]"
+            return r"\\[" + latex_math + r"\\]"
+            # if content.metadata and content.metadata.get("environment") == "align":
+            #     lines = []
+            #     lines.append(r"\\begin{align*}")
+            #     lines.append("  " + latex_math)
+            #     lines.append(r"\\end{align*}")
+            #     return "\n".join(lines)
+            # elif content.metadata and content.metadata.get("environment") == "equation":
+            #     lines = []
+            #     lines.append(r"\\begin{equation*}")
+            #     lines.append("  " + latex_math)
+            #     lines.append(r"\\end{equation*}")
+            #     return "\n".join(lines)
+            # else:
+            #     return r"\\[" + latex_math + r"\\]"
         else:
             # ریاضی درون خطی
             return r"$" + latex_math + r"$"
@@ -610,10 +613,11 @@ class LatexWriter(BaseDocumentWriter):
         lines.append(r"  \\end{tabular}")
         
         # کپشن
-        if content.caption and content.caption.spans:
-            caption_text = self._rich_text_to_latex(content.caption)
-            lines.append(r"  \\caption{" + caption_text + "}")
-        
+        caption_text = content.caption
+        if caption_text:
+            caption_text_escaped = self._escape_latex(caption_text)
+            lines.append(r"  \\caption{" + caption_text_escaped + "}")
+            
         lines.append(r"\\end{table}")
         lines.append("")  # خط خالی بعد از جدول
         

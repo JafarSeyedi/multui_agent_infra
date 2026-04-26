@@ -5,7 +5,7 @@
 import io
 import zlib
 import hashlib
-from typing import Dict, List, Optional, Any, Union, Tuple
+from typing import Dict, List, Optional, Any, Union, Tuple, Optional
 from dataclasses import dataclass, field
 from datetime import datetime
 import struct
@@ -58,12 +58,14 @@ class PDFDictionary(PDFObject):
             elif isinstance(value, list):
                 result.append(f"/{key} [".encode('utf-8'))
                 for item in value:
-                    if isinstance(item, PDFObject):
-                        result.append(f" {item.obj_id} {item.generation} R".encode('utf-8'))
-                    elif isinstance(item, int):
-                        result.append(f" {item}".encode('utf-8'))
-                    elif isinstance(item, float):
-                        result.append(f" {item:.2f}".encode('utf-8'))
+                    # Cast to Any to avoid false mypy error (items are int, float, or PDFObject)
+                    item_typed: Any = item
+                    if isinstance(item_typed, PDFObject):
+                        result.append(f" {item_typed.obj_id} {item_typed.generation} R".encode('utf-8'))
+                    elif isinstance(item_typed, int):
+                        result.append(f" {item_typed}".encode('utf-8'))
+                    elif isinstance(item_typed, float):
+                        result.append(f" {item_typed:.2f}".encode('utf-8'))
                 result.append(b" ]\n")
             elif value is None:
                 result.append(f"/{key} null\n".encode('utf-8'))
@@ -87,10 +89,10 @@ class PDFStream(PDFObject):
     
     def to_bytes(self) -> bytes:
         # ایجاد دیکشنری استریم
-        dict_entries = {
+        dict_entries: Dict[str, Any] = {                     # <-- add type annotation
             'Length': len(self.data) if self.length is None else self.length
         }
-        
+
         if self.filters:
             if len(self.filters) == 1:
                 dict_entries['Filter'] = f"/{self.filters[0]}"
@@ -161,7 +163,7 @@ class PDFPage(PDFObject):
 @dataclass
 class PDFCatalog(PDFObject):
     """کاتالوگ PDF (ریشه سند)"""
-    pages: PDFObject = None
+    pages: Optional[PDFObject] = None  
     outlines: Optional[PDFObject] = None
     metadata: Optional[PDFObject] = None
     
@@ -286,7 +288,7 @@ class PDFTrailer:
 class PDFObjectFactory:
     """کارخانه تولید اشیاء PDF"""
     
-    def __init__(self):
+    def __init__(self) -> None:
         self.next_obj_id = 1
         self.objects: List[PDFObject] = []
     
@@ -297,7 +299,7 @@ class PDFObjectFactory:
         self.objects.append(obj)
         return obj
     
-    def create_stream(self, data: bytes, filters: List[str] = None) -> PDFStream:
+    def create_stream(self, data: bytes, filters: Optional[List[str]] = None) -> PDFStream:
         """ایجاد استریم جدید"""
         obj = PDFStream(
             obj_id=self.next_obj_id,
@@ -308,7 +310,7 @@ class PDFObjectFactory:
         self.objects.append(obj)
         return obj
     
-    def create_page(self, media_box: List[float] = None) -> PDFPage:
+    def create_page(self, media_box: Optional[List[float]] = None) -> PDFPage:
         """ایجاد صفحه جدید"""
         obj = PDFPage(
             obj_id=self.next_obj_id,
@@ -381,13 +383,13 @@ class PDFObjectFactory:
 class PDFWriter:
     """کلاس اصلی برای نوشتن PDF"""
     
-    def __init__(self):
+    def __init__(self) -> None:
         self.factory = PDFObjectFactory()
         self.pages: List[PDFPage] = []
         self.current_offset = 0
         self.object_offsets: Dict[int, int] = {}
     
-    def add_page(self, media_box: List[float] = None) -> PDFPage:
+    def add_page(self, media_box: Optional[List[float]] = None) -> PDFPage:
         """افزودن صفحه جدید"""
         page = self.factory.create_page(media_box)
         self.pages.append(page)

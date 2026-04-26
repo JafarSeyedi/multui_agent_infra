@@ -99,7 +99,9 @@ class FontInfo:
     encoding: FontEncoding = FontEncoding.UNKNOWN
     to_unicode_cmap: Optional[bytes] = None
     cid_system_info: Optional[Dict[str, str]] = None
-    
+    has_to_unicode: bool = False
+    has_cid_system_info: bool = False
+        
     # اطلاعات فنی
     descriptor: Optional[FontDescriptor] = None
     first_char: int = 0
@@ -157,7 +159,7 @@ class FontAnalysisResult:
 class FontHandler:
     """کلاس اصلی مدیریت فونت‌های فارسی"""
     
-    def __init__(self, pdf_parser=None):
+    def __init__(self, pdf_parser=None) -> None:
         """
         مقداردهی اولیه
         
@@ -263,7 +265,7 @@ class FontHandler:
         
         try:
             # استفاده از PyPDF2 برای استخراج فونت‌ها
-            import PyPDF2
+            import PyPDF2 
             
             with open(pdf_path, 'rb') as file:
                 pdf_reader = PyPDF2.PdfReader(file)
@@ -491,8 +493,8 @@ class FontHandler:
                 if '/FontBBox' in descriptor_obj:
                     bbox_obj = descriptor_obj['/FontBBox']
                     if isinstance(bbox_obj, list) and len(bbox_obj) == 4:
-                        descriptor.bbox = tuple(float(x) for x in bbox_obj)
-                
+                        descriptor.bbox = (float(bbox_obj[0]), float(bbox_obj[1]), float(bbox_obj[2]), float(bbox_obj[3]))
+                        
                 # استخراج char set
                 if '/CharSet' in descriptor_obj:
                     descriptor.char_set = descriptor_obj['/CharSet']
@@ -926,3 +928,4 @@ class FontHandler:
                     font_info.subtype = subtype_bytes.decode('latin-1', errors='ignore')
             except (UnicodeDecodeError, AttributeError):
                 pass
+        return font_info

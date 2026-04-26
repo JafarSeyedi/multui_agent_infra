@@ -7,12 +7,14 @@ from pathlib import Path
 from typing import Optional, Dict, Any, AsyncIterator, List, Union, Tuple
 from html.parser import HTMLParser
 from html import entities
+from datetime import datetime
 import re
 import io
-
-from engines.document.parsers.base import BaseDocumentParser, ParseOptions
-from engines.document.models.base import BaseDocument
-from engines.document.models.usdm import (
+import uuid
+from .base import BaseDocumentParser, ParseOptions
+from ..models.media_detection import detect_by_extension
+from ..models.base import BaseDocument, ElementType, BinaryEncoding
+from ..models.usdm_models import (
     USDMDocument,
     DocumentElement,
     LogicalElement,
@@ -31,23 +33,21 @@ from engines.document.models.usdm import (
     ImageContent,
     LinkContent,
     MathContent,
-    ElementType,
-    MediaType,
-    BinaryEncoding
 )
-from engines.document.models.exceptions import DocumentParseError
-from engines.document.models.media_types import MEDIA_TYPES
+from ..models.media_types import MEDIA_TYPES
+from ..models.exceptions import DocumentParseError
 
 
 class HTMLDocumentParser(HTMLParser):
     """پارسر HTML داخلی برای پردازش ساختار"""
     
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.current_element: Optional[Dict[str, Any]] = None
         self.element_stack: List[Dict[str, Any]] = []
         self.sections: List[Section] = []
-        self.elements: List[LogicalElement] = []
+        self.elements: List[DocumentElement] = []
+        self.logical_elements: List[LogicalElement] = []
         self.current_text: List[str] = []
         self.current_spans: List[RichTextSpan] = []
         self.current_style: Dict[str, Any] = {}
@@ -264,7 +264,33 @@ class HTMLDocumentParser(HTMLParser):
             "level": level,
             "attrs": attrs
         }
-    
+    def _add_element(self, logical_elem: LogicalElement, caption: Optional[HeadingContent] = None) -> None:
+        self.logical_elements.append(logical_elem)
+        doc_elem = DocumentElement(
+            element_id=logical_elem.element_id,
+            element_type=logical_elem.element_type,
+            metadata=logical_elem.metadata
+        )
+        self.elements.append(doc_elem)
+        if not self.current_section:
+            # به یک بخش پیش‌فرض اضافه کن
+            if not self.sections:
+                default_section = Section(
+                    section_id="section_default",
+                    title=None,
+                    elements=[],
+                    metadata={"auto_generated": True}
+                )
+                self.sections.append(default_section)
+                self.current_section = default_section
+            
+        if self.current_section:
+            self.current_section.elements.append(doc_elem)
+            # اگر عنوان بخش هنوز تنظیم نشده، از هدینگ استفاده کن
+            if caption and self.current_section.title is None: #and self.current_element and self.current_element["level"] <= 3
+                self.current_section.title = caption
+        
+        
     def _handle_heading_end(self) -> None:
         """پردازش پایان هدینگ"""
         if self.current_element and self.current_element.get("type") == ElementType.HEADING:
@@ -281,20 +307,7 @@ class HTMLDocumentParser(HTMLParser):
                     metadata=self.current_element.get("attrs", {})
                 )
                 
-                self.elements.append(element)
-                
-                # اگر بخش جاری داریم، المنت را به آن اضافه کن
-                if self.current_section:
-                    doc_elem = DocumentElement(
-                        element_id=element.element_id,
-                        element_type=ElementType.HEADING,
-                        metadata={}
-                    )
-                    self.current_section.elements.append(doc_elem)
-                    
-                    # اگر عنوان بخش هنوز تنظیم نشده، از هدینگ استفاده کن
-                    if self.current_section.title is None and self.current_element["level"] <= 3:
-                        self.current_section.title = content
+                self._add_element(element, content)
             
             self.current_spans = []
             self.current_element = None
@@ -321,35 +334,7 @@ class HTMLDocumentParser(HTMLParser):
                     metadata=self.current_element.get("attrs", {})
                 )
                 
-                self.elements.append(element)
-                
-                # اگر بخش جاری داریم، المنت را به آن اضافه کن
-                if self.current_section:
-                    doc_elem = DocumentElement(
-                        element_id=element.element_id,
-                        element_type=ElementType.PARAGRAPH,
-                        metadata={}
-                    )
-                    self.current_section.elements.append(doc_elem)
-                else:
-                    # اگر بخشی نداریم، المنت مستقل است
-                    doc_elem = DocumentElement(
-                        element_id=element.element_id,
-                        element_type=ElementType.PARAGRAPH,
-                        metadata={}
-                    )
-                    # به یک بخش پیش‌فرض اضافه کن
-                    if not self.sections:
-                        default_section = Section(
-                            section_id="section_default",
-                            title=None,
-                            elements=[],
-                            metadata={"auto_generated": True}
-                        )
-                        self.sections.append(default_section)
-                        self.current_section = default_section
-                    
-                    self.current_section.elements.append(doc_elem)
+                self._add_element(element)
             
             self.current_spans = []
             self.current_element = None
@@ -382,17 +367,8 @@ class HTMLDocumentParser(HTMLParser):
                     metadata=self.current_element.get("attrs", {})
                 )
                 
-                self.elements.append(element)
-                
-                # اضافه کردن به بخش جاری
-                if self.current_section:
-                    doc_elem = DocumentElement(
-                        element_id=element.element_id,
-                        element_type=ElementType.CODE,
-                        metadata={}
-                    )
-                    self.current_section.elements.append(doc_elem)
-            
+                self._add_element(element)
+                            
             self.current_text = []
             self.current_element = None
             self.in_code_block = False
@@ -429,16 +405,7 @@ class HTMLDocumentParser(HTMLParser):
                     metadata=list_info.get("attrs", {})
                 )
                 
-                self.elements.append(element)
-                
-                # اضافه کردن به بخش جاری
-                if self.current_section:
-                    doc_elem = DocumentElement(
-                        element_id=element.element_id,
-                        element_type=ElementType.LIST,
-                        metadata={}
-                    )
-                    self.current_section.elements.append(doc_elem)
+                self._add_element(element)
             
             # بازیابی لیست قبلی از استک
             if self.list_stack:
@@ -501,16 +468,7 @@ class HTMLDocumentParser(HTMLParser):
                     metadata=self.current_element.get("attrs", {})
                 )
                 
-                self.elements.append(element)
-                
-                # اضافه کردن به بخش جاری
-                if self.current_section:
-                    doc_elem = DocumentElement(
-                        element_id=element.element_id,
-                        element_type=ElementType.QUOTE,
-                        metadata={}
-                    )
-                    self.current_section.elements.append(doc_elem)
+                self._add_element(element)
             
             self.current_element = None
     
@@ -538,16 +496,7 @@ class HTMLDocumentParser(HTMLParser):
                 metadata=attrs
             )
             
-            self.elements.append(element)
-            
-            # اضافه کردن به بخش جاری
-            if self.current_section:
-                doc_elem = DocumentElement(
-                    element_id=element.element_id,
-                    element_type=ElementType.IMAGE,
-                    metadata={}
-                )
-                self.current_section.elements.append(doc_elem)
+            self._add_element(element)
     
     def _handle_link_start(self, attrs: Dict[str, Any]) -> None:
         """پردازش شروع لینک"""
@@ -557,7 +506,7 @@ class HTMLDocumentParser(HTMLParser):
     
     def _handle_table_start(self, attrs: Dict[str, Any]) -> None:
         """پردازش شروع جدول"""
-        table_info = {
+        table_info: Dict[str, Any] = {
             "type": ElementType.TABLE,
             "attrs": attrs,
             "rows": [],
@@ -604,8 +553,8 @@ class HTMLDocumentParser(HTMLParser):
                 "elements": [],
                 "is_header": tag == "th",
                 "attrs": attrs,
-                "colspan": int(attrs.get("colspan", 1)),
-                "rowspan": int(attrs.get("rowspan", 1))
+                "col_span": int(attrs.get("colspan", 1)),
+                "row_span": int(attrs.get("rowspan", 1))
             }
     
     def _handle_table_cell_end(self) -> None:
@@ -619,8 +568,8 @@ class HTMLDocumentParser(HTMLParser):
             table_cell = TableCell(
                 content=cell_info["elements"],
                 is_header=cell_info["is_header"],
-                colspan=cell_info["colspan"],
-                rowspan=cell_info["rowspan"],
+                col_span=cell_info["col_span"],
+                row_span=cell_info["row_span"],
                 metadata=cell_info.get("attrs", {})
             )
             
@@ -649,16 +598,7 @@ class HTMLDocumentParser(HTMLParser):
                     metadata=table_info.get("attrs", {})
                 )
                 
-                self.elements.append(element)
-                
-                # اضافه کردن به بخش جاری
-                if self.current_section:
-                    doc_elem = DocumentElement(
-                        element_id=element.element_id,
-                        element_type=ElementType.TABLE,
-                        metadata={}
-                    )
-                    self.current_section.elements.append(doc_elem)
+                self._add_element(element)
             
             # بازیابی جدول قبلی از استک
             if self.table_stack:
@@ -681,90 +621,76 @@ class HTMLDocumentParser(HTMLParser):
             metadata={"html_tag": "hr", "is_horizontal_rule": True}
         )
         
-        self.elements.append(element)
-        
-        # اضافه کردن به بخش جاری
-        if self.current_section:
-            doc_elem = DocumentElement(
-                element_id=element.element_id,
-                element_type=ElementType.PARAGRAPH,
-                metadata={}
-            )
-            self.current_section.elements.append(doc_elem)
+        self._add_element(element)
 
 
 class HtmlParser(BaseDocumentParser):
     """پارسر HTML برای تبدیل HTML به USDM"""
     
-    def __init__(self, options: Optional[ParseOptions] = None):
-        super().__init__(options)
-        self.options = options or ParseOptions()
-    
-    async def parse(self, source: Union[bytes, str, Path]) -> BaseDocument:
-        """
-        تجزیه HTML به مدل USDM
-        """
+    async def parse_bytes(self, data: bytes, document_id: str, source_name: str, 
+                         metadata: Optional[Dict[str, Any]] = None, 
+                         options: Optional[ParseOptions] = None) -> BaseDocument:
         try:
-            # خواندن محتوای HTML
-            if isinstance(source, Path):
-                html_content = source.read_text(encoding=self.options.encoding)
-            elif isinstance(source, bytes):
-                html_content = source.decode(self.options.encoding)
-            else:
-                html_content = source
-            
-            # تجزیه HTML
+            encoding = "utf-8"
+            if options and options.encoding:
+                encoding=options.encoding
+            html_content = data.decode(encoding)
+            return await self.parse_text(html_content, document_id, source_name, metadata, options)
+        except Exception as e:
+            raise DocumentParseError(f"خطا در تجزیه HTML: {e}")
+
+    async def parse_text(self, html_content: str, document_id: str, source_name: str, 
+                         metadata: Optional[Dict[str, Any]] = None, 
+                         options: Optional[ParseOptions] = None) -> BaseDocument:
+        try:
             parser = HTMLDocumentParser()
             parser.feed(html_content)
             
             # ایجاد سند USDM
+            merged_metadata={
+                "source_format": "html",
+                "parser": "HtmlParser",
+            }
+            if options:
+                merged_metadata["encoding"] = options.encoding
+            if metadata:
+                merged_metadata.update(metadata)
+            # ایجاد سند USDM
+            if document_id == "":
+                document_id = str(uuid.uuid4())
+            if parser.document_title:
+                source_name=parser.document_title
+            if not source_name or source_name == "":
+                source_name="Untitled HTML Document"
+            mt=detect_by_extension("html")
             document = USDMDocument(
-                title=parser.document_title or "Untitled HTML Document",
+                document_id=document_id,
+                title=source_name,
+                media_type=mt,
                 sections=parser.sections,
                 elements=parser.elements,
-                logical_elements=parser.elements,  # در این پیاده‌سازی منطقی و المنت‌ها یکی هستند
-                metadata={
-                    "source_format": "html",
-                    "parser": "HtmlParser",
-                    "encoding": self.options.encoding
-                }
+                logical_elements=parser.logical_elements,  # در این پیاده‌سازی منطقی و المنت‌ها یکی هستند
+                metadata=merged_metadata
             )
             
             return document
-            
         except Exception as e:
             raise DocumentParseError(f"خطا در تجزیه HTML: {e}")
-    
-    async def parse_stream(self, source: AsyncIterator[bytes]) -> BaseDocument:
+
+    async def parse_stream(self, stream: AsyncIterator[bytes], document_id: str = "", source_name: str = "", metadata: Optional[Dict[str, Any]] = None, options: Optional[ParseOptions] = None) -> BaseDocument:
         """
         تجزیه HTML از استریم
         """
         try:
             # جمع‌آوری تمام داده‌ها از استریم
             chunks = []
-            async for chunk in source:
+            async for chunk in stream:
                 chunks.append(chunk)
-            
-            html_content = b"".join(chunks).decode(self.options.encoding)
-            
-            # تجزیه HTML
-            parser = HTMLDocumentParser()
-            parser.feed(html_content)
-            
-            # ایجاد سند USDM
-            document = USDMDocument(
-                title=parser.document_title or "Untitled HTML Document",
-                sections=parser.sections,
-                elements=parser.elements,
-                logical_elements=parser.elements,
-                metadata={
-                    "source_format": "html",
-                    "parser": "HtmlParser",
-                    "encoding": self.options.encoding
-                }
-            )
-            
-            return document
+            encoding = "utf-8"
+            if options and options.encoding:
+                encoding=options.encoding
+            html_content = b"".join(chunks).decode(encoding)
+            return await self.parse_text(html_content, document_id, source_name, metadata, options)
             
         except Exception as e:
             raise DocumentParseError(f"خطا در تجزیه استریم HTML: {e}")

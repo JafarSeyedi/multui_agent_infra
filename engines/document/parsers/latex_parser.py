@@ -12,7 +12,7 @@ import logging
 from engines.document.parsers.base import BaseDocumentParser, ParseOptions
 from engines.document.models.base import BaseDocument, ElementType
 from engines.document.models.media_types import MEDIA_TYPES, MediaType
-from engines.document.models.usdm import (
+from ..models.usdm_models import (
     USDMDocument,
     DocumentElement,
     LogicalElement,
@@ -47,7 +47,7 @@ class LatexParser(BaseDocumentParser):
     name: str = "latex"
     supported_extensions: tuple[str, ...] = (".tex", ".latex")
     
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self._current_section: Optional[Section] = None
         self._sections: List[Section] = []
@@ -525,7 +525,7 @@ class LatexParser(BaseDocumentParser):
             element_type=ElementType.MATH,
             content=MathContent(
                 latex=math_content,
-                display_mode=True if '$$' in math_content or '\\[' in math_content else False
+                display=True if '$$' in math_content or '\\[' in math_content else False
             ),
             metadata={"latex_environment": "equation" if '\\begin{equation' in math_content else "inline"}
         )

@@ -13,7 +13,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple, Union, BinaryIO, Iterator
+from typing import Any, Dict, List, Optional, Tuple, Union, BinaryIO, Iterator, Sequence, cast
 from decimal import Decimal, getcontext
 import re
 
@@ -515,23 +515,105 @@ class PDFStream(PDFObject):
             return base64.a85decode(ascii85_str, adobe=True)
         except Exception:
             raise PDFParseError("خطا در decode ASCII85")
-    
+
     def _decode_lzw(self, data: bytes) -> bytes:
-        """Decode LZW"""
-        try:
-            import lzw
-            return lzw.decompress(data)
-        except ImportError:
-            # پیاده‌سازی ساده LZW
-            return self._simple_lzw_decode(data)
-        except Exception:
-            raise PDFParseError("خطا در decode LZW")
+        """Decode LZW (simple fallback implementation)"""
+        # The external 'lzw' library is deprecated and unavailable; always use the fallback.
+        return self._simple_lzw_decode(data)
     
     def _simple_lzw_decode(self, data: bytes) -> bytes:
-        """پیاده‌سازی ساده LZW decode"""
-        # این یک پیاده‌سازی ساده است
-        # برای نسخه کامل نیاز به کتابخانه lzw داریم
-        return data
+        """
+        Full LZW decoder for PDF streams (EarlyChange=1).
+        Reference: PDF 1.7 spec, Section 7.4.4.
+        """
+        # Constants
+        CLEAR_TABLE = 256
+        EOD = 257
+        INITIAL_BITS = 9
+        MAX_BITS = 12
+        EARLY_CHANGE = 1  # PDF default
+
+        # Convert bytes to a list of ints for easier bit reading
+        data_bytes = list(data)
+        bit_pos = 0  # current bit position within the byte stream (0-indexed)
+
+        def read_bits(n: int) -> int:
+            """Read n bits from the data (MSB first)."""
+            nonlocal bit_pos
+            value = 0
+            for _ in range(n):
+                byte_index = bit_pos // 8
+                bit_index = 7 - (bit_pos % 8)   # MSB first
+                if byte_index >= len(data_bytes):
+                    return value
+                bit = (data_bytes[byte_index] >> bit_index) & 1
+                value = (value << 1) | bit
+                bit_pos += 1
+            return value
+
+        # Initialize the string table with single-character entries 0..255
+        table: Dict[int, bytes] = {i: bytes([i]) for i in range(256)}
+        table[CLEAR_TABLE] = b''   # placeholder
+        table[EOD] = b''           # placeholder
+        next_code = EOD + 1
+        current_bits = INITIAL_BITS
+        max_code = (1 << current_bits) - 1
+
+        result = bytearray()
+        old_code = None
+
+        while True:
+            # Read next code from the stream
+            code = read_bits(current_bits)
+            if code == EOD or code == -1:   # -1 from read_bits when data exhausted
+                break
+            if code == CLEAR_TABLE:
+                # Reset the table
+                table = {i: bytes([i]) for i in range(256)}
+                table[CLEAR_TABLE] = b''
+                table[EOD] = b''
+                next_code = EOD + 1
+                current_bits = INITIAL_BITS
+                max_code = (1 << current_bits) - 1
+                old_code = None
+                continue
+
+            if old_code is None:
+                # First code after clear or start: must be a single character
+                if code < 256:
+                    result.append(code)
+                    old_code = code
+                    continue
+                else:
+                    # Should not happen in a valid stream
+                    raise PDFParseError("LZW: first code is not a literal")
+
+            # We have a previous string (old_code).
+            # default: new string = old_string + first_char_of(old_string)
+            # but if code is already in table, new string = table[old_code] + first_char_of(table[code])
+            if code in table:
+                current_string = table[code]
+                new_string = table[old_code] + bytes([current_string[0]])
+                result.extend(current_string)
+            else:
+                # code == next_code, meaning the string is not yet in the table
+                # The string is old_string + first_char_of(old_string)
+                current_string = table[old_code] + bytes([table[old_code][0]])
+                result.extend(current_string)
+                new_string = current_string
+
+            # Add new_string to table if possible
+            if next_code <= max_code:
+                table[next_code] = new_string
+                next_code += 1
+                # Determine if we need to increase code size
+                if next_code > max_code and current_bits < MAX_BITS:
+                    current_bits += 1
+                    max_code = (1 << current_bits) - 1
+
+            old_code = code
+
+        return bytes(result)
     
     def _decode_run_length(self, data: bytes) -> bytes:
         """Decode RunLength"""
@@ -766,7 +848,7 @@ class PDFPage(PDFObject):
                 if len(self.contents) == 1:
                     dict_obj.set("Contents", self.contents[0])
                 else:
-                    contents_array = PDFArray(self.contents)
+                    contents_array = PDFArray(cast(List[PDFObject], self.contents))
                     dict_obj.set("Contents", contents_array)
             else:
                 dict_obj.set("Contents", self.contents)
@@ -781,7 +863,7 @@ class PDFPage(PDFObject):
         
         # Annotations
         if self.annotations:
-            annotations_array = PDFArray(self.annotations)
+            annotations_array = PDFArray(cast(List[PDFObject], self.annotations))
             dict_obj.set("Annots", annotations_array)
         
         # Boxes

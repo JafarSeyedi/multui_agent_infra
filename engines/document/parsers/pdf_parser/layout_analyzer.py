@@ -5,9 +5,9 @@
 import logging
 from typing import Dict, List, Optional, Any, Tuple, Set
 from dataclasses import dataclass, field
-import fitz  # PyMuPDF
+import fitz  # type: ignore[import-untyped]
 import numpy as np
-from sklearn.cluster import DBSCAN
+from sklearn.cluster import DBSCAN  # type: ignore[import-untyped]
 from collections import defaultdict
 
 logger = logging.getLogger(__name__)
@@ -130,14 +130,15 @@ class LayoutAnalyzer:
         
         # استخراج جداول (با استفاده از pdfplumber)
         try:
-            import pdfplumber
-            with pdfplumber.open(stream=page.parent.write()) as pdf:
+            import io
+            import pdfplumber  # type: ignore[import-not-found]
+            pdf_bytes = page.parent.tobytes()   # or write() depending on PyMuPDF version
+            with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
                 pdf_page = pdf.pages[page.number]
                 tables = pdf_page.find_tables()
-                
                 for i, table in enumerate(tables):
-                    bbox = (table.bbox[0], table.bbox[1], 
-                           table.bbox[2], table.bbox[3])
+                    bbox = (table.bbox[0], table.bbox[1],
+                            table.bbox[2], table.bbox[3])
                     layout_block = LayoutBlock(
                         id=f"table_{i}",
                         bbox=bbox,
@@ -225,7 +226,7 @@ class LayoutAnalyzer:
     
     def _detect_regions(self, blocks: List[LayoutBlock], layout: PageLayout) -> Dict[str, List[LayoutBlock]]:
         """شناسایی مناطق صفحه"""
-        regions = {
+        regions: Dict[str, List[LayoutBlock]] = {
             "header": [],
             "footer": [],
             "main": [],

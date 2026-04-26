@@ -32,7 +32,7 @@ class BinaryCodec:
     def to_bytes(payload: BinaryPayload, text_encoding: Optional[str] = None) -> bytes:
 
         encoding = text_encoding or BinaryCodec.DEFAULT_TEXT_ENCODING
-        return base64.b64decode(payload.data.encode(encoding))
+        return base64.b64decode((payload.data or '').encode(encoding))
 
 class BinaryCodecAdvanced:
 
@@ -71,7 +71,7 @@ class BinaryCodecAdvanced:
     @staticmethod
     def decode(payload: BinaryPayload, text_encoding: Optional[str] = None) -> bytes:
         enc = text_encoding or BinaryCodecAdvanced.DEFAULT_TEXT_ENCODING
-        data = payload.data
+        data = payload.data or ''
 
         if payload.encoding == BinaryEncoding.BASE64:
             return base64.b64decode(data.encode(enc))

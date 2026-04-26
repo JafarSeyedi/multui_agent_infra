@@ -88,8 +88,8 @@ class ColorConverter:
         # rgba()
         rgba_match = re.match(r'rgba\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([\d.]+)\s*\)', color_str)
         if rgba_match:
-            r, g, b, a = rgba_match.groups()
-            return (int(r)/255.0, int(g)/255.0, int(b)/255.0)
+            r_str, g_str, b_str, _alpha_str = rgba_match.groups()
+            return (int(r_str)/255.0, int(g_str)/255.0, int(b_str)/255.0)
         
         # نام رنگ
         named_colors = {
@@ -216,7 +216,7 @@ class ImageProcessor:
         """
         try:
             # باز کردن تصویر
-            image = Image.open(io.BytesIO(image_data))
+            image: Image.Image = Image.open(io.BytesIO(image_data))
             
             # ذخیره اطلاعات اصلی
             original_width, original_height = image.size
@@ -306,6 +306,7 @@ class ImageProcessor:
             
         else:  # max_height
             # محدودیت ارتفاع
+            assert max_height is not None
             ratio = max_height / original_height
             new_width = int(original_width * ratio)
             new_height = max_height
@@ -316,7 +317,7 @@ class ImageProcessor:
     def extract_image_info(self, image_data: bytes) -> Dict[str, Any]:
         """استخراج اطلاعات تصویر"""
         try:
-            image = Image.open(io.BytesIO(image_data))
+            image: Image.Image = Image.open(io.BytesIO(image_data))
             
             info = {
                 'width': image.width,
@@ -346,12 +347,12 @@ class ImageProcessor:
         except Exception as e:
             raise Exception(f"خطا در استخراج اطلاعات تصویر: {e}")
     
-    def convert_to_base64(self, image_data: bytes, mime_type: str = None) -> str:
+    def convert_to_base64(self, image_data: bytes, mime_type: Optional[str] = None) -> str:
         """تبدیل تصویر به base64"""
         if not mime_type:
             # تشخیص خودکار MIME type
             try:
-                image = Image.open(io.BytesIO(image_data))
+                image: Image.Image = Image.open(io.BytesIO(image_data))
                 mime_type = f'image/{image.format.lower()}' if image.format else 'image/jpeg'
             except:
                 mime_type = 'image/jpeg'
@@ -364,7 +365,7 @@ class ImageProcessor:
                         quality: int = 75) -> bytes:
         """ایجاد thumbnail"""
         try:
-            image = Image.open(io.BytesIO(image_data))
+            image: Image.Image = Image.open(io.BytesIO(image_data))
             
             # حفظ نسبت ابعاد
             original_width, original_height = image.size

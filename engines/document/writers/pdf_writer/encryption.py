@@ -119,17 +119,17 @@ class PDFEncryptor:
     
     def __init__(self, options: EncryptionOptions):
         self.options = options
-        self.encryption_key = None
-        self.encryption_dict = None
-        self.file_id = None
+        self.encryption_key: Optional[bytes] = None
+        self.encryption_dict: Optional[Dict[str, Any]] = None
+        self.file_id: Optional[bytes] = None
         self._backend = default_backend()
         
         # ذخیره کلیدهای واسط
-        self._o_key = None
-        self._u_key = None
-        self._ue_key = None
-        self._oe_key = None
-        self._perms_key = None
+        self._o_key: Optional[bytes] = None
+        self._u_key: Optional[bytes] = None
+        self._ue_key: Optional[bytes] = None
+        self._oe_key: Optional[bytes] = None
+        self._perms_key: Optional[bytes] = None
         
     def generate_encryption_key(self, file_id: bytes) -> bytes:
         """تولید کلید رمزگذاری اصلی بر اساس استاندارد PDF"""
@@ -220,6 +220,10 @@ class PDFEncryptor:
     
     def _generate_key_revision_4(self) -> bytes:
         """تولید کلید برای رمزگذاری Revision 4 (AES-128)"""
+        file_id = self.file_id
+        if file_id is None:
+            raise ValueError("file_id must be set before generating an encryption key.")
+
         # 1. Pad passwords
         user_password = self._pad_password(self.options.user_password.encode('utf-8'))
         owner_password = self._pad_password(self.options.owner_password.encode('utf-8'))
@@ -229,7 +233,7 @@ class PDFEncryptor:
             user_password,
             owner_password,
             self.options.permissions,
-            self.file_id
+            file_id
         )
         
         # 3. Compute O value (Algorithm 3)
@@ -247,6 +251,10 @@ class PDFEncryptor:
     
     def _generate_key_revision_3(self) -> bytes:
         """تولید کلید برای رمزگذاری Revision 3 (RC4-128)"""
+        file_id = self.file_id
+        if file_id is None:
+            raise ValueError("file_id must be set before generating an encryption key.")
+
         # 1. Pad passwords
         user_password = self._pad_password(self.options.user_password.encode('utf-8'))
         owner_password = self._pad_password(self.options.owner_password.encode('utf-8'))
@@ -256,7 +264,7 @@ class PDFEncryptor:
             user_password,
             owner_password,
             self.options.permissions,
-            self.file_id
+            file_id
         )
         
         # 3. Compute O value (Algorithm 3)
@@ -274,6 +282,10 @@ class PDFEncryptor:
     
     def _generate_key_revision_2(self) -> bytes:
         """تولید کلید برای رمزگذاری Revision 2 (RC4-40)"""
+        file_id = self.file_id
+        if file_id is None:
+            raise ValueError("file_id must be set before generating an encryption key.")
+
         # Similar to revision 3 but with 40-bit key
         user_password = self._pad_password(self.options.user_password.encode('utf-8'))
         owner_password = self._pad_password(self.options.owner_password.encode('utf-8'))
@@ -283,7 +295,7 @@ class PDFEncryptor:
             user_password,
             owner_password,
             self.options.permissions,
-            self.file_id
+            file_id
         )
         
         # Compute O and U values
@@ -450,6 +462,10 @@ class PDFEncryptor:
     
     def _compute_u_value_r3(self, user_pass: bytes, key: bytes) -> bytes:
         """محاسبه مقدار U برای Revision 3"""
+        file_id = self.file_id
+        if file_id is None:
+            raise ValueError("file_id must be set before computing U value.")
+
         # Algorithm 4 for RC4-128
         padded_user = self._pad_password_32(user_pass)
         
@@ -457,7 +473,7 @@ class PDFEncryptor:
         padding_hash = hashlib.md5(self.PADDING_STRING).digest()
         
         # Combine with file ID
-        hash_input = padding_hash + self.file_id
+        hash_input = padding_hash + file_id
         
         # Encrypt with RC4
         encrypted = self._rc4_encrypt(hash_input, key)
@@ -469,6 +485,10 @@ class PDFEncryptor:
     
     def _compute_u_value_r2(self, user_pass: bytes, key: bytes) -> bytes:
         """محاسبه مقدار U برای Revision 2"""
+        file_id = self.file_id
+        if file_id is None:
+            raise ValueError("file_id must be set before computing U value.")
+
         # Similar to R3 but with 40-bit key
         padded_user = self._pad_password_32(user_pass)
         
@@ -476,7 +496,7 @@ class PDFEncryptor:
         padding_hash = hashlib.md5(self.PADDING_STRING).digest()
         
         # Combine with file ID
-        hash_input = padding_hash + self.file_id
+        hash_input = padding_hash + file_id
         
         # Encrypt with 40-bit RC4
         encrypted = self._rc4_encrypt(hash_input, key[:5])
@@ -556,16 +576,20 @@ class PDFEncryptor:
     
     def _generate_object_key(self, object_num: int, generation_num: int) -> bytes:
         """تولید کلید برای آبجکت خاص"""
+        encryption_key = self.encryption_key
+        if encryption_key is None:
+            raise ValueError("Encryption key has not been generated.")
+
         if self.options.revision >= 4:
             # برای AES، کلید اصلی مستقیماً استفاده می‌شود
-            return self.encryption_key
+            return encryption_key
         else:
             # برای RC4، کلید با شماره آبجکت ترکیب می‌شود
-            key_input = self.encryption_key + struct.pack('<I', object_num)[:3] + struct.pack('<I', generation_num)[:2]
+            key_input = encryption_key + struct.pack('<I', object_num)[:3] + struct.pack('<I', generation_num)[:2]
             
             if self.options.revision == 3:
                 # Revision 3: MD5 hash
-                return hashlib.md5(key_input).digest()[:min(16, len(self.encryption_key) + 5)]
+                return hashlib.md5(key_input).digest()[:min(16, len(encryption_key) + 5)]
             else:
                 # Revision 2: 40-bit key
                 return hashlib.md5(key_input).digest()[:5]

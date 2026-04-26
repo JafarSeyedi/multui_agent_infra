@@ -7,7 +7,7 @@ import re
 from typing import Dict, List, Optional, Any, Tuple, Set
 from dataclasses import dataclass, field
 from collections import defaultdict, Counter
-import fitz  # PyMuPDF
+import fitz  # type: ignore[import-untyped]  # PyMuPDF
 from enum import Enum
 
 logger = logging.getLogger(__name__)
@@ -353,7 +353,7 @@ class StructureParser:
         
         # ایجاد سلسله مراتب
         hierarchy = defaultdict(list)
-        parent_stack = []  # استک برای نگهداری والدین
+        parent_stack: List[StructuralElement] = []
         
         for element in sorted_elements:
             # حذف والدین با سطح بالاتر یا مساوی
@@ -380,8 +380,8 @@ class StructureParser:
     
     def _identify_sections(self, structure: DocumentStructure) -> List[Dict[str, Any]]:
         """شناسایی بخش‌های سند"""
-        sections = []
-        current_section = None
+        sections: List[Dict[str, Any]] = []
+        current_section: Optional[Dict[str, Any]] = None
         
         for element in sorted(structure.elements, 
                             key=lambda x: (x.page_number, x.bbox[1])):
@@ -453,8 +453,8 @@ class StructureParser:
     def visualize_hierarchy(self, structure: DocumentStructure, output_path: Optional[str] = None):
         """نمایش بصری سلسله مراتب"""
         try:
-            import matplotlib.pyplot as plt
-            import networkx as nx
+            import matplotlib.pyplot as plt  # type: ignore[import-not-found]
+            import networkx as nx  # type: ignore[import-untyped]
             
             G = nx.DiGraph()
             

@@ -3,16 +3,19 @@
 کاهش حجم فایل و بهبود کارایی
 """
 
-import re
+import hashlib
 import io
+import logging
+import re
 import zlib
-import io
-from typing import List, Dict, Any, Tuple, Optional, Set
-from dataclasses import dataclass, field
+from typing import List, Dict, Any, Tuple, Optional, Set, cast
+from dataclasses import dataclass
 from enum import Enum
-import re
 from PIL import Image
 import numpy as np
+
+
+logger = logging.getLogger(__name__)
 
 
 class OptimizationLevel(Enum):
@@ -41,7 +44,7 @@ class OptimizationOptions:
 class PDFOptimizer:
     """بهینه‌ساز PDF"""
     
-    def __init__(self, options: OptimizationOptions = None):
+    def __init__(self, options: Optional[OptimizationOptions] = None):
         self.options = options or OptimizationOptions()
         self.stats = {
             'original_size': 0,
@@ -396,7 +399,7 @@ class PDFOptimizer:
             (داده‌های تصویر, اطلاعات تصویر)
         """
         try:
-            image_info = {}
+            image_info: Dict[str, Any] = {}
             
             # استخراج از stream
             if 'stream' in image_obj:
@@ -440,7 +443,7 @@ class PDFOptimizer:
                 # محاسبه DPI تقریبی
                 if '/UserUnit' in metadata:
                     user_unit = float(metadata['/UserUnit'])
-                    image_info['dpi'] = 72 * user_unit
+                    image_info['dpi'] = int(72 * user_unit)
                 else:
                     image_info['dpi'] = 72  # پیش‌فرض
             
@@ -495,7 +498,7 @@ class PDFOptimizer:
             import io
             
             # باز کردن تصویر
-            img = Image.open(io.BytesIO(image_data))
+            img = cast(Image.Image, Image.open(io.BytesIO(image_data)))
             
             # کاهش اندازه اگر لازم باشد
             if options.get('downscale_images', True):
@@ -506,7 +509,7 @@ class PDFOptimizer:
             if options.get('remove_metadata', True):
                 # حذف EXIF و سایر متادیتا
                 img_data = list(img.getdata())
-                img = Image.new(img.mode, img.size)
+                img = cast(Image.Image, Image.new(img.mode, img.size))
                 img.putdata(img_data)
             
             # ذخیره با کیفیت بهینه
@@ -519,9 +522,9 @@ class PDFOptimizer:
                     # ایجاد پس‌زمینه سفید برای تصاویر RGBA
                     background = Image.new('RGB', img.size, (255, 255, 255))
                     background.paste(img, mask=img.split()[3] if img.mode == 'RGBA' else None)
-                    img = background
+                    img = cast(Image.Image, background)
                 else:
-                    img = img.convert('RGB')
+                    img = cast(Image.Image, img.convert('RGB'))
             
             img.save(output, format='JPEG', quality=quality, optimize=True)
             
@@ -550,7 +553,7 @@ class PDFOptimizer:
             import zlib
             
             # باز کردن تصویر
-            img = Image.open(io.BytesIO(image_data))
+            img = cast(Image.Image, Image.open(io.BytesIO(image_data)))
             
             # کاهش اندازه اگر لازم باشد
             if options.get('downscale_images', True):
@@ -562,14 +565,14 @@ class PDFOptimizer:
                 # بررسی اگر تصویر فقط از 256 رنگ استفاده می‌کند
                 colors = img.getcolors(maxcolors=256)
                 if colors and len(colors) <= 256:
-                    img = img.convert('P', palette=Image.ADAPTIVE, colors=256)
+                    img = cast(Image.Image, img.convert('P', palette=Image.Palette.ADAPTIVE, colors=256))
                     self.stats['images_converted'] += 1
             
             # ذخیره با فشرده‌سازی بهینه
             output = io.BytesIO()
             
             # تنظیمات فشرده‌سازی PNG
-            png_info = {
+            png_info: Dict[str, Any] = {
                 'optimize': True,
             }
             
@@ -603,7 +606,7 @@ class PDFOptimizer:
             import io
             
             # باز کردن تصویر
-            img = Image.open(io.BytesIO(image_data))
+            img = cast(Image.Image, Image.open(io.BytesIO(image_data)))
             
             # کاهش اندازه اگر لازم باشد
             if options.get('downscale_images', True):
@@ -617,7 +620,7 @@ class PDFOptimizer:
                 
                 # تبدیل به RGB
                 if img.mode not in ['RGB', 'L']:
-                    img = img.convert('RGB')
+                    img = cast(Image.Image, img.convert('RGB'))
                 
                 img.save(output, format='JPEG', quality=quality, optimize=True)
                 self.stats['images_converted'] += 1
@@ -917,20 +920,21 @@ class PDFOptimizer:
             total_objects = len(objects)
             
             # 2. ایجاد Linearization Dictionary (آبجکت اول)
-            linearization_dict = {
+            linearization_value: Dict[str, Any] = {
+                'Type': '/Linearization',
+                'L': pdf_parts.get('file_size', 0),
+                'H': [0, 0],
+                'O': 1,
+                'E': 0,
+                'N': total_objects,
+                'T': 0,
+                'P': 0
+            }
+            linearization_dict: Dict[str, Any] = {
                 'obj_num': 1,
                 'generation': 0,
                 'type': 'dict',
-                'value': {
-                    'Type': '/Linearization',
-                    'L': pdf_parts.get('file_size', 0),  # طول کل فایل
-                    'H': [0, 0],  # Hint stream offset و length
-                    'O': 1,  # شماره آبجکت root
-                    'E': 0,  # offset آخرین آبجکت cross-reference
-                    'N': total_objects,  # تعداد کل آبجکت‌ها
-                    'T': 0,  # offset اولین صفحه
-                    'P': 0   # شماره آبجکت first page
-                }
+                'value': linearization_value
             }
             
             # 3. شناسایی صفحات و مرتب‌سازی
@@ -999,7 +1003,7 @@ class PDFOptimizer:
             sorted_objects.append(hint_stream_obj)
             
             # 8. به‌روزرسانی Linearization Dictionary با اطلاعات Hint Stream
-            linearization_dict['value']['H'] = [
+            linearization_value['H'] = [
                 self._calculate_object_offset(hint_stream_obj, sorted_objects),
                 len(hint_stream)
             ]
@@ -1007,8 +1011,8 @@ class PDFOptimizer:
             # 9. به‌روزرسانی اطلاعات صفحات
             if pages:
                 first_page = pages[0]
-                linearization_dict['value']['P'] = first_page['obj_num']
-                linearization_dict['value']['T'] = self._calculate_object_offset(first_page, sorted_objects)
+                linearization_value['P'] = first_page['obj_num']
+                linearization_value['T'] = self._calculate_object_offset(first_page, sorted_objects)
             
             # 10. ایجاد هدر خطی‌سازی شده
             # استفاده از کامنت استاندارد به جای کاراکترهای چینی
@@ -1044,7 +1048,7 @@ class PDFOptimizer:
         Returns:
             دیکشنری حاوی hint tables
         """
-        hint_tables = {
+        hint_tables: Dict[str, List[List[int]]] = {
             'primary': [],  # Primary Hint Table
             'overflow': []  # Overflow Hint Table
         }

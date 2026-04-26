@@ -8,9 +8,9 @@ from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass
 import struct
 
-from ..models.usdm_models import (
+from ...models.usdm_models import (
     TextRun, ImageObject, VectorPath, ParagraphContent,
-    HeadingContent, TableContent, ListContent, MathContent,
+    HeadingContent, TableContent, TableCell, ListContent, MathContent,
     StyleSheet, CharacterStyle
 )
 from .pdf_objects import PDFStream, PDFDictionary
@@ -34,6 +34,7 @@ class ContentWriter:
         self.unit_converter = unit_converter
         self.color_converter = ColorConverter()
         self.current_state = TextState()
+        self._next_obj_id = 1
     
     def create_text_stream(self, text_runs: List[TextRun], 
                           stylesheet: StyleSheet,
@@ -55,7 +56,9 @@ class ContentWriter:
         # بازیابی وضعیت
         stream_data.write(b"Q\n")
         
-        return PDFStream(data=stream_data.getvalue())
+        obj_id = self._next_obj_id
+        self._next_obj_id += 1
+        return PDFStream(obj_id=obj_id, data=stream_data.getvalue())        
     
     def _write_text_run(self, stream: io.BytesIO, text_run: TextRun, 
                        stylesheet: StyleSheet, page_height: float):
@@ -74,7 +77,7 @@ class ContentWriter:
         
         if style:
             font_name = self.font_manager.get_pdf_font_name(style.font_family)
-            font_size = style.font_size or 12.0
+            font_size = style.size or 12.0
             
             # تنظیم حالت bold/italic
             if style.bold and style.italic:
@@ -105,7 +108,7 @@ class ContentWriter:
         
         stream.write(b"ET\n")
     
-    def _encode_pdf_text(self, text: str, language: str = "en") -> str:
+    def _encode_pdf_text(self, text: str, language: Optional[str] = "en") -> str:
         """کدگذاری متن برای PDF با پشتیبانی از فارسی"""
         if not text:
             return ""
@@ -135,23 +138,23 @@ class ContentWriter:
     
     def create_image_stream(self, image_object: ImageObject) -> Optional[PDFStream]:
         """ایجاد استریم تصویر"""
-        if not image_object.image_data:
-            return None
+        # if not image_object.src:
+        #     return None
         
         try:
             # استخراج داده تصویر
             image_bytes = None
             
-            if image_object.image_data.startswith('data:'):
+            if image_object.src.startswith('data:'):
                 # استخراج از data URL
                 import re
-                match = re.match(r'data:image/(\w+);base64,(.+)', image_object.image_data)
+                match = re.match(r'data:image/(\w+);base64,(.+)', image_object.src)
                 if match:
                     _, base64_data = match.groups()
                     image_bytes = base64.b64decode(base64_data)
             else:
                 # فرض می‌کنیم base64 خالص است
-                image_bytes = base64.b64decode(image_object.image_data)
+                image_bytes = base64.b64decode(image_object.src)
             
             if not image_bytes:
                 return None
@@ -170,14 +173,17 @@ class ContentWriter:
             stream_data.write(b"/Im1 Do\n")
             stream_data.write(b"Q\n")
             
-            # ایجاد شیء تصویر
+            obj_id = self._next_obj_id
+            self._next_obj_id += 1
             image_stream = PDFStream(
+                obj_id=obj_id,
                 data=image_bytes,
                 filters=["DCTDecode"] if image_object.format.lower() in ['jpg', 'jpeg'] else ["FlateDecode"]
             )
-            
+            obj_id = self._next_obj_id
+            self._next_obj_id += 1            
             # ایجاد دیکشنری تصویر
-            image_dict = PDFDictionary(entries={
+            image_dict = PDFDictionary(obj_id=obj_id, entries={
                 'Type': '/XObject',
                 'Subtype': '/Image',
                 'Width': width,
@@ -237,7 +243,9 @@ class ContentWriter:
         
         stream_data.write(b"Q\n")
         
-        return PDFStream(data=stream_data.getvalue())
+        obj_id = self._next_obj_id
+        self._next_obj_id += 1
+        return PDFStream(obj_id=obj_id, data=stream_data.getvalue())
     
     def create_table_stream(self, table_content: TableContent, 
                            stylesheet: StyleSheet,
@@ -247,11 +255,13 @@ class ContentWriter:
         stream_data = io.BytesIO()
         
         if not table_content.rows:
-            return PDFStream(data=stream_data.getvalue())
+            obj_id = self._next_obj_id
+            self._next_obj_id += 1
+            return PDFStream(obj_id=obj_id,data=stream_data.getvalue())
         
         # محاسبات اولیه جدول
         rows = table_content.rows
-        col_count = max(len(row) for row in rows) if rows else 0
+        col_count = max(len(row.cells) for row in rows) if rows else 0
         
         # ابعاد سلول‌ها
         cell_width = (page_width - 100) / col_count if col_count > 0 else 100
@@ -267,7 +277,7 @@ class ContentWriter:
         for row_idx, row in enumerate(rows):
             y = start_y - (row_idx * cell_height)
             
-            for col_idx, cell in enumerate(row):
+            for col_idx, cell in enumerate(row.cells):
                 x = start_x + (col_idx * cell_width)
                 
                 # رسم border سلول
@@ -299,4 +309,6 @@ class ContentWriter:
         
         stream_data.write(b"Q\n")
         
-        return PDFStream(data=stream_data.getvalue())
+        obj_id = self._next_obj_id
+        self._next_obj_id += 1
+        return PDFStream(obj_id=obj_id,data=stream_data.getvalue())

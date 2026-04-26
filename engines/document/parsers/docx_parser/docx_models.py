@@ -187,7 +187,7 @@ class DOCXField:
     """A Word field (e.g., PAGE, DATE, HYPERLINK)."""
     field_type: str  # e.g., "PAGE", "DATE", "NUMPAGES", "REF", "HYPERLINK"
     instruction: Optional[str] = None
-    result: Optional[str] = None
+    result: Optional[Union[str, 'DOCXMath', Any]] = None
     is_locked: bool = False
     is_dirty: bool = False
 
@@ -203,7 +203,7 @@ class DOCXSymbol:
 class DOCXBreak:
     """A line, page, or column break."""
     break_type: Literal["line", "page", "column", "text_wrapping"]
-    clear: Optional[Literal["none", "left", "right", "all"]] = None
+    clear: Optional[str] = None  # Literal["none", "left", "right", "all"]
 
 
 @dataclass
@@ -484,7 +484,7 @@ class DOCXNumberingDefinition:
 class DOCXNumberingInstance:
     """A concrete instance of a numbering definition."""
     instance_id: str
-    abstract_definition_id: str
+    abstract_definition_id: Optional[str] = None
     levels_overrides: Dict[int, DOCXNumberingLevel] = field(default_factory=dict)
 
 
@@ -497,7 +497,7 @@ class DOCXHeaderFooter:
     """A header or footer definition."""
     header_footer_id: str
     header_footer_type: Literal["default", "first", "even"]
-    content: List[Union[DOCXParagraph, DOCXTable]] = field(default_factory=list)
+    content: List[Union[DOCXParagraph, DOCXTable, DOCXSection]] = field(default_factory=list)
     
     # References to images
     relationships: Dict[str, str] = field(default_factory=dict)
@@ -599,22 +599,22 @@ class DOCXMathElement:
     text_properties: Optional[DOCXRunProperties] = None
     
     # For fraction
-    numerator: Optional['DOCXMathElement'] = None
-    denominator: Optional['DOCXMathElement'] = None
+    numerator: Optional[DOCXMathElement] = None
+    denominator: Optional[DOCXMathElement] = None
     
     # For radicals
-    degree: Optional['DOCXMathElement'] = None
-    base: Optional['DOCXMathElement'] = None
+    degree: Optional[DOCXMathElement] = None
+    base: Optional[DOCXMathElement] = None
     
     # For n-ary operators (sum, product, integral)
-    sub: Optional['DOCXMathElement'] = None
-    sup: Optional['DOCXMathElement'] = None
+    sub: Optional[DOCXMathElement] = None
+    sup: Optional[DOCXMathElement] = None
     
     # For matrices
-    rows: List[List['DOCXMathElement']] = field(default_factory=list)
+    rows: List[List[DOCXMathElement]] = field(default_factory=list)
     
     # For general containers
-    children: List['DOCXMathElement'] = field(default_factory=list)
+    children: List[DOCXMathElement] = field(default_factory=list)
     
     # Properties
     properties: Dict[str, Any] = field(default_factory=dict)
@@ -724,7 +724,7 @@ class DOCXDocument:
     
     # Themes, fonts, etc.
     theme: Optional[Dict[str, Any]] = None
-    font_table: Dict[str, str] = field(default_factory=dict)
+    font_table: Dict[str, Dict[str, Any]] = field(default_factory=dict)
     
     # Web settings
     web_settings: Dict[str, Any] = field(default_factory=dict)

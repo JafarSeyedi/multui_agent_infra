@@ -11,6 +11,7 @@ import json
 import math
 import os
 import re
+import io
 import tempfile
 import warnings
 from datetime import datetime
@@ -21,8 +22,9 @@ from dataclasses import dataclass, field, asdict
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
-import arabic_reshaper
-from bidi.algorithm import get_display
+import arabic_reshaper  # type: ignore[import-untyped]
+from bidi.algorithm import get_display  # type: ignore[import-not-found]
+from PIL.Image import Image as PILImage
 
 
 class TextDirection(Enum):
@@ -44,6 +46,7 @@ class Language(Enum):
     CHINESE = "zh"
     JAPANESE = "ja"
     KOREAN = "ko"
+    HEBREW = "he"    
     UNKNOWN = "unknown"
 
 
@@ -433,8 +436,7 @@ class ImageUtils:
         """
         try:
             # بارگذاری تصویر
-            image = Image.open(io.BytesIO(image_data))
-            
+            image: PILImage = Image.open(io.BytesIO(image_data))
             # تبدیل به خاکستری و تغییر اندازه
             image = image.convert('L').resize((hash_size, hash_size), Image.Resampling.LANCZOS)
             
@@ -515,7 +517,7 @@ class ImageUtils:
             داده‌های تصویر تغییر اندازه داده شده
         """
         try:
-            image = Image.open(io.BytesIO(image_data))
+            image: PILImage = Image.open(io.BytesIO(image_data))
             original_width, original_height = image.size
             
             # محاسبه اندازه جدید با حفظ نسبت ابعاد
@@ -554,7 +556,7 @@ class ImageUtils:
             داده‌های تصویر تبدیل شده
         """
         try:
-            image = Image.open(io.BytesIO(image_data))
+            image: PILImage = Image.open(io.BytesIO(image_data))
             
             # تبدیل به RGB اگر فرمت هدف JPEG است
             if target_format.upper() == 'JPEG' and image.mode in ('RGBA', 'LA', 'P'):
@@ -570,8 +572,8 @@ class ImageUtils:
             save_kwargs = {'format': target_format.upper()}
             
             if target_format.upper() in ('JPEG', 'WEBP'):
-                save_kwargs['quality'] = quality
-                save_kwargs['optimize'] = True
+                save_kwargs['quality'] = str(quality)
+                save_kwargs['optimize'] = str(True)
             
             image.save(output, **save_kwargs)
             return output.getvalue()
@@ -591,7 +593,7 @@ class ImageUtils:
         Returns:
             دیکشنری متادیتا
         """
-        metadata = {
+        metadata: Dict[str, Any] = {
             'format': None,
             'size': (0, 0),
             'mode': None,
@@ -602,7 +604,7 @@ class ImageUtils:
         }
         
         try:
-            image = Image.open(io.BytesIO(image_data))
+            image: PILImage = Image.open(io.BytesIO(image_data))
             
             metadata['format'] = image.format
             metadata['size'] = image.size
@@ -877,9 +879,9 @@ class ValidationUtils:
             (is_valid, message)
         """
         try:
-            image = Image.open(io.BytesIO(image_data))
+            image: PILImage = Image.open(io.BytesIO(image_data))
             image.verify()  # بررسی اعتبار تصویر
-            return True, f"تصویر معتبر ({image.format})"
+            return True, f"تصویر معتبر ({image.format or 'unknown'})"
         except Exception as e:
             return False, f"داده‌های تصویر معتبر نیستند: {str(e)}"
     
@@ -1045,7 +1047,7 @@ def clamp(value: float, min_val: float, max_val: float) -> float:
     return max(min_val, min(value, max_val))
 
 
-def format_bytes(size: int) -> str:
+def format_bytes(size: float) -> str:
     """فرمت‌بندی بایت به واحدهای خوانا"""
     for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
         if size < 1024.0:

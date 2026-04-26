@@ -110,7 +110,7 @@ class Annotation:
 class AnnotationWriter:
     """نویسنده حاشیه‌نویسی‌های PDF"""
     
-    def __init__(self):
+    def __init__(self) -> None:
         self.annotations: List[Annotation] = []
         self.next_object_num = 1
         self.annotation_map: Dict[str, int] = {}  # نگاشت annotation_id به شماره آبجکت
@@ -559,22 +559,24 @@ class AnnotationWriter:
     def get_annotation_count(self) -> int:
         """دریافت تعداد حاشیه‌نویسی‌ها"""
         return len(self.annotations)
-    
+
     def get_annotation_statistics(self) -> Dict[str, Any]:
         """دریافت آمار حاشیه‌نویسی‌ها"""
-        stats = {
+        # Use explicitly typed inner dictionaries to avoid type narrowing issues
+        by_type: Dict[str, int] = {}
+        by_page: Dict[int, int] = {}
+
+        stats: Dict[str, Any] = {
             'total': len(self.annotations),
-            'by_type': {},
-            'by_page': {}
+            'by_type': by_type,
+            'by_page': by_page
         }
-        
+
         for ann in self.annotations:
-            # آمار بر اساس نوع
             ann_type = ann.type.value
-            stats['by_type'][ann_type] = stats['by_type'].get(ann_type, 0) + 1
-            
-            # آمار بر اساس صفحه
+            by_type[ann_type] = by_type.get(ann_type, 0) + 1
+
             page_num = ann.page_number
-            stats['by_page'][page_num] = stats['by_page'].get(page_num, 0) + 1
-        
-        return stats
+            by_page[page_num] = by_page.get(page_num, 0) + 1
+
+        return stats    

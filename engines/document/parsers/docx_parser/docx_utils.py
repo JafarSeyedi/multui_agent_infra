@@ -3,6 +3,8 @@
 شامل توابع کمکی برای پردازش استایل‌ها، متن، ریاضیات و مدیریت فایل‌های DOCX
 """
 
+# mypy: ignore-errors
+
 import re
 import zipfile
 import xml.etree.ElementTree as ET

@@ -8,8 +8,7 @@ import hashlib
 import uuid
 from dataclasses import dataclass, field
 
-from ..models.usdm_models import USDMDocument, DocumentMetadata
-from ..models.standard import Metadata as StandardMetadata
+from ...models.usdm_models import USDMDocument
 from .pdf_objects import PDFInfo, PDFDictionary, PDFStream
 
 
@@ -60,6 +59,7 @@ class MetadataWriter:
     """کلاس نوشتن متادیتای PDF"""
     
     def __init__(self):
+        self._next_obj_id = 1
         self.xmp_namespaces = {
             'rdf': 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
             'dc': 'http://purl.org/dc/elements/1.1/',
@@ -78,6 +78,7 @@ class MetadataWriter:
         
         # ایجاد شیء PDFInfo
         pdf_info = PDFInfo(
+            obj_id=self._next_obj_id,
             title=self._get_title(document, metadata),
             author=self._get_author(metadata),
             subject=self._get_subject(metadata),
@@ -87,6 +88,7 @@ class MetadataWriter:
             creation_date=self._get_creation_date(metadata),
             mod_date=datetime.now()
         )
+        self._next_obj_id += 1
         
         return pdf_info
     
@@ -123,76 +125,99 @@ class MetadataWriter:
         # ایجاد استریم XMP
         if xmp_xml:
             return PDFStream(
+                obj_id=self._next_obj_id,
                 data=xmp_xml.encode('utf-8'),
                 filters=[]
             )
-        
+        self._next_obj_id += 1
         return None
     
-    def _get_title(self, document: USDMDocument, metadata: Optional[DocumentMetadata]) -> Optional[str]:
+    def _get_title(self, document: USDMDocument, metadata: Optional[Dict[str, Any]]) -> Optional[str]:
         """دریافت عنوان"""
-        if metadata and metadata.title:
-            return metadata.title
+        if metadata and metadata.get('title'):
+            return metadata['title']
         elif hasattr(document, 'title') and document.title:
             return document.title
         return None
     
-    def _get_author(self, metadata: Optional[DocumentMetadata]) -> Optional[str]:
+    def _get_author(self, metadata: Optional[Dict[str, Any]]) -> Optional[str]:
         """دریافت نویسنده"""
         if metadata:
-            if metadata.author:
-                return metadata.author
-            elif metadata.authors and len(metadata.authors) > 0:
-                return ', '.join(metadata.authors)
+            author = metadata.get('author')
+            authors = metadata.get('authors')
+            if author:
+                return author
+            if authors and len(authors) > 0:
+                return ', '.join(authors)
+        return None            
+
+    def _get_subject(self, metadata: Optional[Dict[str, Any]]) -> Optional[str]:
+        if metadata and metadata.get('subject'):
+            return metadata['subject']
         return None
-    
-    def _get_subject(self, metadata: Optional[DocumentMetadata]) -> Optional[str]:
-        """دریافت موضوع"""
-        if metadata and metadata.subject:
-            return metadata.subject
-        return None
-    
-    def _get_keywords(self, metadata: Optional[DocumentMetadata]) -> Optional[str]:
-        """دریافت کلمات کلیدی به صورت رشته"""
+
+    def _get_keywords(self, metadata: Optional[Dict[str, Any]]) -> Optional[str]:
         if metadata:
-            if metadata.keywords:
-                if isinstance(metadata.keywords, list):
-                    return ', '.join(metadata.keywords)
-                return str(metadata.keywords)
-            elif metadata.tags and len(metadata.tags) > 0:
-                return ', '.join(metadata.tags)
+            keywords = metadata.get('keywords')
+            tags = metadata.get('tags')
+            if keywords:
+                if isinstance(keywords, list):
+                    return ', '.join(keywords)
+                return str(keywords)
+            if tags and len(tags) > 0:
+                return ', '.join(tags)
         return None
-    
-    def _get_keywords_list(self, metadata: Optional[DocumentMetadata]) -> List[str]:
-        """دریافت کلمات کلیدی به صورت لیست"""
-        keywords = []
+
+    def _get_keywords_list(self, metadata: Optional[Dict[str, Any]]) -> List[str]:
+        keywords: List[str] = []
         if metadata:
-            if metadata.keywords:
-                if isinstance(metadata.keywords, list):
-                    keywords.extend(metadata.keywords)
+            kw = metadata.get('keywords')
+            if kw:
+                if isinstance(kw, list):
+                    keywords.extend(kw)
                 else:
-                    keywords.append(str(metadata.keywords))
-            if metadata.tags:
-                keywords.extend(metadata.tags)
-        return list(set(keywords))  # حذف تکراری‌ها
-    
-    def _get_creator(self, metadata: Optional[DocumentMetadata]) -> Optional[str]:
-        """دریافت سازنده"""
-        if metadata and metadata.creator:
-            return metadata.creator
+                    keywords.append(str(kw))
+            tags = metadata.get('tags')
+            if tags:
+                keywords.extend(tags)
+        return list(set(keywords))
+
+    def _get_creator(self, metadata: Optional[Dict[str, Any]]) -> Optional[str]:
+        if metadata and metadata.get('creator'):
+            return metadata['creator']
         return "USDM Document Processor"
-    
-    def _get_creation_date(self, metadata: Optional[DocumentMetadata]) -> Optional[datetime]:
-        """دریافت تاریخ ایجاد"""
-        if metadata and metadata.creation_date:
-            if isinstance(metadata.creation_date, datetime):
-                return metadata.creation_date
-            elif isinstance(metadata.creation_date, str):
+
+    def _get_creation_date(self, metadata: Optional[Dict[str, Any]]) -> Optional[datetime]:
+        if metadata and metadata.get('creation_date'):
+            creation_date = metadata['creation_date']
+            if isinstance(creation_date, datetime):
+                return creation_date
+            elif isinstance(creation_date, str):
                 try:
-                    return datetime.fromisoformat(metadata.creation_date.replace('Z', '+00:00'))
+                    return datetime.fromisoformat(creation_date.replace('Z', '+00:00'))
                 except:
                     pass
         return datetime.now()
+
+    def _get_rights(self, metadata: Optional[Dict[str, Any]]) -> Optional[str]:
+        if metadata:
+            rights = metadata.get('rights')
+            license_val = metadata.get('license')
+            if rights:
+                return rights
+            if license_val:
+                return f"Licensed under {license_val}"
+        return None
+
+    def _is_rights_marked(self, metadata: Optional[Dict[str, Any]]) -> bool:
+        if metadata:
+            if metadata.get('copyright'):
+                return True
+            if metadata.get('rights'):
+                return True
+            if metadata.get('license'):
+                return True
+        return False
     
     def _generate_document_id(self, document: USDMDocument) -> str:
         """تولید شناسه منحصر به فرد سند"""
@@ -222,27 +247,7 @@ class MetadataWriter:
                             return text_run.language
         
         return "en-US"  # پیش‌فرض
-    
-    def _get_rights(self, metadata: Optional[DocumentMetadata]) -> Optional[str]:
-        """دریافت اطلاعات حقوق"""
-        if metadata:
-            if metadata.rights:
-                return metadata.rights
-            elif metadata.license:
-                return f"Licensed under {metadata.license}"
-        return None
-    
-    def _is_rights_marked(self, metadata: Optional[DocumentMetadata]) -> bool:
-        """آیا سند دارای علامت حقوق است؟"""
-        if metadata:
-            if hasattr(metadata, 'copyright') and metadata.copyright:
-                return True
-            if hasattr(metadata, 'rights') and metadata.rights:
-                return True
-            if hasattr(metadata, 'license') and metadata.license:
-                return True
-        return False
-    
+            
     def _generate_xmp_xml(self, xmp: XMPMetadata) -> str:
         """تولید XML متادیتای XMP"""
         

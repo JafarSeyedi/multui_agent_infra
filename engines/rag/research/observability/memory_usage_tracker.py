@@ -2,11 +2,7 @@ from __future__ import annotations
 
 import os
 import resource
-
-try:
-    import psutil  # type: ignore
-except Exception:  # pragma: no cover
-    psutil = None
+import psutil
 
 
 class MemoryUsageTracker:

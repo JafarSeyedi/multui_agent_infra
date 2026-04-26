@@ -13,7 +13,7 @@ Coordinates extraction of all components from a DOCX file into intermediate DOCX
 import os
 import re
 import zipfile
-from typing import Dict, List, Optional, Any, Tuple, Union, BinaryIO
+from typing import List, Dict, Optional, Any, Tuple, Union, BinaryIO, Literal, cast
 from pathlib import Path
 from xml.etree import ElementTree as ET
 from datetime import datetime
@@ -72,8 +72,8 @@ from .docx_utils import (
     DocxUtils,  # Add this for utility class access
 )
 from .docx_image_extractor import DOCXImageExtractor
-from .docx_style_parser import DocxStyleParser  # Fixed class name
-from .docx_table_parser import DocxTableParser  # Fixed class name
+from .docx_style_parser import DocxStyleParser
+from .docx_table_parser import DocxTableParser
 from .docx_math_parser import OMMLParser
 from ...models.base import BinaryEncoding
 
@@ -110,8 +110,8 @@ class DOCXExtractor:
         
         # Sub-extractors
         self.image_extractor: Optional[DOCXImageExtractor] = None
-        self.style_parser: Optional[DOCXStyleParser] = None
-        self.table_parser: Optional[DOCXTableParser] = None
+        self.style_parser: Optional[DocxStyleParser] = None
+        self.table_parser: Optional[DocxTableParser] = None
         self.math_parser: Optional[OMMLParser] = None
         
         # Cache for XML documents
@@ -249,8 +249,8 @@ class DOCXExtractor:
     def _initialize_parsers(self):
         """Initialize sub-parsers."""
         self.image_extractor = DOCXImageExtractor(self.zip_file, self.encoding)
-        self.style_parser = DOCXStyleParser()
-        self.table_parser = DOCXTableParser()
+        self.style_parser = DocxStyleParser()
+        self.table_parser = DocxTableParser()
         self.math_parser = OMMLParser()
     
     def _get_xml_document(self, path: str) -> Optional[ET.Element]:
@@ -265,7 +265,8 @@ class DOCXExtractor:
         """
         if path in self._xml_cache:
             return self._xml_cache[path]
-        
+
+        assert self.zip_file is not None, "ZIP file not opened"        
         try:
             xml_content = self.zip_file.read(path)
             root = ET.fromstring(xml_content)
@@ -425,7 +426,7 @@ class DOCXExtractor:
         Returns:
             Dictionary mapping rel_id to target path
         """
-        relationships = {}
+        relationships: Dict[str, str] = {}
         
         rels_xml = self._get_xml_document(rels_path)
         if rels_xml is None:
@@ -474,7 +475,7 @@ class DOCXExtractor:
         styles_xml = self._get_xml_document('word/styles.xml')
         if styles_xml is None:
             return {}
-        
+        assert self.style_parser is not None
         return self.style_parser.parse_styles(styles_xml)
     
     def _extract_default_style_ids(self) -> Tuple[Optional[str], Optional[str], Optional[str]]:
@@ -513,8 +514,8 @@ class DOCXExtractor:
         if num_xml is None:
             return {}, {}
         
-        definitions = {}
-        instances = {}
+        definitions: Dict[str, DOCXNumberingDefinition] = {}
+        instances: Dict[str, DOCXNumberingInstance] = {}
         
         # Parse abstract numbering definitions
         for abs_num_elem in safe_findall(num_xml, './/w:abstractNum'):
@@ -653,7 +654,7 @@ class DOCXExtractor:
                     start_ovr_elem = safe_find(ovr_elem, './/w:startOverride')
                     if start_ovr_elem is not None:
                         start_val = self._parse_int(start_ovr_elem.get(f'{{{NS["w"]}}}val'))
-                        if start_val is not None:
+                        if start_val is not None and instance.abstract_definition_id:
                             # Create a level with just start override
                             base_def = definitions.get(instance.abstract_definition_id)
                             if base_def and level_num in base_def.levels:
@@ -681,7 +682,7 @@ class DOCXExtractor:
     
     def _extract_headers(self) -> Dict[str, DOCXHeaderFooter]:
         """Extract all headers from the document."""
-        headers = {}
+        headers: Dict[str, DOCXHeaderFooter] = {}
         
         # Get header relationships from document relationships
         doc_rels = self._relationships.get('document', {})
@@ -704,7 +705,7 @@ class DOCXExtractor:
     
     def _extract_footers(self) -> Dict[str, DOCXHeaderFooter]:
         """Extract all footers from the document."""
-        footers = {}
+        footers: Dict[str, DOCXHeaderFooter] = {}
         
         doc_rels = self._relationships.get('document', {})
         
@@ -724,7 +725,7 @@ class DOCXExtractor:
         
         return footers
     
-    def _get_header_footer_type(self, rel_id: str) -> str:
+    def _get_header_footer_type(self, rel_id: str) -> Literal['default', 'first', 'even']:
         """Determine header/footer type from relationship ID."""
         if 'first' in rel_id.lower():
             return 'first'
@@ -737,7 +738,7 @@ class DOCXExtractor:
         self, 
         elem: ET.Element, 
         hf_id: str, 
-        hf_type: str
+        hf_type: Literal['default', 'first', 'even']
     ) -> DOCXHeaderFooter:
         """Parse a header or footer XML element."""
         hf = DOCXHeaderFooter(
@@ -747,7 +748,8 @@ class DOCXExtractor:
         
         # Parse content (paragraphs and tables)
         content = self._parse_block_elements(elem)
-        hf.content = content
+        # Headers/footers should not contain DOCXSection; keep only paragraphs and tables
+        hf.content = [item for item in content if isinstance(item, (DOCXParagraph, DOCXTable))]
         
         return hf
     
@@ -761,7 +763,7 @@ class DOCXExtractor:
         if comments_xml is None:
             return {}
         
-        comments = {}
+        comments: Dict[str, DOCXComment] = {}
         
         ns_map = {'w': NS['w']}
         
@@ -799,13 +801,13 @@ class DOCXExtractor:
         """Extract endnotes from endnotes.xml."""
         return self._extract_notes('word/endnotes.xml', 'endnote')
     
-    def _extract_notes(self, path: str, note_type: str) -> Dict[str, DOCXFootnoteEndnote]:
+    def _extract_notes(self, path: str, note_type: Literal['footnote', 'endnote']) -> Dict[str, DOCXFootnoteEndnote]:
         """Extract footnotes or endnotes."""
         notes_xml = self._get_xml_document(path)
         if notes_xml is None:
             return {}
         
-        notes = {}
+        notes: Dict[str, DOCXFootnoteEndnote] = {}
         
         for note_elem in safe_findall(notes_xml, './/w:footnote') + safe_findall(notes_xml, './/w:endnote'):
             note_id = note_elem.get(f'{{{NS["w"]}}}id')
@@ -844,7 +846,7 @@ class DOCXExtractor:
     
     def _parse_block_elements(self, parent_elem: ET.Element) -> List[Union[DOCXParagraph, DOCXTable, DOCXSection]]:
         """Parse block-level elements (paragraphs, tables, sections)."""
-        elements = []
+        elements: List[Union[DOCXParagraph, DOCXTable, DOCXSection]] = []
         
         for elem in parent_elem:
             tag = elem.tag.split('}')[-1] if '}' in elem.tag else elem.tag
@@ -908,6 +910,7 @@ class DOCXExtractor:
                 
             elif tag == 'oMath' or tag == 'oMathPara':
                 # Math equation - store as special field for later conversion
+                assert self.math_parser is not None
                 math = self.math_parser.parse_math(child, is_display=(tag == 'oMathPara'))
                 if math:
                     # Create a field to hold the math
@@ -1050,7 +1053,7 @@ class DOCXExtractor:
         text_run = DOCXTextRun(text='')
         
         # Extract text
-        text_parts = []
+        text_parts: List[str] = []
         for t_elem in safe_findall(elem, './/w:t'):
             if t_elem.text:
                 text_parts.append(t_elem.text)
@@ -1153,15 +1156,19 @@ class DOCXExtractor:
         # Font size
         sz_elem = safe_find(elem, './/w:sz')
         if sz_elem is not None:
-            val = self._parse_int(sz_elem.get(f'{{{NS["w"]}}}val'))
-            if val:
-                props.font_size = val / 2.0  # Half-points to points
+            sz_val = sz_elem.get(f'{{{NS["w"]}}}val')
+            if sz_val is not None:
+                val_int = self._parse_int(sz_val)
+                if val_int is not None:
+                    props.font_size = val_int / 2.0        
         
         sz_cs_elem = safe_find(elem, './/w:szCs')
         if sz_cs_elem is not None:
-            val = self._parse_int(sz_cs_elem.get(f'{{{NS["w"]}}}val'))
-            if val:
-                props.font_size_cs = val / 2.0
+            sz_val = sz_cs_elem.get(f'{{{NS["w"]}}}val')
+            if sz_val:
+                val_int = self._parse_int(sz_val)
+                if val_int is not None:
+                    props.font_size_cs = val_int / 2.0        
         
         # Kerning
         kern_elem = safe_find(elem, './/w:kern')
@@ -1280,7 +1287,7 @@ class DOCXExtractor:
             field.instruction = parts[1] if len(parts) > 1 else None
         
         # Get field result (computed value)
-        result_text = []
+        result_text: List[str] = []
         for child in elem:
             tag = child.tag.split('}')[-1] if '}' in child.tag else child.tag
             if tag == 'r':
@@ -1413,14 +1420,16 @@ class DOCXExtractor:
         # Cell margins
         cell_mar_elem = safe_find(elem, './/w:tblCellMar')
         if cell_mar_elem is not None:
-            margins = {}
+            margins: Dict[str, float] = {}
             for margin_type in ['top', 'bottom', 'left', 'right']:
                 mar_elem = safe_find(cell_mar_elem, f'.//w:{margin_type}')
                 if mar_elem is not None:
-                    margins[margin_type] = parse_dxa_to_points(mar_elem.get(f'{{{NS["w"]}}}val'))
+                    val1 = parse_dxa_to_points(mar_elem.get(f'{{{NS["w"]}}}val'))
+                    if val1 is not None:
+                        margins[margin_type] = val1 if val1 is not None else 0.0
             if margins:
                 props.cell_margin_default = margins
-        
+                
         # Cell spacing
         spacing_elem = safe_find(elem, './/w:tblCellSpacing')
         if spacing_elem is not None:
@@ -1567,7 +1576,7 @@ class DOCXExtractor:
     
     def _extract_sections(self) -> List[DOCXSection]:
         """Extract all sections from the document."""
-        sections = []
+        sections: List[DOCXSection] = []
         
         doc_xml = self._get_xml_document('word/document.xml')
         if doc_xml is None:
@@ -1606,7 +1615,7 @@ class DOCXExtractor:
         if pg_sz_elem is not None:
             width = parse_dxa_to_points(pg_sz_elem.get(f'{{{NS["w"]}}}w')) or 12240
             height = parse_dxa_to_points(pg_sz_elem.get(f'{{{NS["w"]}}}h')) or 15840
-            orient = pg_sz_elem.get(f'{{{NS["w"]}}}orient', 'portrait')
+            orient = cast(Literal['portrait', 'landscape'],pg_sz_elem.get(f'{{{NS["w"]}}}orient', 'portrait'))
             section.page_size = DOCXPageSize(
                 width=width,
                 height=height,
@@ -1644,9 +1653,9 @@ class DOCXExtractor:
             # Individual column widths
             if not equal_width:
                 for col_elem in safe_findall(cols_elem, './/w:col'):
-                    width = parse_dxa_to_points(col_elem.get(f'{{{NS["w"]}}}w'))
-                    if width is not None:
-                        section.columns.widths.append(width)
+                    width1 = parse_dxa_to_points(col_elem.get(f'{{{NS["w"]}}}w'))
+                    if width1:
+                        section.columns.widths.append(width1)
         
 # engines/document/parsers/docx_parser/docx_extractor.py (continued from _parse_section_properties)
 
@@ -1697,7 +1706,7 @@ class DOCXExtractor:
     
     def _extract_binary_parts(self) -> Dict[str, bytes]:
         """Extract all binary parts (images, embedded objects)."""
-        binary_parts = {}
+        binary_parts: Dict[str, bytes] = {}
         
         if self.image_extractor is None:
             return binary_parts
@@ -1719,6 +1728,7 @@ class DOCXExtractor:
             if target.startswith('embeddings/') or target.endswith('.bin') or target.endswith('.ole'):
                 try:
                     obj_path = f'word/{target}'
+                    assert self.zip_file is not None, "ZIP file not opened"
                     obj_data = self.zip_file.read(obj_path)
                     binary_parts[rel_id] = obj_data
                 except (KeyError, zipfile.BadZipFile):
@@ -1732,7 +1742,7 @@ class DOCXExtractor:
     
     def _extract_settings(self) -> Dict[str, Any]:
         """Extract document settings from settings.xml."""
-        settings = {}
+        settings: Dict[str, Any] = {}
         
         settings_xml = self._get_xml_document('word/settings.xml')
         if settings_xml is None:
@@ -1792,7 +1802,7 @@ class DOCXExtractor:
     
     def _extract_theme(self) -> Optional[Dict[str, Any]]:
         """Extract theme from theme1.xml."""
-        theme = {}
+        theme: Dict[str, Any] = {}
         
         theme_xml = self._get_xml_document('word/theme/theme1.xml')
         if theme_xml is None:
@@ -1887,7 +1897,7 @@ class DOCXExtractor:
     
     def _parse_theme_fonts(self, elem: ET.Element) -> Dict[str, str]:
         """Parse theme font definitions."""
-        fonts = {}
+        fonts: Dict[str, str] = {}
         ns_map = {'a': NS.get('a', '')}
         
         for script in ['latin', 'ea', 'cs']:
@@ -1899,11 +1909,11 @@ class DOCXExtractor:
     
     def _parse_theme_fill_styles(self, elem: ET.Element) -> List[Dict[str, Any]]:
         """Parse theme fill styles."""
-        styles = []
+        styles: List[Dict[str, Any]] = []
         ns_map = {'a': NS.get('a', '')}
         
         for fill_elem in elem:
-            style = {}
+            style: Dict[str, Any] = {}
             tag = fill_elem.tag.split('}')[-1] if '}' in fill_elem.tag else fill_elem.tag
             
             if tag == 'solidFill':
@@ -1927,11 +1937,11 @@ class DOCXExtractor:
     
     def _parse_theme_line_styles(self, elem: ET.Element) -> List[Dict[str, Any]]:
         """Parse theme line styles."""
-        styles = []
+        styles: List[Dict[str, Any]] = []
         ns_map = {'a': NS.get('a', '')}
         
         for ln_elem in elem:
-            style = {}
+            style: Dict[str, Any] = {}
             tag = ln_elem.tag.split('}')[-1] if '}' in ln_elem.tag else ln_elem.tag
             
             if tag == 'ln':
@@ -1970,11 +1980,11 @@ class DOCXExtractor:
     
     def _parse_theme_effect_styles(self, elem: ET.Element) -> List[Dict[str, Any]]:
         """Parse theme effect styles."""
-        styles = []
+        styles: List[Dict[str, Any]] = []
         ns_map = {'a': NS.get('a', '')}
         
         for effect_elem in elem:
-            style = {}
+            style: Dict[str, Any] = {}
             tag = effect_elem.tag.split('}')[-1] if '}' in effect_elem.tag else effect_elem.tag
             
             if tag == 'effectStyle':
@@ -2014,9 +2024,9 @@ class DOCXExtractor:
         
         return styles
     
-    def _extract_font_table(self) -> Dict[str, str]:
+    def _extract_font_table(self) -> Dict[str, Dict[str, Any]]:
         """Extract font table from fontTable.xml."""
-        font_table = {}
+        font_table: Dict[str, Dict[str, Any]] = {}
         
         fonts_xml = self._get_xml_document('word/fontTable.xml')
         if fonts_xml is None:
@@ -2060,7 +2070,7 @@ class DOCXExtractor:
     
     def _extract_web_settings(self) -> Dict[str, Any]:
         """Extract web settings from webSettings.xml."""
-        web_settings = {}
+        web_settings: Dict[str, Any] = {}
         
         web_xml = self._get_xml_document('word/webSettings.xml')
         if web_xml is None:

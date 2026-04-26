@@ -9,7 +9,7 @@ import re
 
 from engines.document.writers.base import BaseDocumentWriter, WriteOptions
 from engines.document.models.base import BaseDocument
-from engines.document.models.usdm import (
+from ..models.usdm_models import (
     USDMDocument,
     DocumentElement,
     LogicalElement,
@@ -21,10 +21,11 @@ from engines.document.models.usdm import (
     ListContent,
     ListItemContent,
     TableContent,
+    TableCell,
     QuoteContent,
     ImageContent,
     LinkContent,
-    ElementType
+    ElementType,
 )
 from engines.document.models.exceptions import DocumentWriteError
 
@@ -40,6 +41,7 @@ class MarkdownWriter(BaseDocumentWriter):
         """
         تبدیل سند به مارک‌داون (بایت)
         """
+        assert self.options is not None, "WriteOptions not initialized"
         if not isinstance(document, USDMDocument):
             raise DocumentWriteError("سند باید از نوع USDMDocument باشد")
         
@@ -191,8 +193,8 @@ class MarkdownWriter(BaseDocumentWriter):
     
     def _code_to_markdown(self, content: CodeContent) -> str:
         """تبدیل کد به مارک‌داون"""
+        assert self.options is not None, "WriteOptions not initialized"        
         language = content.language or ""
-        
         if self.options.code_block_style == "~~~":
             return f"~~~{language}\n{content.code}\n~~~"
         else:
@@ -200,6 +202,7 @@ class MarkdownWriter(BaseDocumentWriter):
     
     def _list_to_markdown(self, content: ListContent) -> str:
         """تبدیل لیست به مارک‌داون"""
+        assert self.options is not None, "WriteOptions not initialized"
         lines = []
         bullet = self.options.bullet_style
         

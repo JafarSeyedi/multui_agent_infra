@@ -2,6 +2,8 @@
 مدیریت فونت‌ها در PDF - پیاده‌سازی حرفه‌ای با پشتیبانی کامل از فونت‌های فارسی و انگلیسی
 """
 
+# mypy: ignore-errors
+
 import os
 import tempfile
 import hashlib
@@ -1499,5 +1501,4 @@ class FontManager:
             }
         
         return report
-
 

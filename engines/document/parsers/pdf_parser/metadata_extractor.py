@@ -20,26 +20,26 @@ import warnings
 
 # برای پردازش XMP
 try:
-    import defusedxml.ElementTree as safe_ET
+    import defusedxml.ElementTree as safe_ET  # type: ignore[import-untyped]
     ET = safe_ET
 except ImportError:
     pass
 
 # برای پردازش PDF
 try:
-    import PyPDF2
+    import PyPDF2  # type: ignore[import-not-found]
     HAS_PYPDF2 = True
 except ImportError:
     HAS_PYPDF2 = False
 
 try:
-    import pdfplumber
+    import pdfplumber  # type: ignore[import-not-found]
     HAS_PDFPLUMBER = True
 except ImportError:
     HAS_PDFPLUMBER = False
 
 try:
-    import pikepdf
+    import pikepdf  # type: ignore[import-not-found]
     HAS_PIKEPDF = True
 except ImportError:
     HAS_PIKEPDF = False
@@ -859,20 +859,25 @@ class PDFMetadataExtractor:
                         xmp_data[elem.lower()] = values[0] if len(values) == 1 else values
             
             self.metadata.xmp_metadata = xmp_data
+
+            def _stringify_xmp_value(value: Any) -> str:
+                if isinstance(value, list):
+                    return ", ".join(str(item) for item in value)
+                return str(value)
             
             # به‌روزرسانی metadata اصلی با XMP
             if 'title' in xmp_data and not self.metadata.title:
-                self.metadata.title = xmp_data['title']
+                self.metadata.title = _stringify_xmp_value(xmp_data['title'])
             if 'creator' in xmp_data and not self.metadata.author:
-                self.metadata.author = xmp_data['creator']
+                self.metadata.author = _stringify_xmp_value(xmp_data['creator'])
             if 'subject' in xmp_data and not self.metadata.subject:
-                self.metadata.subject = xmp_data['subject']
+                self.metadata.subject = _stringify_xmp_value(xmp_data['subject'])
             if 'keywords' in xmp_data and not self.metadata.keywords:
-                self.metadata.keywords = xmp_data['keywords']
+                self.metadata.keywords = _stringify_xmp_value(xmp_data['keywords'])
             if 'creatortool' in xmp_data and not self.metadata.creator:
-                self.metadata.creator = xmp_data['creatortool']
+                self.metadata.creator = _stringify_xmp_value(xmp_data['creatortool'])
             if 'producer' in xmp_data and not self.metadata.producer:
-                self.metadata.producer = xmp_data['producer']
+                self.metadata.producer = _stringify_xmp_value(xmp_data['producer'])
             
         except Exception as e:
             warnings.warn(f"خطا در پارس XMP: {str(e)}")
@@ -964,7 +969,10 @@ class MetadataExtractor:
     """کلاس اصلی برای استخراج متادیتا"""
     
     @staticmethod
-    def extract_from_file(pdf_path: str, extract_types: List[MetadataType] = None) -> Dict[str, Any]:
+    def extract_from_file(
+        pdf_path: str,
+        extract_types: Optional[List[MetadataType]] = None
+    ) -> Dict[str, Any]:
         """
         استخراج متادیتا از فایل
         
@@ -981,7 +989,7 @@ class MetadataExtractor:
         extractor = PDFMetadataExtractor(pdf_path=pdf_path)
         metadata = extractor.extract_all()
         
-        result = {
+        result: Dict[str, Any] = {
             "file_path": pdf_path,
             "file_name": os.path.basename(pdf_path),
             "extraction_timestamp": datetime.now().isoformat(),
@@ -1049,7 +1057,10 @@ class MetadataExtractor:
         return result
     
     @staticmethod
-    def extract_from_bytes(pdf_bytes: bytes, extract_types: List[MetadataType] = None) -> Dict[str, Any]:
+    def extract_from_bytes(
+        pdf_bytes: bytes,
+        extract_types: Optional[List[MetadataType]] = None
+    ) -> Dict[str, Any]:
         """
         استخراج متادیتا از داده‌های بایت
         
@@ -1066,7 +1077,7 @@ class MetadataExtractor:
         extractor = PDFMetadataExtractor(pdf_bytes=pdf_bytes)
         metadata = extractor.extract_all()
         
-        result = {
+        result: Dict[str, Any] = {
             "file_name": "in_memory.pdf",
             "file_size": len(pdf_bytes),
             "extraction_timestamp": datetime.now().isoformat(),
@@ -1165,7 +1176,7 @@ class MetadataExtractor:
         Returns:
             دیکشنری حاوی نتایج اعتبارسنجی
         """
-        validation_result = {
+        validation_result: Dict[str, Any] = {
             "file_path": pdf_path,
             "file_name": os.path.basename(pdf_path),
             "is_valid": False,
@@ -1216,7 +1227,7 @@ class MetadataExtractor:
             
             # بررسی دسترسی‌پذیری
             if metadata.accessibility:
-                accessibility_issues = []
+                accessibility_issues: List[str] = []
                 if not metadata.accessibility.get('tagged', False):
                     accessibility_issues.append("PDF برچسب‌گذاری نشده است")
                 if not metadata.accessibility.get('language_specified', False):
@@ -1256,7 +1267,7 @@ class MetadataExtractor:
         metadata1 = extractor1.extract_all()
         metadata2 = extractor2.extract_all()
         
-        comparison = {
+        comparison: Dict[str, Any] = {
             "files": {
                 "file1": pdf_path1,
                 "file2": pdf_path2
@@ -1352,7 +1363,7 @@ def batch_extract_metadata(pdf_files: List[str], output_format: str = 'json') ->
     Returns:
         لیست دیکشنری‌های متادیتا
     """
-    results = []
+    results: List[Dict[str, Any]] = []
     
     for pdf_file in pdf_files:
         try:
@@ -1386,7 +1397,7 @@ def batch_extract_metadata(pdf_files: List[str], output_format: str = 'json') ->
     return results
 
 
-def export_metadata_to_json(pdf_path: str, output_path: str = None) -> str:
+def export_metadata_to_json(pdf_path: str, output_path: Optional[str] = None) -> str:
     """
     صادر کردن متادیتا به فایل JSON
     

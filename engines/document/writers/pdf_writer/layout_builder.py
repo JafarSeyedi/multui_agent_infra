@@ -6,7 +6,7 @@ from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass, field
 import math
 
-from ..models.usdm_models import Page as USDMPage, USDMDocument
+from ...models.usdm_models import USDMDocument
 from .pdf_objects import PDFPage, PDFDictionary
 from .utils import UnitConverter
 
@@ -54,15 +54,15 @@ class LayoutBuilder:
     def create_page_layouts(self, document: USDMDocument, 
                            options: Dict[str, Any]) -> List[PageLayout]:
         """ایجاد طرح‌بندی صفحات بر اساس سند USDM"""
-        layouts = []
+        layouts: List[PageLayout] = []
         
         # اگر صفحات از قبل وجود دارند، از آنها استفاده کن
         if document.pages:
             for usdm_page in document.pages:
                 layout = PageLayout(
                     page_number=usdm_page.page_number or len(layouts) + 1,
-                    width=self.unit_converter.points(usdm_page.width or 210),  # mm to points
-                    height=self.unit_converter.points(usdm_page.height or 297),
+                    width=self.unit_converter.to_points(usdm_page.width or 210),  # mm to points
+                    height=self.unit_converter.to_points(usdm_page.height or 297),
                     margin_top=options.get('margin_top', 72),
                     margin_bottom=options.get('margin_bottom', 72),
                     margin_left=options.get('margin_left', 72),
@@ -132,10 +132,10 @@ class LayoutBuilder:
         
         # تخمین از صفحات
         for page in document.pages:
-            for element in page.elements:
-                if hasattr(element, 'text'):
-                    volume += len(getattr(element, 'text', '')) * 10
-                elif hasattr(element, 'image_data'):
+            for elmnt in page.elements:
+                if hasattr(elmnt, 'text'):
+                    volume += len(getattr(elmnt, 'text', '')) * 10
+                elif hasattr(elmnt, 'image_data'):
                     volume += 1000  # تقریب برای تصاویر
         
         return volume

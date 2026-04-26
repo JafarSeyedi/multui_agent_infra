@@ -2,12 +2,15 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Optional, Dict, Any, Union
 from .media_types import DocumentStandard
 
 from .base import BaseDocument, ElementType
 
-class USDMDcoument(BaseDocument):
+from typing import List, Optional, Dict, Any, Union, Literal, Type, Callable, Tuple
+from abc import ABC, abstractmethod
+from datetime import datetime
+
+class USDMDocument(BaseDocument):
     kind: DocumentStandard = DocumentStandard.USDM
     sections: List[Section] = field(default_factory=list)
     pages: List[Page] = field(default_factory=list)
@@ -18,36 +21,6 @@ class USDMDcoument(BaseDocument):
     logical_elements: List[LogicalElement] = field(default_factory=list)
     stylesheet: StyleSheet = field(default_factory=StyleSheet)
 
-LogicalContent = Union[
-    ParagraphContent,
-    HeadingContent,
-    MathContent,
-    CodeContent,
-    ImageContent,
-    ListContent,
-    ListItemContent,
-    TableContent,
-    QuoteContent,
-    DrawingContent,
-    BinaryContent,
-    DataContent,
-    SpreadsheetContent,
-    FormulaContent,
-    LinkContent,
-    FootnoteContent,
-    EndnoteContent,
-    CommentContent,
-    BookmarkContent,
-    PageBreakContent,
-    LineBreakContent,
-    ColumnBreakContent,
-    EmbeddedObjectContent,
-    OLEObjectContent,
-    VideoContent,
-    AudioContent,
-    ShapeContent,
-    ChartContent,  # New
-]
 
 @dataclass
 class DocumentElement:
@@ -57,9 +30,11 @@ class DocumentElement:
 
 @dataclass
 class Section:
+    section_id: str = ""
     title: Optional[HeadingContent] = None
     elements: List[DocumentElement] = field(default_factory=list)
     section_type: Optional[str] = None  # e.g. "body", "header", "footer"
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
 @dataclass
 class PageContent:
@@ -93,7 +68,7 @@ class RichTextSpan:
     background: Optional[str] = None
     href: Optional[str] = None
     math: Optional[str] = None  # inline math
-
+    display_math: bool = False
 
 @dataclass
 class RichTextContent:
@@ -131,9 +106,10 @@ class CodeContent:
 @dataclass
 class ImageContent:
     src: str
-    width: Optional[int] = None
-    height: Optional[int] = None
+    width: Optional[float] = None
+    height: Optional[float] = None
     alt: Optional[str] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -153,17 +129,23 @@ class TableCell:
     content: List[LogicalElement]
     row_span: int = 1
     col_span: int = 1
+    is_header: bool = False
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class TableRow:
-    cells: List[TableCell]
+    cells: List[TableCell] = []
+    is_header: bool = False    
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class TableContent:
     rows: List[TableRow]
     grid: Optional[List[int]] = None     # Word-style table grid definition
+    caption: Optional[str] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -188,7 +170,9 @@ class TextRun:
     font: str
     size: float
     color: Optional[str] = None
-
+    style_id: Optional[str] = None
+    bbox: Optional[Dict[str, float]] = None
+    language: Optional[str] = None
 
 @dataclass
 class ImageObject:
@@ -197,7 +181,8 @@ class ImageObject:
     y: float
     width: float
     height: float
-
+    format: str = 'jpg'
+    bbox: Optional[Dict[str, float]] = None
 
 @dataclass
 class VectorPath:
@@ -205,6 +190,7 @@ class VectorPath:
     stroke_color: Optional[str] = None
     fill_color: Optional[str] = None
     stroke_width: Optional[float] = None
+    points: Optional[List[Dict[str, float]]] = None
 
 
 @dataclass
@@ -222,7 +208,7 @@ class Page:
     page_number: int
     width: float
     height: float
-    objects: List[Union[TextRun, ImageObject, VectorPath, AnnotationObject]] = field(default_factory=list)
+    elements: List[Union[TextRun, ImageObject, VectorPath, AnnotationObject]] = field(default_factory=list)
 
 
 
@@ -236,13 +222,37 @@ class CharacterStyle:
     bold: Optional[bool] = None
     italic: Optional[bool] = None
     underline: Optional[bool] = None
+    underline_type: Optional[str] = None
     color: Optional[str] = None
+    highlight: Optional[str] = None
+    background: Optional[str] = None
     font: Optional[str] = None
+    font_family: Optional[str] = None
+    font_charset: Optional[str] = None
+    font_pitch: Optional[str] = None
     size: Optional[float] = None
+    size_cs: Optional[float] = None
     strike: Optional[bool] = None
+    double_strike: Optional[bool] = None
     superscript: Optional[bool] = None
     subscript: Optional[bool] = None
-
+    small_caps: Optional[bool] = None
+    all_caps: Optional[bool] = None
+    kerning: Optional[float] = None
+    spacing: Optional[float] = None
+    position: Optional[float] = None
+    shadow: Optional[bool] = None
+    outline: Optional[bool] = None
+    emboss: Optional[bool] = None
+    imprint: Optional[bool] = None
+    vanished: Optional[bool] = None
+    web_hidden: Optional[bool] = None
+    language: Optional[str] = None
+    no_proof: Optional[bool] = None
+    style_id: Optional[str] = None
+    based_on: Optional[str] = None
+    next_style: Optional[str] = None
+    linked_style: Optional[str] = None
 
 @dataclass
 class ParagraphStyle:
@@ -255,17 +265,45 @@ class ParagraphStyle:
     indent_right: Optional[float] = None
     first_line_indent: Optional[float] = None
 
+    line_spacing_rule: Optional[str] = None
+    indent_hanging: Optional[float] = None
+    keep_lines_together: Optional[bool] = None
+    keep_with_next: Optional[bool] = None
+    page_break_before: Optional[bool] = None
+    widow_control: Optional[bool] = None
+    borders: Optional[Dict[str, Any]] = None
+    shading: Optional[Dict[str, Any]] = None
+    outline_level: Optional[int] = None
+    text_direction: Optional[str] = None   # "ltr", "rtl", etc.
+    tabs: Optional[List[Dict[str, Any]]] = None
+    frame_properties: Optional[Dict[str, Any]] = None
+    style_id: Optional[str] = None
+    based_on: Optional[str] = None
+    next_style: Optional[str] = None
 
 @dataclass
 class TableStyle:
     name: str
     border_color: Optional[str] = None
     border_width: Optional[float] = None
-    cell_padding: Optional[float] = None
+    cell_spacing: Optional[float] = None
     header_row: Optional[bool] = None
     banded_rows: Optional[bool] = None
     banded_columns: Optional[bool] = None
 
+    alignment: Optional[str] = None               # "left", "center", "right"
+    indent_left: Optional[float] = None
+    width: Optional[float] = None
+    layout_type: Optional[str] = None             # "fixed", "auto"
+    borders: Optional[Dict[str, Any]] = None
+    cell_margins: Optional[Dict[str, float]] = None
+    shading: Optional[Dict[str, Any]] = None
+    first_row: Optional[bool] = None              # special formatting for first row
+    last_row: Optional[bool] = None
+    first_column: Optional[bool] = None
+    last_column: Optional[bool] = None
+    style_id: Optional[str] = None
+    based_on: Optional[str] = None
 
 @dataclass
 class ListStyle:
@@ -294,11 +332,6 @@ class StyleSheet:
 
 
 
-# USDM Extended Python Model
-from __future__ import annotations
-from dataclasses import dataclass, field
-from enum import Enum
-from typing import List, Optional, Dict, Any
 
 
 
@@ -337,7 +370,7 @@ class ColumnBreakContent:
     pass
 
 # PDF layout models
-dataclass
+@dataclass
 class PDFTextRun:
     text: str
     x: float
@@ -352,7 +385,7 @@ class PDFVectorPath:
     fill_color: Optional[str] = None
 
 @dataclass
-class LaTeXEnvironmentContent(LogicalContent):
+class LaTeXEnvironmentContent:
     """محیط‌های LaTeX مانند theorem, proof, figure"""
     environment_type: str  # "theorem", "lemma", "figure", "table"
     label: Optional[str]
@@ -361,21 +394,41 @@ class LaTeXEnvironmentContent(LogicalContent):
     content: List[LogicalContent] = field(default_factory=list)
 
 @dataclass  
-class LaTeXCommandContent(LogicalContent):
+class LaTeXCommandContent:
     """دستورات LaTeX مانند \\section{}, \\cite{}"""
     command: str
     arguments: List[str] = field(default_factory=list)
     options: Dict[str, str] = field(default_factory=dict)
 
 @dataclass
-class SemanticHTMLContent(LogicalContent):
+class SemanticHTMLContent:
     """عناصر معنایی HTML5"""
     element_type: Literal["article", "section", "nav", "aside", "header", "footer"]
     role: Optional[str]  # برای ARIA roles
     aria_attributes: Dict[str, str] = field(default_factory=dict)
 
 @dataclass
-class CanvasContent(LogicalContent):
+class CanvasOperation:
+    """Placeholder for canvas operations."""
+    pass
+
+@dataclass
+class PDFInfo:
+    """Placeholder for PDF metadata."""
+    pass
+
+@dataclass
+class DOCXProperties:
+    """Placeholder for DOCX properties."""
+    pass
+
+@dataclass
+class Change:
+    """Placeholder for tracked changes."""
+    pass
+
+@dataclass
+class CanvasContent:
     """محتوای <canvas> در HTML5"""
     canvas_id: str
     drawing_operations: List[CanvasOperation]
@@ -389,6 +442,14 @@ class DocumentMetadata:
     creation_date: Optional[datetime] = None
     modification_date: Optional[datetime] = None
     
+    # subject: Optional[str] = None
+    # keywords: Optional[List[str]] = field(default_factory=list)
+    # creator: Optional[str] = None
+    # rights: Optional[str] = None
+    # license: Optional[str] = None
+    # copyright: Optional[str] = None
+    # language: Optional[str] = None
+        
     # متادیتای فرمت‌خاص
     format_specific: Dict[str, Any] = field(default_factory=dict)
     
@@ -452,7 +513,7 @@ class TransformationRule:
     loss_level: Literal["none", "minimal", "moderate", "high"]
     
 class TransformationPipeline:
-    def __init__(self):
+    def __init__(self) -> None:
         self.rules: Dict[Tuple[str, str], TransformationRule] = {}
     
     def add_rule(self, source_format: str, target_format: str, rule: TransformationRule):
@@ -572,3 +633,35 @@ class SpreadsheetContent:
     sheet_name: Optional[str] = None
     rows: int = 0
     columns: int = 0
+    
+    
+LogicalContent = Union[
+    ParagraphContent,
+    HeadingContent,
+    MathContent,
+    CodeContent,
+    ImageContent,
+    ListContent,
+    ListItemContent,
+    TableContent,
+    QuoteContent,
+    DrawingContent,
+    BinaryContent,
+    DataContent,
+    SpreadsheetContent,
+    FormulaContent,
+    LinkContent,
+    FootnoteContent,
+    EndnoteContent,
+    CommentContent,
+    BookmarkContent,
+    PageBreakContent,
+    LineBreakContent,
+    ColumnBreakContent,
+    EmbeddedObjectContent,
+    OLEObjectContent,
+    VideoContent,
+    AudioContent,
+    ShapeContent,
+    ChartContent,
+]
