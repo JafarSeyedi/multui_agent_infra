@@ -74,8 +74,3 @@ python-bidi>=0.4.2
 # Utilities
 python-magic>=0.4.27
 
-
-
-# DeepSeek API Key  sk-a9cef2c0ed9c448990fc57579d15cd23
-# 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
-# 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
