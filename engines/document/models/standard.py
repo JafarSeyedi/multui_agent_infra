@@ -118,7 +118,7 @@ def get_common_formats(standard: DocumentStandard) -> list[str]:
         DocumentStandard.DSDM: ["json", "xml", "yaml", "toml", "csv", "tsv"],
         DocumentStandard.USDM: ["pdf", "docx", "html", "md", "txt", "rtf"],
         DocumentStandard.ESDM: ["xlsx", "xls", "csv", "tsv", "prn", "ods", "parquet", "feather", "arrow", "txt"],
-        DocumentStandard.CSDM: ["dxf", "dwg", "ifc", "stl", "step"]
+        DocumentStandard.CSDM: ["dxf", "dwg", "ifc", "stl", "step"],
         DocumentStandard.PSDM: ["pptx", "ppt", "odp"],
         DocumentStandard.CSDM: ["dxf", "dwg", "ifc", "stl", "step"],
         DocumentStandard.MSDM: [

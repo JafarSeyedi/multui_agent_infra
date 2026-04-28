@@ -235,7 +235,7 @@ class AvroSchemaWriter(BaseMSDMWriter):
             default = self._parse_avro_default(attr.default_value, attr.data_type)
             if default is not None:
                 field["default"] = default
-        elif not attr.required:
+        # elif not attr.required:
             # if optional and no default, Avro still requires a default? Not strictly, but it's allowed to omit. We'll follow the schema: if null is in union, we can set default to null? Optional without default usually just omits default. We'll not set default unless explicitly present.
 
         # Aliases (from annotation "aliases")
