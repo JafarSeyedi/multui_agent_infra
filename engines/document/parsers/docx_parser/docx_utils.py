@@ -30,8 +30,9 @@ OOXML_NAMESPACES = {
     'dc': 'http://purl.org/dc/elements/1.1/',
     'dcterms': 'http://purl.org/dc/terms/',
     'xsi': 'http://www.w3.org/2001/XMLSchema-instance',
+    'wps': 'http://schemas.microsoft.com/office/word/2010/wordprocessingShape',
+    'dgm': 'http://schemas.openxmlformats.org/drawingml/2006/diagram',
 }
-
 # ثبت namespaceها برای ET
 for prefix, uri in OOXML_NAMESPACES.items():
     ET.register_namespace(prefix, uri)

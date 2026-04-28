@@ -17,12 +17,21 @@ class DocumentFormat(str, Enum):
     HTML = "html"
     MARKDOWN = "markdown"
     LATEX = "latex"
+    RTF = "rtf"
+    TXT = "txt"
+
+    # PSDM
+    PPTX = "pptx"
     PPT = "ppt"
+    ODP = "odp"
 
     # ESDM
     XLSX = "xlsx"
+    XLS = "xls"
+    ODS = "ods"
     CSV = "csv"
     TSV = "tsv"
+    PRN = "prn"                 # fixed‑width text
     PARQUET = "parquet"
     ARROW = "arrow"
     FEATHER = "feather"
@@ -31,6 +40,7 @@ class DocumentFormat(str, Enum):
     JSON = "json"
     XML = "xml"
     YAML = "yaml"
+    TOML = "toml"
     BSON = "bson"
     CBOR = "cbor"
     MESSAGEPACK = "messagepack"
@@ -39,8 +49,42 @@ class DocumentFormat(str, Enum):
     DXF = "dxf"
     DWG = "dwg"
     IFC = "ifc"
+    STL = "stl"
+    STEP = "step"
 
-    TEXT = "txt"
+    # MSDM formats
+    JSON_SCHEMA = "json_schema"
+    XSD = "xsd"
+    SQL_DDL = "sql_ddl"
+    ERD = "erd"               # generic, usually XML/JSON
+    UML_XMI = "uml_xmi"
+    PLANTUML = "plantuml"
+    PROTOBUF = "proto"
+    AVRO_SCHEMA = "avro_schema"
+    THRIFT_IDL = "thrift"
+    GRAPHQL_SCHEMA = "graphql_schema"
+    OWL = "owl"
+    CUE = "cue"
+    # MSDM – NoSQL & time‑series
+    CQL = "cql"                                     # Cassandra
+    MONGODB_SCHEMA = "mongodb_schema"               # MongoDB validator / Mongoose
+    INFLUXDB_SCHEMA = "influxdb_schema"             # InfluxDB measurements
+    ELASTICSEARCH_MAPPING = "elasticsearch_mapping" # Elasticsearch
+    NEO4J_SCHEMA = "neo4j_schema"                   # Neo4j / Cypher schema
+    
+    # SSDM formats
+    OPENAPI_JSON = "openapi_json"
+    OPENAPI_YAML = "openapi_yaml"
+    WSDL = "wsdl"
+    YANG = "yang"
+    MIB = "mib"
+    ASYNCAPI = "asyncapi"
+    RAML = "raml"
+    API_BLUEPRINT = "apib"
+    WEB_IDL = "webidl"
+    POSTMAN_COLLECTION = "postman_collection"
+    CDDL = "cddl"
+    
     UNKNOWN = "unknown"
 
 
@@ -56,6 +100,9 @@ class MediaContentKind(str, Enum):
     MIXED = "mixed"
     VECTOR = "vector"
     GEOMETRIC = "geometric"
+    PRESENTATION = "presentation"
+    SCHEMA_DEFINITION = "schema_definition"
+    SERVICE_DEFINITION = "service_definition"    
     UNKNOWN = "unknown"
 
 
@@ -79,7 +126,6 @@ class MediaType(BaseModel):
     raw_type: MediaRawType
     description: Optional[str] = None
 
-    # model_config = ConfigDict(frozen=True)  # به جای class Config
 
 # ------------------------
 # FULL REGISTRY
@@ -105,7 +151,8 @@ MEDIA_TYPES: Dict[str, MediaType] = {
         standard=DocumentStandard.USDM,
         extensions=[".docx"],
         kind=MediaContentKind.STRUCTURED,
-        raw_type=MediaRawType.BINARY
+        raw_type=MediaRawType.BINARY,
+        description="Office Open XML Document"
     ),
 
     "html": MediaType(
@@ -114,7 +161,8 @@ MEDIA_TYPES: Dict[str, MediaType] = {
         standard=DocumentStandard.USDM,
         extensions=[".html", ".htm"],
         kind=MediaContentKind.MIXED,
-        raw_type=MediaRawType.TEXT
+        raw_type=MediaRawType.TEXT,
+        description="HyperText Markup Language"
     ),
 
     "markdown": MediaType(
@@ -123,7 +171,8 @@ MEDIA_TYPES: Dict[str, MediaType] = {
         standard=DocumentStandard.USDM,
         extensions=[".md", ".markdown"],
         kind=MediaContentKind.TEXT,
-        raw_type=MediaRawType.TEXT
+        raw_type=MediaRawType.TEXT,
+        description="Markdown"
     ),
 
     "latex": MediaType(
@@ -132,12 +181,65 @@ MEDIA_TYPES: Dict[str, MediaType] = {
         standard=DocumentStandard.USDM,
         extensions=[".tex"],
         kind=MediaContentKind.TEXT,
-        raw_type=MediaRawType.TEXT
+        raw_type=MediaRawType.TEXT,
+        description="LaTeX"
     ),
 
+    "rtf": MediaType(
+        mime="application/rtf",
+        format=DocumentFormat.RTF,
+        standard=DocumentStandard.USDM,
+        extensions=[".rtf"],
+        kind=MediaContentKind.TEXT,
+        raw_type=MediaRawType.TEXT,
+        description="Rich Text Format"
+    ),
+
+    "txt": MediaType(
+        mime="text/plain",
+        format=DocumentFormat.TXT,
+        standard=DocumentStandard.USDM,
+        extensions=[".txt"],
+        kind=MediaContentKind.TEXT,
+        raw_type=MediaRawType.TEXT,
+        description="Plain Text Document"
+    ),
 
     # ======================
-    # ESDM (with XLSX variants)
+    # PSDM
+    # ======================
+    "pptx": MediaType(
+        mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        format=DocumentFormat.PPTX,
+        standard=DocumentStandard.PSDM,
+        extensions=[".pptx"],
+        kind=MediaContentKind.PRESENTATION,
+        raw_type=MediaRawType.BINARY,
+        description="Office Open XML Presentation"
+    ),
+
+    "ppt": MediaType(
+        mime="application/vnd.ms-powerpoint",
+        format=DocumentFormat.PPT,
+        standard=DocumentStandard.PSDM,
+        extensions=[".ppt"],
+        kind=MediaContentKind.PRESENTATION,
+        raw_type=MediaRawType.BINARY,
+        description="Microsoft PowerPoint Presentation (legacy)"
+    ),
+
+    "odp": MediaType(
+        mime="application/vnd.oasis.opendocument.presentation",
+        format=DocumentFormat.ODP,
+        standard=DocumentStandard.PSDM,
+        extensions=[".odp"],
+        kind=MediaContentKind.PRESENTATION,
+        raw_type=MediaRawType.BINARY,
+        description="OpenDocument Presentation"
+    ),
+
+    # ======================
+    # ESDM
     # ======================
     "xlsx": MediaType(
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -145,7 +247,28 @@ MEDIA_TYPES: Dict[str, MediaType] = {
         standard=DocumentStandard.ESDM,
         extensions=[".xlsx", ".xlsm", ".xltx", ".xltm"],
         kind=MediaContentKind.TABULAR,
-        raw_type=MediaRawType.BINARY
+        raw_type=MediaRawType.BINARY,
+        description="Office Open XML Spreadsheet"
+    ),
+
+    "xls": MediaType(
+        mime="application/vnd.ms-excel",
+        format=DocumentFormat.XLS,
+        standard=DocumentStandard.ESDM,
+        extensions=[".xls"],
+        kind=MediaContentKind.TABULAR,
+        raw_type=MediaRawType.BINARY,
+        description="Microsoft Excel Spreadsheet (legacy)"
+    ),
+
+    "ods": MediaType(
+        mime="application/vnd.oasis.opendocument.spreadsheet",
+        format=DocumentFormat.ODS,
+        standard=DocumentStandard.ESDM,
+        extensions=[".ods"],
+        kind=MediaContentKind.TABULAR,
+        raw_type=MediaRawType.BINARY,
+        description="OpenDocument Spreadsheet"
     ),
 
     "csv": MediaType(
@@ -154,7 +277,8 @@ MEDIA_TYPES: Dict[str, MediaType] = {
         standard=DocumentStandard.ESDM,
         extensions=[".csv"],
         kind=MediaContentKind.TABULAR,
-        raw_type=MediaRawType.TEXT
+        raw_type=MediaRawType.TEXT,
+        description="Comma‑Separated Values"
     ),
 
     "tsv": MediaType(
@@ -163,7 +287,18 @@ MEDIA_TYPES: Dict[str, MediaType] = {
         standard=DocumentStandard.ESDM,
         extensions=[".tsv"],
         kind=MediaContentKind.TABULAR,
-        raw_type=MediaRawType.TEXT
+        raw_type=MediaRawType.TEXT,
+        description="Tab‑Separated Values"
+    ),
+
+    "prn": MediaType(
+        mime="text/plain",                             # same MIME as txt, but format is PRN
+        format=DocumentFormat.PRN,
+        standard=DocumentStandard.ESDM,
+        extensions=[".prn"],
+        kind=MediaContentKind.TABULAR,
+        raw_type=MediaRawType.TEXT,
+        description="Fixed‑Width Text File"
     ),
 
     "parquet": MediaType(
@@ -172,7 +307,8 @@ MEDIA_TYPES: Dict[str, MediaType] = {
         standard=DocumentStandard.ESDM,
         extensions=[".parquet"],
         kind=MediaContentKind.TABULAR,
-        raw_type=MediaRawType.BINARY
+        raw_type=MediaRawType.BINARY,
+        description="Apache Parquet"
     ),
 
     "arrow": MediaType(
@@ -181,7 +317,8 @@ MEDIA_TYPES: Dict[str, MediaType] = {
         standard=DocumentStandard.ESDM,
         extensions=[".arrow"],
         kind=MediaContentKind.TABULAR,
-        raw_type=MediaRawType.BINARY
+        raw_type=MediaRawType.BINARY,
+        description="Apache Arrow IPC"
     ),
 
     "feather": MediaType(
@@ -190,9 +327,9 @@ MEDIA_TYPES: Dict[str, MediaType] = {
         standard=DocumentStandard.ESDM,
         extensions=[".feather"],
         kind=MediaContentKind.TABULAR,
-        raw_type=MediaRawType.BINARY
+        raw_type=MediaRawType.BINARY,
+        description="Feather Binary Format"
     ),
-
 
     # ======================
     # DSDM
@@ -203,7 +340,8 @@ MEDIA_TYPES: Dict[str, MediaType] = {
         standard=DocumentStandard.DSDM,
         extensions=[".json"],
         kind=MediaContentKind.STRUCTURED,
-        raw_type=MediaRawType.TEXT
+        raw_type=MediaRawType.TEXT,
+        description="JavaScript Object Notation"
     ),
 
     "xml": MediaType(
@@ -212,7 +350,8 @@ MEDIA_TYPES: Dict[str, MediaType] = {
         standard=DocumentStandard.DSDM,
         extensions=[".xml"],
         kind=MediaContentKind.HIERARCHICAL,
-        raw_type=MediaRawType.TEXT
+        raw_type=MediaRawType.TEXT,
+        description="Extensible Markup Language"
     ),
 
     "yaml": MediaType(
@@ -221,7 +360,18 @@ MEDIA_TYPES: Dict[str, MediaType] = {
         standard=DocumentStandard.DSDM,
         extensions=[".yaml", ".yml"],
         kind=MediaContentKind.STRUCTURED,
-        raw_type=MediaRawType.TEXT
+        raw_type=MediaRawType.TEXT,
+        description="YAML"
+    ),
+
+    "toml": MediaType(
+        mime="application/toml",
+        format=DocumentFormat.TOML,
+        standard=DocumentStandard.DSDM,
+        extensions=[".toml"],
+        kind=MediaContentKind.STRUCTURED,
+        raw_type=MediaRawType.TEXT,
+        description="TOML Configuration"
     ),
 
     "bson": MediaType(
@@ -230,7 +380,8 @@ MEDIA_TYPES: Dict[str, MediaType] = {
         standard=DocumentStandard.DSDM,
         extensions=[".bson"],
         kind=MediaContentKind.BINARY,
-        raw_type=MediaRawType.BINARY
+        raw_type=MediaRawType.BINARY,
+        description="Binary JSON"
     ),
 
     "cbor": MediaType(
@@ -239,7 +390,8 @@ MEDIA_TYPES: Dict[str, MediaType] = {
         standard=DocumentStandard.DSDM,
         extensions=[".cbor"],
         kind=MediaContentKind.BINARY,
-        raw_type=MediaRawType.BINARY
+        raw_type=MediaRawType.BINARY,
+        description="Concise Binary Object Representation"
     ),
 
     "messagepack": MediaType(
@@ -248,9 +400,9 @@ MEDIA_TYPES: Dict[str, MediaType] = {
         standard=DocumentStandard.DSDM,
         extensions=[".msgpack"],
         kind=MediaContentKind.BINARY,
-        raw_type=MediaRawType.BINARY
+        raw_type=MediaRawType.BINARY,
+        description="MessagePack"
     ),
-
 
     # ======================
     # CSDM
@@ -261,7 +413,8 @@ MEDIA_TYPES: Dict[str, MediaType] = {
         standard=DocumentStandard.CSDM,
         extensions=[".dxf"],
         kind=MediaContentKind.VECTOR,
-        raw_type=MediaRawType.BINARY
+        raw_type=MediaRawType.BINARY,
+        description="AutoCAD DXF"
     ),
 
     "dwg": MediaType(
@@ -270,7 +423,8 @@ MEDIA_TYPES: Dict[str, MediaType] = {
         standard=DocumentStandard.CSDM,
         extensions=[".dwg"],
         kind=MediaContentKind.VECTOR,
-        raw_type=MediaRawType.BINARY
+        raw_type=MediaRawType.BINARY,
+        description="AutoCAD DWG"
     ),
 
     "ifc": MediaType(
@@ -279,10 +433,298 @@ MEDIA_TYPES: Dict[str, MediaType] = {
         standard=DocumentStandard.CSDM,
         extensions=[".ifc"],
         kind=MediaContentKind.GEOMETRIC,
-        raw_type=MediaRawType.BINARY
+        raw_type=MediaRawType.BINARY,
+        description="Industry Foundation Classes (IFC)"
+    ),
+
+    "stl": MediaType(
+        mime="application/sla",                        # common MIME for STL
+        format=DocumentFormat.STL,
+        standard=DocumentStandard.CSDM,
+        extensions=[".stl"],
+        kind=MediaContentKind.GEOMETRIC,
+        raw_type=MediaRawType.BINARY,
+        description="Stereolithography (STL)"
+    ),
+
+    "step": MediaType(
+        mime="application/step",
+        format=DocumentFormat.STEP,
+        standard=DocumentStandard.CSDM,
+        extensions=[".step", ".stp"],
+        kind=MediaContentKind.GEOMETRIC,
+        raw_type=MediaRawType.TEXT,                   # STEP is a text‑based ISO format
+        description="ISO 10303 STEP"
     ),
 
 
+    # ======================
+    # MSDM
+    # ======================
+    "json_schema": MediaType(
+        mime="application/schema+json",
+        format=DocumentFormat.JSON_SCHEMA,
+        standard=DocumentStandard.MSDM,
+        extensions=[".schema.json"],
+        kind=MediaContentKind.SCHEMA_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="JSON Schema"
+    ),
+    "xsd": MediaType(
+        mime="application/xml",
+        format=DocumentFormat.XSD,
+        standard=DocumentStandard.MSDM,
+        extensions=[".xsd"],
+        kind=MediaContentKind.SCHEMA_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="XML Schema Definition"
+    ),
+    "sql_ddl": MediaType(
+        mime="text/plain",
+        format=DocumentFormat.SQL_DDL,
+        standard=DocumentStandard.MSDM,
+        extensions=[".sql", ".ddl"],
+        kind=MediaContentKind.SCHEMA_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="SQL Data Definition Language"
+    ),
+    "erd": MediaType(
+        mime="application/xml",               # often stored as XML
+        format=DocumentFormat.ERD,
+        standard=DocumentStandard.MSDM,
+        extensions=[".erd"],
+        kind=MediaContentKind.SCHEMA_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="Entity‑Relationship Diagram (generic)"
+    ),
+    "uml_xmi": MediaType(
+        mime="application/xmi+xml",
+        format=DocumentFormat.UML_XMI,
+        standard=DocumentStandard.MSDM,
+        extensions=[".xmi", ".uml"],
+        kind=MediaContentKind.SCHEMA_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="UML XMI"
+    ),
+        "plantuml": MediaType(
+        mime="text/plain",
+        format=DocumentFormat.PLANTUML,
+        standard=DocumentStandard.MSDM,
+        extensions=[".plantuml", ".puml", ".pu"],
+        kind=MediaContentKind.SCHEMA_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="PlantUML Diagram"
+    ),
+    "proto": MediaType(
+        mime="text/plain",
+        format=DocumentFormat.PROTOBUF,
+        standard=DocumentStandard.MSDM,
+        extensions=[".proto"],
+        kind=MediaContentKind.SCHEMA_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="Protobuf IDL"
+    ),
+    "avro_schema": MediaType(
+        mime="application/vnd.apache.avro+json",
+        format=DocumentFormat.AVRO_SCHEMA,
+        standard=DocumentStandard.MSDM,
+        extensions=[".avsc"],
+        kind=MediaContentKind.SCHEMA_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="Apache Avro Schema"
+    ),
+    "thrift_idl": MediaType(
+        mime="text/plain",
+        format=DocumentFormat.THRIFT_IDL,
+        standard=DocumentStandard.MSDM,
+        extensions=[".thrift"],
+        kind=MediaContentKind.SCHEMA_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="Apache Thrift IDL"
+    ),
+    "graphql_schema": MediaType(
+        mime="application/graphql-schema+json",   # common MIME
+        format=DocumentFormat.GRAPHQL_SCHEMA,
+        standard=DocumentStandard.MSDM,
+        extensions=[".graphql", ".gql"],
+        kind=MediaContentKind.SCHEMA_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="GraphQL Schema"
+    ),
+    "owl": MediaType(
+        mime="application/rdf+xml",
+        format=DocumentFormat.OWL,
+        standard=DocumentStandard.MSDM,
+        extensions=[".owl", ".rdf"],
+        kind=MediaContentKind.SCHEMA_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="Web Ontology Language (OWL)"
+    ),
+    "cue": MediaType(
+        mime="text/plain",
+        format=DocumentFormat.CUE,
+        standard=DocumentStandard.MSDM,
+        extensions=[".cue"],
+        kind=MediaContentKind.SCHEMA_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="CUE Data Language"
+    ),
+    
+    
+    # ======================
+    # MSDM - NoSQL, Time-based
+    # ======================
+    
+    "cql": MediaType(
+        mime="text/plain",
+        format=DocumentFormat.CQL,
+        standard=DocumentStandard.MSDM,
+        extensions=[".cql", ".cqlsh"],
+        kind=MediaContentKind.SCHEMA_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="Cassandra Query Language Schema"
+    ),
+    "mongodb_schema": MediaType(
+        mime="application/json",
+        format=DocumentFormat.MONGODB_SCHEMA,
+        standard=DocumentStandard.MSDM,
+        extensions=[".mongoose.js", ".validator.json"],
+        kind=MediaContentKind.SCHEMA_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="MongoDB Schema (Mongoose / Validator)"
+    ),
+    "influxdb_schema": MediaType(
+        mime="text/plain",
+        format=DocumentFormat.INFLUXDB_SCHEMA,
+        standard=DocumentStandard.MSDM,
+        extensions=[".influxql", ".flux"],
+        kind=MediaContentKind.SCHEMA_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="InfluxDB Measurement Schema"
+    ),
+    "elasticsearch_mapping": MediaType(
+        mime="application/json",
+        format=DocumentFormat.ELASTICSEARCH_MAPPING,
+        standard=DocumentStandard.MSDM,
+        extensions=[".mapping.json", ".es.json"],
+        kind=MediaContentKind.SCHEMA_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="Elasticsearch Index Mapping"
+    ),
+    "neo4j_schema": MediaType(
+        mime="text/plain",
+        format=DocumentFormat.NEO4J_SCHEMA,
+        standard=DocumentStandard.MSDM,
+        extensions=[".cypher", ".cql"],   # note: .cql also used for Cassandra, detection will distinguish
+        kind=MediaContentKind.SCHEMA_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="Neo4j Cypher Schema"
+    ),    
+
+    # ======================
+    # SSDM
+    # ======================
+    "openapi_yaml": MediaType(
+        mime="application/x-yaml",
+        format=DocumentFormat.OPENAPI_YAML,
+        standard=DocumentStandard.SSDM,
+        extensions=[".yaml", ".yml"],       # detected by content
+        kind=MediaContentKind.SERVICE_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="OpenAPI (Swagger) YAML"
+    ),
+    "openapi_json": MediaType(
+        mime="application/json",
+        format=DocumentFormat.OPENAPI_JSON,
+        standard=DocumentStandard.SSDM,
+        extensions=[".json"],
+        kind=MediaContentKind.SERVICE_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="OpenAPI (Swagger) JSON"
+    ),
+    "wsdl": MediaType(
+        mime="application/xml",
+        format=DocumentFormat.WSDL,
+        standard=DocumentStandard.SSDM,
+        extensions=[".wsdl"],
+        kind=MediaContentKind.SERVICE_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="WSDL Service Definition"
+    ),
+    "yang": MediaType(
+        mime="application/yang",
+        format=DocumentFormat.YANG,
+        standard=DocumentStandard.SSDM,
+        extensions=[".yang"],
+        kind=MediaContentKind.SERVICE_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="YANG Data Model"
+    ),
+    "mib": MediaType(
+        mime="text/plain",
+        format=DocumentFormat.MIB,
+        standard=DocumentStandard.SSDM,
+        extensions=[".mib"],
+        kind=MediaContentKind.SERVICE_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="SNMP MIB"
+    ),
+    "asyncapi": MediaType(
+        mime="application/json",
+        format=DocumentFormat.ASYNCAPI,
+        standard=DocumentStandard.SSDM,
+        extensions=[".asyncapi.json", ".asyncapi.yaml"],
+        kind=MediaContentKind.SERVICE_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="AsyncAPI"
+    ),
+    "raml": MediaType(
+        mime="application/raml+yaml",
+        format=DocumentFormat.RAML,
+        standard=DocumentStandard.SSDM,
+        extensions=[".raml"],
+        kind=MediaContentKind.SERVICE_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="RAML"
+    ),
+    "apib": MediaType(
+        mime="text/vnd.apiblueprint+markdown",
+        format=DocumentFormat.API_BLUEPRINT,
+        standard=DocumentStandard.SSDM,
+        extensions=[".apib"],
+        kind=MediaContentKind.SERVICE_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="API Blueprint"
+    ),
+    "webidl": MediaType(
+        mime="text/plain",
+        format=DocumentFormat.WEB_IDL,
+        standard=DocumentStandard.SSDM,
+        extensions=[".webidl"],
+        kind=MediaContentKind.SERVICE_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="Web IDL"
+    ),
+    "postman_collection": MediaType(
+        mime="application/json",
+        format=DocumentFormat.POSTMAN_COLLECTION,
+        standard=DocumentStandard.SSDM,
+        extensions=[".postman_collection.json"],
+        kind=MediaContentKind.SERVICE_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="Postman Collection"
+    ),
+    "cddl": MediaType(
+        mime="text/plain",
+        format=DocumentFormat.CDDL,
+        standard=DocumentStandard.SSDM,
+        extensions=[".cddl"],
+        kind=MediaContentKind.SERVICE_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="CBOR Data Definition Language"
+    ),
+    
+        
     # ======================
     # FALLBACK TYPES
     # ======================
@@ -292,16 +734,18 @@ MEDIA_TYPES: Dict[str, MediaType] = {
         standard=DocumentStandard.UNKNOWN,
         extensions=[".bin"],
         kind=MediaContentKind.BINARY,
-        raw_type=MediaRawType.BINARY
+        raw_type=MediaRawType.BINARY,
+        description="Generic Binary Data"
     ),
 
-    "text": MediaType(
+    "text_generic": MediaType(              # renamed to avoid conflict with the USDM "txt"
         mime="text/plain",
-        format=DocumentFormat.TEXT,
+        format=DocumentFormat.UNKNOWN,
         standard=DocumentStandard.UNKNOWN,
-        extensions=[".txt"],
+        extensions=[".text", ".log"],       # additional text extensions not captured above
         kind=MediaContentKind.TEXT,
-        raw_type=MediaRawType.TEXT
+        raw_type=MediaRawType.TEXT,
+        description="Plain Text (generic)"
     ),
 }
 

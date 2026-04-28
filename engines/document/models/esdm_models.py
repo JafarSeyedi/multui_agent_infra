@@ -1,54 +1,67 @@
+# engines/spreadsheet/models/esdm_models.py
 """
 ESDM Models
 ===============
 Excel Structured Data Model (ESDM)
-Pythonic, complete, industrial-grade modeling of Excel workbooks
-
-A clean, implementation-friendly data model for representing Excel workbooks
-independent of file format (XLSX). The goal is to provide a complete and
-consistent structure that can be parsed from, or written to, Excel files.
+Complete, industrial-grade modeling of Excel workbooks, built on top of USDM.
 
 ESDM supports:
-    - Multiple worksheets
-    - Cells with different data types
-    - Formulas
-    - Styles
-    - Merged cells
-    - Tables
-    - Named ranges
-    - Hyperlinks
-    - Row/Column properties
-    - Worksheet metadata
+    - Workbooks with multiple worksheets
+    - Cells with data types, formulas, rich text
+    - Full Excel styling (fonts, fills, borders, number formats, alignment, protection)
+    - Tables, auto filters, conditional formatting
+    - Data validation, hyperlinks, comments (legacy & threaded)
+    - Named ranges, shared formulas, external links
+    - Pivot tables, calculation chain, sheet/page setup
+    - Row/column properties, merged cells, relationships
 
-This model is intentionally independent from USDM.
-A converter (Excel → USDM View / USDM → Excel Table) will be built separately.
+This model reuses USDM components via inheritance and composition.
+No changes to usdm_models.py are required.
 """
 
 from __future__ import annotations
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Dict, List, Optional, Any, Union, Tuple
 from enum import Enum
-from .media_types import DocumentStandard
-
 from .base import BaseDocument
 
 # ============================================================
-# Base model
+# USDM imports (reused without modification)
 # ============================================================
+from engines.document.models.usdm_models import (
+    RichTextContent,
+    RichTextSpan,
+    CharacterStyle,
+    ParagraphStyle,
+    TableStyle,
+    ListStyle,
+    DocumentMetadata,
+    ImageContent,
+    ChartContent,
+    ShapeContent,
+    CommentContent,          # legacy comment from USDM (can be mapped)
+    StyleSheet,
+)
 
 @dataclass
+class ESDMDocument(BaseDocument):
+    """ESDM document that wraps a full Excel Workbook model."""
+    kind: DocumentStandard = DocumentStandard.ESDM
+    workbook: Optional[Workbook] = None
+
+# ============================================================
+# Base model (simple metadata container)
+# ============================================================
+@dataclass
 class DocumentBaseModel:
-    """
-    Base class for all ESDM models.
-    Provides consistent API surface and metadata hooks.
-    """
+    """Base class for all ESDM models, providing metadata hook."""
     _meta: Dict[str, Any] = field(default_factory=dict, repr=False, init=False)
 
 
 # ============================================================
 # Workbook-level models
 # ============================================================
-
 @dataclass
 class WorkbookProperties(DocumentBaseModel):
     date_1904: bool = False
@@ -57,36 +70,25 @@ class WorkbookProperties(DocumentBaseModel):
     window_height: int = 1080
     active_tab: int = 0
 
-
 @dataclass
 class Relationship(DocumentBaseModel):
-    """
-    A relationship inside XLSX (but represented Pythonically):
-    connects workbook → sheets, styles, shared strings, drawings, etc.
-    """
     id: str
     type: str
     target: str
-    mode: str = "Internal"  # or "External"
-
+    mode: str = "Internal"  # "Internal" or "External"
 
 @dataclass
 class RelationshipCollection(DocumentBaseModel):
     relationships: List[Relationship] = field(default_factory=list)
 
-    def add(self, rel: Relationship):
+    def add(self, rel: Relationship) -> None:
         self.relationships.append(rel)
 
     def find_by_type(self, rel_type: str) -> List[Relationship]:
         return [r for r in self.relationships if r.type == rel_type]
 
-
 @dataclass
 class SharedStrings(DocumentBaseModel):
-    """
-    Shared string table used by Excel to deduplicate strings.
-    Pythonic version: simple list mapping index → string.
-    """
     strings: List[str] = field(default_factory=list)
     index_map: Dict[str, int] = field(default_factory=dict, repr=False)
 
@@ -95,35 +97,12 @@ class SharedStrings(DocumentBaseModel):
             idx = len(self.strings)
             self.strings.append(value)
             self.index_map[value] = idx
-        return self.index_map[value]
+        return idx
 
 
 # ============================================================
-# Worksheet-level models
+# Cell, Row, Column (core spreadsheet primitives)
 # ============================================================
-
-@dataclass
-class SheetDimensions(DocumentBaseModel):
-    """
-    Sheet used area bounding box.
-    """
-    min_row: int = 1
-    max_row: int = 1
-    min_col: int = 1
-    max_col: int = 1
-
-
-@dataclass
-class WorksheetProperties(DocumentBaseModel):
-    show_gridlines: bool = True
-    show_headings: bool = True
-    tab_color: Optional[str] = None  # Hex color
-
-
-# ============================================================
-# Cell, Row, Column
-# ============================================================
-
 @dataclass
 class Cell(DocumentBaseModel):
     row: int
@@ -132,7 +111,8 @@ class Cell(DocumentBaseModel):
     formula: Optional[str] = None
     style_id: Optional[int] = None
     hyperlink: Optional[str] = None
-    comment: Optional[str] = None
+    comment: Optional[str] = None          # plain text comment (legacy)
+    rich_text: Optional[RichTextContent] = None   # USDM rich text for cell
 
     @property
     def coordinate(self) -> str:
@@ -140,13 +120,11 @@ class Cell(DocumentBaseModel):
 
     @staticmethod
     def _col_to_letter(col: int) -> str:
-        """Convert column number to Excel-style letters (1 → A)."""
         result = ""
         while col > 0:
             col, remainder = divmod(col - 1, 26)
             result = chr(65 + remainder) + result
         return result
-
 
 @dataclass
 class Row(DocumentBaseModel):
@@ -154,24 +132,24 @@ class Row(DocumentBaseModel):
     height: Optional[float] = None
     hidden: bool = False
     cells: Dict[int, Cell] = field(default_factory=dict)
+    style_id: Optional[int] = None
 
     def get_or_create_cell(self, col: int) -> Cell:
         if col not in self.cells:
             self.cells[col] = Cell(row=self.index, col=col)
         return self.cells[col]
 
-
 @dataclass
 class Column(DocumentBaseModel):
     index: int
     width: Optional[float] = None
     hidden: bool = False
+    style_id: Optional[int] = None
 
 
 # ============================================================
-# Ranges
+# Ranges and Merged Cells
 # ============================================================
-
 @dataclass
 class CellRange(DocumentBaseModel):
     min_row: int
@@ -186,93 +164,28 @@ class CellRange(DocumentBaseModel):
     def _coord(self, row: int, col: int) -> str:
         return f"{Cell._col_to_letter(col)}{row}"
 
-
 @dataclass
 class MergedCellRange(CellRange):
     pass
-
 
 @dataclass
 class NamedRange(DocumentBaseModel):
     name: str
     range: CellRange
-    scope: Optional[str] = None  # workbook or sheet-level
+    scope: Optional[str] = None   # workbook or sheet name
 
 
 # ============================================================
-# Worksheet
-# ============================================================
-
-@dataclass
-class Worksheet(DocumentBaseModel):
-    name: str
-    rows: Dict[int, Row] = field(default_factory=dict)
-    columns: Dict[int, Column] = field(default_factory=dict)
-    merged_cells: List[MergedCellRange] = field(default_factory=list)
-    named_ranges: List[NamedRange] = field(default_factory=list)
-    properties: WorksheetProperties = field(default_factory=WorksheetProperties)
-    dimensions: SheetDimensions = field(default_factory=SheetDimensions)
-
-    def get_row(self, index: int) -> Row:
-        if index not in self.rows:
-            self.rows[index] = Row(index=index)
-        return self.rows[index]
-
-    def get_cell(self, row: int, col: int) -> Cell:
-        return self.get_row(row).get_or_create_cell(col)
-
-    def merge_cells(self, min_row: int, min_col: int, max_row: int, max_col: int):
-        self.merged_cells.append(
-            MergedCellRange(
-                min_row=min_row, max_row=max_row,
-                min_col=min_col, max_col=max_col
-            )
-        )
-
-
-# ============================================================
-# Workbook
-# ============================================================
-
-@dataclass
-class Workbook(BaseDocument):
-    kind: DocumentStandard = DocumentStandard.GENERIC
-    properties: WorkbookProperties = field(default_factory=WorkbookProperties)
-    sheets: List[Worksheet] = field(default_factory=list)
-    shared_strings: SharedStrings = field(default_factory=SharedStrings)
-    relationships: RelationshipCollection = field(default_factory=RelationshipCollection)
-    named_ranges: List[NamedRange] = field(default_factory=list)
-
-    def add_sheet(self, name: str) -> Worksheet:
-        sheet = Worksheet(name=name)
-        self.sheets.append(sheet)
-        return sheet
-
-
-
-
-
-
-
-
-
-# ============================================================
-# Stylesheet Models (Full Excel-Grade)
+# Style Components – inheriting from USDM where appropriate
 # ============================================================
 
 # ------------------------------------------------------------
 # Number Formats
 # ------------------------------------------------------------
-
 @dataclass
 class NumberFormat(DocumentBaseModel):
-    """
-    Custom number format, e.g. "#,##0.00", "dd/mm/yyyy"
-    Excel has built-in IDs 0–163; customs start at 164+.
-    """
     id: int
     format_code: str
-
 
 @dataclass
 class NumberFormatCollection(DocumentBaseModel):
@@ -292,18 +205,15 @@ class NumberFormatCollection(DocumentBaseModel):
             return self.custom_formats[id].format_code
         return None
 
-
 # ------------------------------------------------------------
-# Font
+# Font (Excel-specific, not from USDM)
 # ------------------------------------------------------------
-
 class FontUnderline(Enum):
     NONE = "none"
     SINGLE = "single"
     DOUBLE = "double"
     SINGLE_ACCOUNTING = "singleAccounting"
     DOUBLE_ACCOUNTING = "doubleAccounting"
-
 
 @dataclass
 class Font(DocumentBaseModel):
@@ -313,11 +223,10 @@ class Font(DocumentBaseModel):
     italic: bool = False
     underline: FontUnderline = FontUnderline.NONE
     strike: bool = False
-    color: Optional[str] = None         # hex
+    color: Optional[str] = None
     charset: Optional[int] = None
     family: Optional[int] = None
-    scheme: Optional[str] = None        # "minor", "major"
-
+    scheme: Optional[str] = None
 
 @dataclass
 class FontCollection(DocumentBaseModel):
@@ -327,11 +236,9 @@ class FontCollection(DocumentBaseModel):
         self.fonts.append(font)
         return len(self.fonts) - 1
 
-
 # ------------------------------------------------------------
-# Fill
+# Fill (Pattern and Gradient)
 # ------------------------------------------------------------
-
 class PatternType(Enum):
     NONE = "none"
     SOLID = "solid"
@@ -353,35 +260,30 @@ class PatternType(Enum):
     LIGHT_GRID = "lightGrid"
     LIGHT_TRELLIS = "lightTrellis"
 
-
 @dataclass
 class PatternFill(DocumentBaseModel):
     pattern_type: PatternType = PatternType.NONE
     fg_color: Optional[str] = None
     bg_color: Optional[str] = None
 
-
 @dataclass
 class GradientStop(DocumentBaseModel):
-    position: float      # 0.0 → 1.0
-    color: str           # hex color
-
+    position: float
+    color: str
 
 @dataclass
 class GradientFill(DocumentBaseModel):
-    degree: Optional[float] = None           # linear gradient
+    degree: Optional[float] = None
     left: Optional[float] = None
     right: Optional[float] = None
     top: Optional[float] = None
     bottom: Optional[float] = None
     stops: List[GradientStop] = field(default_factory=list)
 
-
 @dataclass
 class Fill(DocumentBaseModel):
     pattern: Optional[PatternFill] = None
     gradient: Optional[GradientFill] = None
-
 
 @dataclass
 class FillCollection(DocumentBaseModel):
@@ -391,11 +293,9 @@ class FillCollection(DocumentBaseModel):
         self.fills.append(fill)
         return len(self.fills) - 1
 
-
 # ------------------------------------------------------------
 # Border
 # ------------------------------------------------------------
-
 class BorderStyle(Enum):
     NONE = "none"
     THIN = "thin"
@@ -412,12 +312,10 @@ class BorderStyle(Enum):
     MEDIUM_DASH_DOT_DOT = "mediumDashDotDot"
     SLANT_DASH_DOT = "slantDashDot"
 
-
 @dataclass
 class BorderSide(DocumentBaseModel):
     style: BorderStyle = BorderStyle.NONE
-    color: Optional[str] = None  # hex color
-
+    color: Optional[str] = None
 
 @dataclass
 class Border(DocumentBaseModel):
@@ -429,7 +327,6 @@ class Border(DocumentBaseModel):
     diagonal_up: bool = False
     diagonal_down: bool = False
 
-
 @dataclass
 class BorderCollection(DocumentBaseModel):
     borders: List[Border] = field(default_factory=list)
@@ -438,11 +335,9 @@ class BorderCollection(DocumentBaseModel):
         self.borders.append(border)
         return len(self.borders) - 1
 
-
 # ------------------------------------------------------------
 # Alignment
 # ------------------------------------------------------------
-
 class HorizontalAlign(Enum):
     GENERAL = "general"
     LEFT = "left"
@@ -453,14 +348,12 @@ class HorizontalAlign(Enum):
     CENTER_CONTINUOUS = "centerContinuous"
     DISTRIBUTED = "distributed"
 
-
 class VerticalAlign(Enum):
     TOP = "top"
     CENTER = "center"
     BOTTOM = "bottom"
     JUSTIFY = "justify"
     DISTRIBUTED = "distributed"
-
 
 @dataclass
 class Alignment(DocumentBaseModel):
@@ -469,23 +362,21 @@ class Alignment(DocumentBaseModel):
     wrap_text: bool = False
     shrink_to_fit: bool = False
     indent: int = 0
-    text_rotation: int = 0      # -90 to 90
-
+    text_rotation: int = 0
 
 # ------------------------------------------------------------
 # Protection
 # ------------------------------------------------------------
-
 @dataclass
 class Protection(DocumentBaseModel):
     locked: bool = True
     hidden: bool = False
 
-
 # ------------------------------------------------------------
-# Cell Format (xf)
-# ------------------------------------------------------------
-
+# Cell Format (xf) – uses USDM's CharacterStyle as base via composition
+# but we keep separate because Excel uses indices.
+# For maximum inheritance we could have CellStyle inherit, but we already did that.
+# Here we define Excel's CellFormat as a container of references.
 @dataclass
 class CellFormat(DocumentBaseModel):
     number_format_id: Optional[int] = None
@@ -495,7 +386,6 @@ class CellFormat(DocumentBaseModel):
     alignment: Optional[Alignment] = None
     protection: Optional[Protection] = None
 
-
 @dataclass
 class CellFormatCollection(DocumentBaseModel):
     formats: List[CellFormat] = field(default_factory=list)
@@ -504,32 +394,18 @@ class CellFormatCollection(DocumentBaseModel):
         self.formats.append(xf)
         return len(self.formats) - 1
 
-
 # ------------------------------------------------------------
-# Cell Styles (styleXfs)
-# ------------------------------------------------------------
-
+# CellStyle (named style) – can inherit from USDM's CharacterStyle
+# because a named style in Excel is essentially a CharacterStyle plus an xf_id.
 @dataclass
-class CellStyle(DocumentBaseModel):
+class CellStyle(CharacterStyle):
+    """Excel named style – extends USDM CharacterStyle with Excel-specific fields."""
     name: str
     builtin_id: Optional[int] = None
-    xf_id: Optional[int] = None
-
-
-@dataclass
-class CellStyleCollection(DocumentBaseModel):
-    styles: List[CellStyle] = field(default_factory=list)
-
-    def register(self, style: CellStyle) -> int:
-        self.styles.append(style)
-        return len(self.styles) - 1
-
+    xf_id: Optional[int] = None   # reference to a CellFormat
 
 # ------------------------------------------------------------
-# DXF (differential formats)
-# Used in Conditional Formatting & Table Styles
-# ------------------------------------------------------------
-
+# Differential Format (dxf) – used for conditional formatting and table styles
 @dataclass
 class DifferentialFormat(DocumentBaseModel):
     font: Optional[Font] = None
@@ -538,26 +414,13 @@ class DifferentialFormat(DocumentBaseModel):
     alignment: Optional[Alignment] = None
     number_format: Optional[NumberFormat] = None
 
-
-@dataclass
-class DifferentialFormatCollection(DocumentBaseModel):
-    dxfs: List[DifferentialFormat] = field(default_factory=list)
-
-    def register(self, dxf: DifferentialFormat) -> int:
-        self.dxfs.append(dxf)
-        return len(self.dxfs) - 1
-
-
 # ------------------------------------------------------------
-# Table Styles
-# ------------------------------------------------------------
-
+# Table Styles (Excel specific)
 @dataclass
 class TableStyleElement(DocumentBaseModel):
-    type: str                  # e.g. "wholeTable", "headerRow", "totalRow", ...
+    type: str   # "wholeTable", "headerRow", "totalRow", etc.
     dxf_id: Optional[int] = None
     size: Optional[int] = None
-
 
 @dataclass
 class ExcelTableStyle(DocumentBaseModel):
@@ -568,48 +431,28 @@ class ExcelTableStyle(DocumentBaseModel):
     show_column_stripes: bool = False
     elements: List[TableStyleElement] = field(default_factory=list)
 
-
-@dataclass
-class TableStyleCollection(DocumentBaseModel):
-    styles: List[ExcelTableStyle] = field(default_factory=list)
-
-    def register(self, style: ExcelTableStyle) -> int:
-        self.styles.append(style)
-        return len(self.styles) - 1
-
-
 # ------------------------------------------------------------
-# Master Stylesheet Object
-# ------------------------------------------------------------
-
+# Master Stylesheet – inherits from USDM StyleSheet and adds Excel collections
 @dataclass
-class Stylesheet(DocumentBaseModel):
+class SpreadsheetStyleSheet(StyleSheet):
+    """Extends USDM stylesheet with Excel-specific formatting collections."""
     number_formats: NumberFormatCollection = field(default_factory=NumberFormatCollection)
-    fonts: FontCollection = field(default_factory=FontCollection)
+    excel_fonts: FontCollection = field(default_factory=FontCollection)
     fills: FillCollection = field(default_factory=FillCollection)
     borders: BorderCollection = field(default_factory=BorderCollection)
     cell_formats: CellFormatCollection = field(default_factory=CellFormatCollection)
-    cell_styles: CellStyleCollection = field(default_factory=CellStyleCollection)
-    dxfs: DifferentialFormatCollection = field(default_factory=DifferentialFormatCollection)
-    table_styles: TableStyleCollection = field(default_factory=TableStyleCollection)
-
-
-
-
-
+    cell_styles: Dict[str, CellStyle] = field(default_factory=dict)  # name -> CellStyle
+    dxfs: List[DifferentialFormat] = field(default_factory=list)
+    excel_table_styles: Dict[str, ExcelTableStyle] = field(default_factory=dict)
 
 
 # ============================================================
-# Tables, AutoFilter, and Structured References
+# Tables, AutoFilter, Conditional Formatting, etc.
 # ============================================================
 
-from enum import Enum
-
-
 # ------------------------------------------------------------
-# AutoFilter System
+# AutoFilter
 # ------------------------------------------------------------
-
 class DynamicFilterType(Enum):
     ABOVE_AVERAGE = "aboveAverage"
     BELOW_AVERAGE = "belowAverage"
@@ -630,7 +473,6 @@ class DynamicFilterType(Enum):
     YEAR_TO_DATE = "yearToDate"
     YESTERDAY = "yesterday"
 
-
 class FilterOperator(Enum):
     EQUAL = "equal"
     NOT_EQUAL = "notEqual"
@@ -639,18 +481,15 @@ class FilterOperator(Enum):
     GREATER_OR_EQUAL = "greaterThanOrEqual"
     LESS_OR_EQUAL = "lessThanOrEqual"
 
-
 @dataclass
 class CustomFilter(DocumentBaseModel):
     operator: FilterOperator
     value: Any
 
-
 @dataclass
 class Filters(DocumentBaseModel):
     values: List[Any] = field(default_factory=list)
     blank: bool = False
-
 
 @dataclass
 class FilterColumn(DocumentBaseModel):
@@ -659,18 +498,14 @@ class FilterColumn(DocumentBaseModel):
     custom_filters: List[CustomFilter] = field(default_factory=list)
     dynamic_filter: Optional[DynamicFilterType] = None
 
-
 @dataclass
 class AutoFilter(DocumentBaseModel):
-    ref: Optional[str] = None                # range string, e.g. "A1:D10"
+    ref: Optional[str] = None
     filter_columns: List[FilterColumn] = field(default_factory=list)
-    sort_state: Optional[Any] = None         # placeholder for future use
-
 
 # ------------------------------------------------------------
-# Table Model
+# Table
 # ------------------------------------------------------------
-
 @dataclass
 class TableColumn(DocumentBaseModel):
     id: int
@@ -679,18 +514,10 @@ class TableColumn(DocumentBaseModel):
     totals_row_label: Optional[str] = None
     calculated_column_formula: Optional[str] = None
 
-
 @dataclass
 class ExcelTableRow(DocumentBaseModel):
     index: int
     values: Dict[int, Any] = field(default_factory=dict)
-
-    def get_value(self, column_id: int) -> Any:
-        return self.values.get(column_id)
-
-    def set_value(self, column_id: int, value: Any):
-        self.values[column_id] = value
-
 
 @dataclass
 class TableStyleInfo(DocumentBaseModel):
@@ -700,13 +527,12 @@ class TableStyleInfo(DocumentBaseModel):
     show_row_stripes: bool = True
     show_column_stripes: bool = False
 
-
 @dataclass
 class Table(DocumentBaseModel):
     id: int
     name: str
     display_name: Optional[str] = None
-    ref: Optional[str] = None                  # range reference
+    ref: Optional[str] = None
     header_row_count: int = 1
     totals_row_count: int = 0
     columns: List[TableColumn] = field(default_factory=list)
@@ -714,58 +540,9 @@ class Table(DocumentBaseModel):
     auto_filter: Optional[AutoFilter] = None
     table_style_info: TableStyleInfo = field(default_factory=TableStyleInfo)
 
-    def get_column_by_name(self, name: str) -> Optional[TableColumn]:
-        for col in self.columns:
-            if col.name == name:
-                return col
-        return None
-
-    def add_column(self, name: str) -> TableColumn:
-        next_id = len(self.columns) + 1
-        col = TableColumn(id=next_id, name=name)
-        self.columns.append(col)
-        return col
-
-    def add_row(self, values: Dict[str, Any]) -> ExcelTableRow:
-        col_map = {c.name: c.id for c in self.columns}
-        row = ExcelTableRow(index=len(self.rows) + 1)
-        for cname, val in values.items():
-            if cname in col_map:
-                row.set_value(col_map[cname], val)
-        self.rows.append(row)
-        return row
-
-
 # ------------------------------------------------------------
-# Table Collection (per worksheet)
+# Conditional Formatting
 # ------------------------------------------------------------
-
-@dataclass
-class TableCollection(DocumentBaseModel):
-    tables: List[Table] = field(default_factory=list)
-
-    def add(self, table: Table):
-        self.tables.append(table)
-
-    def find(self, name: str) -> Optional[Table]:
-        for t in self.tables:
-            if t.name == name:
-                return t
-        return None
-
-
-
-# ============================================================
-# Conditional Formatting (CF)
-# ============================================================
-
-from enum import Enum
-
-
-# ------------------------------------------------------------
-# CF Base Components
-# ------------------------------------------------------------
-
 class CFType(Enum):
     CELL_IS = "cellIs"
     EXPRESSION = "expression"
@@ -786,7 +563,6 @@ class CFType(Enum):
     TIME_PERIOD = "timePeriod"
     ABOVE_AVERAGE = "aboveAverage"
 
-
 class CFOperator(Enum):
     LESS_THAN = "lessThan"
     LESS_OR_EQUAL = "lessThanOrEqual"
@@ -797,26 +573,15 @@ class CFOperator(Enum):
     BETWEEN = "between"
     NOT_BETWEEN = "notBetween"
 
-
 @dataclass
 class CFValueObject(DocumentBaseModel):
-    type: str                   # "num", "percentile", "formula", "min", "max"
+    type: str   # "num", "percentile", "formula", "min", "max"
     value: Optional[Any] = None
-
-
-# ------------------------------------------------------------
-# Color Scale
-# ------------------------------------------------------------
 
 @dataclass
 class ColorScale(DocumentBaseModel):
-    values: List[CFValueObject] = field(default_factory=list)   # min/mid/max
-    colors: List[str] = field(default_factory=list)             # hex colors
-
-
-# ------------------------------------------------------------
-# Data Bar
-# ------------------------------------------------------------
+    values: List[CFValueObject] = field(default_factory=list)
+    colors: List[str] = field(default_factory=list)
 
 @dataclass
 class DataBar(DocumentBaseModel):
@@ -826,11 +591,6 @@ class DataBar(DocumentBaseModel):
     show_value: bool = True
     border: bool = False
     gradient: bool = True
-
-
-# ------------------------------------------------------------
-# Icon Set
-# ------------------------------------------------------------
 
 class IconSetType(Enum):
     THREE_ARROWS = "3Arrows"
@@ -844,14 +604,12 @@ class IconSetType(Enum):
     FIVE_ARROWS_GRAY = "5ArrowsGray"
     FIVE_RATINGS = "5Rating"
 
-
 @dataclass
 class IconCriterion(DocumentBaseModel):
     type: str
     value: Optional[Any] = None
-    operator: Optional[str] = None     # >= or >
+    operator: Optional[str] = None
     icon_id: int = 0
-
 
 @dataclass
 class IconSet(DocumentBaseModel):
@@ -860,68 +618,27 @@ class IconSet(DocumentBaseModel):
     show_value: bool = True
     reverse: bool = False
 
-
-# ------------------------------------------------------------
-# CF Rule
-# ------------------------------------------------------------
-
 @dataclass
 class CFRule(DocumentBaseModel):
     type: CFType
     priority: int
     dxf_id: Optional[int] = None
     stop_if_true: bool = False
-
-    operator: Optional[CFOperator] = None   # for cellIs
+    operator: Optional[CFOperator] = None
     formula: List[str] = field(default_factory=list)
-
     color_scale: Optional[ColorScale] = None
     data_bar: Optional[DataBar] = None
     icon_set: Optional[IconSet] = None
 
-
-# ------------------------------------------------------------
-# CF Region (range + rule list)
-# ------------------------------------------------------------
-
 @dataclass
 class ConditionalFormatting(DocumentBaseModel):
-    ref: str  # target range: "A1:D20"
+    ref: str
     rules: List[CFRule] = field(default_factory=list)
 
-    def add_rule(self, rule: CFRule):
-        self.rules.append(rule)
-
-
-# ------------------------------------------------------------
-# CF Collection per Worksheet
-# ------------------------------------------------------------
-
-@dataclass
-class ConditionalFormattingCollection(DocumentBaseModel):
-    items: List[ConditionalFormatting] = field(default_factory=list)
-
-    def add(self, cf: ConditionalFormatting):
-        self.items.append(cf)
-
-    def for_range(self, ref: str) -> Optional[ConditionalFormatting]:
-        for c in self.items:
-            if c.ref == ref:
-                return c
-        return None
-
 
 # ============================================================
-# Formulas, Defined Names, Shared Formulas, External Links
+# Formulas and Defined Names
 # ============================================================
-
-from enum import Enum
-
-
-# ------------------------------------------------------------
-# Formula Token System (Simple AST-Lite Model)
-# ------------------------------------------------------------
-
 class FormulaTokenType(Enum):
     OPERAND = "operand"
     OPERATOR = "operator"
@@ -932,108 +649,45 @@ class FormulaTokenType(Enum):
     RANGE = "range"
     STRUCTURED_REF = "structured_reference"
 
-
 @dataclass
 class FormulaToken(DocumentBaseModel):
     type: FormulaTokenType
     value: Any
-
 
 @dataclass
 class FormulaAST(DocumentBaseModel):
     tokens: List[FormulaToken] = field(default_factory=list)
 
     @classmethod
-    def from_string(cls, formula: str):
-        # NOTE: We do NOT parse formula here (not an interpreter)
-        # We store the formula raw and let parser be external or pluggable.
+    def from_string(cls, formula: str) -> FormulaAST:
         return cls(tokens=[FormulaToken(type=FormulaTokenType.OPERAND, value=formula)])
 
     def to_string(self) -> str:
-        # For now: round‑trip raw formula
         if len(self.tokens) == 1 and self.tokens[0].type == FormulaTokenType.OPERAND:
             return str(self.tokens[0].value)
-        # Otherwise join token values
-        return "".join(t.value for t in self.tokens)
-
-
-# ------------------------------------------------------------
-# Shared Formula System
-# ------------------------------------------------------------
+        return "".join(str(t.value) for t in self.tokens)
 
 @dataclass
 class SharedFormula(DocumentBaseModel):
-    shared_index: int                  # Excel's si attribute
-    ref: str                           # Target area: "A1:C10"
-    formula: FormulaAST                # Base formula
-
-
-@dataclass
-class SharedFormulaCollection(DocumentBaseModel):
-    items: Dict[int, SharedFormula] = field(default_factory=dict)
-
-    def add(self, shared_formula: SharedFormula):
-        self.items[shared_formula.shared_index] = shared_formula
-
-    def get(self, shared_index: int) -> Optional[SharedFormula]:
-        return self.items.get(shared_index)
-
-
-# ------------------------------------------------------------
-# Defined Names (Workbook-Scoped or Worksheet-Scoped)
-# ------------------------------------------------------------
+    shared_index: int
+    ref: str
+    formula: FormulaAST
 
 @dataclass
 class DefinedName(DocumentBaseModel):
     name: str
-    formula: str                                # raw formula or reference
-    local_sheet_id: Optional[int] = None        # None => workbook-scope
+    formula: str
+    local_sheet_id: Optional[int] = None
     comment: Optional[str] = None
     hidden: bool = False
-    function: bool = False                      # is this a user-defined function?
-    vb_procedure: bool = False                  # legacy VBA linkage
-
-    @property
-    def is_global(self) -> bool:
-        return self.local_sheet_id is None
-
-
-@dataclass
-class DefinedNameCollection(DocumentBaseModel):
-    items: List[DefinedName] = field(default_factory=list)
-
-    def add(self, dn: DefinedName):
-        self.items.append(dn)
-
-    def find(self, name: str, sheet_id: Optional[int] = None) -> Optional[DefinedName]:
-        """
-        Spec-accurate name resolution:
-        1) Look for worksheet-scope name if sheet_id provided
-        2) Fallback to workbook-scope name
-        """
-        # sheet-scope
-        if sheet_id is not None:
-            for dn in self.items:
-                if dn.name == name and dn.local_sheet_id == sheet_id:
-                    return dn
-
-        # workbook-scope
-        for dn in self.items:
-            if dn.name == name and dn.local_sheet_id is None:
-                return dn
-        return None
-
-
-# ------------------------------------------------------------
-# External Workbooks / Links
-# ------------------------------------------------------------
+    function: bool = False
+    vb_procedure: bool = False
 
 @dataclass
 class ExternalReference(DocumentBaseModel):
-    workbook_name: str                       # "Book2.xlsx"
-    sheet_name: str                          # "Sheet1"
-    ref: str                                 # "A1" or "A1:B10"
-
+    workbook_name: str
+    sheet_name: str
+    ref: str
 
 @dataclass
 class ExternalLink(DocumentBaseModel):
@@ -1041,34 +695,15 @@ class ExternalLink(DocumentBaseModel):
     file_path: str
     references: List[ExternalReference] = field(default_factory=list)
 
-
-@dataclass
-class ExternalLinkCollection(DocumentBaseModel):
-    items: List[ExternalLink] = field(default_factory=list)
-
-    def add(self, link: ExternalLink):
-        self.items.append(link)
-
-    def get_by_id(self, id: int) -> Optional[ExternalLink]:
-        for link in self.items:
-            if link.id == id:
-                return link
-        return None
-
-
-# ------------------------------------------------------------
-# Formula Handling inside Cell
-# ------------------------------------------------------------
-
 @dataclass
 class CellFormula(DocumentBaseModel):
     text: str
     ast: Optional[FormulaAST] = None
-    shared_index: Optional[int] = None          # si attribute
-    array: bool = False                         # array formula flag
+    shared_index: Optional[int] = None
+    array: bool = False
 
     @classmethod
-    def create(cls, formula_text: str, shared_index: Optional[int] = None):
+    def create(cls, formula_text: str, shared_index: Optional[int] = None) -> CellFormula:
         return cls(text=formula_text,
                    ast=FormulaAST.from_string(formula_text),
                    shared_index=shared_index)
@@ -1080,16 +715,8 @@ class CellFormula(DocumentBaseModel):
 
 
 # ============================================================
-# Phase 6 — Workbook/Worksheet Features
+# Data Validation, Hyperlinks, Comments
 # ============================================================
-
-from enum import Enum
-
-
-# ------------------------------------------------------------
-# Data Validation
-# ------------------------------------------------------------
-
 class DataValidationType(Enum):
     WHOLE = "whole"
     DECIMAL = "decimal"
@@ -1099,7 +726,6 @@ class DataValidationType(Enum):
     TEXT_LENGTH = "textLength"
     CUSTOM = "custom"
 
-
 class DataValidationOperator(Enum):
     BETWEEN = "between"
     NOT_BETWEEN = "notBetween"
@@ -1107,7 +733,6 @@ class DataValidationOperator(Enum):
     GREATER_THAN = "greaterThan"
     EQUAL = "equal"
     NOT_EQUAL = "notEqual"
-
 
 @dataclass
 class DataValidationRule(DocumentBaseModel):
@@ -1123,49 +748,22 @@ class DataValidationRule(DocumentBaseModel):
     formula1: Optional[str] = None
     formula2: Optional[str] = None
 
-
 @dataclass
 class DataValidation(DocumentBaseModel):
-    ref: str                                      # "A1", "A1:A20"
+    ref: str
     rule: DataValidationRule
-
-
-@dataclass
-class DataValidationCollection(DocumentBaseModel):
-    items: List[DataValidation] = field(default_factory=list)
-
-    def add(self, dv: DataValidation):
-        self.items.append(dv)
-
-
-# ------------------------------------------------------------
-# Hyperlinks
-# ------------------------------------------------------------
 
 @dataclass
 class Hyperlink(DocumentBaseModel):
-    ref: str                                      # target cell(s)
-    target: str                                   # URL or internal reference
+    ref: str
+    target: str
     tooltip: Optional[str] = None
     display: Optional[str] = None
 
-
-@dataclass
-class HyperlinkCollection(DocumentBaseModel):
-    items: List[Hyperlink] = field(default_factory=list)
-
-    def add(self, hyperlink: Hyperlink):
-        self.items.append(hyperlink)
-
-
-# ------------------------------------------------------------
-# Comments (Note: In Excel → Comments + Threaded Comments)
-# ------------------------------------------------------------
-
+# Legacy comments
 @dataclass
 class Author(DocumentBaseModel):
     name: str
-
 
 @dataclass
 class CommentTextRun(DocumentBaseModel):
@@ -1175,15 +773,13 @@ class CommentTextRun(DocumentBaseModel):
     underline: bool = False
     color: Optional[str] = None
 
-
 @dataclass
 class CommentText(DocumentBaseModel):
     runs: List[CommentTextRun] = field(default_factory=list)
 
     @classmethod
-    def from_string(cls, text: str):
+    def from_string(cls, text: str) -> CommentText:
         return cls(runs=[CommentTextRun(text=text)])
-
 
 @dataclass
 class Comment(DocumentBaseModel):
@@ -1191,25 +787,12 @@ class Comment(DocumentBaseModel):
     author_id: int
     text: CommentText
 
-
 @dataclass
 class CommentCollection(DocumentBaseModel):
     authors: List[Author] = field(default_factory=list)
     comments: List[Comment] = field(default_factory=list)
 
-    def add_author(self, name: str) -> int:
-        index = len(self.authors)
-        self.authors.append(Author(name=name))
-        return index
-
-    def add_comment(self, ref: str, author_id: int, text: CommentText):
-        self.comments.append(Comment(ref=ref, author_id=author_id, text=text))
-
-
-# ------------------------------------------------------------
-# Threaded Comments (Excel Modern Comments)
-# ------------------------------------------------------------
-
+# Threaded comments (modern)
 @dataclass
 class ThreadedComment(DocumentBaseModel):
     ref: str
@@ -1218,28 +801,15 @@ class ThreadedComment(DocumentBaseModel):
     date: Optional[str] = None
 
 
-@dataclass
-class ThreadedCommentCollection(DocumentBaseModel):
-    items: List[ThreadedComment] = field(default_factory=list)
-
-    def add(self, tc: ThreadedComment):
-        self.items.append(tc)
-
-
-# ------------------------------------------------------------
-# Sheet Properties
-# ------------------------------------------------------------
-
+# ============================================================
+# Worksheet Properties, Protection, Page Setup
+# ============================================================
 @dataclass
 class SheetProperties(DocumentBaseModel):
     tab_color: Optional[str] = None
     filter_mode: bool = False
     published: bool = True
-
-
-# ------------------------------------------------------------
-# Sheet Protection
-# ------------------------------------------------------------
+    show_gridlines: bool = True
 
 @dataclass
 class SheetProtection(DocumentBaseModel):
@@ -1257,15 +827,9 @@ class SheetProtection(DocumentBaseModel):
     select_locked_cells: bool = True
     select_unlocked_cells: bool = True
 
-
-# ------------------------------------------------------------
-# Page Setup
-# ------------------------------------------------------------
-
 class Orientation(Enum):
     PORTRAIT = "portrait"
     LANDSCAPE = "landscape"
-
 
 @dataclass
 class PageMargins(DocumentBaseModel):
@@ -1276,101 +840,156 @@ class PageMargins(DocumentBaseModel):
     header: float = 0.3
     footer: float = 0.3
 
-
 @dataclass
 class PageSetup(DocumentBaseModel):
     orientation: Orientation = Orientation.PORTRAIT
     scale: int = 100
-    paper_size: int = 9                # A4
+    paper_size: int = 9
     fit_to_width: Optional[int] = None
     fit_to_height: Optional[int] = None
 
+@dataclass
+class SheetDimensions(DocumentBaseModel):
+    min_row: int = 1
+    max_row: int = 1
+    min_col: int = 1
+    max_col: int = 1
 
-# ------------------------------------------------------------
-# Calculation Chain (formula dependency order)
-# ------------------------------------------------------------
 
+# ============================================================
+# Calculation Chain
+# ============================================================
 @dataclass
 class CalcChainEntry(DocumentBaseModel):
     sheet_id: int
-    ref: str                 # "A1"
+    ref: str
     array: bool = False
-
 
 @dataclass
 class CalculationChain(DocumentBaseModel):
     items: List[CalcChainEntry] = field(default_factory=list)
 
-    def add(self, entry: CalcChainEntry):
-        self.items.append(entry)
 
-
-# ------------------------------------------------------------
-# Rich Text (inline cell text)
-# ------------------------------------------------------------
-
-@dataclass
-class RichTextRun(DocumentBaseModel):
-    text: str
-    bold: bool = False
-    italic: bool = False
-    underline: bool = False
-    color: Optional[str] = None
-    font_name: Optional[str] = None
-    font_size: Optional[float] = None
-
-
-@dataclass
-class RichText(DocumentBaseModel):
-    runs: List[RichTextRun] = field(default_factory=list)
-
-    @classmethod
-    def from_string(cls, text: str):
-        return cls(runs=[RichTextRun(text=text)])
-
-
-# ------------------------------------------------------------
-# Pivot Tables (minimal yet complete)
-# ------------------------------------------------------------
-
+# ============================================================
+# Pivot Tables
+# ============================================================
 @dataclass
 class PivotField(DocumentBaseModel):
     name: str
-    orientation: str        # row, column, data, page
+    orientation: str   # row, column, data, page
     subtotal: Optional[str] = None
-
 
 @dataclass
 class PivotCacheReference(DocumentBaseModel):
     sheet: str
-    ref: str                # source range
-
+    ref: str
 
 @dataclass
 class PivotCache(DocumentBaseModel):
     id: int
     source: PivotCacheReference
 
-
 @dataclass
 class PivotTable(DocumentBaseModel):
     name: str
-    location: str           # top-left cell
+    location: str
     cache_id: int
     fields: List[PivotField] = field(default_factory=list)
 
 
+# # ============================================================
+# # Shape Content (for floating shapes)
+# # ============================================================
+
+# @dataclass
+# class ShapeContent(DocumentBaseModel):
+#     """Shape for drawing (rectangle, line, ellipse, textbox, etc.)"""
+#     shape_type: str                              # "rectangle", "line", "ellipse", "circle", "textbox"
+#     x: int = 0                                   # position in EMU (left)
+#     y: int = 0                                   # position in EMU (top)
+#     width: int = 100                             # width in EMU (1/12700 cm)
+#     height: int = 100                            # height in EMU
+#     name: Optional[str] = None                   # shape name
+#     text: Optional[RichTextContent] = None       # text content (for textbox)
+#     fill_color: Optional[str] = None             # hex color (e.g., "#FF0000")
+#     line_color: Optional[str] = None             # stroke color
+#     line_width: int = 12700                      # stroke width in EMU (1 pt = 12700 EMU)
+#     rotation: int = 0                            # rotation in degrees
+#     hidden: bool = False
+    
+# ============================================================
+# Worksheet (complete)
+# ============================================================
 @dataclass
-class PivotCacheCollection(DocumentBaseModel):
-    items: List[PivotCache] = field(default_factory=list)
+class Worksheet(DocumentBaseModel):
+    name: str
+    rows: Dict[int, Row] = field(default_factory=dict)
+    columns: Dict[int, Column] = field(default_factory=dict)
+    merged_cells: List[MergedCellRange] = field(default_factory=list)
+    named_ranges: List[NamedRange] = field(default_factory=list)
+    tables: List[Table] = field(default_factory=list)
+    conditional_formattings: List[ConditionalFormatting] = field(default_factory=list)
+    data_validations: List[DataValidation] = field(default_factory=list)
+    hyperlinks: List[Hyperlink] = field(default_factory=list)
+    comments: CommentCollection = field(default_factory=CommentCollection)
+    threaded_comments: List[ThreadedComment] = field(default_factory=list)
+    properties: SheetProperties = field(default_factory=SheetProperties)
+    protection: SheetProtection = field(default_factory=SheetProtection)
+    page_setup: PageSetup = field(default_factory=PageSetup)
+    margins: PageMargins = field(default_factory=PageMargins)
+    dimensions: SheetDimensions = field(default_factory=SheetDimensions)
+    auto_filter: Optional[AutoFilter] = None
+    shapes: List[ShapeContent] = field(default_factory=list)
+    # Floating USDM objects (reused)
+    floating_images: List[ImageContent] = field(default_factory=list)
+    floating_charts: List[ChartContent] = field(default_factory=list)
 
-    def add(self, cache: PivotCache):
-        self.items.append(cache)
+    def get_row(self, index: int) -> Row:
+        if index not in self.rows:
+            self.rows[index] = Row(index=index)
+        return self.rows[index]
+
+    def get_cell(self, row: int, col: int) -> Cell:
+        return self.get_row(row).get_or_create_cell(col)
+
+    def merge_cells(self, min_row: int, min_col: int, max_row: int, max_col: int) -> None:
+        self.merged_cells.append(
+            MergedCellRange(min_row=min_row, max_row=max_row,
+                            min_col=min_col, max_col=max_col)
+        )
 
 
+# ============================================================
+# Workbook (top-level)
+# ============================================================
 @dataclass
-class PivotTableCollection(DocumentBaseModel):
-    items: List[PivotTable] = field(default_factory=list)
+class Workbook(DocumentBaseModel):
+    properties: WorkbookProperties = field(default_factory=WorkbookProperties)
+    sheets: List[Worksheet] = field(default_factory=list)
+    shared_strings: SharedStrings = field(default_factory=SharedStrings)
+    relationships: RelationshipCollection = field(default_factory=RelationshipCollection)
+    named_ranges: List[NamedRange] = field(default_factory=list)
+    defined_names: List[DefinedName] = field(default_factory=list)
+    external_links: List[ExternalLink] = field(default_factory=list)
+    stylesheet: SpreadsheetStyleSheet = field(default_factory=SpreadsheetStyleSheet)
+    calculation_chain: CalculationChain = field(default_factory=CalculationChain)
+    pivot_caches: List[PivotCache] = field(default_factory=list)
+    pivot_tables: List[PivotTable] = field(default_factory=list)
 
-    def add(self, pt: PivotTable):
-        self.items.append(pt)
+    vba_project: Optional[bytes] = None                # Raw VBA binary
+    full_calculation_on_load: bool = True              # Whether to recalculate on open
+
+    # Reuse USDM metadata
+    metadata: DocumentMetadata = field(default_factory=DocumentMetadata)
+    
+    
+    def add_sheet(self, name: str) -> Worksheet:
+        sheet = Worksheet(name=name)
+        self.sheets.append(sheet)
+        return sheet
+
+    def get_sheet_by_name(self, name: str) -> Optional[Worksheet]:
+        for sheet in self.sheets:
+            if sheet.name == name:
+                return sheet
+        return None

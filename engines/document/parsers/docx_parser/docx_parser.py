@@ -9,7 +9,7 @@ from datetime import datetime
 import hashlib
 import uuid
 import re
-
+import json
 from .docx_extractor import DOCXExtractor
 from .docx_models import (
     DOCXDocument,
@@ -1640,111 +1640,41 @@ class DOCXParser:
             }
         )
 
-
     def _convert_chart_drawing(self, drawing: DOCXDrawing) -> Optional[LogicalElement]:
-        """
-        Convert a chart drawing to ChartContent.
-        
-        Args:
-            drawing: DOCXDrawing object of type 'chart'
-            
-        Returns:
-            LogicalElement with ChartContent
-        """
-        # Extract chart data if available
-        chart_data = drawing.chart_data or {}
-        
-        # Get chart dimensions
-        width = None
-        height = None
+        chart_content = drawing.chart
+        if chart_content is None:
+            # Fallback if no chart data was resolved (should not happen after extraction)
+            chart_content = ChartContent(chart_type='bar', title=drawing.name)
+
         if drawing.width:
-            width = self._convert_emu_to_pixels(drawing.width)
+            chart_content.width = self._convert_emu_to_pixels(drawing.width)
         if drawing.height:
-            height = self._convert_emu_to_pixels(drawing.height)
-        
-        # Determine chart type from relationship or data
-        chart_type = chart_data.get('type', 'bar')
-        
-        # Build chart content
-        content = ChartContent(
-            chart_type=chart_type,
-            data=chart_data,
-            title=drawing.name,
-            width=int(width) if width else None,
-            height=int(height) if height else None
-        )
-        
-        # Add chart-specific metadata
+            chart_content.height = self._convert_emu_to_pixels(drawing.height)
+
         metadata = {
             "relationship_id": drawing.relationship_id,
             "name": drawing.name,
             "description": drawing.description,
-            "chart_type": chart_type,
             "width_emu": drawing.width,
             "height_emu": drawing.height,
         }
-        
-        # Add chart properties if available
-        if 'properties' in chart_data:
-            metadata['chart_properties'] = chart_data['properties']
-        
+
         return LogicalElement(
             element_id=self._generate_element_id(),
             element_type=ElementType.CHART,
-            content=content,
+            content=chart_content,
             metadata=metadata
         )
 
-
     def _convert_shape_drawing(self, drawing: DOCXDrawing) -> Optional[LogicalElement]:
-        """
-        Convert a shape drawing to ShapeContent.
-        
-        Args:
-            drawing: DOCXDrawing object of type 'shape'
-            
-        Returns:
-            LogicalElement with ShapeContent
-        """
         # Extract shape data
-        shape_data = drawing.chart_data or {}
-        
-        # Determine shape type
-        shape_type = shape_data.get('shape_type', 'rectangle')
-        
-        # Get dimensions
-        width = None
-        height = None
+        content = drawing.shape
+        if content is None: return None
+
         if drawing.width:
-            width = self._convert_emu_to_pixels(drawing.width)
+            content.width = self._convert_emu_to_pixels(drawing.width)
         if drawing.height:
-            height = self._convert_emu_to_pixels(drawing.height)
-        
-        # Build shape data dictionary
-        shape_properties = {
-            "width": width,
-            "height": height,
-            "fill_color": shape_data.get('fill_color'),
-            "stroke_color": shape_data.get('stroke_color'),
-            "stroke_width": shape_data.get('stroke_width'),
-            "rotation": shape_data.get('rotation'),
-            "flip_horizontal": shape_data.get('flip_horizontal', False),
-            "flip_vertical": shape_data.get('flip_vertical', False),
-        }
-        
-        # Remove None values
-        shape_properties = {k: v for k, v in shape_properties.items() if v is not None}
-        
-        # Extract text content if shape has text
-        shape_text = None
-        if 'text' in shape_data:
-            shape_text = self._convert_plain_text_to_rich_text(shape_data['text'])
-        
-        content = ShapeContent(
-            shape_type=shape_type,
-            data=shape_properties,
-            text=shape_text
-        )
+            content.height = self._convert_emu_to_pixels(drawing.height)
         
         return LogicalElement(
             element_id=self._generate_element_id(),
@@ -1754,12 +1684,10 @@ class DOCXParser:
                 "relationship_id": drawing.relationship_id,
                 "name": drawing.name,
                 "description": drawing.description,
-                "shape_type": shape_type,
                 "width_emu": drawing.width,
                 "height_emu": drawing.height,
             }
         )
-
 
     def _convert_diagram_drawing(self, drawing: DOCXDrawing) -> Optional[LogicalElement]:
         """
@@ -1771,40 +1699,49 @@ class DOCXParser:
         Returns:
             LogicalElement with DrawingContent
         """
-        # For diagrams, we store as vector data or structured representation
-        diagram_data = drawing.chart_data or {}
-        
-        # Get dimensions
-        width = None
-        height = None
-        if drawing.width:
-            width = self._convert_emu_to_pixels(drawing.width)
-        if drawing.height:
-            height = self._convert_emu_to_pixels(drawing.height)
-        
-        # Build vector data representation
-        vector_data = diagram_data.get('svg', '') or diagram_data.get('xml', '')
-        
-        content = DrawingContent(
-            vector_data=vector_data,
-            width=width,
-            height=height
-        )
-        
+        diagram = drawing.diagram
+        if diagram is None:
+            return None
+
+        width = self._convert_emu_to_pixels(drawing.width) if drawing.width else None
+        height = self._convert_emu_to_pixels(drawing.height) if drawing.height else None
+
+        # Build a structured representation of the diagram tree
+        def node_to_dict(node):
+            if node is None:
+                return None
+            return {
+                "id": node.id,
+                "text": node.text,
+                "shape": node.shape_type,
+                "fill": node.fill_color,
+                "line": node.line_color,
+                "children": [node_to_dict(child) for child in node.children] if node.children else []
+            }
+
+        tree_dict = node_to_dict(diagram.root)
+        vector_data = json.dumps({
+            "type": diagram.layout_type or "unknown",
+            "name": diagram.name or drawing.name,
+            "root": tree_dict
+        }, ensure_ascii=False)
+
+        from engines.document.models.usdm_models import DrawingContent
+        content = DrawingContent(vector_data=vector_data, width=width, height=height)
+        metadata = {
+            "relationship_id": drawing.relationship_id,
+            "name": drawing.name,
+            "description": drawing.description,
+            "diagram_type": diagram.layout_type,
+            "width_emu": drawing.width,
+            "height_emu": drawing.height,
+        }
         return LogicalElement(
             element_id=self._generate_element_id(),
             element_type=ElementType.DRAWING,
             content=content,
-            metadata={
-                "relationship_id": drawing.relationship_id,
-                "name": drawing.name,
-                "description": drawing.description,
-                "diagram_type": diagram_data.get('type', 'unknown'),
-                "width_emu": drawing.width,
-                "height_emu": drawing.height,
-            }
+            metadata=metadata
         )
-
 
     def _convert_emu_to_pixels(self, emu: float, dpi: int = 96) -> float:
         """

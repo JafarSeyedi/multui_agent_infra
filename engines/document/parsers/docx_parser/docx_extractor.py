@@ -76,6 +76,8 @@ from .docx_style_parser import DocxStyleParser
 from .docx_table_parser import DocxTableParser
 from .docx_math_parser import OMMLParser
 from ...models.base import BinaryEncoding
+from .docx_chart_extractor import parse_docx_chart
+from .docx_diagram_extractor import parse_diagram
 
 class DOCXExtractor:
     """
@@ -194,6 +196,10 @@ class DOCXExtractor:
             # Extract web settings
             doc.web_settings = self._extract_web_settings()
             
+            self._resolve_charts(doc)
+            
+            self._resolve_diagrams(doc)
+            
             return doc
             
         finally:
@@ -275,6 +281,95 @@ class DOCXExtractor:
         except (KeyError, ET.ParseError):
             return None
     
+    def _resolve_diagrams(self, doc: DOCXDocument):
+        """Resolve diagram relationship IDs, parse diagram XML, attach DOCXDiagram."""
+        from .docx_diagram_extractor import parse_diagram
+
+        def _iter_drawings(content_list):
+            for item in content_list:
+                if isinstance(item, (DOCXParagraph,)):
+                    for run_item in item.content.items:
+                        if isinstance(run_item, DOCXDrawing):
+                            yield run_item
+                elif isinstance(item, DOCXTable):
+                    for row in item.rows:
+                        for cell in row.cells:
+                            for cell_item in cell.content:
+                                if isinstance(cell_item, DOCXParagraph):
+                                    for run_item in cell_item.content.items:
+                                        if isinstance(run_item, DOCXDrawing):
+                                            yield run_item
+                                elif isinstance(cell_item, DOCXTable):
+                                    for inner_row in cell_item.rows:
+                                        for inner_cell in inner_row.cells:
+                                            for inner_item in inner_cell.content:
+                                                if isinstance(inner_item, DOCXParagraph):
+                                                    for r_item in inner_item.content.items:
+                                                        if isinstance(r_item, DOCXDrawing):
+                                                            yield r_item
+
+        all_drawings = []
+        all_drawings.extend(_iter_drawings(doc.body))
+        for hf in doc.headers.values():
+            all_drawings.extend(_iter_drawings(hf.content))
+        for hf in doc.footers.values():
+            all_drawings.extend(_iter_drawings(hf.content))
+
+        doc_rels = self._relationships.get('document', {})
+        for drawing in all_drawings:
+            if drawing.drawing_type == 'diagram' and drawing.relationship_id:
+                rel_target = doc_rels.get(drawing.relationship_id)
+                if rel_target:
+                    diagram_path = f'word/{rel_target}'
+                    diagram_xml = self._get_xml_document(diagram_path)
+                    if diagram_xml is not None:
+                        drawing.diagram = parse_diagram(diagram_xml)          
+                        
+    def _resolve_charts(self, doc: DOCXDocument):
+        """Resolve chart relationship IDs, parse chart XML, and attach ChartContent."""
+        # Collect all drawings from paragraphs, headers, footers
+        def _iter_drawings(content_list):
+            for item in content_list:
+                if isinstance(item, (DOCXParagraph,)):
+                    for run_item in item.content.items:
+                        if isinstance(run_item, DOCXDrawing):
+                            yield run_item
+                elif isinstance(item, DOCXTable):
+                    for row in item.rows:
+                        for cell in row.cells:
+                            for cell_item in cell.content:
+                                if isinstance(cell_item, DOCXParagraph):
+                                    for run_item in cell_item.content.items:
+                                        if isinstance(run_item, DOCXDrawing):
+                                            yield run_item
+                                elif isinstance(cell_item, DOCXTable):
+                                    for inner_row in cell_item.rows:
+                                        for inner_cell in inner_row.cells:
+                                            for inner_item in inner_cell.content:
+                                                if isinstance(inner_item, DOCXParagraph):
+                                                    for r_item in inner_item.content.items:
+                                                        if isinstance(r_item, DOCXDrawing):
+                                                            yield r_item
+
+        # Process all drawings in body, headers, footers
+        all_drawings = []
+        all_drawings.extend(_iter_drawings(doc.body))
+        for hf in doc.headers.values():
+            all_drawings.extend(_iter_drawings(hf.content))
+        for hf in doc.footers.values():
+            all_drawings.extend(_iter_drawings(hf.content))
+
+        # Now for each chart drawing, resolve and parse
+        doc_rels = self._relationships.get('document', {})
+        for drawing in all_drawings:
+            if drawing.drawing_type == 'chart' and drawing.relationship_id:
+                rel_target = doc_rels.get(drawing.relationship_id)
+                if rel_target:
+                    # Target is relative to word/, e.g., 'charts/chart1.xml'
+                    chart_path = f'word/{rel_target}'
+                    chart_xml = self._get_xml_document(chart_path)
+                    if chart_xml is not None:
+                        drawing.chart = parse_docx_chart(chart_xml)    
     # ============================================================
     # METADATA EXTRACTION
     # ============================================================
@@ -1241,26 +1336,28 @@ class DOCXExtractor:
         blip_elem = safe_find(inline_elem, './/a:blip', {'a': NS.get('a', '')})
         if blip_elem is not None:
             drawing.relationship_id = blip_elem.get(f'{{{NS.get("r", "")}}}embed', '')
-        
+
         # Get dimensions
         extent_elem = safe_find(inline_elem, './/wp:extent', {'wp': NS.get('wp', '')})
         if extent_elem is not None:
             drawing.width = self._parse_int(extent_elem.get('cx'))
             drawing.height = self._parse_int(extent_elem.get('cy'))
-        
+
         # Get name and description
         docpr_elem = safe_find(inline_elem, './/wp:docPr', {'wp': NS.get('wp', '')})
         if docpr_elem is not None:
             drawing.name = docpr_elem.get('name')
             drawing.description = docpr_elem.get('descr')
-        
-        # Get alternative text
-        alt_text_elem = safe_find(inline_elem, './/a:extLst/a:ext//a16:altText', 
-                                   {'a': NS.get('a', ''), 'a16': NS.get('a16', '')})
+
+        return drawing
+
+        # Alternative text
+        alt_text_elem = safe_find(inline_elem, './/a:extLst/a:ext//a16:altText',
+                                {'a': NS.get('a', ''), 'a16': NS.get('a16', '')})
         if alt_text_elem is not None:
             drawing.alt_text = alt_text_elem.get('altText')
-        
-        # Determine drawing type
+
+        # Determine drawing type and relationship ID
         graphic_elem = safe_find(inline_elem, './/a:graphic', {'a': NS.get('a', '')})
         if graphic_elem is not None:
             graphic_data = safe_find(graphic_elem, './/a:graphicData', {'a': NS.get('a', '')})
@@ -1268,12 +1365,36 @@ class DOCXExtractor:
                 uri = graphic_data.get('uri', '')
                 if 'chart' in uri:
                     drawing.drawing_type = 'chart'
+                    # Find the chart reference ID
+                    chart_el = safe_find(graphic_data, './/c:chart',
+                                        {'c': 'http://schemas.openxmlformats.org/drawingml/2006/chart'})
+                    if chart_el is not None:
+                        drawing.relationship_id = chart_el.get(f'{{{NS.get("r", "")}}}id', '')
                 elif 'diagram' in uri:
                     drawing.drawing_type = 'diagram'
+                    # Find the <dgm:relIds r:id="...">
+                    rel_ids = safe_find(graphic_data, './/dgm:relIds', {'dgm': NS.get('dgm', '')})
+                    if rel_ids is not None:
+                        drawing.relationship_id = rel_ids.get(f'{{{NS["r"]}}}id', '')
+    # Store the relationship id for later diagram resolution
+    # In diagrams, the relationship is inside <dgm:relIds> not in graphic data directly?
+    # Actually the diagram reference is via <c:chart> like pattern, but for diagrams it's a special element.
+    # We'll handle diagram resolution using the relationship from the drawing part.                    
                 elif 'shape' in uri:
                     drawing.drawing_type = 'shape'
-        
-        return drawing
+                    # The shape XML is directly under graphic_data as <wps:wsp>
+                    shape_elem = safe_find(graphic_data, './/wps:wsp', {'wps': NS.get('wps', '')})
+                    if shape_elem is not None:
+                        from .docx_shape_extractor import parse_inline_shape
+                        drawing.shape = parse_inline_shape(shape_elem)
+        # If still no type, check for image blip (standard for pictures)
+        if not drawing.drawing_type or drawing.drawing_type == 'image':
+            blip_elem = safe_find(inline_elem, './/a:blip', {'a': NS.get('a', '')})
+            if blip_elem is not None:
+                drawing.relationship_id = blip_elem.get(f'{{{NS.get("r", "")}}}embed', '')
+                drawing.drawing_type = 'image'
+
+        return drawing    
     
     def _parse_simple_field(self, elem: ET.Element) -> Optional[DOCXField]:
         """Parse a simple field element."""

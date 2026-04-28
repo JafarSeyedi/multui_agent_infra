@@ -1,77 +1,75 @@
 # engines/document/models/standards.py
-"""
-تعاریف استانداردها و مخفف‌های مورد استفاده در سیستم
-"""
 
 from enum import Enum
 from typing import Dict, Any
 
 class DocumentStandard(str, Enum):
-    """استانداردهای سند مورد پشتیبانی"""
-    
-    # داده‌های ساختاریافته
-    DSDM = "dsdm"  # Data Structured Document Model (Structured/hierarchical data)
-    
-    # اسناد متنی/صفحه‌ای
-    USDM = "usdm"  # Unified/Universal Structured Document Model (HyperText/page-based docs)
-    
-    # داده‌های جدولی
-    ESDM = "esdm"  # Excel/Spreadsheet Document Model
-    
-    # مدل‌های CAD/هندسی
+    """Supported document standards."""
+
+    DSDM = "dsdm"  # Data Structured Document Model
+    USDM = "usdm"  # Unified Structured Document Model
+    ESDM = "esdm"  # Excel/Spreadsheet Structured Document Model
+    PSDM = "psdm"  # Presentation Structured Document Model
     CSDM = "csdm"  # CAD/Geometric Structured Document Model
-
+    MSDM = "msdm"  # Metadata (of data) Structured Definition Model
+    SSDM = "ssdm"  # Service Structured Definition Model
     GENERIC = "generic"
-
     UNKNOWN = "unknown"
-    
+
     @property
     def full_name(self) -> str:
-        """نام کامل استاندارد"""
         names = {
             "dsdm": "Data Structured Document Model",
-            "usdm": "Unified Structured Document Model", 
-            "esdm": "Excel/Spreadsheet Document Model",
+            "usdm": "Unified Structured Document Model",
+            "esdm": "Excel/Spreadsheet Structured Document Model",
+            "psdm": "Presentation Structured Document Model",
             "csdm": "CAD/Geometric Structured Document Model",
+            "msdm": "Metadata Structured Definition Model",
+            "ssdm": "Service Structured Definition Model",
             "generic": "Generic Text/Binary",
             "unknown": "Unknown",
         }
         return names.get(self.value, self.value)
-    
+
     @property
     def description(self) -> str:
-        """توضیحات استاندارد"""
         descriptions = {
-            "dsdm": "مدل سند ساختاریافته داده‌ای برای فرمت‌های JSON، XML، YAML و...",
-            "usdm": "مدل سند ساختاریافته یکپارچه برای اسناد متنی و صفحه‌ای",
-            "esdm": "مدل سند ساختاریافته برای داده‌های جدولی و صفحه‌گسترده",
-            "csdm": "مدل سند ساختاریافته برای مدل‌های CAD و داده‌های هندسی",
-            "generic": "بدون رعایت یا کنترل ساختار خاص",
-            "unknown": "نامشخص",
+            "dsdm": "Structured data document model for JSON, XML, YAML, etc.",
+            "usdm": "Unified structured document model for textual/page-based documents",
+            "esdm": "Structured document model for tabular data and spreadsheets",
+            "psdm": "Structured document model for presentations",
+            "csdm": "Structured document model for CAD models and geometric data",
+            "msdm": "Structured document model for data structure definitions (schemas, DDL, ERD, etc.)",
+            "ssdm": "Structured document model for service/API definitions (OpenAPI, WSDL, etc.)",
+            "generic": "No specific structure enforced",
+            "unknown": "Unknown",
         }
         return descriptions.get(self.value, "")
 
 class MediaCategory(str, Enum):
-    """دسته‌بندی‌های اصلی رسانه‌ها"""
-    
-    STRUCTURED_DATA = "structured_data"      # داده ساختاریافته
-    DOCUMENT = "document"                    # اسناد متنی
-    SPREADSHEET = "spreadsheet"              # صفحات گسترده
-    CAD_GEOMETRIC = "cad_geometric"          # CAD و هندسی
-    IMAGE = "image"                          # تصاویر
-    AUDIO = "audio"                          # صوت
-    VIDEO = "video"                          # ویدئو
-    ARCHIVE = "archive"                      # آرشیو
-    EXECUTABLE = "executable"                # اجرایی
-    DATABASE = "database"                    # پایگاه داده
-    OTHER = "other"                          # سایر
+    STRUCTURED_DATA = "structured_data"
+    DOCUMENT = "document"
+    SPREADSHEET = "spreadsheet"
+    PRESENTATION = "presentation"
+    CAD_GEOMETRIC = "cad_geometric"
+    SCHEMA_DEFINITION = "schema_definition"
+    SERVICE_DEFINITION = "service_definition"
+    IMAGE = "image"
+    AUDIO = "audio"
+    VIDEO = "video"
+    ARCHIVE = "archive"
+    EXECUTABLE = "executable"
+    DATABASE = "database"
+    OTHER = "other"
 
-# نگاشت استانداردها به دسته‌بندی‌ها
 STANDARD_TO_CATEGORY: Dict[DocumentStandard, MediaCategory] = {
     DocumentStandard.DSDM: MediaCategory.STRUCTURED_DATA,
     DocumentStandard.USDM: MediaCategory.DOCUMENT,
     DocumentStandard.ESDM: MediaCategory.SPREADSHEET,
-    DocumentStandard.CSDM: MediaCategory.CAD_GEOMETRIC
+    DocumentStandard.PSDM: MediaCategory.PRESENTATION,
+    DocumentStandard.CSDM: MediaCategory.CAD_GEOMETRIC,
+    DocumentStandard.MSDM: MediaCategory.SCHEMA_DEFINITION,
+    DocumentStandard.SSDM: MediaCategory.SERVICE_DEFINITION,
 }
 
 # تعاریف مخفف‌ها برای مستندات
@@ -79,8 +77,11 @@ ABBREVIATIONS: Dict[str, str] = {
     # استانداردها
     "DSDM": "Data Structured Document Model",
     "USDM": "Unified Structured Document Model",
-    "ESDM": "Excel/Spreadsheet Document Model", 
+    "ESDM": "Excel/Spreadsheet Document Model",
+    "PSDM": "Presentation Document Model",
     "CSDM": "CAD/Geometric Structured Document Model",
+    "MSDM": "Metadata Standard Definition Model",
+    "SSDM": "Service Standard Definition Model",
     
     # کامپوننت‌ها
     "MIME": "Multipurpose Internet Mail Extensions",
@@ -116,7 +117,20 @@ def get_common_formats(standard: DocumentStandard) -> list[str]:
     formats = {
         DocumentStandard.DSDM: ["json", "xml", "yaml", "toml", "csv", "tsv"],
         DocumentStandard.USDM: ["pdf", "docx", "html", "md", "txt", "rtf"],
-        DocumentStandard.ESDM: ["xlsx", "xls", "csv", "ods", "parquet"],
+        DocumentStandard.ESDM: ["xlsx", "xls", "csv", "tsv", "prn", "ods", "parquet", "feather", "arrow", "txt"],
         DocumentStandard.CSDM: ["dxf", "dwg", "ifc", "stl", "step"]
+        DocumentStandard.PSDM: ["pptx", "ppt", "odp"],
+        DocumentStandard.CSDM: ["dxf", "dwg", "ifc", "stl", "step"],
+        DocumentStandard.MSDM: [
+            "xsd", "json_schema", "sql_ddl", "cql", "mongodb_schema",
+            "influxdb_schema", "elasticsearch_mapping", "neo4j_schema",
+            "proto", "avro_schema", "thrift_idl", "graphql_schema",
+            "owl", "cue", "plantuml",
+            "python_model", "typescript_interface"
+        ],
+        DocumentStandard.SSDM: ["openapi", "swagger", "wsdl", "yang", "mib", "asyncapi", "raml", "apib"],
+
     }
     return formats.get(standard, [])
+
+

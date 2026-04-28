@@ -594,11 +594,21 @@ class AudioContent:
 
 @dataclass
 class ShapeContent:
-    """Content for shapes."""
-    shape_type: str  # e.g., "rectangle", "circle", "line", "textbox"
-    data: Dict[str, Any] = field(default_factory=dict)
-    text: Optional[RichTextContent] = None
-
+    """Shape for drawing (rectangle, line, ellipse, textbox, etc.)"""
+    shape_type: str                              # "rectangle", "line", "ellipse", "circle", "textbox"
+    x: int = 0                                   # position in EMU (left)
+    y: int = 0                                   # position in EMU (top)
+    width: int = 100                             # width in EMU (1/12700 cm)
+    height: int = 100                            # height in EMU
+    name: Optional[str] = None                   # shape name
+    text: Optional[RichTextContent] = None       # text content (for textbox)
+    fill_color: Optional[str] = None             # hex color (e.g., "#FF0000")
+    line_color: Optional[str] = None             # stroke color
+    line_width: int = 12700                      # stroke width in EMU (1 pt = 12700 EMU)
+    rotation: int = 0                            # rotation in degrees
+    hidden: bool = False
+    _meta: Dict[str, Any] = field(default_factory=dict, repr=False, init=False)
+    # data: Dict[str, Any] = field(default_factory=dict)
 
 @dataclass
 class DrawingContent:
@@ -609,14 +619,37 @@ class DrawingContent:
 
 
 @dataclass
-class ChartContent:
-    """Content for charts."""
-    chart_type: str  # "bar", "line", "pie", etc.
-    data: Dict[str, Any] = field(default_factory=dict)
+class ChartSeriesContent:
+    """A data series within a chart – mapped from chart XML."""
+    name: Optional[str] = None               # series name (e.g., "Sales")
+    categories_ref: Optional[str] = None     # formula like "Sheet1!$A$2:$A$10"
+    values_ref: Optional[str] = None         # formula like "Sheet1!$B$2:$B$10"
+    fill_color: Optional[str] = None         # hex color of the series fill
+    line_color: Optional[str] = None         # hex color of the series line
+
+@dataclass
+class ChartAxisContent:
+    """Axis descriptor."""
+    axis_type: str = "category"              # "category", "value", "date"
     title: Optional[str] = None
+    min_value: Optional[float] = None
+    max_value: Optional[float] = None
+    format_code: Optional[str] = None
+    axis_id: int = 0
+
+
+@dataclass
+class ChartContent:
+    """Complete chart description – extended with semantic fields."""
+    chart_type: str = "unknown"              # "bar", "line", "pie", etc.
+    grouping: Optional[str] = None           # "clustered", "stacked", etc.
+    direction: Optional[str] = None          # "bar" or "col" for bar charts
+    title: Optional[str] = None
+    series: List[ChartSeriesContent] = field(default_factory=list)
+    category_axis: Optional[ChartAxisContent] = None
+    value_axis: Optional[ChartAxisContent] = None
     width: Optional[float] = None
     height: Optional[float] = None
-
 
 @dataclass
 class DataContent:

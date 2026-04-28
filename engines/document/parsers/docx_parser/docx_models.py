@@ -8,7 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import List, Optional, Dict, Any, Literal, Union
 from enum import Enum
-
+from ...models.usdm_models import ChartContent, ShapeContent, ChartContent 
 
 # ============================================================
 # ENUMS
@@ -162,6 +162,15 @@ class DOCXTextRun:
     revision_date: Optional[str] = None
     revision_id: Optional[int] = None
 
+@dataclass
+class DOCXDiagram:
+    """Intermediate model for a Diagram (SmartArt)."""
+    name: Optional[str] = None
+    description: Optional[str] = None
+    # Flat list of all text runs found in the diagram
+    texts: List[str] = field(default_factory=list)
+    # Hierarchical structure could be added later (list of nodes)
+    # For now, a list of text lines is sufficient.
 
 @dataclass
 class DOCXDrawing:
@@ -169,7 +178,7 @@ class DOCXDrawing:
     relationship_id: str
     name: Optional[str] = None
     description: Optional[str] = None
-    
+        
     # Positioning
     width: Optional[float] = None  # in EMUs
     height: Optional[float] = None
@@ -179,9 +188,12 @@ class DOCXDrawing:
     
     # For charts and diagrams
     drawing_type: Literal["image", "chart", "diagram", "shape"] = "image"
-    chart_data: Optional[Dict[str, Any]] = None
-
-
+    # For charts – fully parsed, typed chart model
+    chart: Optional[ChartContent] = None   
+    shape: Optional[ShapeContent] = None
+    diagram: Optional[DOCXDiagram] = None
+    
+    
 @dataclass
 class DOCXField:
     """A Word field (e.g., PAGE, DATE, HYPERLINK)."""
