@@ -7,8 +7,6 @@ pyautogen
 llama-index
 langchain
 
-# LLM Providers
-openai
 
 # Vector Databases (Choose at least one)
 chromadb
@@ -43,7 +41,6 @@ psycopg2-binary>=2.9
 # optional typing helpers
 greenlet>=3.0
 
-aiosqlite
 
 torch
 
@@ -74,3 +71,19 @@ python-bidi>=0.4.2
 # Utilities
 python-magic>=0.4.27
 
+pydantic>=2.0
+openai>=1.0
+http>=0.26
+olefile>=0.47
+aiosqlite>=0.19
+
+# Optional: type stubs for static analysis
+types-requests>=2.31.0.20240106
+types-Pillow>=10.2.0.20240106
+
+
+types-pydantic
+types-openai
+types-httpx
+types-olefile
+types-aiosqlite
