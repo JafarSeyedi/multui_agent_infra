@@ -11,17 +11,17 @@
 # from typing import Any, Dict, List, Optional, Sequence, Type
 
 # # ایمپورت‌های مدل پایه و ساختار سیستم
-# from engines.document.models.base import BaseDocument
+# from ..models.base import BaseDocument
 # from .models import ParseOptions
 # from .base import BaseDocumentParser
 
 # # ایمپورت‌های هسته CSDM که در مراحل قبل ساختیم
-# from engines.document.models.base.csdm_core import (
+# from ..models.base.csdm_core import (
 #     CSDMDocument, CSDMHandle, Vector3, Matrix4, 
 #     ENTITY_REGISTRY, Header, Metadata
 # )
-# from engines.document.models.base.csdm_tables import CSDMTableCollection
-# from engines.document.models.base.csdm_entities import *
+# from ..models.base.csdm_tables import CSDMTableCollection
+# from ..models.base.csdm_entities import *
 
 
 # class CSDMDocumentParser(BaseDocumentParser):

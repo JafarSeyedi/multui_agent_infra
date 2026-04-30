@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional
 from engines.storage.event_log.base import LogStorage
 from engines.storage.vector.base import VectorDBAdapter
 
-from engines.agents.base_agents.base_agent import BaseAgent
+from ..base_agents.base_agent import BaseAgent
 from .models.content_agents_1_8 import RewriteChange, TextRewriteInput, TextRewriteOutput
 
 

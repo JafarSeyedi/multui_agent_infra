@@ -22,7 +22,7 @@
 
 # from .base_context import WriterContext
 # from engines.document import csdm_entities as E
-# from engines.document.models.base.csdm_core import CSDMObject
+# from ...models.base.csdm_core import CSDMObject
 
 
 # class ACISWriter:

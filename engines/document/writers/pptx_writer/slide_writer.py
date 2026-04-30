@@ -7,8 +7,8 @@ from __future__ import annotations
 from typing import Optional
 from xml.etree.ElementTree import Element, SubElement
 
-from engines.document.models.psdm_models import Slide, MediaReference
-from engines.document.models.usdm_models import (
+from ...models.psdm_models import Slide, MediaReference
+from ...models.usdm_models import (
     ShapeContent, ImageContent, ChartContent, TableContent,
     OLEObjectContent, DrawingContent,
     LogicalElement, ElementType,

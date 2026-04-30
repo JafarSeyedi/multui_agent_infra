@@ -1,8 +1,8 @@
 from typing import Any, Dict, List, Optional
 
 from .base_strategy import InteractionStrategy
-from engines.agents.models import AgentOutput
-from engines.interaction.interaction_models import (
+from ..agents.models import AgentOutput
+from .interaction_models import (
     InteractionRequest,
     InteractionResult,
 )

@@ -6,7 +6,7 @@ The actual binary data must be provided by the caller (e.g., from the original Z
 
 from __future__ import annotations
 from typing import Dict, List, Optional
-from engines.document.models.psdm_models import Slide, MediaReference
+from ...models.psdm_models import Slide, MediaReference
 
 
 def build_slide_media_rels(slide: Slide) -> Dict[str, str]:

@@ -8,7 +8,7 @@ from typing import Optional, Dict, Any, List
 
 from pydantic import BaseModel, Field
 
-from engines.document.ingestion.ingestion_models import (
+from .ingestion_models import (
     DocumentAsset,
     DocumentRecord,
     ParsedDocument,
@@ -16,16 +16,16 @@ from engines.document.ingestion.ingestion_models import (
     EmbeddingRecord,
     IngestionEvent,
 )
-from engines.document.models.base import BaseDocument
-from engines.document.models.media_types import MediaType
+from ..models.base import BaseDocument
+from ..models.media_types import MediaType
 
 from engines.storage.object.base import ObjectStorage
-from engines.document.models.document_registry import DocumentRegistry
-from engines.document.chunking.base import ChunkingConfig, BaseChunker
-from engines.document.storage.document_store import DocumentStore
-from engines.document.storage.chunk_store import ChunkStore
-from engines.document.storage.metadata_store import MetadataStore
-from engines.document.embedding.service import DocumentEmbeddingService
+from ..models.document_registry import DocumentRegistry
+from ..chunking.base import ChunkingConfig, BaseChunker
+from ..storage.document_store import DocumentStore
+from ..storage.chunk_store import ChunkStore
+from ..storage.metadata_store import MetadataStore
+from ..embedding.service import DocumentEmbeddingService
 
 
 class IngestionContext(BaseModel):

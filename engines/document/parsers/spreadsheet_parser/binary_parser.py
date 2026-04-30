@@ -14,9 +14,9 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pyarrow.feather as pf
 
-from engines.document.parsers.spreadsheet_parser.base_spreadsheet_parser import BaseSpreadsheetParser
-from engines.document.parsers.base import ParseOptions
-from engines.document.models.esdm_models import Workbook, Worksheet, Row, Cell
+from ..spreadsheet_parser.base_spreadsheet_parser import BaseSpreadsheetParser
+from ..base import ParseOptions
+from ...models.esdm_models import Workbook, Worksheet, Row, Cell
 
 
 class ColumnarBinaryParser(BaseSpreadsheetParser):

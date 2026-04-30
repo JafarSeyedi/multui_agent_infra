@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
-from engines.document.models.media_types import MediaType
+from ..models.media_types import MediaType
 from pydantic import BaseModel, Field
 from enum import Enum
 from dataclasses import dataclass, field
 from datetime import datetime
-from engines.document.models.base import BaseDocument
+from ..models.base import BaseDocument
 
 
 

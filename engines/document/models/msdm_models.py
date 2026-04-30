@@ -72,9 +72,9 @@ Annotations are reserved for human‑oriented text without semantic weight.
 from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Optional, Dict, Any
-from engines.document.models.base import BaseDocument
-from engines.document.models.media_types import DocumentStandard
+from typing import List, Optional, Dict, Any, Literal, Union
+from .base import BaseDocument
+from .media_types import DocumentStandard
 
 # ============================================================
 # Enums
@@ -282,8 +282,9 @@ class Attribute:
 
     # OWL restrictions (e.g., someValuesFrom, allValuesFrom) – stored as a small typed map
     owl_restrictions: Dict[str, str] = field(default_factory=dict)
-
-
+    extensions: Dict[str, Any] = field(default_factory=dict)
+    deprecated: bool = False
+    xml: Optional[Dict[str, Any]] = None    # OpenAPI's xml object
 # ============================================================
 # Entity – table, collection, node, measurement, etc.
 # ============================================================
@@ -307,7 +308,20 @@ class Entity:
 
     # Avro namespace (optional)
     namespace: Optional[str] = None
-
+    composition: Optional[CompositionEntity] = None
+    discriminator: Optional[Attribute] = None
+    discriminator_mapping: Dict[str, Entity] = field(default_factory=dict)
+    extensions: Dict[str, Any] = field(default_factory=dict)
+    
+@dataclass
+class CompositionEntity:
+    """
+    Represents a schema composition keyword (allOf, oneOf, anyOf).
+    The actual type definitions are referenced via entity names or inline entities.
+    """
+    composition_type: Literal["allOf", "oneOf", "anyOf"]
+    members: List[Entity] = field(default_factory=list)
+    description: Optional[str] = None
 
 # ============================================================
 # Relationship – explicit ERD/UML association
@@ -315,9 +329,9 @@ class Entity:
 
 @dataclass
 class Relationship:
-    name: Optional[str] = None
     from_entity: str
     to_entity: str
+    name: Optional[str] = None
     cardinality_from: Cardinality = Cardinality.ONE
     cardinality_to: Cardinality = Cardinality.MANY
     foreign_key_attributes: List[str] = field(default_factory=list)   # attributes in from_entity

@@ -9,7 +9,7 @@ from typing import List, Optional, Dict, Tuple
 from xml.etree.ElementTree import Element
 from zipfile import ZipFile
 
-from engines.document.models.psdm_models import MediaReference
+from ...models.psdm_models import MediaReference
 from .constants import NAMESPACES
 from .relationship_utils import get_target_for_id, resolve_path
 

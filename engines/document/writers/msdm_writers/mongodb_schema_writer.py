@@ -11,8 +11,8 @@ import json
 from typing import Optional, Dict, Any, List
 
 from .base_msdm_writer import BaseMSDMWriter, WriteTarget, SoftDeleteStrategy
-from engines.document.writers.base import WriteOptions
-from engines.document.models.msdm_models import (
+from ..base import WriteOptions
+from ...models.msdm_models import (
     MSDMDocument,
     Entity,
     Attribute,
@@ -23,6 +23,11 @@ from engines.document.models.msdm_models import (
     EntityKind,
     ScalarType,
 )
+try:
+    from pymongo import MongoClient
+    MONGO_AVAILABLE = True
+except ImportError:
+    MONGO_AVAILABLE = False
 
 # ── ScalarType → BSON type ────────────────────────────────────────
 _SCALAR_TO_BSON: Dict[ScalarType, str] = {
@@ -306,3 +311,44 @@ class MongoDBSchemaWriter(BaseMSDMWriter):
         if (raw.startswith('"') and raw.endswith('"')) or (raw.startswith("'") and raw.endswith("'")):
             return raw[1:-1]
         return raw
+    
+    
+    async def apply_to_database(self, document: MSDMDocument, connection: ConnectionConfig = None):
+        if not MONGO_AVAILABLE:
+            raise ImportError("pymongo is required. pip install pymongo")
+        if connection is None:
+            raise ValueError("ConnectionConfig required")
+
+        url = connection.url or f"mongodb://{connection.host or 'localhost'}:{connection.port or 27017}/"
+        client = MongoClient(url)
+        try:
+            db = client[connection.database or "default"]
+            for entity in document.entities:
+                if entity.kind != EntityKind.DOCUMENT:
+                    continue
+                collection_name = entity.name
+                # If collection does not exist, create with validator
+                if collection_name not in db.list_collection_names():
+                    validator_schema = self._build_validator_schema(entity)
+                    db.create_collection(collection_name, validator=validator_schema)
+                else:
+                    # Update validator? MongoDB allows collMod to update validation.
+                    validator_schema = self._build_validator_schema(entity)
+                    db.command("collMod", collection_name, validator=validator_schema)
+            # Remove collections not in model
+            model_collections = {e.name for e in document.entities if e.kind == EntityKind.DOCUMENT}
+            existing = set(db.list_collection_names())
+            for coll in existing - model_collections:
+                self._handle_collection_deletion(db, coll)
+        finally:
+            client.close()
+
+    def _handle_collection_deletion(self, db, coll_name: str):
+        if self.soft_delete_strategy == SoftDeleteStrategy.NONE:
+            db.drop_collection(coll_name)
+        elif self.soft_delete_strategy == SoftDeleteStrategy.PREFIX:
+            new_name = f"_deleted_{coll_name}"
+            db.get_collection(coll_name).rename(new_name)
+        elif self.soft_delete_strategy == SoftDeleteStrategy.SUFFIX:
+            new_name = f"{coll_name}_deleted"
+            db.get_collection(coll_name).rename(new_name)    

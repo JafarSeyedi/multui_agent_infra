@@ -12,9 +12,9 @@ from pathlib import Path
 from typing import Dict, List, Optional, Any, Tuple
 from xml.etree import ElementTree as ET
 
-from ...base import BaseDocumentParser, ParseOptions
-from ....models.base import BaseDocument
-from ....models.psdm_models import (
+from ..base import BaseDocumentParser, ParseOptions
+from ...models.base import BaseDocument
+from ...models.psdm_models import (
     PSDMDocument,
     Slide,
     SlideLayout,
@@ -24,8 +24,8 @@ from ....models.psdm_models import (
     NotesSlide,
     Section,
 )
-from ....media_types import DocumentStandard  # assuming PSDM added
-from ....usdm_models import (
+from ...models.media_types import DocumentStandard  # assuming PSDM added
+from ...models.usdm_models import (
     LogicalElement, ElementType, ImageContent, ChartContent,
 )
 
@@ -72,7 +72,7 @@ class PPTXParser(BaseDocumentParser):
         doc.metadata = metadata or {}
         doc.title = source_name or document_id
         # media_type detection
-        from engines.document.models.media_detection import detect_media_type
+        from ...models.media_detection import detect_media_type
         doc.media_type = detect_media_type(path=source_name, data=data)
         doc.file_extension = Path(source_name).suffix if source_name else ".pptx"
         return doc

@@ -13,7 +13,7 @@ from .utils import (
     xml_find, xml_findall, xml_attr, xml_text, xml_bool, xml_int, xml_float,
     color_hex_from_xml, parse_range, col_letter_to_index,
 )
-from engines.document.models.esdm_models import (
+from ....models.esdm_models import (
     Table, TableColumn, TableStyleInfo,
     AutoFilter, FilterColumn, Filters, CustomFilter, DynamicFilterType, FilterOperator,
     ConditionalFormatting, CFRule, CFType, CFOperator, CFValueObject,

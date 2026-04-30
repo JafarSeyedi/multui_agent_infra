@@ -9,9 +9,9 @@ from typing import Optional, Dict, Any, AsyncIterator, List, Tuple, Union
 from dataclasses import asdict
 import logging
 
-from engines.document.parsers.base import BaseDocumentParser, ParseOptions
-from engines.document.models.base import BaseDocument, ElementType
-from engines.document.models.media_types import MEDIA_TYPES, MediaType
+from .base import BaseDocumentParser, ParseOptions
+from ..models.base import BaseDocument, ElementType
+from ..models.media_types import MEDIA_TYPES, MediaType
 from ..models.usdm_models import (
     USDMDocument,
     DocumentElement,
@@ -36,7 +36,7 @@ from ..models.usdm_models import (
     CharacterStyle,
     ParagraphStyle
 )
-from engines.document.models.exceptions import DocumentParseError
+from ..models.exceptions import DocumentParseError
 
 logger = logging.getLogger(__name__)
 

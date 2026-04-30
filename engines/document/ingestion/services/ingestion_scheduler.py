@@ -6,10 +6,10 @@ from typing import Iterable, Dict, Any
 import asyncio
 from pathlib import Path
 
-from engines.document.ingestion.services.upload_service import UploadService
-from engines.document.ingestion.ingestion_context import IngestionContext
-from engines.document.models.media_types import MediaType
-from engines.document.models.media_detection import detect_media_type
+from .upload_service import UploadService
+from ..ingestion_context import IngestionContext
+from ...models.media_types import MediaType
+from ...models.media_detection import detect_media_type
 
 
 class IngestionScheduler:

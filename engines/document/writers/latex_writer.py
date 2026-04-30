@@ -7,8 +7,8 @@ from pathlib import Path
 from typing import Optional, Dict, Any, AsyncIterator, List, Union
 import re
 
-from engines.document.writers.base import BaseDocumentWriter, WriteOptions
-from engines.document.models.base import BaseDocument
+from .base import BaseDocumentWriter, WriteOptions
+from ..models.base import BaseDocument
 from ..models.usdm_models import (
     USDMDocument,
     DocumentElement,
@@ -30,7 +30,7 @@ from ..models.usdm_models import (
     MathContent,
     ElementType
 )
-from engines.document.models.exceptions import DocumentWriteError
+from ..models.exceptions import DocumentWriteError
 
 
 class LatexWriter(BaseDocumentWriter):

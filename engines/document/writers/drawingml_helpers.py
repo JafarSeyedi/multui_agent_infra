@@ -218,7 +218,7 @@ def _group_spans_by_newlines(spans):
 
 def copy_span(original, text=None):
     """Create a shallow copy of a RichTextSpan with optional text override."""
-    from engines.document.models.usdm_models import RichTextSpan
+    from ..models.usdm_models import RichTextSpan
     return RichTextSpan(
         text=text if text is not None else original.text,
         character_style=original.character_style,

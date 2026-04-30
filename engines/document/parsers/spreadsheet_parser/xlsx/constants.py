@@ -12,7 +12,7 @@ from openpyxl.styles import (
 )
 from openpyxl.styles.borders import BORDER_STYLES as OPX_BORDER_STYLES
 
-from engines.document.models.esdm_models import (
+from ....models.esdm_models import (
     FontUnderline,
     PatternType,
     BorderStyle,

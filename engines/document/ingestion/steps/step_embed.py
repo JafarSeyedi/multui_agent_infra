@@ -3,9 +3,9 @@
 from __future__ import annotations
 from datetime import datetime
 from typing import List
-from engines.document.ingestion.ingestion_models import EmbeddingRecord
-from engines.document.ingestion.ingestion_context import IngestionContext
-from engines.document.ingestion.ingestion_errors import EmbeddingFailed
+from ..ingestion_models import EmbeddingRecord
+from ..ingestion_context import IngestionContext
+from ..ingestion_errors import EmbeddingFailed
 
 
 async def step_embed(ctx: IngestionContext) -> IngestionContext:

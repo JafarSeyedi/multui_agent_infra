@@ -8,10 +8,10 @@ from __future__ import annotations
 from typing import Optional, Dict, List, Any, Tuple
 from xml.etree.ElementTree import Element
 
-from engines.document.models.psdm_models import (
+from ...models.psdm_models import (
     Slide, SlideLayout, SlideMaster, NotesSlide,
 )
-from engines.document.models.usdm_models import (
+from ...models.usdm_models import (
     LogicalElement, ElementType,
     ShapeContent, ImageContent, ChartContent, TableContent,
 )
@@ -21,10 +21,10 @@ from .media_parser import parse_media_references
 
 from .animation_parser import parse_slide_transition, parse_slide_animations
 from .constants import NAMESPACES, REL_TYPE
-from engines.document.parsers.drawingml.image_parser import (
+from ..drawingml.image_parser import (
     parse_image_from_pic, resolve_image,
 )
-from engines.document.parsers.drawingml.chart_ref_parser import parse_chart_ref
+from ..drawingml.chart_ref_parser import parse_chart_ref
 from ..drawingml.diagram_parser import parse_diagram_ref
 from .utils import element_to_dict
 
@@ -68,7 +68,7 @@ def build_slide(
                 # Solid
                 solid = bg_pr.find("a:solidFill", NS)
                 if solid is not None:
-                    from engines.document.parsers.drawingml.shape_parser import _parse_color
+                    from ..drawingml.shape_parser import _parse_color
                     background_color = _parse_color(solid, NS)
                 # Image (blipFill)
                 blip_fill = bg_pr.find("a:blipFill", NS)

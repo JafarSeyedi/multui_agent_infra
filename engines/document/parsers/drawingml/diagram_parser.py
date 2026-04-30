@@ -10,7 +10,7 @@ from xml.etree.ElementTree import Element
 from zipfile import ZipFile
 import json
 
-from engines.document.models.usdm_models import DrawingContent
+from ...models.usdm_models import DrawingContent
 
 # Shared namespaces
 NS = {

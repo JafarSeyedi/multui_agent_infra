@@ -253,7 +253,122 @@ def _detect_fixed_width(text: str) -> bool:
     lengths = {len(line) for line in lines}
     return len(lengths) == 1 and lengths.pop() > 0
 
+def _is_mcp(text: str) -> bool:
+    try:
+        data = json.loads(text)
+        if isinstance(data, dict) and ("tools" in data or "resources" in data or "prompts" in data):
+            return True
+    except Exception:
+        pass
+    return False
+# engines/document/models/media_detection.py
+def _is_tsdm_json(text: str) -> bool:
+    """JSON with a top-level 'tools' array containing objects with 'kind'."""
+    try:
+        data = json.loads(text)
+        if isinstance(data, dict) and "tools" in data:
+            tools = data["tools"]
+            if isinstance(tools, list) and all(isinstance(t, dict) and "kind" in t for t in tools):
+                return True
+    except Exception:
+        pass
+    return False
 
+def _is_bpmn(text: str) -> bool:
+    """Check for BPMN 2.0 XML: root element with namespace containing 'bpmn'."""
+    try:
+        root = ET.fromstring(text)
+        ns = root.tag.split("}")[0][1:] if root.tag.startswith("{") else ""
+        return "bpmn" in ns or root.tag.endswith("definitions")
+    except Exception:
+        return False
+
+def _is_cmmn(text: str) -> bool:
+    """Check for CMMN XML."""
+    try:
+        root = ET.fromstring(text)
+        ns = root.tag.split("}")[0][1:] if root.tag.startswith("{") else ""
+        return "cmmn" in ns or root.tag.endswith("definitions")
+    except Exception:
+        return False
+
+def _is_dmn(text: str) -> bool:
+    """Check for DMN XML."""
+    try:
+        root = ET.fromstring(text)
+        ns = root.tag.split("}")[0][1:] if root.tag.startswith("{") else ""
+        return "dmn" in ns or root.tag.endswith("definitions")
+    except Exception:
+        return False
+
+def _is_pnml(text: str) -> bool:
+    """Check for PNML: root tag 'pnml'."""
+    try:
+        root = ET.fromstring(text)
+        return root.tag.endswith("}pnml") or root.tag == "pnml"
+    except Exception:
+        return False
+
+def _is_graphml(text: str) -> bool:
+    """Check for GraphML: root tag 'graphml'."""
+    try:
+        root = ET.fromstring(text)
+        return root.tag.endswith("}graphml") or root.tag == "graphml"
+    except Exception:
+        return False
+
+def _is_cncf_serverless_workflow(text: str) -> bool:
+    """Check for CNCF Serverless Workflow JSON/YAML."""
+    if _is_json(text):
+        data = json.loads(text)
+        return isinstance(data, dict) and ("id" in data and "states" in data)
+    if _is_yaml(text):
+        return bool(re.search(r'^\s*(?:id|states)\s*:', text, re.MULTILINE))
+    return False
+def _is_cep_json(text: str) -> bool:
+    try:
+        data = json.loads(text)
+        return isinstance(data, dict) and ('streams' in data or 'rules' in data)
+    except: return False
+def _is_uml_state_machine(text: str) -> bool:
+    try:
+        root = ET.fromstring(text)
+        ns = root.tag.split("}")[0][1:] if root.tag.startswith("{") else ""
+        return 'uml' in ns and 'StateMachine' in text  # heuristic
+    except: return False
+
+def _is_scxml(text: str) -> bool:
+    try:
+        root = ET.fromstring(text)
+        return root.tag.endswith('scxml') or root.tag == 'scxml'
+    except: return False
+
+def _is_epc(text: str) -> bool:
+    return '<epc' in text or 'epml' in text  # needs precise detection
+
+def _is_aws_step_functions(text: str) -> bool:
+    data = json.loads(text)
+    return 'StartAt' in data and 'States' in data
+
+def _is_azure_logic_apps(text: str) -> bool:
+    data = json.loads(text)
+    return 'definition' in data and 'triggers' in data
+
+def _is_airflow_dag(text: str) -> bool:
+    return 'from airflow' in text or 'DAG(' in text
+
+def _is_prefect_dag(text: str) -> bool:
+    return 'from prefect' in text or '@task' in text
+
+def _is_yawl(text: str) -> bool:
+    return '<specification' in text and 'xmlns' in text and 'yawl' in text.lower()
+
+def _is_xpd(text: str) -> bool:
+    try:
+        root = ET.fromstring(text)
+        ns = root.tag.split("}")[0][1:] if root.tag.startswith("{") else ""
+        return 'xpdl' in ns or root.tag.endswith('Package')
+    except: return False
 # ------------------------------------------------------
 # MAIN CONTENT DETECTOR (strictly ordered)
 # ------------------------------------------------------
@@ -299,18 +414,55 @@ def detect_by_content(data: bytes) -> Optional[MediaType]:
         # OpenAPI JSON
         if _is_openapi(text):
             return MEDIA_TYPES["openapi_json"]
+        if _is_mcp(text):
+            return MEDIA_TYPES["mcp"]
+        if _is_tsdm_json(text):
+            return MEDIA_TYPES["tsdm_json"]
+        if _is_cep_json(text):
+            return MEDIA_TYPES["cep_json"]
+        if _is_aws_step_functions(text):
+            return MEDIA_TYPES["aws_step_functions_json"]
+        if _is_azure_logic_apps(text):
+            return MEDIA_TYPES["azure_logic_apps_json"]        
         # All other JSON
         return MEDIA_TYPES["json"]
 
     # 5. XML-based specific formats (must precede generic XML)
     if _is_xml(text):
+        if _is_bpmn(text):
+            return MEDIA_TYPES["bpmn_xml"]
+        if _is_cmmn(text):
+            return MEDIA_TYPES["cmmn_xml"]
+        if _is_dmn(text):
+            return MEDIA_TYPES["dmn_xml"]
+        if _is_pnml(text):
+            return MEDIA_TYPES["pnml_xml"]
+        if _is_graphml(text):
+            return MEDIA_TYPES["graphml_xml"]
         if _is_xsd(text):
             return MEDIA_TYPES["xsd"]
         if _is_wsdl(text):
             return MEDIA_TYPES["wsdl"]
         if _is_erd(text):
             return MEDIA_TYPES["erd"]
+        if _is_uml_state_machine(text):
+            return MEDIA_TYPES["uml_state_machine_xml"]
+        if _is_scxml(text):
+            return MEDIA_TYPES["scxml_xml"]
+        if _is_epc(text):
+            return MEDIA_TYPES["epc_xml"]
+        if _is_yawl(text):
+            return MEDIA_TYPES["yawl_xml"]
+        if _is_xpd(text):
+            return MEDIA_TYPES["xpd_xml"]        
         return MEDIA_TYPES["xml"]
+
+    if _is_python_model(text):
+        if _is_airflow_dag(text):
+            return MEDIA_TYPES["airflow_dag_py"]
+        if _is_prefect_dag(text):
+            return MEDIA_TYPES["prefect_dag_py"]
+        return MEDIA_TYPES["python_model"]
 
     # 6. Specific textual DSLs (no JSON/XML dependency)
     if _is_proto(text):
@@ -327,8 +479,6 @@ def detect_by_content(data: bytes) -> Optional[MediaType]:
         return MEDIA_TYPES["influxdb_schema"]
     if _is_plantuml(text):
         return MEDIA_TYPES["plantuml"]
-    if _is_python_model(text):
-        return MEDIA_TYPES["python_model"]
     if _is_typescript_interface(text):
         return MEDIA_TYPES["typescript_interface"]
 
@@ -343,6 +493,12 @@ def detect_by_content(data: bytes) -> Optional[MediaType]:
     if _is_toml(text):
         return MEDIA_TYPES["toml"]
 
+    if _is_cncf_serverless_workflow(text):
+        if _is_json(text):
+            return MEDIA_TYPES["cncf_serverless_workflow_json"]
+        else:
+            return MEDIA_TYPES["cncf_serverless_workflow_yaml"]
+    
     # 9. Delimiter-based (CSV/TSV) – after structured text that may contain commas
     t = _detect_csv_tsv(text)
     if t and t in MEDIA_TYPES:
@@ -386,3 +542,4 @@ def detect_media_type(
 
     # Final fallback
     return MEDIA_TYPES["text_generic"]
+

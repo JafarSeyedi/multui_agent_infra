@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Dict, List, Optional
 
-from engines.document.ingestion.ingestion_models import ChunkRecord
+from ..ingestion.ingestion_models import ChunkRecord
 from engines.rag.rag_models import DocumentChunk
 from engines.storage.key_value.base import KeyValueStorage
 from engines.storage.vector.base import VectorDBAdapter

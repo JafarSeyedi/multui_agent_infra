@@ -4,7 +4,7 @@ from typing import List
 
 from pydantic import BaseModel, Field
 
-from engines.document.ingestion.ingestion_models import ChunkRecord
+from ..ingestion.ingestion_models import ChunkRecord
 
 
 class ChunkingConfig(BaseModel):

@@ -1,7 +1,7 @@
 from typing import List, Optional
 from .common import ConfidenceScore, Recommendation
 from .learning_objects import Lesson, LearningObjective
-from engines.agents.models import AgentInput, AgentOutput
+from ...models import AgentInput, AgentOutput
 
 # -------------------------------------------------
 # Agent 91 — Example Generator

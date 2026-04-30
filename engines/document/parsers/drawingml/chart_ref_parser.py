@@ -10,12 +10,12 @@ from xml.etree.ElementTree import Element
 from typing import Optional, Dict, Callable, Union
 from zipfile import ZipFile
 
-from engines.document.models.usdm_models import ChartContent
+from ...models.usdm_models import ChartContent
 
 # We reuse the comprehensive chart XML parser from the XLSX module.
 # If the spreadsheet parser is not available, a fallback can be implemented.
 try:
-    from engines.document.parsers.spreadsheet_parser.xlsx.charts_builder import (
+    from ..spreadsheet_parser.xlsx.charts_builder import (
         parse_chart as _parse_chart_xml,
     )
 except ImportError:

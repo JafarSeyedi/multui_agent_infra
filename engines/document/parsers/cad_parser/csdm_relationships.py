@@ -5,7 +5,7 @@
 # import traceback
 # from typing import Dict, List, Optional
 
-# from engines.document.models.csdm_core import (
+# from ...models.csdm_core import (
 #     CSDMDocument,
 #     CSDMHandle,
 #     CSDMObjectBase,
@@ -13,13 +13,13 @@
 #     CSDMReactorLink,
 # )
 
-# from engines.document.models.csdm_entities import (
+# from ...models.csdm_entities import (
 #     CSDMEntityBase,
 #     CSDMInsert,
 #     CSDMViewportEntity,
 # )
 
-# from engines.document.models.csdm_tables import (
+# from ...models.csdm_tables import (
 #     CSDMLayer,
 #     CSDMLinetype,
 #     CSDMTextStyle,

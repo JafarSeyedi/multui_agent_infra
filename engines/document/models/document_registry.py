@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Optional, Sequence, Union, Type, Any
 
-from engines.document.models.media_types import (
+from ..media_types import (
     DocumentFormat,
     MediaType,
     MEDIA_TYPES,
@@ -14,9 +14,9 @@ from engines.document.models.media_types import (
     MediaRawType,
     MediaContentKind,
 )
-from engines.document.parsers.base import BaseDocumentParser
-from engines.document.writers.base import BaseDocumentWriter
-from engines.document.models.media_detection import detect_media_type
+from ..parsers.base import BaseDocumentParser
+from ..writers.base import BaseDocumentWriter
+from ..media_detection import detect_media_type
 
 
 # ==========================================================

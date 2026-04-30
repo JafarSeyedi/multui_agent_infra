@@ -8,8 +8,8 @@ from __future__ import annotations
 from typing import Optional, Union
 from xml.etree.ElementTree import Element, SubElement
 
-from engines.document.models.usdm_models import ShapeContent, ImageContent
-from engines.document.models.psdm_models import GroupShapeContent, Placeholder
+from ...models.usdm_models import ShapeContent, ImageContent
+from ...models.psdm_models import GroupShapeContent, Placeholder
 from .constants import NAMESPACES
 from ..drawingml_helpers import (
     write_fill, write_line, write_effects,

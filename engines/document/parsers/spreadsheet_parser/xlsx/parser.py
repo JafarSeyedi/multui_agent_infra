@@ -14,8 +14,8 @@ from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 from xml.etree import ElementTree as ET
 
-from engines.document.parsers.spreadsheet_parser.base_spreadsheet_parser import BaseSpreadsheetParser
-from engines.document.parsers.base import ParseOptions
+from ...spreadsheet_parser.base_spreadsheet_parser import BaseSpreadsheetParser
+from ...base import ParseOptions
 from ....models.esdm_models import (
     ESDMDocument,
     Workbook,
@@ -296,7 +296,7 @@ class XLSXParser(BaseSpreadsheetParser):
     ) -> ESDMDocument:
         options = options or ParseOptions()
         workbook = await self._parse_to_workbook(data, source_name, options)
-        from engines.document.models.media_detection import detect_media_type
+        from ....models.media_detection import detect_media_type
         media_type = detect_media_type(path=source_name, data=data)
         return ESDMDocument(
             title=source_name or document_id,

@@ -12,8 +12,8 @@ from typing import Optional, Dict, Any, List
 from xml.etree.ElementTree import Element, SubElement, tostring
 
 from .base_msdm_writer import BaseMSDMWriter, WriteTarget, SoftDeleteStrategy
-from engines.document.writers.base import WriteOptions
-from engines.document.models.msdm_models import (
+from ..base import WriteOptions
+from ...models.msdm_models import (
     MSDMDocument,
     Entity,
     Attribute,

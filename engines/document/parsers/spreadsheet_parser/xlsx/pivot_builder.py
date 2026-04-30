@@ -10,7 +10,7 @@ from .utils import (
     xml_find, xml_findall, xml_attr, xml_text, xml_int, xml_bool,
     parse_range, col_letter_to_index,
 )
-from engines.document.models.esdm_models import (
+from ....models.esdm_models import (
     PivotCache, PivotCacheReference,
     PivotTable, PivotField,
 )

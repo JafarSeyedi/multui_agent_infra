@@ -1,6 +1,6 @@
 from typing import List
 
-from engines.document.storage.document_store import DocumentStore
+from ...document.storage.document_store import DocumentStore
 from .retriever_result import RetrievalResult
 from .base_retriever import BaseRetriever
 

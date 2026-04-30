@@ -3,8 +3,8 @@
 # import logging
 # from typing import Any, Dict, Optional
 
-# from engines.document.parsers.cad_parser.oda_bridge import ODABridge
-# from engines.document.models.base.csdm_core import CSDMDocument
+# from ...parsers.cad_parser.oda_bridge import ODABridge
+# from ...models.base.csdm_core import CSDMDocument
 
 
 # class WriterContext:

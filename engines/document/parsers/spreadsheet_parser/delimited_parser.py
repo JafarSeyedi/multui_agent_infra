@@ -11,10 +11,9 @@ import io
 from pathlib import Path
 from typing import Optional, Dict, Any, List, Union, AsyncIterator
 
-from engines.document.parsers.spreadsheet_parser.base_spreadsheet_parser import BaseSpreadsheetParser
-from engines.document.parsers.base import ParseOptions
-from engines.document.models.esdm_models import Workbook, Worksheet, Row, Cell
-from engines.document.models.esdm_document import ESDMDocument
+from .base_spreadsheet_parser import BaseSpreadsheetParser
+from ..base import ParseOptions
+from ...models.esdm_models import Workbook, Worksheet, Row, Cell, ESDMDocument
 
 
 class DelimitedParser(BaseSpreadsheetParser):

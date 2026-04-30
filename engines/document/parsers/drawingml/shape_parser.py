@@ -273,42 +273,17 @@ def _parse_text_body(tx_body: Element, ns: Dict[str, str]) -> RichTextContent:
             r_pr = r_elem.find("a:rPr", ns)
             span = RichTextSpan(text=text)
             if r_pr is not None:
-                span.bold = r_pr.find("a:b", ns) is not None
-                span.italic = r_pr.find("a:i", ns) is not None
-                u = r_pr.find("a:u", ns)
-                span.underline = u is not None
-                if u is not None and u.get("val"):
-                    span._meta["underline_type"] = u.get("val")
-
-                # Font size (hundredths of a point)
-                sz_elem = r_pr.find("a:sz", ns)
-                if sz_elem is not None:
-                    size_val = int(sz_elem.get("val", "0"))
-                    span.character_style = f"size:{size_val/100}" if size_val else None
-
-                # Font name
-                latin = r_pr.find("a:latin", ns)
-                if latin is not None:
-                    span.font = latin.get("typeface")
-
-                # Color
-                solid_clr = r_pr.find("a:solidFill/a:srgbClr", ns)
-                if solid_clr is not None:
-                    span.color = f"#{solid_clr.get('val', '')}"
-                else:
-                    # Also check high‑light
-                    hl = r_pr.find("a:highlight/a:srgbClr", ns)
-                    if hl is not None:
-                        span.background = f"#{hl.get('val', '')}"
+                style = r_pr.get("style")
+                if style:
+                    span.character_style = style
+                hl = r_pr.find("a:highlight/a:srgbClr", ns)
+                if hl is not None:
+                    span.background = f"#{hl.get('val', '')}"
 
                 # Hyperlink
                 hlink = r_pr.find("a:hlinkClick", ns)
                 if hlink is not None:
                     span.href = hlink.get("r:id") if hlink.get("r:id") else hlink.get("id")
-
-                # Other effects (strike, etc.)
-                if r_pr.find("a:strike", ns) is not None:
-                    span._meta["strike"] = True  # RichTextSpan has no strike field; use meta
 
             spans.append(span)
 

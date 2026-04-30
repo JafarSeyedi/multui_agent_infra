@@ -2,8 +2,8 @@
 
 import hashlib  # رفع خطای مربوط به نام hashlib
 from typing import Iterable, List # برای دقت بیشتر در تایپ‌هینت‌ها
-from engines.document.models.media_types import MediaType
-from engines.document.models.base import BinaryEncoding, BinaryPayload 
+from ..models.media_types import MediaType
+from ..models.base import BinaryEncoding, BinaryPayload 
 from .binary_codec import BinaryCodecAdvanced
 
 class StreamingBinaryCodec:

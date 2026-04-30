@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import List, Optional
 from xml.etree.ElementTree import Element, SubElement
 
-from engines.document.models.psdm_models import Transition, Animation, TriggerType
+from ...models.psdm_models import Transition, Animation, TriggerType
 from .constants import NAMESPACES, PSDM_TO_PPTX_TRANSITION, PSDM_TO_PPTX_ANIM
 
 NS = NAMESPACES

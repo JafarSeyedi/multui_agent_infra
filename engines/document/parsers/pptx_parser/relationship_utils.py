@@ -6,7 +6,8 @@ Supports package-level, slide-level, and drawing-level rels.
 
 from __future__ import annotations
 from typing import Dict, Optional, List, Tuple
-from xml.etree.ElementTree import Element
+# from xml.etree.ElementTree import Element
+import xml.etree.ElementTree as ET
 from zipfile import ZipFile
 
 # Relationships namespace
@@ -28,7 +29,7 @@ def load_rels(zip_file: ZipFile, rels_path: str) -> Dict[str, Tuple[str, str]]:
     rels: Dict[str, Tuple[str, str]] = {}
     try:
         xml_bytes = zip_file.read(rels_path)
-        root = Element.fromstring(xml_bytes)
+        root = ET.fromstring(xml_bytes)
         for rel_elem in root.findall("rel:Relationship", NSMAP):
             r_id = rel_elem.get("Id")
             r_type = rel_elem.get("Type", "")

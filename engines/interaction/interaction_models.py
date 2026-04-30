@@ -5,8 +5,8 @@ from typing import Any, Dict, List, Optional, Literal
 from datetime import datetime
 from pydantic import BaseModel, Field
 import uuid
-from engines.agents.base_agents.base_agent import BaseAgent
-from engines.agents.models import AgentOutput
+from ..agents.base_agents.base_agent import BaseAgent
+from ..agents.models import AgentOutput
 
 class InteractionRequest(BaseModel):
     """ورودی اصلی به InteractionAgent"""

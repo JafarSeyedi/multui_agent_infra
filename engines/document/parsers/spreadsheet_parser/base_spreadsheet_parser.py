@@ -5,9 +5,9 @@ from pathlib import Path
 from typing import Optional, Dict, Any, Union, AsyncIterator
 import io
 
-from ...base import BaseDocumentParser, ParseOptions
-from ....models.esdm_models import ESDMDocument, Workbook
-from ....models.media_detection import detect_media_type
+from ..base import BaseDocumentParser, ParseOptions
+from ...models.esdm_models import ESDMDocument, Workbook
+from ...models.media_detection import detect_media_type
 
 
 class BaseSpreadsheetParser(BaseDocumentParser):

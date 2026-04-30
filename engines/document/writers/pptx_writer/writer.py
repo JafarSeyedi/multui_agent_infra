@@ -10,12 +10,12 @@ import zipfile
 from pathlib import Path
 from typing import Optional, Dict, Any, List, Tuple, AsyncIterator
 
-from engines.document.writers.base import BaseDocumentWriter, WriteOptions
-from engines.document.models.psdm_models import (
+from ..base import BaseDocumentWriter, WriteOptions
+from ...models.psdm_models import (
     PSDMDocument, Slide, SlideMaster, SlideLayout, Theme,
     NotesSlide, SlideComment, MediaReference,
 )
-from engines.document.models.usdm_models import (
+from ...models.usdm_models import (
     ImageContent, ChartContent, DrawingContent, OLEObjectContent,
     LogicalElement, ElementType,
 )
@@ -419,7 +419,7 @@ class PPTXWriter(BaseDocumentWriter):
         """Produce the chart XML part. Reuses the spreadsheet chart writer logic."""
         # Import the chart builder (from spreadsheet writer) to generate XML.
         # For brevity, we assume a function write_chart exists.
-        from engines.document.writers.spreadsheet_writer.xlsx.charts_writer import write_chart_xml
+        from ..spreadsheet_writer.xlsx.charts_writer import write_chart_xml
         return write_chart_xml(chart)
 
     def _build_content_types(self, doc: PSDMDocument) -> Element:

@@ -2,17 +2,17 @@
 
 from __future__ import annotations
 from typing import Optional, List, Dict, Any
-from engines.document.ingestion.ingestion_context import IngestionContext
-from engines.document.ingestion.ingestion_pipeline import IngestionPipeline
-from engines.document.ingestion.workflow_registry import WorkflowRegistry
-from engines.document.models.media_types import MediaType, DocumentFormat
-from engines.document.ingestion.steps.step_extract import step_extract
-from engines.document.ingestion.steps.step_parse import step_parse
-from engines.document.ingestion.steps.step_chunk import step_chunk
-from engines.document.ingestion.steps.step_embed import step_embed
-from engines.document.ingestion.steps.step_store import step_store
+from .ingestion_context import IngestionContext
+from .ingestion_pipeline import IngestionPipeline
+from .workflow_registry import WorkflowRegistry
+from ..models.media_types import MediaType, DocumentFormat
+from .steps.step_extract import step_extract
+from .steps.step_parse import step_parse
+from .steps.step_chunk import step_chunk
+from .steps.step_embed import step_embed
+from .steps.step_store import step_store
 
-from engines.document.ingestion.ingestion_models import (
+from .ingestion_models import (
     DocumentIngestionResult,
     DocumentRecord,
     ParsedDocument,
@@ -68,7 +68,7 @@ class IngestionRunner:
                 return wf
 
         # 5) Plain text
-        if media_type.format == DocumentFormat.TEXT:
+        if media_type.format == DocumentFormat.TXT:
             wf = self.workflow_registry.get("text/plain")
             if wf:
                 return wf

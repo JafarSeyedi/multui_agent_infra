@@ -8,8 +8,8 @@ from __future__ import annotations
 from typing import Optional
 from xml.etree.ElementTree import Element, SubElement
 
-from engines.document.models.psdm_models import SlideMaster, SlideLayout, Placeholder
-from engines.document.models.usdm_models import ImageContent
+from ...models.psdm_models import SlideMaster, SlideLayout, Placeholder
+from ...models.usdm_models import ImageContent
 from .constants import NAMESPACES
 from .drawingml_helpers import set_solid_color, write_rich_text_body
 from .shape_writer import write_shape

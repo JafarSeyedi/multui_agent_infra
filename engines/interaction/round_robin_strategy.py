@@ -2,12 +2,9 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Sequence, Optional
 
-from engines.buses.base_message_bus import MessageBus
-from engines.agents.models import AgentOutput
-from engines.interaction.interaction_models import (
-    InteractionRequest,
-    InteractionResult,
-)
+from ..buses.base_message_bus import MessageBus
+from ..agents.models import AgentOutput
+from .interaction_models import InteractionRequest, InteractionResult
 from .base_strategy import InteractionStrategy
 
 

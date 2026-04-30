@@ -26,9 +26,9 @@ from enum import Enum
 
 from pydantic import BaseModel
 
-from engines.document.writers.base import BaseDocumentWriter, WriteOptions
-from engines.document.models.msdm_models import MSDMDocument
-from engines.document.models.base import BaseDocument
+from ..base import BaseDocumentWriter, WriteOptions
+from ...models.msdm_models import MSDMDocument
+from ...models.base import BaseDocument
 
 
 # ── Enumerations ────────────────────────────────────────────────
@@ -128,7 +128,7 @@ class BaseMSDMWriter(BaseDocumentWriter):
         The default implementation raises NotImplementedError.
         """
         raise NotImplementedError(
-            f"{self.name} does not support database application"
+            f"{self.__class__.__name__} does not support database application"
         )
 
     # ── Abstracts for concrete writers ──────────────────────────

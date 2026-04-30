@@ -8,8 +8,8 @@ from abc import abstractmethod
 from pathlib import Path
 from typing import Optional, Any, Dict, Union, AsyncIterator
 
-from engines.document.parsers.base import BaseDocumentParser, ParseOptions
-from engines.document.models.msdm_models import MSDMDocument
+from ..base import BaseDocumentParser, ParseOptions
+from ...models.msdm_models import MSDMDocument
 
 
 class BaseMSDMParser(BaseDocumentParser):

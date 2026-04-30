@@ -15,7 +15,7 @@ Handles:
 from xml.etree.ElementTree import Element
 from typing import List, Dict, Optional, Sequence
 
-from engines.document.models.esdm_models import (
+from ....models.esdm_models import (
     SpreadsheetStyleSheet,
     NumberFormatCollection,
     NumberFormat,

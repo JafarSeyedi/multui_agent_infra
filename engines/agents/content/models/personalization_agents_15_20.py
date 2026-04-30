@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Literal
-from engines.agents.models import AgentInput, AgentOutput
+from ...models import AgentInput, AgentOutput
 from .learning_objects import LearningStyle, StudentProfile, LearningProgress
 
 # --- مدل‌های عامل 15: مدرس دیالوگ (Dialogue Tutor) ---

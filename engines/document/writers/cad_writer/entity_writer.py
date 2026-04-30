@@ -27,7 +27,7 @@
 # from typing import Any, Dict, Callable
 
 # from .base_context import WriterContext
-# from engines.document.models.base.csdm_core import (
+# from ...models.base.csdm_core import (
 #     CSDMObject,
 #     Vector3,
 #     Matrix4,

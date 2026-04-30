@@ -1,9 +1,9 @@
 # agents/base_agents/interaction_agent.py
 from typing import Any, Dict, Optional
 from .base_agent import BaseAgent
-from engines.interaction.interaction_models import InteractionRequest, InteractionResult
-from engines.interaction.backends.native_backend import NativeOrchestrationBackend
-from engines.buses.base_message_bus import MessageBus
+from ..interaction.interaction_models import InteractionRequest, InteractionResult
+from ..interaction.backends.native_backend import NativeOrchestrationBackend
+from ..buses.base_message_bus import MessageBus
 
 class InteractionAgent(BaseAgent):
     """

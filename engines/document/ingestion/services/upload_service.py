@@ -3,11 +3,11 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional, cast
 
-from engines.document.ingestion.ingestion_context import IngestionContext
-from engines.document.ingestion.ingestion_service import IngestionService
-from engines.document.ingestion.ingestion_errors import IngestionError
-from engines.document.models.media_types import MediaType
-from engines.document.ingestion.ingestion_models import DocumentIngestionResult
+from ..ingestion_context import IngestionContext
+from ..ingestion_service import IngestionService
+from ..ingestion_errors import IngestionError
+from ...models.media_types import MediaType
+from ..ingestion_models import DocumentIngestionResult
 
 
 class UploadService:

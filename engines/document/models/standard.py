@@ -13,6 +13,8 @@ class DocumentStandard(str, Enum):
     CSDM = "csdm"  # CAD/Geometric Structured Document Model
     MSDM = "msdm"  # Metadata (of data) Structured Definition Model
     SSDM = "ssdm"  # Service Structured Definition Model
+    TSDM = "tsdm"   # Tools Standard Definition Model    
+    OSDM = "osdm"   # Orchestration Standard Definition Model
     GENERIC = "generic"
     UNKNOWN = "unknown"
 
@@ -26,6 +28,8 @@ class DocumentStandard(str, Enum):
             "csdm": "CAD/Geometric Structured Document Model",
             "msdm": "Metadata Structured Definition Model",
             "ssdm": "Service Structured Definition Model",
+            "tsdm": "Tools Standard Definition Model",
+            "osdm": "Orchestration Standard Definition Model",
             "generic": "Generic Text/Binary",
             "unknown": "Unknown",
         }
@@ -41,6 +45,8 @@ class DocumentStandard(str, Enum):
             "csdm": "Structured document model for CAD models and geometric data",
             "msdm": "Structured document model for data structure definitions (schemas, DDL, ERD, etc.)",
             "ssdm": "Structured document model for service/API definitions (OpenAPI, WSDL, etc.)",
+            "tsdm": "Tools Standard Definition Model",
+            "osdm": "Orchestration Standard Definition Model including workflows, orchestrations, decisions, case management, and event processing models",
             "generic": "No specific structure enforced",
             "unknown": "Unknown",
         }
@@ -54,6 +60,8 @@ class MediaCategory(str, Enum):
     CAD_GEOMETRIC = "cad_geometric"
     SCHEMA_DEFINITION = "schema_definition"
     SERVICE_DEFINITION = "service_definition"
+    TOOLS_DEFINITION = "service_definition"
+    ORCHESTRATION_DEFINITION = "orchestration_definition"
     IMAGE = "image"
     AUDIO = "audio"
     VIDEO = "video"
@@ -62,6 +70,7 @@ class MediaCategory(str, Enum):
     DATABASE = "database"
     OTHER = "other"
 
+# In get_common_formats
 STANDARD_TO_CATEGORY: Dict[DocumentStandard, MediaCategory] = {
     DocumentStandard.DSDM: MediaCategory.STRUCTURED_DATA,
     DocumentStandard.USDM: MediaCategory.DOCUMENT,
@@ -70,6 +79,8 @@ STANDARD_TO_CATEGORY: Dict[DocumentStandard, MediaCategory] = {
     DocumentStandard.CSDM: MediaCategory.CAD_GEOMETRIC,
     DocumentStandard.MSDM: MediaCategory.SCHEMA_DEFINITION,
     DocumentStandard.SSDM: MediaCategory.SERVICE_DEFINITION,
+    DocumentStandard.TSDM: MediaCategory.TOOLS_DEFINITION,
+    DocumentStandard.OSDM: MediaCategory.ORCHESTRATION_DEFINITION,
 }
 
 # تعاریف مخفف‌ها برای مستندات
@@ -82,6 +93,8 @@ ABBREVIATIONS: Dict[str, str] = {
     "CSDM": "CAD/Geometric Structured Document Model",
     "MSDM": "Metadata Standard Definition Model",
     "SSDM": "Service Standard Definition Model",
+    "TSDM": "Tool Standard Definition Model",
+    "OSDM": "Orchestration Standard Definition Model",
     
     # کامپوننت‌ها
     "MIME": "Multipurpose Internet Mail Extensions",
@@ -118,7 +131,7 @@ def get_common_formats(standard: DocumentStandard) -> list[str]:
         DocumentStandard.DSDM: ["json", "xml", "yaml", "toml", "csv", "tsv"],
         DocumentStandard.USDM: ["pdf", "docx", "html", "md", "txt", "rtf"],
         DocumentStandard.ESDM: ["xlsx", "xls", "csv", "tsv", "prn", "ods", "parquet", "feather", "arrow", "txt"],
-        DocumentStandard.CSDM: ["dxf", "dwg", "ifc", "stl", "step"]
+        DocumentStandard.CSDM: ["dxf", "dwg", "ifc", "stl", "step"],
         DocumentStandard.PSDM: ["pptx", "ppt", "odp"],
         DocumentStandard.CSDM: ["dxf", "dwg", "ifc", "stl", "step"],
         DocumentStandard.MSDM: [
@@ -129,6 +142,8 @@ def get_common_formats(standard: DocumentStandard) -> list[str]:
             "python_model", "typescript_interface"
         ],
         DocumentStandard.SSDM: ["openapi", "swagger", "wsdl", "yang", "mib", "asyncapi", "raml", "apib"],
+        DocumentStandard.SSDM: ["tsdm_json"],
+        DocumentStandard.OSDM: ["bpmn", "cmmn", "dmn", "pnml", "graphml", "serverless_workflow_json", "serverless_workflow_yaml"],
 
     }
     return formats.get(standard, [])

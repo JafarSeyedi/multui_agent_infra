@@ -4,7 +4,7 @@ import hashlib
 import math
 from typing import Dict, Iterable, List, Sequence
 
-from engines.document.ingestion.ingestion_models import ChunkRecord
+from ..ingestion.ingestion_models import ChunkRecord
 
 from .base import EmbeddingProvider
 

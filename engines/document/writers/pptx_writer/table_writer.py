@@ -7,7 +7,7 @@ Full round‑trip: grid, row/cell properties, rich text with all formatting.
 from __future__ import annotations
 from xml.etree.ElementTree import Element, SubElement
 
-from engines.document.models.usdm_models import TableContent, ParagraphContent
+from ...models.usdm_models import TableContent, ParagraphContent
 from .constants import NAMESPACES
 from ..drawingml_helpers import write_rich_text_body
 

@@ -10,9 +10,9 @@ from typing import Any, Optional, Type, TypeVar, Generic
 
 from pydantic import BaseModel
 
-from engines.storage.event_log.base import LogStorage
-from engines.storage.vector.base import VectorDBAdapter
-from engines.agents.models import AgentInput, AgentOutput, AgentExecutionRecord
+from ..storage.event_log.base import LogStorage
+from ..storage.vector.base import VectorDBAdapter
+from .models import AgentInput, AgentOutput, AgentExecutionRecord
 
 TInput = TypeVar("TInput", bound=AgentInput)
 TOutput = TypeVar("TOutput", bound=AgentOutput)

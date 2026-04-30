@@ -27,8 +27,8 @@ from xml.etree import ElementTree as ET
 from pathlib import Path
 
 from .base_msdm_parser import BaseMSDMParser
-from engines.document.parsers.base import ParseOptions
-from engines.document.models.msdm_models import (
+from ..base import ParseOptions
+from ...models.msdm_models import (
     MSDMDocument,
     Entity,
     Attribute,

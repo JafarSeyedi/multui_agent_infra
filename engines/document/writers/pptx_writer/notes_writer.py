@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Optional
 from xml.etree.ElementTree import Element, SubElement
 
-from engines.document.models.psdm_models import NotesSlide
+from ...models.psdm_models import NotesSlide
 from .constants import NAMESPACES
 from ..drawingml_helpers import write_rich_text_body
 

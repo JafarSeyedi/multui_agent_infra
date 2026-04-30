@@ -2,7 +2,7 @@
 
 # import json
 # from typing import Any, List, Tuple, Optional
-# from engines.document.models.base import BaseDocument, ElementType
+# from ..models.base import BaseDocument, ElementType
 # from .base import BaseDocumentWriter
 
 

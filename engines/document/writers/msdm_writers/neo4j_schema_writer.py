@@ -12,8 +12,8 @@ from __future__ import annotations
 from typing import Optional, Dict, Any, List, Set, Tuple
 
 from .base_msdm_writer import BaseMSDMWriter, WriteTarget, SoftDeleteStrategy
-from engines.document.writers.base import WriteOptions
-from engines.document.models.msdm_models import (
+from ..base import WriteOptions
+from ...models.msdm_models import (
     MSDMDocument,
     Entity,
     Attribute,
@@ -23,7 +23,11 @@ from engines.document.models.msdm_models import (
     Annotation,
     EntityKind,
 )
-
+try:
+    from neo4j import AsyncGraphDatabase
+    NEO4J_AVAILABLE = True
+except ImportError:
+    NEO4J_AVAILABLE = False
 
 class Neo4jSchemaWriter(BaseMSDMWriter):
     """Writer for Neo4j Cypher schema files (.cypher, .cql)."""
@@ -164,3 +168,33 @@ class Neo4jSchemaWriter(BaseMSDMWriter):
     def _constraint_name(entity_name: str, suffix: str) -> str:
         """Generate a constraint name."""
         return Neo4jSchemaWriter._quote_identifier(f"constraint_{entity_name}_{suffix}")
+    
+    
+    async def apply_to_database(self, document: MSDMDocument, connection: ConnectionConfig = None):
+        if not NEO4J_AVAILABLE:
+            raise ImportError("neo4j is required. pip install neo4j")
+        if connection is None:
+            raise ValueError("ConnectionConfig required")
+
+        uri = connection.url or f"bolt://{connection.host or 'localhost'}:{connection.port or 7687}"
+        auth = (connection.username, connection.password) if connection.username else None
+        driver = AsyncGraphDatabase.driver(uri, auth=auth)
+        try:
+            async with driver.session() as session:
+                # Create constraints and indexes for each node/edge entity
+                for entity in document.entities:
+                    if entity.kind == EntityKind.GRAPH_NODE:
+                        for stmt in self._write_node_constraints(entity):
+                            await session.run(stmt)
+                        for stmt in self._write_indexes(entity):
+                            await session.run(stmt)
+                    elif entity.kind == EntityKind.GRAPH_EDGE:
+                        for stmt in self._write_edge_constraints(entity):
+                            await session.run(stmt)
+
+                # To handle removal of nodes/edges not in model, we would need to compare existing labels and drop constraints.
+                # That is complex and risky; we focus on additive changes.
+                # Soft-delete of entire label could be done by dropping constraints, but not practical.
+                # For production use, a full diff tool would be required.
+        finally:
+            await driver.close()    

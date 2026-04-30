@@ -6,8 +6,8 @@ import hashlib
 # import gzip
 # import brotli  # type: ignore[import-untyped]
 from typing import Optional
-from engines.document.models.media_types import MediaType
-from engines.document.models.base import BinaryPayload, BinaryEncoding
+from ..models.media_types import MediaType
+from ..models.base import BinaryPayload, BinaryEncoding
 
 class BinaryCodec:
 

@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from typing import Dict, Any
 
-from engines.document.ingestion.services.upload_service import UploadService
-from engines.document.ingestion.ingestion_context import IngestionContext
-from engines.document.models.media_types import MediaType, MEDIA_TYPES
-from engines.document.models.media_detection import detect_media_type
+from .upload_service import UploadService
+from ..ingestion_context import IngestionContext
+from ...models.media_types import MediaType, MEDIA_TYPES
+from ...models.media_detection import detect_media_type
 
 
 class AsyncIngestService:

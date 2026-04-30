@@ -7,7 +7,7 @@ Every run property handled, including those stored in _meta for round‑trip.
 from __future__ import annotations
 from xml.etree.ElementTree import Element, SubElement
 
-from engines.document.models.usdm_models import CharacterStyle
+from ...models.usdm_models import CharacterStyle
 from .constants import NAMESPACES
 from ..drawingml_helpers import set_solid_color
 

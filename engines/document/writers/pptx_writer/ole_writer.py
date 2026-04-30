@@ -7,8 +7,8 @@ from __future__ import annotations
 from typing import List, Dict
 from xml.etree.ElementTree import Element, SubElement
 
-from engines.document.models.usdm_models import OLEObjectContent
-from engines.document.models.psdm_models import Slide
+from ...models.usdm_models import OLEObjectContent
+from ...models.psdm_models import Slide
 from .constants import NAMESPACES
 
 P = f"{{{NAMESPACES['p']}}}"

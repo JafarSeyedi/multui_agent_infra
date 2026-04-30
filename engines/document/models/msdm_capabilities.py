@@ -5,10 +5,9 @@ MSDM Format Capability Profiles – describes what each MSDM format can express.
 
 from __future__ import annotations
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import Enum, Flag, auto
 from typing import List, Dict, Set
 from .media_types import DocumentFormat
-
 
 # ============================================================
 # Enums for schema expressiveness
@@ -80,13 +79,12 @@ class AnnotationSupport(str, Enum):
     KEY_VALUE = "key_value"     # structured key‑value pairs
     DIRECTIVES = "directives"   # special directives (e.g., Protobuf options, GraphQL directives)
 
-class TimeSeriesSupport(str, Enum):
-    """Support for time‑series specific properties."""
-    NONE = "none"
-    TIMESTAMP_FIELD = "timestamp_field"  # explicit timestamp column
-    TAG_FIELDS = "tag_fields"            # tag / dimension markers
-    VALUE_FIELDS = "value_fields"        # metric / value markers
-    RETENTION_POLICY = "retention_policy"
+class TimeSeriesSupport(Flag):
+    NONE = 0
+    TIMESTAMP_FIELD = auto()
+    TAG_FIELDS = auto()
+    VALUE_FIELDS = auto()
+    RETENTION_POLICY = auto()
 
 class NamespaceSupport(str, Enum):
     """Support for namespacing / packaging."""
@@ -94,11 +92,10 @@ class NamespaceSupport(str, Enum):
     FLAT = "flat"               # single namespace (e.g., package name)
     HIERARCHICAL = "hierarchical" # nested namespaces
 
-class EnumCapability(str, Enum):
-    """Support for enumerations."""
-    NONE = "none"
-    STRING_ENUM = "string_enum"  # enum with named values
-    INT_ENUM = "int_enum"        # enum with integer values
+class EnumCapability(Flag):
+    NONE = 0
+    STRING_ENUM = auto()  # enum with named values
+    INT_ENUM = auto()        # enum with integer values
 
 
 @dataclass

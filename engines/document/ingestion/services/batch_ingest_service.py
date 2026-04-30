@@ -5,10 +5,10 @@ from __future__ import annotations
 from typing import List, Dict, Any, Optional
 import asyncio
 
-from engines.document.ingestion.services.upload_service import UploadService
-from engines.document.ingestion.ingestion_context import IngestionContext
-from engines.document.models.media_types import MediaType
-from engines.document.ingestion.ingestion_models import DocumentIngestionResult
+from .upload_service import UploadService
+from ..ingestion_context import IngestionContext
+from ...models.media_types import MediaType
+from ..ingestion_models import DocumentIngestionResult
 
 
 class BatchIngestService:

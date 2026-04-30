@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import List, Optional, Dict, Any
 from xml.etree.ElementTree import Element
 
-from engines.document.models.psdm_models import (
+from ...models.psdm_models import (
     Transition,
     Animation,
     TransitionType,

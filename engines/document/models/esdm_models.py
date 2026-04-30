@@ -23,13 +23,14 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Dict, List, Optional, Any, Union, Tuple
+from .standard import DocumentStandard
 from enum import Enum
 from .base import BaseDocument
 
 # ============================================================
 # USDM imports (reused without modification)
 # ============================================================
-from engines.document.models.usdm_models import (
+from ..usdm_models import (
     RichTextContent,
     RichTextSpan,
     CharacterStyle,

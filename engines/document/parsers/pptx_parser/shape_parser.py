@@ -9,9 +9,9 @@ from __future__ import annotations
 from typing import Optional, List, Dict, Any
 from xml.etree.ElementTree import Element
 
-from engines.document.parsers.drawingml.shape_parser import parse_shape as parse_dml_shape
-from engines.document.models.usdm_models import ShapeContent
-from engines.document.models.psdm_models import Placeholder, PlaceholderType
+from ..drawingml.shape_parser import parse_shape as parse_dml_shape
+from ...models.usdm_models import ShapeContent
+from ...models.psdm_models import Placeholder, PlaceholderType
 from .constants import NAMESPACES, PPTX_PLACEHOLDER_MAP
 
 NS = NAMESPACES

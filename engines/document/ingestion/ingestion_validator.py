@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from typing import Dict, Any
 
-from engines.document.ingestion.ingestion_errors import (
+from .ingestion_errors import (
     InvalidDocumentError,
     UnsupportedMediaTypeError,
 )
-from engines.document.models.media_types import MediaType, MEDIA_TYPES
+from ..models.media_types import MediaType, MEDIA_TYPES
 
 
 class IngestionValidator:

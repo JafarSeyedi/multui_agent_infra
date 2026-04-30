@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import List, Optional, Dict, Any
 from xml.etree.ElementTree import Element
 
-from engines.document.models.usdm_models import (
+from ...models.usdm_models import (
     TableContent,
     TableRow,
     TableCell,
@@ -125,30 +125,15 @@ def parse_paragraph(p_elem: Element) -> ParagraphContent:
     spans: List[RichTextSpan] = []
     for r_elem in p_elem.findall("a:r", NS):
         t_elem = r_elem.find("a:t", NS)
-        text = t_elem.text if t_elem is not None and t_elem.text else ""
+        text = t_elem.text if t_elem is not None and t_elem.text is not None else ""
+        
         span = RichTextSpan(text=text)
-        # Run properties
         r_pr = r_elem.find("a:rPr", NS)
         if r_pr is not None:
-            span.bold = r_pr.find("a:b", NS) is not None
-            span.italic = r_pr.find("a:i", NS) is not None
-            u = r_pr.find("a:u", NS)
-            if u is not None:
-                span.underline = True
-            # color
-            solid = r_pr.find("a:solidFill/a:srgbClr", NS)
-            if solid is not None:
-                span.color = f"#{solid.get('val', '')}"
-            # font size
-            sz = r_pr.find("a:sz", NS)
-            if sz is not None:
-                size = int(sz.get("val", "0"))
-                if size:
-                    span.character_style = f"size:{size/100}"
-            # font name
-            latin = r_pr.find("a:latin", NS)
-            if latin is not None:
-                span.font = latin.get("typeface")
+            # Use the pre‑existing style key
+            style = r_pr.get("style")
+            if style:
+                span.character_style = style
         spans.append(span)
 
     # Combine spans into a single RichTextContent, preserving line breaks (each paragraph is a separate element)

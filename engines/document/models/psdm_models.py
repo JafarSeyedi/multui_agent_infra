@@ -10,11 +10,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional, Dict, Tuple
+from typing import List, Optional, Dict, Tuple, Union
 
-from engines.document.models.base import BaseDocument, ElementType
-from engines.document.models.media_types import DocumentStandard
-from engines.document.models.usdm_models import (
+from ..base import BaseDocument, ElementType
+from ..media_types import DocumentStandard
+from ..usdm_models import (
     # Content types used directly in slides
     RichTextContent,
     ShapeContent,
@@ -249,6 +249,9 @@ class GroupShapeContent:
     rotation: int = 0
     children: List[Union[ShapeContent, GroupShapeContent]] = field(default_factory=list)
 
+def _default_shape_content() -> ShapeContent:
+    return ShapeContent()
+
 @dataclass
 class ConnectorContent:
     """A connector line between two shapes."""
@@ -256,7 +259,7 @@ class ConnectorContent:
     end_shape_id: str
     start_connection_site: Optional[int] = None
     end_connection_site: Optional[int] = None
-    line_shape: ShapeContent = field(default_factory=ShapeContent)   # visual appearance
+    line_shape: ShapeContent = field(default_factory=_default_shape_content)   # visual appearance
 
 @dataclass
 class Section:

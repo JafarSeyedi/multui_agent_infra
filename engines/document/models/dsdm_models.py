@@ -13,7 +13,7 @@ from typing import Optional, Dict, Any, List, Union, Literal
 from pydantic import BaseModel, Field, ConfigDict
 from dataclasses import dataclass, field
 
-from engines.document.models.base import BaseDocument
+from ..base import BaseDocument
 
 class DataNodeKind(str, Enum):
     OBJECT = "object"

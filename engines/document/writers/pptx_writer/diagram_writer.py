@@ -9,7 +9,7 @@ from typing import Dict, Any, Optional
 from xml.etree.ElementTree import Element, SubElement, tostring
 import json
 
-from engines.document.models.usdm_models import DrawingContent
+from ...models.usdm_models import DrawingContent
 
 # DrawingML namespaces
 DGM = "http://schemas.openxmlformats.org/drawingml/2006/diagram"

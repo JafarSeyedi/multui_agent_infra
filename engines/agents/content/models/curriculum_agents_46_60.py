@@ -1,5 +1,5 @@
 from typing import List, Optional
-from engines.agents.models import AgentInput, AgentOutput
+from ...models import AgentInput, AgentOutput
 
 from .common import ConfidenceScore, Recommendation, Evidence
 from .learning_objects import (

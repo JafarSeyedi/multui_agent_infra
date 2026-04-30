@@ -1,6 +1,24 @@
 # engines/document/models/msdm_registry.py
 
 # Registry populated at module level
+from typing import Dict
+from .media_types import DocumentFormat
+from .msdm_capabilities import (
+    NestingDepth,
+    MSDM_FormatCapability, 
+    ConstraintCapability,
+    InheritanceSupport,
+    AnnotationSupport,
+    ScalarSupport,
+    CompositeSupport,
+    TimeSeriesSupport,
+    NamespaceSupport,
+    EnumCapability,
+    MSDM_FormatCapability,
+    RelationshipModel,
+    IndexCapability
+)
+
 MSDM_FORMAT_CAPABILITY_REGISTRY: Dict[DocumentFormat, MSDM_FormatCapability] = {}
 
 

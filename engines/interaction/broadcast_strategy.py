@@ -3,9 +3,9 @@ import asyncio
 from typing import Any, Dict, Iterable, List
 
 from .base_strategy import InteractionStrategy
-from engines.agents.base_agents.base_agent import BaseAgent
-from engines.agents.models import AgentOutput, AgentInput
-from engines.interaction.interaction_models import (
+from ..agents.base_agents.base_agent import BaseAgent
+from ..agents.models import AgentOutput, AgentInput
+from .interaction_models import (
     InteractionRequest,
     InteractionResult,
 )

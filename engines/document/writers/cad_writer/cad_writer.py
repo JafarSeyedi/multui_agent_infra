@@ -24,8 +24,8 @@
 # import traceback
 # from typing import Any
 
-# from engines.document.writers.base import BaseDocumentWriter
-# from engines.document.parsers.models import BaseDocument
+# from ..base import BaseDocumentWriter
+# from ...parsers.models import BaseDocument
 
 # from .cad_writer.base_context import WriterContext
 # from .cad_writer.dwg_builder import DWGBuilder
@@ -61,7 +61,7 @@
 #             # ----------------------------------------------------------
 #             # Create Writer Context
 #             # ----------------------------------------------------------
-#             ctx = WriterContext(csdm_doc=engines.document.models.base.csdm)
+#             ctx = WriterContext(csdm_doc=...models.base.csdm)
 #             ctx.log("=== Starting DWG generation pipeline ===")
 
 #             # ==========================================================

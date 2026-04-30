@@ -8,8 +8,8 @@ from __future__ import annotations
 from typing import List, Optional, Dict, Tuple
 from xml.etree.ElementTree import Element
 
-from engines.document.models.psdm_models import MediaReference
-from engines.document.models.usdm_models import AudioContent, VideoContent
+from ...models.psdm_models import MediaReference
+from ...models.usdm_models import AudioContent, VideoContent
 from .constants import NAMESPACES
 from .relationship_utils import get_target_for_id, resolve_path
 

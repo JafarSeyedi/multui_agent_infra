@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Dict, List, Optional, Union, cast
 
-from engines.document.ingestion.ingestion_models import DocumentRecord
+from ..ingestion.ingestion_models import DocumentRecord
 from engines.rag.rag_models import Document, DocumentChunk
 from engines.storage.key_value.base import KeyValueStorage
 

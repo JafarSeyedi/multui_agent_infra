@@ -20,7 +20,7 @@ from __future__ import annotations
 from typing import List, Optional, Dict, Any, Tuple
 from xml.etree.ElementTree import Element
 
-from engines.document.models.esdm_models import (
+from ....models.esdm_models import (
     Worksheet, Row, Cell, Column, MergedCellRange,
     SharedStrings, SpreadsheetStyleSheet,
     AutoFilter, ConditionalFormatting,

@@ -10,7 +10,7 @@ from .utils import (
     xml_find, xml_findall, xml_attr, xml_text, xml_int, xml_bool,
     parse_cell_coordinate,
 )
-from engines.document.models.esdm_models import (
+from ....models.esdm_models import (
     CellFormula, FormulaAST, FormulaToken, FormulaTokenType,
     SharedFormula, CalcChainEntry, CalculationChain,
 )

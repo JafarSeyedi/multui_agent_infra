@@ -3,8 +3,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import List
 
-from engines.document.ingestion.ingestion_models import ChunkRecord
-from engines.document.models.base import BaseDocument
+from ..ingestion.ingestion_models import ChunkRecord
+from ..models.base import BaseDocument
 
 from .models import ChunkingConfig
 

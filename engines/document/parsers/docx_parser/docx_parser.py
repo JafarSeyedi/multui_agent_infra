@@ -1726,7 +1726,7 @@ class DOCXParser:
             "root": tree_dict
         }, ensure_ascii=False)
 
-        from engines.document.models.usdm_models import DrawingContent
+        from ...models.usdm_models import DrawingContent
         content = DrawingContent(vector_data=vector_data, width=width, height=height)
         metadata = {
             "relationship_id": drawing.relationship_id,

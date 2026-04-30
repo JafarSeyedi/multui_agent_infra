@@ -3,14 +3,9 @@ from __future__ import annotations
 from collections import Counter
 from typing import Any, Dict, List, Optional
 
-from engines.buses.base_message_bus import MessageBus
-from engines.agents.models import AgentOutput
-from engines.interaction.interaction_models import AgentMessage
-
-from engines.interaction.interaction_models import (
-    InteractionRequest,
-    InteractionResult,
-)
+from ..buses.base_message_bus import MessageBus
+from ..agents.models import AgentOutput
+from .interaction_models import AgentMessage, InteractionRequest, InteractionResult
 from .base_strategy import InteractionStrategy
 
 

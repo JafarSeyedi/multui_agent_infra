@@ -11,9 +11,9 @@ import markdown
 from markdown.extensions import Extension
 from markdown.treeprocessors import Treeprocessor
 
-from engines.document.parsers.base import BaseDocumentParser, ParseOptions
-from engines.document.models.base import BaseDocument, ElementType
-from engines.document.models.media_types import MEDIA_TYPES, MediaType
+from .base import BaseDocumentParser, ParseOptions
+from ..models.base import BaseDocument, ElementType
+from ..models.media_types import MEDIA_TYPES, MediaType
 from ..models.usdm_models import (
     USDMDocument,
     DocumentElement,
@@ -37,7 +37,7 @@ from ..models.usdm_models import (
     CharacterStyle,
     ParagraphStyle
 )
-from engines.document.models.exceptions import DocumentParseError
+from ..models.exceptions import DocumentParseError
 
 
 class MarkdownTreeProcessor(Treeprocessor):

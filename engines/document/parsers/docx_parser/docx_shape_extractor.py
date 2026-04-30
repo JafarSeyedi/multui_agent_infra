@@ -4,7 +4,7 @@ Extracts a ShapeContent from a wps:wsp element.
 """
 from xml.etree.ElementTree import Element
 from typing import Optional
-from engines.document.models.usdm_models import ShapeContent, RichTextContent, RichTextSpan
+from ...models.usdm_models import ShapeContent, RichTextContent, RichTextSpan
 from .docx_utils import safe_find, safe_findall, parse_emu_to_pixels, NS
 
 def parse_inline_shape(shape_elem: Element) -> ShapeContent:
@@ -90,18 +90,13 @@ def _parse_drawing_rich_text(tx_body, ns_map) -> Optional[RichTextContent]:
     for p in safe_findall(tx_body, './/a:p', ns_map):
         for r in safe_findall(p, './/a:r', ns_map):
             t_el = safe_find(r, './/a:t', ns_map)
-            text = t_el.text if t_el is not None else ""
+            t_el = safe_find(r, './/a:t', ns_map)
+            text = t_el.text if t_el is not None and t_el.text is not None else ""
             rpr = safe_find(r, './/a:rPr', ns_map)
             span = RichTextSpan(text=text)
             if rpr is not None:
-                span.bold = safe_find(rpr, './/a:b', ns_map) is not None
-                span.italic = safe_find(rpr, './/a:i', ns_map) is not None
-                span.underline = safe_find(rpr, './/a:u', ns_map) is not None
-                solid_fill = safe_find(rpr, './/a:solidFill/a:srgbClr', ns_map)
-                if solid_fill is not None:
-                    span.color = f"#{solid_fill.get('val', '')}"
-                latin = safe_find(rpr, './/a:latin', ns_map)
-                if latin is not None:
-                    span.font = latin.get('typeface')
+                style = rpr.get("style")
+                if style:
+                    span.character_style = style
             spans.append(span)
     return RichTextContent(spans=spans) if spans else None

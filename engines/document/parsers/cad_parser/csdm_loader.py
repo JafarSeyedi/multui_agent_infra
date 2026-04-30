@@ -13,7 +13,7 @@
 # )
 
 # # CSDM Core
-# from engines.document.models.base.csdm_core import (
+# from ...models.base.csdm_core import (
 #     CSDMDocument,
 #     CSDMObjectBase,
 #     CSDMHandle,
@@ -22,7 +22,7 @@
 # )
 
 # # Tables
-# from engines.document.models.base.csdm_tables import (
+# from ...models.base.csdm_tables import (
 #     CSDMLayer,
 #     CSDMLinetype,
 #     CSDMTextStyle,
@@ -35,7 +35,7 @@
 # )
 
 # # Entities
-# from engines.document.models.base.csdm_entities import (
+# from ...models.base.csdm_entities import (
 #     CSDMEntityBase,
 #     CSDMLine,
 #     CSDMCircle,

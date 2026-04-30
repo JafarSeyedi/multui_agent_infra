@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import List
 from xml.etree.ElementTree import Element, SubElement
 
-from engines.document.models.psdm_models import SlideComment
+from ...models.psdm_models import SlideComment
 from .constants import NAMESPACES
 
 P = f"{{{NAMESPACES['p']}}}"

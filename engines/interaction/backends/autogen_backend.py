@@ -8,7 +8,7 @@ from typing import Dict, List, Optional, Type
 from engines.buses.base_message_bus import MessageBus
 from engines.interaction.base_strategy import InteractionStrategy
 from .native_backend import NativeOrchestrationBackend
-from engines.agents.models import AgentOutput
+from ...agents.models import AgentOutput
 from engines.interaction.interaction_models import (
     InteractionRequest,
     InteractionResult,

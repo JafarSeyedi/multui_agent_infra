@@ -1,18 +1,18 @@
 # 📐 Architecture Report
 
 > تولید شده توسط `tools/analyze_architecture.py`  
-> تاریخ: 2026-04-21 22:04:53  
+> تاریخ: 2026-04-30 21:57:16  
 ---
 
 ## 📊 آمار کلی
 
 | معیار | مقدار |
 |-------|-------|
-| فایل‌های Python | 526 |
-| کلاس‌ها | 2002 |
-| توابع سطح بالا | 257 |
-| فایل‌های با خطا | 3 |
-| مجموع خطوط کد | 159494 |
+| فایل‌های Python | 717 |
+| کلاس‌ها | 1682 |
+| توابع سطح بالا | 369 |
+| فایل‌های با خطا | 2 |
+| مجموع خطوط کد | 106363 |
 
 ---
 
@@ -28,6 +28,16 @@
   │   │   └── 📁 content/
   │   │       └── 📁 models/
   │   ├── 📁 buses/
+  │   ├── 📁 communication/
+  │   │   ├── 📁 bindings/
+  │   │   ├── 📁 common/
+  │   │   │   ├── 📁 auth/
+  │   │   │   ├── 📁 serialization/
+  │   │   │   └── 📁 transport/
+  │   │   ├── 📁 consumption/
+  │   │   ├── 📁 exposure/
+  │   │   └── 📁 messaging/
+  │   │       └── 📁 adapters/
   │   ├── 📁 document/
   │   │   ├── 📁 chunking/
   │   │   ├── 📁 embedding/
@@ -35,17 +45,36 @@
   │   │   │   ├── 📁 services/
   │   │   │   ├── 📁 steps/
   │   │   │   └── 📁 utils/
+  │   │   ├── 📁 model_tools/
+  │   │   │   ├── 📁 format_converters/
+  │   │   │   ├── 📁 model_standard_converters/
+  │   │   │   └── 📁 report_generators/
   │   │   ├── 📁 models/
   │   │   ├── 📁 parsers/
   │   │   │   ├── 📁 cad_parser/
   │   │   │   ├── 📁 docx_parser/
-  │   │   │   └── 📁 pdf_parser/
+  │   │   │   ├── 📁 drawingml/
+  │   │   │   ├── 📁 msdm_parsers/
+  │   │   │   ├── 📁 osdm_parsers/
+  │   │   │   ├── 📁 pdf_parser/
+  │   │   │   ├── 📁 pptx_parser/
+  │   │   │   ├── 📁 spreadsheet_parser/
+  │   │   │   │   └── 📁 xlsx/
+  │   │   │   ├── 📁 ssdm_parsers/
+  │   │   │   └── 📁 tsdm_parsers/
   │   │   ├── 📁 storage/
   │   │   ├── 📁 utils/
   │   │   └── 📁 writers/
   │   │       ├── 📁 cad_writer/
   │   │       ├── 📁 docx_writer/
-  │   │       └── 📁 pdf_writer/
+  │   │       ├── 📁 msdm_writers/
+  │   │       ├── 📁 osdm_writers/
+  │   │       ├── 📁 pdf_writer/
+  │   │       ├── 📁 pptx_writer/
+  │   │       ├── 📁 spreadsheet_writer/
+  │   │       │   └── 📁 xlsx/
+  │   │       ├── 📁 ssdm_writers/
+  │   │       └── 📁 tsdm_writers/
   │   ├── 📁 interaction/
   │   │   └── 📁 backends/
   │   ├── 📁 orchestration/
@@ -74,25 +103,27 @@
   │   │   ├── 📁 retrieval/
   │   │   ├── 📁 services/
   │   │   └── 📁 trainer/
-  │   └── 📁 storage/
-  │       ├── 📁 cache/
-  │       │   └── 📁 backends/
-  │       ├── 📁 event_log/
-  │       │   └── 📁 backends/
-  │       ├── 📁 graph/
-  │       │   └── 📁 backends/
-  │       ├── 📁 key_value/
-  │       │   └── 📁 backends/
-  │       ├── 📁 object/
-  │       │   └── 📁 backends/
-  │       ├── 📁 relational/
-  │       │   └── 📁 backends/
-  │       ├── 📁 stream/
-  │       │   └── 📁 backends/
-  │       ├── 📁 timeseries/
-  │       │   └── 📁 backends/
-  │       └── 📁 vector/
-  │           └── 📁 backends/
+  │   ├── 📁 storage/
+  │   │   ├── 📁 cache/
+  │   │   │   └── 📁 backends/
+  │   │   ├── 📁 event_log/
+  │   │   │   └── 📁 backends/
+  │   │   ├── 📁 graph/
+  │   │   │   └── 📁 backends/
+  │   │   ├── 📁 key_value/
+  │   │   │   └── 📁 backends/
+  │   │   ├── 📁 object/
+  │   │   │   └── 📁 backends/
+  │   │   ├── 📁 relational/
+  │   │   │   └── 📁 backends/
+  │   │   ├── 📁 stream/
+  │   │   │   └── 📁 backends/
+  │   │   ├── 📁 timeseries/
+  │   │   │   └── 📁 backends/
+  │   │   └── 📁 vector/
+  │   │       └── 📁 backends/
+  │   └── 📁 tools/
+  │       └── 📁 adapters/
   ├── 📁 migrations/
   ├── 📁 tests/
   │   └── 📁 agents/
@@ -101,29 +132,6 @@
   │           ├── 📁 interaction_performance/
   │           └── 📁 interaction_unit/
   └── 📁 tools/
-      └── 📁 ai/
-          ├── 📁 analysis/
-          │   ├── 📁 chunkers/
-          │   ├── 📁 encoders/
-          │   ├── 📁 indexers/
-          │   └── 📁 scanners/
-          ├── 📁 entry_points/
-          ├── 📁 generation/
-          │   ├── 📁 generators/
-          │   ├── 📁 planners/
-          │   └── 📁 refiners/
-          ├── 📁 orchestration/
-          │   ├── 📁 analytics/
-          │   ├── 📁 co_evolution/
-          │   ├── 📁 human_task/
-          │   └── 📁 session/
-          ├── 📁 planning/
-          ├── 📁 quality/
-          │   ├── 📁 debuggers/
-          │   ├── 📁 documenters/
-          │   ├── 📁 testers/
-          │   └── 📁 validators/
-          └── 📁 shared/
 ```
 
 ---
@@ -176,6 +184,60 @@
   │   │   ├── 📄 redis_pub_sub_bus.py [67 lines]
   │   │   ├── 📄 request_reply_bus.py [40 lines]
   │   │   └── 📄 topic_message_bus.py [40 lines]
+  │   ├── 📁 communication/
+  │   │   ├── 📁 bindings/
+  │   │   │   ├── 📄 __init__.py [0 lines]
+  │   │   │   ├── 📄 binding_parser.py [0 lines]
+  │   │   │   ├── 📄 binding_writer.py [0 lines]
+  │   │   │   └── 📄 mcp_binding_writer.py [0 lines]
+  │   │   ├── 📁 common/
+  │   │   │   ├── 📁 auth/
+  │   │   │   │   ├── 📄 __init__.py [0 lines]
+  │   │   │   │   ├── 📄 api_key.py [0 lines]
+  │   │   │   │   ├── 📄 auth_manager.py [0 lines]
+  │   │   │   │   ├── 📄 jwt.py [0 lines]
+  │   │   │   │   ├── 📄 mtls.py [0 lines]
+  │   │   │   │   └── 📄 oauth2.py [0 lines]
+  │   │   │   ├── 📁 serialization/
+  │   │   │   │   ├── 📄 __init__.py [0 lines]
+  │   │   │   │   ├── 📄 avro_serializer.py [0 lines]
+  │   │   │   │   ├── 📄 json_serializer.py [0 lines]
+  │   │   │   │   └── 📄 protobuf_serializer.py [0 lines]
+  │   │   │   ├── 📁 transport/
+  │   │   │   │   ├── 📄 __init__.py [0 lines]
+  │   │   │   │   ├── 📄 amqp_client.py [0 lines]
+  │   │   │   │   ├── 📄 base.py [0 lines]
+  │   │   │   │   ├── 📄 grpc_client.py [0 lines]
+  │   │   │   │   ├── 📄 http_client.py [0 lines]
+  │   │   │   │   ├── 📄 kafka_client.py [0 lines]
+  │   │   │   │   └── 📄 mcp_adapter.py [0 lines]
+  │   │   │   └── 📄 __init__.py [0 lines]
+  │   │   ├── 📁 consumption/
+  │   │   │   ├── 📄 __init__.py [0 lines]
+  │   │   │   ├── 📄 binding_loader.py [0 lines]
+  │   │   │   ├── 📄 circuit_breaker.py [0 lines]
+  │   │   │   ├── 📄 client_generator.py [0 lines]
+  │   │   │   ├── 📄 mcp_binding_loader.py [0 lines]
+  │   │   │   ├── 📄 mcp_client_adapter.py [0 lines]
+  │   │   │   └── 📄 service_discovery.py [0 lines]
+  │   │   ├── 📁 exposure/
+  │   │   │   ├── 📄 __init__.py [0 lines]
+  │   │   │   ├── 📄 docker_compose_writer.py [0 lines]
+  │   │   │   ├── 📄 gateway_config_writer.py [0 lines]
+  │   │   │   ├── 📄 kubernetes_manifest_writer.py [0 lines]
+  │   │   │   ├── 📄 mcp_server_writer.py [0 lines]
+  │   │   │   └── 📄 server_builder.py [0 lines]
+  │   │   ├── 📁 messaging/
+  │   │   │   ├── 📁 adapters/
+  │   │   │   │   ├── 📄 __init__.py [0 lines]
+  │   │   │   │   ├── 📄 amqp_adapter.py [0 lines]
+  │   │   │   │   ├── 📄 kafka_adapter.py [0 lines]
+  │   │   │   │   └── 📄 nats_adapter.py [0 lines]
+  │   │   │   ├── 📄 __init__.py [0 lines]
+  │   │   │   ├── 📄 channel_manager.py [0 lines]
+  │   │   │   ├── 📄 message_binding_parser.py [0 lines]
+  │   │   │   └── 📄 message_binding_writer.py [0 lines]
+  │   │   └── 📄 __init__.py [0 lines]
   │   ├── 📁 document/
   │   │   ├── 📁 chunking/
   │   │   │   ├── 📄 __init__.py [3 lines]
@@ -216,21 +278,73 @@
   │   │   │   ├── 📄 ingestion_utils.py [28 lines]
   │   │   │   ├── 📄 ingestion_validator.py [52 lines]
   │   │   │   └── 📄 workflow_registry.py [29 lines]
+  │   │   ├── 📁 model_tools/
+  │   │   │   ├── 📁 format_converters/
+  │   │   │   │   ├── 📄 __init__.py [0 lines]
+  │   │   │   │   ├── 📄 converter_base.py [0 lines]
+  │   │   │   │   ├── 📄 docx_to_pdf.py [0 lines]
+  │   │   │   │   ├── 📄 docx_to_pptx.py [0 lines]
+  │   │   │   │   ├── 📄 generic_converter.py [0 lines]
+  │   │   │   │   ├── 📄 json_to_docx.py [0 lines]
+  │   │   │   │   ├── 📄 json_to_pdf.py [0 lines]
+  │   │   │   │   ├── 📄 markdown_to_docx.py [0 lines]
+  │   │   │   │   ├── 📄 markdown_to_pdf.py [0 lines]
+  │   │   │   │   ├── 📄 pdf_to_docx.py [0 lines]
+  │   │   │   │   ├── 📄 ppt_to_docx.py [0 lines]
+  │   │   │   │   ├── 📄 ppt_to_pdf.py [0 lines]
+  │   │   │   │   ├── 📄 xlsx_to_docx.py [0 lines]
+  │   │   │   │   ├── 📄 xlsx_to_pdf.py [0 lines]
+  │   │   │   │   └── 📄 xlsx_to_ppt.py [0 lines]
+  │   │   │   ├── 📁 model_standard_converters/
+  │   │   │   │   ├── 📄 __init__.py [0 lines]
+  │   │   │   │   ├── 📄 csdm_to_usdm_adapter.py [0 lines]
+  │   │   │   │   ├── 📄 esdm_to_usdm_adapter.py [0 lines]
+  │   │   │   │   ├── 📄 psdm_to_usdm_adapter.py [0 lines]
+  │   │   │   │   └── 📄 usdm_to_pdf_adapter.py [0 lines]
+  │   │   │   ├── 📁 report_generators/
+  │   │   │   │   ├── 📄 __init__.py [0 lines]
+  │   │   │   │   ├── 📄 data_aggregated_list_report_generator.py [0 lines]
+  │   │   │   │   ├── 📄 data_aggregated_list_with_content_report_generator.py [0 lines]
+  │   │   │   │   ├── 📄 data_aggregated_list_with_related_list_report_generator.py [0 lines]
+  │   │   │   │   ├── 📄 data_aggregated_list_with_sub_list_report_generator.py [0 lines]
+  │   │   │   │   ├── 📄 data_aggregated_page_report_generator.py [0 lines]
+  │   │   │   │   ├── 📄 data_aggregated_page_with_related_list_report_generator.py [0 lines]
+  │   │   │   │   ├── 📄 data_aggregated_page_with_sub_list_report_generator.py [0 lines]
+  │   │   │   │   ├── 📄 data_simple_list_report_generator.py [0 lines]
+  │   │   │   │   ├── 📄 data_simple_list_with_content_report_generator.py [0 lines]
+  │   │   │   │   ├── 📄 data_simple_list_with_related_list_report_generator.py [0 lines]
+  │   │   │   │   ├── 📄 data_simple_page_report_generator.py [0 lines]
+  │   │   │   │   ├── 📄 data_simple_page_with_related_list_report_generator.py [0 lines]
+  │   │   │   │   ├── 📄 schema_report_generator.py [0 lines]
+  │   │   │   │   └── 📄 service_report_generator.py [0 lines]
+  │   │   │   ├── 📄 __init__.py [0 lines]
+  │   │   │   ├── 📄 configuration.py [0 lines]
+  │   │   │   ├── 📄 diff_engine.py [0 lines]
+  │   │   │   └── 📄 diff_sql_writer.py [0 lines]
   │   │   ├── 📁 models/
-  │   │   │   ├── 📄 __init__.py [13 lines]
-  │   │   │   ├── 📄 base.py [170 lines]
+  │   │   │   ├── 📄 __init__.py [20 lines]
+  │   │   │   ├── 📄 base.py [171 lines]
   │   │   │   ├── 📄 chunked_binary_payload.py [23 lines]
   │   │   │   ├── 📄 csdm_core.py [700 lines]
   │   │   │   ├── 📄 csdm_entities.py [654 lines]
   │   │   │   ├── 📄 csdm_tables.py [661 lines]
   │   │   │   ├── 📄 document_registry.py [267 lines]
   │   │   │   ├── 📄 dsdm_models.py [524 lines]
-  │   │   │   ├── 📄 esdm_models.py [1376 lines]
+  │   │   │   ├── 📄 esdm_models.py [996 lines]
   │   │   │   ├── 📄 exceptions.py [65 lines]
-  │   │   │   ├── 📄 media_detection.py [176 lines]
-  │   │   │   ├── 📄 media_types.py [338 lines]
-  │   │   │   ├── 📄 standard.py [122 lines]
-  │   │   │   └── 📄 usdm_models.py [574 lines]
+  │   │   │   ├── 📄 media_detection.py [545 lines]
+  │   │   │   ├── 📄 media_types.py [978 lines]
+  │   │   │   ├── 📄 msdm_capabilities.py [144 lines]
+  │   │   │   ├── 📄 msdm_models.py [356 lines]
+  │   │   │   ├── 📄 msdm_registry.py [483 lines]
+  │   │   │   ├── 📄 osdm_models.py [1471 lines]
+  │   │   │   ├── 📄 psdm_models.py [289 lines]
+  │   │   │   ├── 📄 ssdm_capabilities.py [98 lines]
+  │   │   │   ├── 📄 ssdm_models.py [855 lines]
+  │   │   │   ├── 📄 ssdm_registry.py [323 lines]
+  │   │   │   ├── 📄 standard.py [151 lines]
+  │   │   │   ├── 📄 tsdm_models.py [259 lines]
+  │   │   │   └── 📄 usdm_models.py [700 lines]
   │   │   ├── 📁 parsers/
   │   │   │   ├── 📁 cad_parser/
   │   │   │   │   ├── 📄 __init__.py [0 lines]
@@ -239,37 +353,142 @@
   │   │   │   │   ├── 📄 csdm_relationships.py [281 lines]
   │   │   │   │   └── 📄 oda_bridge.py [273 lines]
   │   │   │   ├── 📁 docx_parser/
-  │   │   │   │   ├── 📄 __init__.py [7 lines]
-  │   │   │   │   ├── 📄 docx_extractor.py [2154 lines]
-  │   │   │   │   ├── 📄 docx_image_extractor.py [544 lines]
+  │   │   │   │   ├── 📄 __init__.py [11 lines]
+  │   │   │   │   ├── 📄 docx_chart_extractor.py [126 lines]
+  │   │   │   │   ├── 📄 docx_diagram_extractor.py [110 lines]
+  │   │   │   │   ├── 📄 docx_extractor.py [2285 lines]
+  │   │   │   │   ├── 📄 docx_image_extractor.py [532 lines]
   │   │   │   │   ├── 📄 docx_math_parser.py [922 lines]
-  │   │   │   │   ├── 📄 docx_models.py [730 lines]
-  │   │   │   │   ├── ⚠️ docx_parser.py [1866 lines]
-  │   │   │   │   ├── 📄 docx_style_parser.py [118 lines]
+  │   │   │   │   ├── 📄 docx_models.py [742 lines]
+  │   │   │   │   ├── 📄 docx_parser.py [1980 lines]
+  │   │   │   │   ├── 📄 docx_shape_extractor.py [102 lines]
+  │   │   │   │   ├── 📄 docx_style_parser.py [130 lines]
   │   │   │   │   ├── 📄 docx_table_parser.py [44 lines]
-  │   │   │   │   └── 📄 docx_utils.py [3590 lines]
+  │   │   │   │   └── 📄 docx_utils.py [3593 lines]
+  │   │   │   ├── 📁 drawingml/
+  │   │   │   │   ├── 📄 __init__.py [4 lines]
+  │   │   │   │   ├── 📄 chart_ref_parser.py [105 lines]
+  │   │   │   │   ├── 📄 diagram_parser.py [126 lines]
+  │   │   │   │   ├── 📄 image_parser.py [123 lines]
+  │   │   │   │   └── 📄 shape_parser.py [333 lines]
+  │   │   │   ├── 📁 msdm_parsers/
+  │   │   │   │   ├── 📄 __init__.py [20 lines]
+  │   │   │   │   ├── 📄 avro_schema_parser.py [353 lines]
+  │   │   │   │   ├── 📄 base_msdm_parser.py [71 lines]
+  │   │   │   │   ├── 📄 cql_parser.py [544 lines]
+  │   │   │   │   ├── 📄 cue_parser.py [378 lines]
+  │   │   │   │   ├── 📄 elasticsearch_mapping_parser.py [252 lines]
+  │   │   │   │   ├── 📄 erd_parser.py [307 lines]
+  │   │   │   │   ├── 📄 graphql_schema_parser.py [566 lines]
+  │   │   │   │   ├── 📄 influxdb_schema_parser.py [319 lines]
+  │   │   │   │   ├── 📄 json_schema_parser.py [404 lines]
+  │   │   │   │   ├── 📄 mongodb_schema_parser.py [472 lines]
+  │   │   │   │   ├── 📄 neo4j_schema_parser.py [266 lines]
+  │   │   │   │   ├── 📄 owl_parser.py [310 lines]
+  │   │   │   │   ├── 📄 plantuml_parser.py [382 lines]
+  │   │   │   │   ├── 📄 proto_msdm_parser.py [463 lines]
+  │   │   │   │   ├── 📄 python_model_parser.py [354 lines]
+  │   │   │   │   ├── 📄 sql_ddl_parser.py [519 lines]
+  │   │   │   │   ├── 📄 thrift_idl_parser.py [277 lines]
+  │   │   │   │   ├── 📄 typescript_interface_parser.py [586 lines]
+  │   │   │   │   ├── 📄 uml_xmi_parser.py [453 lines]
+  │   │   │   │   └── 📄 xsd_parser.py [409 lines]
+  │   │   │   ├── 📁 osdm_parsers/
+  │   │   │   │   ├── 📄 __init__.py [17 lines]
+  │   │   │   │   ├── 📄 airflow_dag_parser.py [319 lines]
+  │   │   │   │   ├── 📄 aws_step_functions_parser.py [228 lines]
+  │   │   │   │   ├── 📄 azure_logic_apps_parser.py [225 lines]
+  │   │   │   │   ├── 📄 base_osdm_parser.py [106 lines]
+  │   │   │   │   ├── 📄 bpmn_xml_parser.py [910 lines]
+  │   │   │   │   ├── 📄 cep_parser.py [125 lines]
+  │   │   │   │   ├── 📄 cmmn_xml_parser.py [302 lines]
+  │   │   │   │   ├── 📄 cncf_serverless_workflow_parser.py [254 lines]
+  │   │   │   │   ├── 📄 dmn_xml_parser.py [249 lines]
+  │   │   │   │   ├── 📄 epc_parser.py [206 lines]
+  │   │   │   │   ├── 📄 graphml_xml_parser.py [162 lines]
+  │   │   │   │   ├── 📄 pnml_xml_parser.py [187 lines]
+  │   │   │   │   ├── 📄 prefect_dag_parser.py [195 lines]
+  │   │   │   │   ├── 📄 scxml_parser.py [279 lines]
+  │   │   │   │   ├── 📄 uml_state_machine_parser.py [228 lines]
+  │   │   │   │   ├── 📄 xpd_parser.py [289 lines]
+  │   │   │   │   └── 📄 yawl_parser.py [193 lines]
   │   │   │   ├── 📁 pdf_parser/
   │   │   │   │   ├── 📄 __init__.py [7 lines]
-  │   │   │   │   ├── 📄 content_extractor.py [1049 lines]
-  │   │   │   │   ├── 📄 font_handler.py [928 lines]
-  │   │   │   │   ├── 📄 layout_analyzer.py [396 lines]
-  │   │   │   │   ├── 📄 metadata_extractor.py [1523 lines]
-  │   │   │   │   ├── 📄 pdf_objects.py [1145 lines]
+  │   │   │   │   ├── 📄 content_extractor.py [1050 lines]
+  │   │   │   │   ├── 📄 font_handler.py [931 lines]
+  │   │   │   │   ├── 📄 layout_analyzer.py [397 lines]
+  │   │   │   │   ├── 📄 metadata_extractor.py [1534 lines]
+  │   │   │   │   ├── 📄 pdf_objects.py [1227 lines]
   │   │   │   │   ├── 📄 structure_parser.py [516 lines]
-  │   │   │   │   └── 📄 utils.py [1145 lines]
-  │   │   │   ├── 📄 __init__.py [9 lines]
+  │   │   │   │   └── 📄 utils.py [1147 lines]
+  │   │   │   ├── 📁 pptx_parser/
+  │   │   │   │   ├── 📄 __init__.py [13 lines]
+  │   │   │   │   ├── 📄 animation_parser.py [192 lines]
+  │   │   │   │   ├── 📄 comments_parser.py [41 lines]
+  │   │   │   │   ├── 📄 constants.py [108 lines]
+  │   │   │   │   ├── 📄 master_parser.py [189 lines]
+  │   │   │   │   ├── 📄 media_parser.py [104 lines]
+  │   │   │   │   ├── 📄 notes_parser.py [127 lines]
+  │   │   │   │   ├── 📄 ole_parser.py [46 lines]
+  │   │   │   │   ├── 📄 parser.py [403 lines]
+  │   │   │   │   ├── 📄 relationship_utils.py [128 lines]
+  │   │   │   │   ├── 📄 shape_parser.py [96 lines]
+  │   │   │   │   ├── 📄 slide_builder.py [292 lines]
+  │   │   │   │   ├── 📄 table_parser.py [140 lines]
+  │   │   │   │   ├── 📄 theme_parser.py [159 lines]
+  │   │   │   │   └── 📄 utils.py [62 lines]
+  │   │   │   ├── 📁 spreadsheet_parser/
+  │   │   │   │   ├── 📁 xlsx/
+  │   │   │   │   │   ├── 📄 __init__.py [12 lines]
+  │   │   │   │   │   ├── 📄 charts_builder.py [120 lines]
+  │   │   │   │   │   ├── 📄 constants.py [245 lines]
+  │   │   │   │   │   ├── 📄 drawings_builder.py [267 lines]
+  │   │   │   │   │   ├── 📄 formulas_builder.py [88 lines]
+  │   │   │   │   │   ├── 📄 namespaces.py [16 lines]
+  │   │   │   │   │   ├── 📄 parser.py [308 lines]
+  │   │   │   │   │   ├── 📄 pivot_builder.py [70 lines]
+  │   │   │   │   │   ├── 📄 relationships_builder.py [109 lines]
+  │   │   │   │   │   ├── 📄 shared_strings_builder.py [0 lines]
+  │   │   │   │   │   ├── 📄 styles_builder.py [368 lines]
+  │   │   │   │   │   ├── 📄 tables_builder.py [215 lines]
+  │   │   │   │   │   ├── 📄 utils.py [106 lines]
+  │   │   │   │   │   ├── 📄 vba_builder.py [124 lines]
+  │   │   │   │   │   ├── 📄 workbook_builder.py [255 lines]
+  │   │   │   │   │   └── 📄 worksheet_builder.py [439 lines]
+  │   │   │   │   ├── 📄 __init__.py [4 lines]
+  │   │   │   │   ├── 📄 base_spreadsheet_parser.py [86 lines]
+  │   │   │   │   ├── 📄 binary_parser.py [128 lines]
+  │   │   │   │   ├── 📄 delimited_parser.py [116 lines]
+  │   │   │   │   └── 📄 fixed_width_parser.py [131 lines]
+  │   │   │   ├── 📁 ssdm_parsers/
+  │   │   │   │   ├── 📄 __init__.py [9 lines]
+  │   │   │   │   ├── 📄 apib_parser.py [621 lines]
+  │   │   │   │   ├── 📄 asyncapi_parser.py [384 lines]
+  │   │   │   │   ├── 📄 base_ssdm_parser.py [97 lines]
+  │   │   │   │   ├── 📄 cddl_parser.py [514 lines]
+  │   │   │   │   ├── 📄 graphql_service_parser.py [713 lines]
+  │   │   │   │   ├── 📄 mcp_parser.py [364 lines]
+  │   │   │   │   ├── 📄 mib_parser.py [584 lines]
+  │   │   │   │   ├── 📄 openapi_parser.py [657 lines]
+  │   │   │   │   ├── 📄 postman_collection_parser.py [210 lines]
+  │   │   │   │   ├── 📄 proto_service_parser.py [539 lines]
+  │   │   │   │   ├── 📄 python_service_parser.py [365 lines]
+  │   │   │   │   ├── 📄 raml_parser.py [308 lines]
+  │   │   │   │   ├── 📄 webidl_parser.py [447 lines]
+  │   │   │   │   ├── 📄 wsdl_parser.py [246 lines]
+  │   │   │   │   └── 📄 yang_parser.py [448 lines]
+  │   │   │   ├── 📁 tsdm_parsers/
+  │   │   │   │   ├── 📄 __init__.py [2 lines]
+  │   │   │   │   ├── 📄 base_tsdm_parser.py [37 lines]
+  │   │   │   │   └── 📄 tsdm_json_parser.py [205 lines]
+  │   │   │   ├── 📄 __init__.py [8 lines]
   │   │   │   ├── 📄 base.py [87 lines]
   │   │   │   ├── 📄 binary_parser.py [374 lines]
   │   │   │   ├── 📄 cad_parser.py [133 lines]
-  │   │   │   ├── 📄 csv_parser.py [535 lines]
-  │   │   │   ├── 📄 docx_parser.py [218 lines]
-  │   │   │   ├── 📄 excel_parser.py [307 lines]
-  │   │   │   ├── 📄 excel_parser0-notvalid.py [1487 lines]
-  │   │   │   ├── 📄 html_parser.py [816 lines]
+  │   │   │   ├── 📄 html_parser.py [742 lines]
   │   │   │   ├── 📄 json_parser.py [155 lines]
   │   │   │   ├── 📄 latex_parser.py [841 lines]
   │   │   │   ├── 📄 markdown_parser.py [439 lines]
-  │   │   │   ├── 📄 pdf_parser.py [513 lines]
   │   │   │   ├── 📄 xml_parser.py [439 lines]
   │   │   │   └── 📄 yaml_parser.py [190 lines]
   │   │   ├── 📁 storage/
@@ -306,31 +525,132 @@
   │   │   │   │   ├── 📄 docx_style_builder.py [0 lines]
   │   │   │   │   ├── 📄 docx_table_builder.py [0 lines]
   │   │   │   │   └── 📄 docx_writer.py [0 lines]
+  │   │   │   ├── 📁 msdm_writers/
+  │   │   │   │   ├── 📄 __init__.py [19 lines]
+  │   │   │   │   ├── 📄 avro_schema_writer.py [399 lines]
+  │   │   │   │   ├── 📄 base_msdm_writer.py [177 lines]
+  │   │   │   │   ├── 📄 cql_writer.py [497 lines]
+  │   │   │   │   ├── 📄 cue_writer.py [218 lines]
+  │   │   │   │   ├── 📄 elasticsearch_mapping_writer.py [290 lines]
+  │   │   │   │   ├── 📄 erd_writer.py [209 lines]
+  │   │   │   │   ├── 📄 graphql_schema_writer.py [315 lines]
+  │   │   │   │   ├── ⚠️ influxdb_schema_writer.py [324 lines]
+  │   │   │   │   ├── 📄 json_schema_writer.py [299 lines]
+  │   │   │   │   ├── 📄 mongodb_schema_writer.py [354 lines]
+  │   │   │   │   ├── 📄 neo4j_schema_writer.py [200 lines]
+  │   │   │   │   ├── 📄 owl_writer.py [197 lines]
+  │   │   │   │   ├── 📄 plantuml_writer.py [246 lines]
+  │   │   │   │   ├── 📄 proto_writer.py [291 lines]
+  │   │   │   │   ├── 📄 python_model_writer.py [391 lines]
+  │   │   │   │   ├── 📄 sql_ddl_writer.py [370 lines]
+  │   │   │   │   ├── 📄 thrift_idl_writer.py [264 lines]
+  │   │   │   │   ├── 📄 typescript_interface_writer.py [288 lines]
+  │   │   │   │   ├── 📄 uml_xmi_writer.py [350 lines]
+  │   │   │   │   └── 📄 xsd_writer.py [324 lines]
+  │   │   │   ├── 📁 osdm_writers/
+  │   │   │   │   ├── 📄 __init__.py [16 lines]
+  │   │   │   │   ├── 📄 airflow_dag_writer.py [192 lines]
+  │   │   │   │   ├── ⚠️ aws_step_functions_writer.py [188 lines]
+  │   │   │   │   ├── 📄 azure_logic_apps_writer.py [183 lines]
+  │   │   │   │   ├── 📄 base_osdm_writer.py [166 lines]
+  │   │   │   │   ├── 📄 bpmn_xml_writer.py [842 lines]
+  │   │   │   │   ├── 📄 cep_writer.py [88 lines]
+  │   │   │   │   ├── 📄 cmmn_xml_writer.py [217 lines]
+  │   │   │   │   ├── 📄 cncf_serverless_workflow_writer.py [165 lines]
+  │   │   │   │   ├── 📄 dmn_xml_writer.py [222 lines]
+  │   │   │   │   ├── 📄 epc_writer.py [136 lines]
+  │   │   │   │   ├── 📄 graphml_xml_writer.py [181 lines]
+  │   │   │   │   ├── 📄 pnml_xml_writer.py [191 lines]
+  │   │   │   │   ├── 📄 prefect_dag_writer.py [189 lines]
+  │   │   │   │   ├── 📄 scxml_writer.py [245 lines]
+  │   │   │   │   ├── 📄 uml_state_machine_writer.py [204 lines]
+  │   │   │   │   ├── 📄 xpd_writer.py [186 lines]
+  │   │   │   │   └── 📄 yawl_writer.py [147 lines]
   │   │   │   ├── 📁 pdf_writer/
   │   │   │   │   ├── 📄 __init__.py [10 lines]
-  │   │   │   │   ├── 📄 annotation_writer.py [580 lines]
-  │   │   │   │   ├── 📄 content_writer.py [302 lines]
-  │   │   │   │   ├── 📄 encryption.py [941 lines]
-  │   │   │   │   ├── 📄 font_manager.py [1503 lines]
+  │   │   │   │   ├── 📄 annotation_writer.py [582 lines]
+  │   │   │   │   ├── 📄 content_writer.py [314 lines]
+  │   │   │   │   ├── 📄 encryption.py [965 lines]
+  │   │   │   │   ├── 📄 font_manager.py [1504 lines]
   │   │   │   │   ├── 📄 init.py [24 lines]
   │   │   │   │   ├── 📄 layout_builder.py [224 lines]
-  │   │   │   │   ├── 📄 metadata_writer.py [407 lines]
-  │   │   │   │   ├── 📄 optimizer.py [1255 lines]
-  │   │   │   │   ├── 📄 outline_builder.py [274 lines]
-  │   │   │   │   ├── 📄 pdf_objects.py [500 lines]
-  │   │   │   │   └── 📄 utils.py [438 lines]
-  │   │   │   ├── 📄 __init__.py [7 lines]
+  │   │   │   │   ├── 📄 metadata_writer.py [412 lines]
+  │   │   │   │   ├── 📄 optimizer.py [1259 lines]
+  │   │   │   │   ├── 📄 outline_builder.py [275 lines]
+  │   │   │   │   ├── 📄 pdf_objects.py [502 lines]
+  │   │   │   │   └── 📄 utils.py [439 lines]
+  │   │   │   ├── 📁 pptx_writer/
+  │   │   │   │   ├── 📄 __init__.py [15 lines]
+  │   │   │   │   ├── 📄 animation_writer.py [90 lines]
+  │   │   │   │   ├── 📄 comments_writer.py [32 lines]
+  │   │   │   │   ├── 📄 constants.py [76 lines]
+  │   │   │   │   ├── 📄 diagram_writer.py [105 lines]
+  │   │   │   │   ├── 📄 master_writer.py [88 lines]
+  │   │   │   │   ├── 📄 media_writer.py [76 lines]
+  │   │   │   │   ├── 📄 notes_writer.py [59 lines]
+  │   │   │   │   ├── 📄 ole_writer.py [48 lines]
+  │   │   │   │   ├── 📄 relationship_utils.py [85 lines]
+  │   │   │   │   ├── 📄 shape_writer.py [163 lines]
+  │   │   │   │   ├── 📄 slide_writer.py [198 lines]
+  │   │   │   │   ├── 📄 style_writer.py [138 lines]
+  │   │   │   │   ├── 📄 table_writer.py [69 lines]
+  │   │   │   │   ├── 📄 theme_writer.py [116 lines]
+  │   │   │   │   ├── 📄 utils.py [30 lines]
+  │   │   │   │   └── 📄 writer.py [463 lines]
+  │   │   │   ├── 📁 spreadsheet_writer/
+  │   │   │   │   ├── 📁 xlsx/
+  │   │   │   │   │   ├── 📄 __init__.py [13 lines]
+  │   │   │   │   │   ├── 📄 conditional_formatting_writer.py [182 lines]
+  │   │   │   │   │   ├── 📄 const.py [7 lines]
+  │   │   │   │   │   ├── 📄 data_validation_writer.py [117 lines]
+  │   │   │   │   │   ├── 📄 drawing_writer.py [426 lines]
+  │   │   │   │   │   ├── 📄 extra_writers.py [189 lines]
+  │   │   │   │   │   ├── 📄 pivot_writer.py [231 lines]
+  │   │   │   │   │   ├── 📄 shared_strings_writer.py [48 lines]
+  │   │   │   │   │   ├── 📄 styles_writer.py [277 lines]
+  │   │   │   │   │   ├── 📄 table_writer.py [103 lines]
+  │   │   │   │   │   ├── 📄 vba_writer.py [39 lines]
+  │   │   │   │   │   ├── 📄 workbook_writer.py [61 lines]
+  │   │   │   │   │   ├── 📄 worksheet_writer.py [310 lines]
+  │   │   │   │   │   ├── 📄 xlsx_writer.py [189 lines]
+  │   │   │   │   │   └── 📄 zip_packager.py [51 lines]
+  │   │   │   │   ├── 📄 __init__.py [3 lines]
+  │   │   │   │   ├── 📄 base.py [316 lines]
+  │   │   │   │   ├── 📄 csv_writer.py [142 lines]
+  │   │   │   │   └── 📄 esdm_writer.py [136 lines]
+  │   │   │   ├── 📁 ssdm_writers/
+  │   │   │   │   ├── 📄 __init__.py [15 lines]
+  │   │   │   │   ├── 📄 apib_writer.py [211 lines]
+  │   │   │   │   ├── 📄 asyncapi_writer.py [204 lines]
+  │   │   │   │   ├── 📄 base_ssdm_writer.py [151 lines]
+  │   │   │   │   ├── 📄 cddl_writer.py [152 lines]
+  │   │   │   │   ├── 📄 graphql_service_writer.py [338 lines]
+  │   │   │   │   ├── 📄 mcp_writer.py [187 lines]
+  │   │   │   │   ├── 📄 mib_writer.py [80 lines]
+  │   │   │   │   ├── 📄 openapi_writer.py [307 lines]
+  │   │   │   │   ├── 📄 postman_collection_writer.py [192 lines]
+  │   │   │   │   ├── 📄 proto_service_writer.py [185 lines]
+  │   │   │   │   ├── 📄 python_service_writer.py [242 lines]
+  │   │   │   │   ├── 📄 raml_writer.py [287 lines]
+  │   │   │   │   ├── 📄 webidl_writer.py [139 lines]
+  │   │   │   │   ├── 📄 wsdl_writer.py [252 lines]
+  │   │   │   │   └── 📄 yang_writer.py [253 lines]
+  │   │   │   ├── 📁 tsdm_writers/
+  │   │   │   │   ├── 📄 __init__.py [2 lines]
+  │   │   │   │   ├── 📄 base_tsdm_writer.py [12 lines]
+  │   │   │   │   └── 📄 tsdm_json_writer.py [67 lines]
+  │   │   │   ├── 📄 __init__.py [8 lines]
   │   │   │   ├── 📄 base.py [60 lines]
   │   │   │   ├── 📄 binary_writer.py [281 lines]
   │   │   │   ├── 📄 cad_writer.py [269 lines]
   │   │   │   ├── 📄 csv_writer.py [298 lines]
   │   │   │   ├── 📄 docx_writer.py [306 lines]
+  │   │   │   ├── 📄 drawingml_helpers.py [230 lines]
   │   │   │   ├── 📄 excel_writer.py [1660 lines]
-  │   │   │   ├── ⚠️ html_writer.py [279 lines]
+  │   │   │   ├── 📄 html_writer.py [279 lines]
   │   │   │   ├── 📄 json_writer.py [188 lines]
-  │   │   │   ├── 📄 latex_writer.py [636 lines]
-  │   │   │   ├── ⚠️ markdown_writer.py [289 lines]
-  │   │   │   ├── 📄 pdf_writer.py [831 lines]
+  │   │   │   ├── 📄 latex_writer.py [640 lines]
+  │   │   │   ├── 📄 markdown_writer.py [290 lines]
   │   │   │   ├── 📄 xml_writer.py [262 lines]
   │   │   │   └── 📄 yaml_writer.py [224 lines]
   │   │   └── 📄 __init__.py [0 lines]
@@ -466,7 +786,7 @@
   │   │   │   │   ├── 📄 __init__.py [9 lines]
   │   │   │   │   ├── 📄 failure_analyzer.py [16 lines]
   │   │   │   │   ├── 📄 graph_visualizer.py [13 lines]
-  │   │   │   │   ├── 📄 memory_usage_tracker.py [20 lines]
+  │   │   │   │   ├── 📄 memory_usage_tracker.py [16 lines]
   │   │   │   │   ├── 📄 metrics_store.py [18 lines]
   │   │   │   │   ├── 📄 observability_controller.py [31 lines]
   │   │   │   │   ├── 📄 retrieval_heatmap.py [20 lines]
@@ -583,6 +903,27 @@
   │   │   │   └── 📄 index_config.py [16 lines]
   │   │   ├── 📄 __init__.py [1 lines]
   │   │   └── 📄 base_storage.py [39 lines]
+  │   ├── 📁 tools/
+  │   │   ├── 📁 adapters/
+  │   │   │   ├── 📄 __init__.py [0 lines]
+  │   │   │   ├── 📄 ai_model_executor.py [0 lines]
+  │   │   │   ├── 📄 cli_executor.py [0 lines]
+  │   │   │   ├── 📄 composite_executor.py [0 lines]
+  │   │   │   ├── 📄 db_query_executor.py [0 lines]
+  │   │   │   ├── 📄 file_executor.py [0 lines]
+  │   │   │   ├── 📄 grpc_tool_executor.py [0 lines]
+  │   │   │   ├── 📄 http_service_executor.py [0 lines]
+  │   │   │   ├── 📄 http_tool_executor.py [0 lines]
+  │   │   │   ├── 📄 mcp_tool_executor.py [0 lines]
+  │   │   │   ├── 📄 message_bus_executor.py [0 lines]
+  │   │   │   ├── 📄 mib_snmp_executor.py [0 lines]
+  │   │   │   ├── 📄 python_function_executor.py [0 lines]
+  │   │   │   ├── 📄 tcp_socket_executor.py [0 lines]
+  │   │   │   └── 📄 yang_netconf_executor.py [0 lines]
+  │   │   ├── 📄 __init__.py [0 lines]
+  │   │   ├── 📄 base_executor.py [0 lines]
+  │   │   ├── 📄 parameter_mapper.py [0 lines]
+  │   │   └── 📄 tool_registry.py [0 lines]
   │   └── 📄 __init__.py [0 lines]
   ├── 📁 migrations/
   │   ├── 📄 __init__.py [1 lines]
@@ -623,140 +964,6 @@
   │   │   └── 📄 __init__.py [0 lines]
   │   └── 📄 __init__.py [0 lines]
   └── 📁 tools/
-      ├── 📁 ai/
-      │   ├── 📁 analysis/
-      │   │   ├── 📁 chunkers/
-      │   │   │   ├── 📄 __init__.py [3 lines]
-      │   │   │   ├── 📄 code_chunker.py [1169 lines]
-      │   │   │   ├── 📄 doc_chunker.py [1345 lines]
-      │   │   │   └── 📄 semantic_chunker.py [1290 lines]
-      │   │   ├── 📁 encoders/
-      │   │   │   ├── 📄 __init__.py [3 lines]
-      │   │   │   ├── 📄 batch_encoder.py [1166 lines]
-      │   │   │   ├── 📄 embedding_store.py [1261 lines]
-      │   │   │   └── 📄 ollama_encoder.py [1030 lines]
-      │   │   ├── 📁 indexers/
-      │   │   │   ├── 📄 __init__.py [2 lines]
-      │   │   │   ├── 📄 code_indexer.py [1126 lines]
-      │   │   │   └── 📄 doc_indexer.py [1237 lines]
-      │   │   └── 📁 scanners/
-      │   │       ├── 📄 __init__.py [4 lines]
-      │   │       ├── 📄 api_surface_extractor.py [1377 lines]
-      │   │       ├── 📄 ast_analyzer.py [1253 lines]
-      │   │       ├── 📄 import_graph.py [1230 lines]
-      │   │       └── 📄 project_scanner.py [1452 lines]
-      │   ├── 📁 entry_points/
-      │   │   ├── 📄 __init__.py [4 lines]
-      │   │   ├── 📄 api_entry.py [966 lines]
-      │   │   ├── 📄 base_entry_point.py [831 lines]
-      │   │   ├── 📄 cli_entry.py [1547 lines]
-      │   │   └── 📄 ide_plugin_entry.py [1267 lines]
-      │   ├── 📁 generation/
-      │   │   ├── 📁 generators/
-      │   │   │   ├── 📄 __init__.py [6 lines]
-      │   │   │   ├── 📄 class_generator.py [1185 lines]
-      │   │   │   ├── 📄 docstring_generator.py [1336 lines]
-      │   │   │   ├── 📄 function_generator.py [1296 lines]
-      │   │   │   ├── 📄 module_generator.py [1124 lines]
-      │   │   │   ├── 📄 performance_test_generator.py [1208 lines]
-      │   │   │   └── 📄 test_generator.py [1133 lines]
-      │   │   ├── 📁 planners/
-      │   │   │   ├── 📄 __init__.py [5 lines]
-      │   │   │   ├── 📄 contract_designer.py [1217 lines]
-      │   │   │   ├── 📄 contract_generator.py [1166 lines]
-      │   │   │   ├── 📄 dependency_planner.py [1221 lines]
-      │   │   │   ├── 📄 module_architect.py [1341 lines]
-      │   │   │   └── 📄 skeleton_generator.py [1323 lines]
-      │   │   └── 📁 refiners/
-      │   │       ├── 📄 __init__.py [6 lines]
-      │   │       ├── 📄 base_refiner.py [96 lines]
-      │   │       ├── 📄 feedback_loop.py [1143 lines]
-      │   │       ├── 📄 functionality_preserver.py [318 lines]
-      │   │       ├── 📄 impact_analyzer.py [1252 lines]
-      │   │       ├── 📄 iterative_refiner.py [875 lines]
-      │   │       └── 📄 scope_manager.py [302 lines]
-      │   ├── 📁 orchestration/
-      │   │   ├── 📁 analytics/
-      │   │   │   ├── 📄 __init__.py [5 lines]
-      │   │   │   ├── 📄 bottleneck_detector.py [764 lines]
-      │   │   │   ├── 📄 performance_tracker.py [779 lines]
-      │   │   │   ├── 📄 report_generator.py [842 lines]
-      │   │   │   ├── 📄 skill_gap_analyzer.py [859 lines]
-      │   │   │   └── 📄 workflow_metrics_collector.py [779 lines]
-      │   │   ├── 📁 co_evolution/
-      │   │   │   ├── 📄 __init__.py [5 lines]
-      │   │   │   ├── 📄 co_evolution_engine.py [1016 lines]
-      │   │   │   ├── 📄 config_updater.py [957 lines]
-      │   │   │   ├── 📄 doc_updater.py [670 lines]
-      │   │   │   ├── 📄 example_updater.py [836 lines]
-      │   │   │   └── 📄 test_updater.py [885 lines]
-      │   │   ├── 📁 human_task/
-      │   │   │   ├── 📄 __init__.py [5 lines]
-      │   │   │   ├── 📄 assignment_engine.py [802 lines]
-      │   │   │   ├── 📄 feedback_collector.py [871 lines]
-      │   │   │   ├── 📄 skill_registry.py [899 lines]
-      │   │   │   ├── 📄 work_item_types.py [230 lines]
-      │   │   │   └── 📄 work_queue.py [746 lines]
-      │   │   ├── 📁 session/
-      │   │   │   ├── 📄 __init__.py [3 lines]
-      │   │   │   ├── 📄 session_manager.py [830 lines]
-      │   │   │   ├── 📄 session_persistence.py [804 lines]
-      │   │   │   └── 📄 session_types.py [630 lines]
-      │   │   ├── 📄 __init__.py [8 lines]
-      │   │   ├── 📄 agent_registry.py [870 lines]
-      │   │   ├── 📄 base_orchestrator.py [811 lines]
-      │   │   ├── 📄 context_manager.py [984 lines]
-      │   │   ├── 📄 event_bus.py [802 lines]
-      │   │   ├── 📄 pipeline_builder.py [1200 lines]
-      │   │   ├── 📄 pipeline_executer.py [1145 lines]
-      │   │   ├── 📄 workflow_engine.py [1080 lines]
-      │   │   └── 📄 workflow_executor.py [681 lines]
-      │   ├── 📁 planning/
-      │   │   ├── 📄 __init__.py [5 lines]
-      │   │   ├── 📄 arch_ideator.py [307 lines]
-      │   │   ├── 📄 arch_implementor.py [414 lines]
-      │   │   ├── 📄 dependency_analyzer.py [1177 lines]
-      │   │   ├── 📄 progress_tracker.py [977 lines]
-      │   │   └── 📄 task_decomposer.py [1272 lines]
-      │   ├── 📁 quality/
-      │   │   ├── 📁 debuggers/
-      │   │   │   ├── 📄 __init__.py [3 lines]
-      │   │   │   ├── 📄 error_analyzer.py [1518 lines]
-      │   │   │   ├── 📄 runtime_inspector.py [1529 lines]
-      │   │   │   └── 📄 stack_trace_parser.py [1232 lines]
-      │   │   ├── 📁 documenters/
-      │   │   │   ├── 📄 api_doc_generator.py [1083 lines]
-      │   │   │   ├── 📄 architecture_doc.py [1132 lines]
-      │   │   │   └── 📄 changelog_generator.py [893 lines]
-      │   │   ├── 📁 testers/
-      │   │   │   ├── 📄 __init__.py [3 lines]
-      │   │   │   ├── 📄 coverage_analyzer.py [1596 lines]
-      │   │   │   ├── 📄 mutation_tester.py [1370 lines]
-      │   │   │   └── 📄 test_runner.py [1359 lines]
-      │   │   └── 📁 validators/
-      │   │       ├── 📄 __init__.py [14 lines]
-      │   │       ├── 📄 api_consistency.py [892 lines]
-      │   │       ├── 📄 architecture_validator.py [1090 lines]
-      │   │       ├── 📄 compatibility_validator.py [1209 lines]
-      │   │       ├── 📄 complexity_validator.py [1250 lines]
-      │   │       ├── 📄 coverage_validator.py [1047 lines]
-      │   │       ├── 📄 dependency_validator.py [1305 lines]
-      │   │       ├── 📄 docstring_validator.py [1193 lines]
-      │   │       ├── 📄 import_validator.py [1057 lines]
-      │   │       ├── 📄 mypy_validator.py [929 lines]
-      │   │       ├── 📄 naming_spellcheck_validator.py [1136 lines]
-      │   │       ├── 📄 performance_validator.py [1349 lines]
-      │   │       ├── 📄 pytest_validator.py [1160 lines]
-      │   │       ├── 📄 ruff_validator.py [1711 lines]
-      │   │       └── 📄 security_validator.py [1329 lines]
-      │   └── 📁 shared/
-      │       ├── 📄 __init__.py [6 lines]
-      │       ├── 📄 config.py [1040 lines]
-      │       ├── 📄 file_utils.py [886 lines]
-      │       ├── 📄 git_utils.py [1329 lines]
-      │       ├── 📄 llm_client.py [1024 lines]
-      │       ├── 📄 logger.py [671 lines]
-      │       └── 📄 state_manager.py [1484 lines]
       ├── 📄 __init__.py [4 lines]
       ├── 📄 analyze_architecture.py [435 lines]
       ├── 📄 clean_pycache.py [21 lines]
@@ -1278,21 +1485,18 @@
 | `engines/document/models/dsdm_models.py` | `DataDocumentCapabilities` | `BaseModel` | `` |
 | `engines/document/models/dsdm_models.py` | `DataNode` | `BaseModel` | `is_leaf` |
 | `engines/document/models/dsdm_models.py` | `DataDocument` | `BaseDocument` | `` |
+| `engines/document/models/esdm_models.py` | `ESDMDocument` | `BaseDocument` | `` |
 | `engines/document/models/esdm_models.py` | `DocumentBaseModel` | `—` | `` |
 | `engines/document/models/esdm_models.py` | `WorkbookProperties` | `DocumentBaseModel` | `` |
 | `engines/document/models/esdm_models.py` | `Relationship` | `DocumentBaseModel` | `` |
 | `engines/document/models/esdm_models.py` | `RelationshipCollection` | `DocumentBaseModel` | `add, find_by_type` |
 | `engines/document/models/esdm_models.py` | `SharedStrings` | `DocumentBaseModel` | `get_index` |
-| `engines/document/models/esdm_models.py` | `SheetDimensions` | `DocumentBaseModel` | `` |
-| `engines/document/models/esdm_models.py` | `WorksheetProperties` | `DocumentBaseModel` | `` |
 | `engines/document/models/esdm_models.py` | `Cell` | `DocumentBaseModel` | `coordinate, _col_to_letter` |
 | `engines/document/models/esdm_models.py` | `Row` | `DocumentBaseModel` | `get_or_create_cell` |
 | `engines/document/models/esdm_models.py` | `Column` | `DocumentBaseModel` | `` |
 | `engines/document/models/esdm_models.py` | `CellRange` | `DocumentBaseModel` | `coord, _coord` |
 | `engines/document/models/esdm_models.py` | `MergedCellRange` | `CellRange` | `` |
 | `engines/document/models/esdm_models.py` | `NamedRange` | `DocumentBaseModel` | `` |
-| `engines/document/models/esdm_models.py` | `Worksheet` | `DocumentBaseModel` | `get_row, get_cell, merge_cells` |
-| `engines/document/models/esdm_models.py` | `Workbook` | `BaseDocument` | `add_sheet` |
 | `engines/document/models/esdm_models.py` | `NumberFormat` | `DocumentBaseModel` | `` |
 | `engines/document/models/esdm_models.py` | `NumberFormatCollection` | `DocumentBaseModel` | `add_custom_format, find` |
 | `engines/document/models/esdm_models.py` | `FontUnderline` | `Enum` | `` |
@@ -1314,14 +1518,11 @@
 | `engines/document/models/esdm_models.py` | `Protection` | `DocumentBaseModel` | `` |
 | `engines/document/models/esdm_models.py` | `CellFormat` | `DocumentBaseModel` | `` |
 | `engines/document/models/esdm_models.py` | `CellFormatCollection` | `DocumentBaseModel` | `register` |
-| `engines/document/models/esdm_models.py` | `CellStyle` | `DocumentBaseModel` | `` |
-| `engines/document/models/esdm_models.py` | `CellStyleCollection` | `DocumentBaseModel` | `register` |
+| `engines/document/models/esdm_models.py` | `CellStyle` | `CharacterStyle` | `` |
 | `engines/document/models/esdm_models.py` | `DifferentialFormat` | `DocumentBaseModel` | `` |
-| `engines/document/models/esdm_models.py` | `DifferentialFormatCollection` | `DocumentBaseModel` | `register` |
 | `engines/document/models/esdm_models.py` | `TableStyleElement` | `DocumentBaseModel` | `` |
 | `engines/document/models/esdm_models.py` | `ExcelTableStyle` | `DocumentBaseModel` | `` |
-| `engines/document/models/esdm_models.py` | `TableStyleCollection` | `DocumentBaseModel` | `register` |
-| `engines/document/models/esdm_models.py` | `Stylesheet` | `DocumentBaseModel` | `` |
+| `engines/document/models/esdm_models.py` | `SpreadsheetStyleSheet` | `StyleSheet` | `` |
 | `engines/document/models/esdm_models.py` | `DynamicFilterType` | `Enum` | `` |
 | `engines/document/models/esdm_models.py` | `FilterOperator` | `Enum` | `` |
 | `engines/document/models/esdm_models.py` | `CustomFilter` | `DocumentBaseModel` | `` |
@@ -1329,10 +1530,9 @@
 | `engines/document/models/esdm_models.py` | `FilterColumn` | `DocumentBaseModel` | `` |
 | `engines/document/models/esdm_models.py` | `AutoFilter` | `DocumentBaseModel` | `` |
 | `engines/document/models/esdm_models.py` | `TableColumn` | `DocumentBaseModel` | `` |
-| `engines/document/models/esdm_models.py` | `ExcelTableRow` | `DocumentBaseModel` | `get_value, set_value` |
+| `engines/document/models/esdm_models.py` | `ExcelTableRow` | `DocumentBaseModel` | `` |
 | `engines/document/models/esdm_models.py` | `TableStyleInfo` | `DocumentBaseModel` | `` |
-| `engines/document/models/esdm_models.py` | `Table` | `DocumentBaseModel` | `get_column_by_name, add_column, add_row` |
-| `engines/document/models/esdm_models.py` | `TableCollection` | `DocumentBaseModel` | `add, find` |
+| `engines/document/models/esdm_models.py` | `Table` | `DocumentBaseModel` | `` |
 | `engines/document/models/esdm_models.py` | `CFType` | `Enum` | `` |
 | `engines/document/models/esdm_models.py` | `CFOperator` | `Enum` | `` |
 | `engines/document/models/esdm_models.py` | `CFValueObject` | `DocumentBaseModel` | `` |
@@ -1342,48 +1542,40 @@
 | `engines/document/models/esdm_models.py` | `IconCriterion` | `DocumentBaseModel` | `` |
 | `engines/document/models/esdm_models.py` | `IconSet` | `DocumentBaseModel` | `` |
 | `engines/document/models/esdm_models.py` | `CFRule` | `DocumentBaseModel` | `` |
-| `engines/document/models/esdm_models.py` | `ConditionalFormatting` | `DocumentBaseModel` | `add_rule` |
-| `engines/document/models/esdm_models.py` | `ConditionalFormattingCollection` | `DocumentBaseModel` | `add, for_range` |
+| `engines/document/models/esdm_models.py` | `ConditionalFormatting` | `DocumentBaseModel` | `` |
 | `engines/document/models/esdm_models.py` | `FormulaTokenType` | `Enum` | `` |
 | `engines/document/models/esdm_models.py` | `FormulaToken` | `DocumentBaseModel` | `` |
 | `engines/document/models/esdm_models.py` | `FormulaAST` | `DocumentBaseModel` | `from_string, to_string` |
 | `engines/document/models/esdm_models.py` | `SharedFormula` | `DocumentBaseModel` | `` |
-| `engines/document/models/esdm_models.py` | `SharedFormulaCollection` | `DocumentBaseModel` | `add, get` |
-| `engines/document/models/esdm_models.py` | `DefinedName` | `DocumentBaseModel` | `is_global` |
-| `engines/document/models/esdm_models.py` | `DefinedNameCollection` | `DocumentBaseModel` | `add, find` |
+| `engines/document/models/esdm_models.py` | `DefinedName` | `DocumentBaseModel` | `` |
 | `engines/document/models/esdm_models.py` | `ExternalReference` | `DocumentBaseModel` | `` |
 | `engines/document/models/esdm_models.py` | `ExternalLink` | `DocumentBaseModel` | `` |
-| `engines/document/models/esdm_models.py` | `ExternalLinkCollection` | `DocumentBaseModel` | `add, get_by_id` |
 | `engines/document/models/esdm_models.py` | `CellFormula` | `DocumentBaseModel` | `create, get` |
 | `engines/document/models/esdm_models.py` | `DataValidationType` | `Enum` | `` |
 | `engines/document/models/esdm_models.py` | `DataValidationOperator` | `Enum` | `` |
 | `engines/document/models/esdm_models.py` | `DataValidationRule` | `DocumentBaseModel` | `` |
 | `engines/document/models/esdm_models.py` | `DataValidation` | `DocumentBaseModel` | `` |
-| `engines/document/models/esdm_models.py` | `DataValidationCollection` | `DocumentBaseModel` | `add` |
 | `engines/document/models/esdm_models.py` | `Hyperlink` | `DocumentBaseModel` | `` |
-| `engines/document/models/esdm_models.py` | `HyperlinkCollection` | `DocumentBaseModel` | `add` |
 | `engines/document/models/esdm_models.py` | `Author` | `DocumentBaseModel` | `` |
 | `engines/document/models/esdm_models.py` | `CommentTextRun` | `DocumentBaseModel` | `` |
 | `engines/document/models/esdm_models.py` | `CommentText` | `DocumentBaseModel` | `from_string` |
 | `engines/document/models/esdm_models.py` | `Comment` | `DocumentBaseModel` | `` |
-| `engines/document/models/esdm_models.py` | `CommentCollection` | `DocumentBaseModel` | `add_author, add_comment` |
+| `engines/document/models/esdm_models.py` | `CommentCollection` | `DocumentBaseModel` | `` |
 | `engines/document/models/esdm_models.py` | `ThreadedComment` | `DocumentBaseModel` | `` |
-| `engines/document/models/esdm_models.py` | `ThreadedCommentCollection` | `DocumentBaseModel` | `add` |
 | `engines/document/models/esdm_models.py` | `SheetProperties` | `DocumentBaseModel` | `` |
 | `engines/document/models/esdm_models.py` | `SheetProtection` | `DocumentBaseModel` | `` |
 | `engines/document/models/esdm_models.py` | `Orientation` | `Enum` | `` |
 | `engines/document/models/esdm_models.py` | `PageMargins` | `DocumentBaseModel` | `` |
 | `engines/document/models/esdm_models.py` | `PageSetup` | `DocumentBaseModel` | `` |
+| `engines/document/models/esdm_models.py` | `SheetDimensions` | `DocumentBaseModel` | `` |
 | `engines/document/models/esdm_models.py` | `CalcChainEntry` | `DocumentBaseModel` | `` |
-| `engines/document/models/esdm_models.py` | `CalculationChain` | `DocumentBaseModel` | `add` |
-| `engines/document/models/esdm_models.py` | `RichTextRun` | `DocumentBaseModel` | `` |
-| `engines/document/models/esdm_models.py` | `RichText` | `DocumentBaseModel` | `from_string` |
+| `engines/document/models/esdm_models.py` | `CalculationChain` | `DocumentBaseModel` | `` |
 | `engines/document/models/esdm_models.py` | `PivotField` | `DocumentBaseModel` | `` |
 | `engines/document/models/esdm_models.py` | `PivotCacheReference` | `DocumentBaseModel` | `` |
 | `engines/document/models/esdm_models.py` | `PivotCache` | `DocumentBaseModel` | `` |
 | `engines/document/models/esdm_models.py` | `PivotTable` | `DocumentBaseModel` | `` |
-| `engines/document/models/esdm_models.py` | `PivotCacheCollection` | `DocumentBaseModel` | `add` |
-| `engines/document/models/esdm_models.py` | `PivotTableCollection` | `DocumentBaseModel` | `add` |
+| `engines/document/models/esdm_models.py` | `Worksheet` | `DocumentBaseModel` | `get_row, get_cell, merge_cells` |
+| `engines/document/models/esdm_models.py` | `Workbook` | `DocumentBaseModel` | `add_sheet, get_sheet_by_name` |
 | `engines/document/models/exceptions.py` | `DocumentError` | `Exception` | `` |
 | `engines/document/models/exceptions.py` | `DocumentParseError` | `DocumentError` | `` |
 | `engines/document/models/exceptions.py` | `DocumentWriteError` | `DocumentError` | `` |
@@ -1400,9 +1592,411 @@
 | `engines/document/models/media_types.py` | `MediaRawType` | `str, Enum` | `` |
 | `engines/document/models/media_types.py` | `MediaType` | `BaseModel` | `` |
 | `engines/document/models/media_types.py` | `MediaTypeRegistry` | `—` | `get_by_format, get_by_extension, get_by_mime, all` |
+| `engines/document/models/msdm_capabilities.py` | `ScalarSupport` | `str, Enum` | `` |
+| `engines/document/models/msdm_capabilities.py` | `CompositeSupport` | `str, Enum` | `` |
+| `engines/document/models/msdm_capabilities.py` | `ConstraintCapability` | `str, Enum` | `` |
+| `engines/document/models/msdm_capabilities.py` | `IndexCapability` | `str, Enum` | `` |
+| `engines/document/models/msdm_capabilities.py` | `NestingDepth` | `str, Enum` | `` |
+| `engines/document/models/msdm_capabilities.py` | `InheritanceSupport` | `str, Enum` | `` |
+| `engines/document/models/msdm_capabilities.py` | `RelationshipModel` | `str, Enum` | `` |
+| `engines/document/models/msdm_capabilities.py` | `AnnotationSupport` | `str, Enum` | `` |
+| `engines/document/models/msdm_capabilities.py` | `TimeSeriesSupport` | `Flag` | `` |
+| `engines/document/models/msdm_capabilities.py` | `NamespaceSupport` | `str, Enum` | `` |
+| `engines/document/models/msdm_capabilities.py` | `EnumCapability` | `Flag` | `` |
+| `engines/document/models/msdm_capabilities.py` | `MSDM_FormatCapability` | `—` | `` |
+| `engines/document/models/msdm_models.py` | `EntityKind` | `str, Enum` | `` |
+| `engines/document/models/msdm_models.py` | `Cardinality` | `str, Enum` | `` |
+| `engines/document/models/msdm_models.py` | `ConstraintType` | `str, Enum` | `` |
+| `engines/document/models/msdm_models.py` | `ScalarType` | `str, Enum` | `` |
+| `engines/document/models/msdm_models.py` | `XSDFacet` | `str, Enum` | `` |
+| `engines/document/models/msdm_models.py` | `ProtobufOption` | `str, Enum` | `` |
+| `engines/document/models/msdm_models.py` | `AvroLogicalType` | `str, Enum` | `` |
+| `engines/document/models/msdm_models.py` | `GraphQLDirective` | `str, Enum` | `` |
+| `engines/document/models/msdm_models.py` | `DataType` | `—` | `` |
+| `engines/document/models/msdm_models.py` | `Annotation` | `—` | `` |
+| `engines/document/models/msdm_models.py` | `Constraint` | `—` | `` |
+| `engines/document/models/msdm_models.py` | `Index` | `—` | `` |
+| `engines/document/models/msdm_models.py` | `Attribute` | `—` | `` |
+| `engines/document/models/msdm_models.py` | `Entity` | `—` | `` |
+| `engines/document/models/msdm_models.py` | `CompositionEntity` | `—` | `` |
+| `engines/document/models/msdm_models.py` | `Relationship` | `—` | `` |
+| `engines/document/models/msdm_models.py` | `MSDMDocument` | `BaseDocument` | `` |
+| `engines/document/models/osdm_models.py` | `YAWLJoinType` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `YAWLSplitType` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `ParticipantBandKind` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `MessageVisibleKind` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `AlignmentKind` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `TransactionMethod` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `TimerCalculationType` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `TimeReference` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `DurationResolution` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `EscapeType` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `CorrelationPropertyType` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `CaseFileMultiplicity` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `EventListenerType` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `SentryExpression` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `DecisionTable` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `ActionList` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `ActivityType` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `TaskType` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `SubProcessType` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `GatewayType` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `EventType` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `LoopType` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `MultiInstanceBehavior` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `AdHocOrdering` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `ScriptLanguage` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `CallActivityType` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `ProcessType` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `GatewayDirection` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `AssociationDirection` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `EventBasedGatewayType` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `ItemKind` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `TimerEventType` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `RelationshipDirection` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `CEPOperator` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `WorkflowStateType` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `ResourceParameterType` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `ResourceRoleType` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `PotentialOwnerType` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `InteractionNodeType` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `EventDefinitionType` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `ChoreographyLoopType` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `DecisionLogicType` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `PseudoStateKind` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `InteractionStrategy` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `BaseElement` | `—` | `` |
+| `engines/document/models/osdm_models.py` | `RootElement` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `StateNode` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `Transition` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `ExtensionAttributeDefinition` | `—` | `` |
+| `engines/document/models/osdm_models.py` | `ExtensionDefinition` | `—` | `` |
+| `engines/document/models/osdm_models.py` | `ExtensionAttributeValue` | `—` | `` |
+| `engines/document/models/osdm_models.py` | `Extension` | `—` | `` |
+| `engines/document/models/osdm_models.py` | `Bounds` | `—` | `` |
+| `engines/document/models/osdm_models.py` | `DiagramElement` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `Edge` | `DiagramElement` | `` |
+| `engines/document/models/osdm_models.py` | `Shape` | `DiagramElement` | `` |
+| `engines/document/models/osdm_models.py` | `BPMNDiagram` | `—` | `` |
+| `engines/document/models/osdm_models.py` | `BPMNPlane` | `DiagramElement` | `` |
+| `engines/document/models/osdm_models.py` | `BPMNShape` | `Shape` | `` |
+| `engines/document/models/osdm_models.py` | `BPMNEdge` | `Edge` | `` |
+| `engines/document/models/osdm_models.py` | `BPMNLabel` | `—` | `` |
+| `engines/document/models/osdm_models.py` | `BpmnExpression` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `FormalExpression` | `BpmnExpression` | `` |
+| `engines/document/models/osdm_models.py` | `ItemDefinition` | `RootElement` | `` |
+| `engines/document/models/osdm_models.py` | `Resource` | `RootElement` | `` |
+| `engines/document/models/osdm_models.py` | `ResourceParameter` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `ResourceAssignmentExpression` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `ResourceParameterBinding` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `ResourceRole` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `HumanPerformer` | `ResourceRole` | `` |
+| `engines/document/models/osdm_models.py` | `Performer` | `HumanPerformer` | `` |
+| `engines/document/models/osdm_models.py` | `PotentialOwner` | `HumanPerformer` | `` |
+| `engines/document/models/osdm_models.py` | `FlowElement` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `FlowNode` | `FlowElement` | `` |
+| `engines/document/models/osdm_models.py` | `Activity` | `FlowNode` | `` |
+| `engines/document/models/osdm_models.py` | `Task` | `Activity` | `` |
+| `engines/document/models/osdm_models.py` | `ServiceTask` | `Task` | `` |
+| `engines/document/models/osdm_models.py` | `SendTask` | `Task` | `` |
+| `engines/document/models/osdm_models.py` | `ReceiveTask` | `Task` | `` |
+| `engines/document/models/osdm_models.py` | `UserTask` | `Task` | `` |
+| `engines/document/models/osdm_models.py` | `ManualTask` | `Task` | `` |
+| `engines/document/models/osdm_models.py` | `Script` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `ScriptTask` | `Task` | `` |
+| `engines/document/models/osdm_models.py` | `BusinessRuleTask` | `Task` | `` |
+| `engines/document/models/osdm_models.py` | `CallActivity` | `Activity` | `` |
+| `engines/document/models/osdm_models.py` | `SubProcess` | `Activity` | `` |
+| `engines/document/models/osdm_models.py` | `TransactionSubProcess` | `SubProcess` | `` |
+| `engines/document/models/osdm_models.py` | `AdHocSubProcess` | `SubProcess` | `` |
+| `engines/document/models/osdm_models.py` | `GlobalTask` | `RootElement` | `` |
+| `engines/document/models/osdm_models.py` | `GlobalUserTask` | `GlobalTask` | `` |
+| `engines/document/models/osdm_models.py` | `GlobalScriptTask` | `GlobalTask` | `` |
+| `engines/document/models/osdm_models.py` | `GlobalManualTask` | `GlobalTask` | `` |
+| `engines/document/models/osdm_models.py` | `GlobalBusinessRuleTask` | `GlobalTask` | `` |
+| `engines/document/models/osdm_models.py` | `Rendering` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `RenderingForm` | `Rendering` | `` |
+| `engines/document/models/osdm_models.py` | `LoopCharacteristics` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `StandardLoopCharacteristics` | `LoopCharacteristics` | `` |
+| `engines/document/models/osdm_models.py` | `MultiInstanceLoopCharacteristics` | `LoopCharacteristics` | `` |
+| `engines/document/models/osdm_models.py` | `ComplexBehaviorDefinition` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `InputOutputSpecification` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `DataInput` | `—` | `` |
+| `engines/document/models/osdm_models.py` | `DataOutput` | `—` | `` |
+| `engines/document/models/osdm_models.py` | `InputSet` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `OutputSet` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `DataInputRef` | `—` | `` |
+| `engines/document/models/osdm_models.py` | `DataOutputRef` | `—` | `` |
+| `engines/document/models/osdm_models.py` | `InputOutputBinding` | `—` | `` |
+| `engines/document/models/osdm_models.py` | `Event` | `FlowNode` | `` |
+| `engines/document/models/osdm_models.py` | `CatchEvent` | `Event` | `` |
+| `engines/document/models/osdm_models.py` | `ThrowEvent` | `Event` | `` |
+| `engines/document/models/osdm_models.py` | `StartEvent` | `CatchEvent` | `` |
+| `engines/document/models/osdm_models.py` | `EndEvent` | `ThrowEvent` | `` |
+| `engines/document/models/osdm_models.py` | `IntermediateCatchEvent` | `CatchEvent` | `` |
+| `engines/document/models/osdm_models.py` | `IntermediateThrowEvent` | `ThrowEvent` | `` |
+| `engines/document/models/osdm_models.py` | `BoundaryEvent` | `CatchEvent` | `` |
+| `engines/document/models/osdm_models.py` | `ImplicitThrowEvent` | `ThrowEvent` | `` |
+| `engines/document/models/osdm_models.py` | `EventDefinition` | `RootElement` | `` |
+| `engines/document/models/osdm_models.py` | `MessageEventDefinition` | `EventDefinition` | `` |
+| `engines/document/models/osdm_models.py` | `TimerEventDefinition` | `EventDefinition` | `` |
+| `engines/document/models/osdm_models.py` | `SignalEventDefinition` | `EventDefinition` | `` |
+| `engines/document/models/osdm_models.py` | `ErrorEventDefinition` | `EventDefinition` | `` |
+| `engines/document/models/osdm_models.py` | `EscalationEventDefinition` | `EventDefinition` | `` |
+| `engines/document/models/osdm_models.py` | `CompensateEventDefinition` | `EventDefinition` | `` |
+| `engines/document/models/osdm_models.py` | `ConditionalEventDefinition` | `EventDefinition` | `` |
+| `engines/document/models/osdm_models.py` | `LinkEventDefinition` | `EventDefinition` | `` |
+| `engines/document/models/osdm_models.py` | `CancelEventDefinition` | `EventDefinition` | `` |
+| `engines/document/models/osdm_models.py` | `TerminateEventDefinition` | `EventDefinition` | `` |
+| `engines/document/models/osdm_models.py` | `DueTimeDuration` | `—` | `` |
+| `engines/document/models/osdm_models.py` | `DataFlowElement` | `FlowElement` | `` |
+| `engines/document/models/osdm_models.py` | `DataObject` | `DataFlowElement` | `` |
+| `engines/document/models/osdm_models.py` | `DataObjectReference` | `DataFlowElement` | `` |
+| `engines/document/models/osdm_models.py` | `DataStore` | `RootElement` | `` |
+| `engines/document/models/osdm_models.py` | `DataStoreReference` | `DataFlowElement` | `` |
+| `engines/document/models/osdm_models.py` | `DataState` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `DataElement` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `Property` | `DataElement` | `` |
+| `engines/document/models/osdm_models.py` | `DataAssociation` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `DataInputAssociation` | `DataAssociation` | `` |
+| `engines/document/models/osdm_models.py` | `DataOutputAssociation` | `DataAssociation` | `` |
+| `engines/document/models/osdm_models.py` | `Assignment` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `SequenceFlow` | `FlowElement` | `` |
+| `engines/document/models/osdm_models.py` | `MessageFlow` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `Gateway` | `FlowNode` | `` |
+| `engines/document/models/osdm_models.py` | `ExclusiveGateway` | `Gateway` | `` |
+| `engines/document/models/osdm_models.py` | `InclusiveGateway` | `Gateway` | `` |
+| `engines/document/models/osdm_models.py` | `ParallelGateway` | `Gateway` | `` |
+| `engines/document/models/osdm_models.py` | `EventBasedGateway` | `Gateway` | `` |
+| `engines/document/models/osdm_models.py` | `ComplexGateway` | `Gateway` | `` |
+| `engines/document/models/osdm_models.py` | `Lane` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `LaneSet` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `Process` | `RootElement` | `` |
+| `engines/document/models/osdm_models.py` | `Collaboration` | `RootElement` | `` |
+| `engines/document/models/osdm_models.py` | `Artifact` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `Association` | `Artifact` | `` |
+| `engines/document/models/osdm_models.py` | `Group` | `Artifact` | `` |
+| `engines/document/models/osdm_models.py` | `TextAnnotation` | `Artifact` | `` |
+| `engines/document/models/osdm_models.py` | `Auditing` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `Monitoring` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `Interface` | `RootElement` | `` |
+| `engines/document/models/osdm_models.py` | `Operation` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `EndPoint` | `RootElement` | `` |
+| `engines/document/models/osdm_models.py` | `Message` | `RootElement` | `` |
+| `engines/document/models/osdm_models.py` | `Signal` | `RootElement` | `` |
+| `engines/document/models/osdm_models.py` | `Error` | `RootElement` | `` |
+| `engines/document/models/osdm_models.py` | `Escalation` | `RootElement` | `` |
+| `engines/document/models/osdm_models.py` | `CorrelationKey` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `CorrelationProperty` | `RootElement` | `` |
+| `engines/document/models/osdm_models.py` | `CorrelationPropertyRetrievalExpression` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `CorrelationSubscription` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `CorrelationPropertyBinding` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `Category` | `RootElement` | `` |
+| `engines/document/models/osdm_models.py` | `CategoryValue` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `InteractionNode` | `—` | `` |
+| `engines/document/models/osdm_models.py` | `MessageFlowAssociation` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `Participant` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `ParticipantMultiplicity` | `—` | `` |
+| `engines/document/models/osdm_models.py` | `ParticipantAssociation` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `PartnerEntity` | `RootElement` | `` |
+| `engines/document/models/osdm_models.py` | `PartnerRole` | `RootElement` | `` |
+| `engines/document/models/osdm_models.py` | `ConversationNode` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `Conversation` | `ConversationNode` | `` |
+| `engines/document/models/osdm_models.py` | `CallConversation` | `ConversationNode` | `` |
+| `engines/document/models/osdm_models.py` | `GlobalConversation` | `ConversationNode` | `` |
+| `engines/document/models/osdm_models.py` | `SubConversation` | `ConversationNode` | `` |
+| `engines/document/models/osdm_models.py` | `ConversationAssociation` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `ConversationLink` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `ChoreographyActivity` | `FlowNode` | `` |
+| `engines/document/models/osdm_models.py` | `ChoreographyTask` | `ChoreographyActivity` | `` |
+| `engines/document/models/osdm_models.py` | `CallChoreography` | `ChoreographyActivity` | `` |
+| `engines/document/models/osdm_models.py` | `SubChoreography` | `ChoreographyActivity` | `` |
+| `engines/document/models/osdm_models.py` | `Choreography` | `Collaboration` | `` |
+| `engines/document/models/osdm_models.py` | `GlobalChoreographyTask` | `Choreography` | `` |
+| `engines/document/models/osdm_models.py` | `PlanItem` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `DiscretionaryItem` | `PlanItem` | `` |
+| `engines/document/models/osdm_models.py` | `CaseFileItem` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `CaseTask` | `Activity` | `` |
+| `engines/document/models/osdm_models.py` | `ProcessTask` | `Activity` | `` |
+| `engines/document/models/osdm_models.py` | `HumanTask` | `Activity` | `` |
+| `engines/document/models/osdm_models.py` | `ApplicabilityRule` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `EntryCriterion` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `ExitCriterion` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `Stage` | `FlowNode` | `` |
+| `engines/document/models/osdm_models.py` | `Milestone` | `FlowNode` | `` |
+| `engines/document/models/osdm_models.py` | `EventListener` | `FlowNode` | `` |
+| `engines/document/models/osdm_models.py` | `Sentry` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `CMMNDefinition` | `—` | `` |
+| `engines/document/models/osdm_models.py` | `InformationRequirement` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `KnowledgeRequirement` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `AuthorityRequirement` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `DecisionService` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `Decision` | `FlowNode` | `` |
+| `engines/document/models/osdm_models.py` | `BusinessKnowledgeModel` | `FlowNode` | `` |
+| `engines/document/models/osdm_models.py` | `InputData` | `FlowNode` | `` |
+| `engines/document/models/osdm_models.py` | `KnowledgeSource` | `FlowNode` | `` |
+| `engines/document/models/osdm_models.py` | `DMNDefinition` | `—` | `` |
+| `engines/document/models/osdm_models.py` | `ErrorHandlingOperator` | `str, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `RetryBackoffRate` | `float, Enum` | `` |
+| `engines/document/models/osdm_models.py` | `CloudResourceBinding` | `—` | `` |
+| `engines/document/models/osdm_models.py` | `ErrorHandlingConfig` | `—` | `` |
+| `engines/document/models/osdm_models.py` | `RetryConfig` | `—` | `` |
+| `engines/document/models/osdm_models.py` | `TimeoutConfig` | `—` | `` |
+| `engines/document/models/osdm_models.py` | `State` | `StateNode` | `` |
+| `engines/document/models/osdm_models.py` | `StateTransition` | `Transition` | `` |
+| `engines/document/models/osdm_models.py` | `StateInvoke` | `—` | `` |
+| `engines/document/models/osdm_models.py` | `StateMachineRegion` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `StateMachineModel` | `—` | `` |
+| `engines/document/models/osdm_models.py` | `PseudoState` | `StateNode` | `` |
+| `engines/document/models/osdm_models.py` | `Place` | `State` | `` |
+| `engines/document/models/osdm_models.py` | `YAWLTaskDecorator` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `PnTransition` | `Transition` | `` |
+| `engines/document/models/osdm_models.py` | `Arc` | `Transition` | `` |
+| `engines/document/models/osdm_models.py` | `EventStream` | `—` | `` |
+| `engines/document/models/osdm_models.py` | `CEPRule` | `—` | `` |
+| `engines/document/models/osdm_models.py` | `CEPDefinition` | `—` | `` |
+| `engines/document/models/osdm_models.py` | `InteractionProtocol` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `InteractionModel` | `—` | `` |
+| `engines/document/models/osdm_models.py` | `BaseOSDMDocument` | `BaseDocument` | `` |
+| `engines/document/models/osdm_models.py` | `BPMNDocument` | `BaseOSDMDocument` | `` |
+| `engines/document/models/osdm_models.py` | `CMMNDocument` | `BaseOSDMDocument` | `` |
+| `engines/document/models/osdm_models.py` | `StateMachineDocument` | `BaseOSDMDocument` | `` |
+| `engines/document/models/osdm_models.py` | `DMNDocument` | `BaseOSDMDocument` | `` |
+| `engines/document/models/osdm_models.py` | `CEPDocument` | `BaseOSDMDocument` | `` |
+| `engines/document/models/osdm_models.py` | `MultiAgentInteractionDocument` | `BaseOSDMDocument` | `` |
+| `engines/document/models/osdm_models.py` | `OSDMModel` | `—` | `` |
+| `engines/document/models/psdm_models.py` | `PlaceholderType` | `str, Enum` | `` |
+| `engines/document/models/psdm_models.py` | `TransitionType` | `str, Enum` | `` |
+| `engines/document/models/psdm_models.py` | `AnimationType` | `str, Enum` | `` |
+| `engines/document/models/psdm_models.py` | `TriggerType` | `str, Enum` | `` |
+| `engines/document/models/psdm_models.py` | `ShowType` | `str, Enum` | `` |
+| `engines/document/models/psdm_models.py` | `Placeholder` | `—` | `` |
+| `engines/document/models/psdm_models.py` | `SlideLayout` | `—` | `` |
+| `engines/document/models/psdm_models.py` | `SlideMaster` | `—` | `` |
+| `engines/document/models/psdm_models.py` | `Transition` | `—` | `` |
+| `engines/document/models/psdm_models.py` | `Animation` | `—` | `` |
+| `engines/document/models/psdm_models.py` | `MediaReference` | `—` | `` |
+| `engines/document/models/psdm_models.py` | `NotesSlide` | `—` | `` |
+| `engines/document/models/psdm_models.py` | `SlideComment` | `—` | `` |
+| `engines/document/models/psdm_models.py` | `Slide` | `—` | `` |
+| `engines/document/models/psdm_models.py` | `PresentationProperties` | `—` | `` |
+| `engines/document/models/psdm_models.py` | `Theme` | `—` | `` |
+| `engines/document/models/psdm_models.py` | `HyperlinkAction` | `—` | `` |
+| `engines/document/models/psdm_models.py` | `GroupShapeContent` | `—` | `` |
+| `engines/document/models/psdm_models.py` | `ConnectorContent` | `—` | `` |
+| `engines/document/models/psdm_models.py` | `Section` | `—` | `` |
+| `engines/document/models/psdm_models.py` | `PSDMDocument` | `BaseDocument` | `` |
+| `engines/document/models/ssdm_capabilities.py` | `ParameterNesting` | `str, Enum` | `` |
+| `engines/document/models/ssdm_capabilities.py` | `BodyMediaType` | `str, Enum` | `` |
+| `engines/document/models/ssdm_capabilities.py` | `SecurityFeature` | `str, Enum` | `` |
+| `engines/document/models/ssdm_capabilities.py` | `TransportBinding` | `str, Enum` | `` |
+| `engines/document/models/ssdm_capabilities.py` | `SchemaKind` | `str, Enum` | `` |
+| `engines/document/models/ssdm_capabilities.py` | `OperationModel` | `str, Enum` | `` |
+| `engines/document/models/ssdm_capabilities.py` | `FormatCapability` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `HttpMethod` | `str, Enum` | `` |
+| `engines/document/models/ssdm_models.py` | `ParameterLocation` | `str, Enum` | `` |
+| `engines/document/models/ssdm_models.py` | `SecurityType` | `str, Enum` | `` |
+| `engines/document/models/ssdm_models.py` | `OAuth2Flow` | `str, Enum` | `` |
+| `engines/document/models/ssdm_models.py` | `ApiKeyLocation` | `str, Enum` | `` |
+| `engines/document/models/ssdm_models.py` | `OperationType` | `str, Enum` | `` |
+| `engines/document/models/ssdm_models.py` | `YangStatement` | `str, Enum` | `` |
+| `engines/document/models/ssdm_models.py` | `SnmpAccess` | `str, Enum` | `` |
+| `engines/document/models/ssdm_models.py` | `SnmpStatus` | `str, Enum` | `` |
+| `engines/document/models/ssdm_models.py` | `ContactInfo` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `LicenseInfo` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `Server` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `SecurityScheme` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `OAuth2FlowInfo` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `Parameter` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `RequestBody` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `Link` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `Response` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `Operation` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `YangType` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `YangLeaf` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `YangContainer` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `MibObjectType` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `MibModule` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `GraphQLService` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `AsyncAPIInfo` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `SSDM_DOCUMENT` | `BaseDocument` | `` |
+| `engines/document/models/ssdm_models.py` | `Transport` | `str, Enum` | `` |
+| `engines/document/models/ssdm_models.py` | `AuthMethod` | `str, Enum` | `` |
+| `engines/document/models/ssdm_models.py` | `ApiKeyLocation` | `str, Enum` | `` |
+| `engines/document/models/ssdm_models.py` | `ValueSource` | `str, Enum` | `` |
+| `engines/document/models/ssdm_models.py` | `OAuth2Flow` | `str, Enum` | `` |
+| `engines/document/models/ssdm_models.py` | `RetryPolicy` | `str, Enum` | `` |
+| `engines/document/models/ssdm_models.py` | `PortProtocol` | `str, Enum` | `` |
+| `engines/document/models/ssdm_models.py` | `HealthProbeType` | `str, Enum` | `` |
+| `engines/document/models/ssdm_models.py` | `PerformedBy` | `str, Enum` | `` |
+| `engines/document/models/ssdm_models.py` | `DiscoveryBackend` | `str, Enum` | `` |
+| `engines/document/models/ssdm_models.py` | `ServiceType` | `str, Enum` | `` |
+| `engines/document/models/ssdm_models.py` | `JWTValidation` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `AuthConfig` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `SlAPolicy` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `RateLimit` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `CORSConfig` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `GatewayRule` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `PortMapping` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `HTTPGetProbe` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `TCPSocketProbe` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `ExecProbe` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `GRPCProbe` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `HealthCheck` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `DiscoveryConfig` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `MeshRuleType` | `str, Enum` | `` |
+| `engines/document/models/ssdm_models.py` | `MeshRule` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `IngressRule` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `LoadBalancerConfig` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `ServiceExposure` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `DeploymentDescriptor` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `MessageFormat` | `str, Enum` | `` |
+| `engines/document/models/ssdm_models.py` | `SubscriptionType` | `str, Enum` | `` |
+| `engines/document/models/ssdm_models.py` | `MessageBinding` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `ServiceBinding` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `MCPToolBinding` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `MCPResourceBinding` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `MCPPromptBinding` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `MCPNorthBoundBinding` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `InternalComponentType` | `str, Enum` | `` |
+| `engines/document/models/ssdm_models.py` | `CoordinationProtocol` | `str, Enum` | `` |
+| `engines/document/models/ssdm_models.py` | `ParameterMapping` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `ResponseMapping` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `InternalServiceBinding` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `NorthBoundBinding` | `ServiceBinding` | `` |
+| `engines/document/models/ssdm_models.py` | `MCPClientToolBinding` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `MCPSouthBoundBinding` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `MCPSouthBoundBinding` | `—` | `to_service_binding` |
 | `engines/document/models/standard.py` | `DocumentStandard` | `str, Enum` | `full_name, description` |
 | `engines/document/models/standard.py` | `MediaCategory` | `str, Enum` | `` |
-| `engines/document/models/usdm_models.py` | `USDMDcoument` | `BaseDocument` | `` |
+| `engines/document/models/tsdm_models.py` | `ToolKind` | `str, Enum` | `` |
+| `engines/document/models/tsdm_models.py` | `ParameterSource` | `str, Enum` | `` |
+| `engines/document/models/tsdm_models.py` | `ParameterType` | `str, Enum` | `` |
+| `engines/document/models/tsdm_models.py` | `HttpMethod` | `str, Enum` | `` |
+| `engines/document/models/tsdm_models.py` | `LoadBalanceStrategy` | `str, Enum` | `` |
+| `engines/document/models/tsdm_models.py` | `SnmpVersion` | `str, Enum` | `` |
+| `engines/document/models/tsdm_models.py` | `NetconfProtocol` | `str, Enum` | `` |
+| `engines/document/models/tsdm_models.py` | `ToolParameter` | `—` | `` |
+| `engines/document/models/tsdm_models.py` | `ToolOutput` | `—` | `` |
+| `engines/document/models/tsdm_models.py` | `Tool` | `—` | `` |
+| `engines/document/models/tsdm_models.py` | `DbQueryTool` | `Tool` | `` |
+| `engines/document/models/tsdm_models.py` | `DbStatementTool` | `Tool` | `` |
+| `engines/document/models/tsdm_models.py` | `HttpServiceTool` | `Tool` | `` |
+| `engines/document/models/tsdm_models.py` | `GrpcServiceTool` | `Tool` | `` |
+| `engines/document/models/tsdm_models.py` | `GraphQLTool` | `Tool` | `` |
+| `engines/document/models/tsdm_models.py` | `TcpSocketTool` | `Tool` | `` |
+| `engines/document/models/tsdm_models.py` | `MessageBusTool` | `Tool` | `` |
+| `engines/document/models/tsdm_models.py` | `CliTool` | `Tool` | `` |
+| `engines/document/models/tsdm_models.py` | `PythonFunctionTool` | `Tool` | `` |
+| `engines/document/models/tsdm_models.py` | `MCPTool` | `Tool` | `` |
+| `engines/document/models/tsdm_models.py` | `YangNetconfTool` | `Tool` | `` |
+| `engines/document/models/tsdm_models.py` | `MibSnmpTool` | `Tool` | `` |
+| `engines/document/models/tsdm_models.py` | `FileReadTool` | `Tool` | `` |
+| `engines/document/models/tsdm_models.py` | `FileWriteTool` | `Tool` | `` |
+| `engines/document/models/tsdm_models.py` | `AiModelTool` | `Tool` | `` |
+| `engines/document/models/tsdm_models.py` | `CompositeTool` | `Tool` | `` |
+| `engines/document/models/tsdm_models.py` | `TSDMDocument` | `BaseDocument` | `` |
+| `engines/document/models/usdm_models.py` | `USDMDocument` | `BaseDocument` | `` |
 | `engines/document/models/usdm_models.py` | `DocumentElement` | `—` | `` |
 | `engines/document/models/usdm_models.py` | `Section` | `—` | `` |
 | `engines/document/models/usdm_models.py` | `PageContent` | `—` | `` |
@@ -1439,10 +2033,14 @@
 | `engines/document/models/usdm_models.py` | `ColumnBreakContent` | `—` | `` |
 | `engines/document/models/usdm_models.py` | `PDFTextRun` | `—` | `` |
 | `engines/document/models/usdm_models.py` | `PDFVectorPath` | `—` | `` |
-| `engines/document/models/usdm_models.py` | `LaTeXEnvironmentContent` | `LogicalContent` | `` |
-| `engines/document/models/usdm_models.py` | `LaTeXCommandContent` | `LogicalContent` | `` |
-| `engines/document/models/usdm_models.py` | `SemanticHTMLContent` | `LogicalContent` | `` |
-| `engines/document/models/usdm_models.py` | `CanvasContent` | `LogicalContent` | `` |
+| `engines/document/models/usdm_models.py` | `LaTeXEnvironmentContent` | `—` | `` |
+| `engines/document/models/usdm_models.py` | `LaTeXCommandContent` | `—` | `` |
+| `engines/document/models/usdm_models.py` | `SemanticHTMLContent` | `—` | `` |
+| `engines/document/models/usdm_models.py` | `CanvasOperation` | `—` | `` |
+| `engines/document/models/usdm_models.py` | `PDFInfo` | `—` | `` |
+| `engines/document/models/usdm_models.py` | `DOCXProperties` | `—` | `` |
+| `engines/document/models/usdm_models.py` | `Change` | `—` | `` |
+| `engines/document/models/usdm_models.py` | `CanvasContent` | `—` | `` |
 | `engines/document/models/usdm_models.py` | `DocumentMetadata` | `—` | `` |
 | `engines/document/models/usdm_models.py` | `CrossReference` | `—` | `` |
 | `engines/document/models/usdm_models.py` | `BibliographyEntry` | `—` | `` |
@@ -1462,6 +2060,8 @@
 | `engines/document/models/usdm_models.py` | `AudioContent` | `—` | `` |
 | `engines/document/models/usdm_models.py` | `ShapeContent` | `—` | `` |
 | `engines/document/models/usdm_models.py` | `DrawingContent` | `—` | `` |
+| `engines/document/models/usdm_models.py` | `ChartSeriesContent` | `—` | `` |
+| `engines/document/models/usdm_models.py` | `ChartAxisContent` | `—` | `` |
 | `engines/document/models/usdm_models.py` | `ChartContent` | `—` | `` |
 | `engines/document/models/usdm_models.py` | `DataContent` | `—` | `` |
 | `engines/document/models/usdm_models.py` | `SpreadsheetContent` | `—` | `` |
@@ -1481,6 +2081,7 @@
 | `engines/document/parsers/docx_parser/docx_models.py` | `TextDirection` | `str, Enum` | `` |
 | `engines/document/parsers/docx_parser/docx_models.py` | `DOCXRunProperties` | `—` | `` |
 | `engines/document/parsers/docx_parser/docx_models.py` | `DOCXTextRun` | `—` | `` |
+| `engines/document/parsers/docx_parser/docx_models.py` | `DOCXDiagram` | `—` | `` |
 | `engines/document/parsers/docx_parser/docx_models.py` | `DOCXDrawing` | `—` | `` |
 | `engines/document/parsers/docx_parser/docx_models.py` | `DOCXField` | `—` | `` |
 | `engines/document/parsers/docx_parser/docx_models.py` | `DOCXSymbol` | `—` | `` |
@@ -1515,18 +2116,59 @@
 | `engines/document/parsers/docx_parser/docx_models.py` | `DOCXExtendedProperties` | `—` | `` |
 | `engines/document/parsers/docx_parser/docx_models.py` | `DOCXCustomProperties` | `—` | `` |
 | `engines/document/parsers/docx_parser/docx_models.py` | `DOCXDocument` | `—` | `` |
+| `engines/document/parsers/docx_parser/docx_parser.py` | `DOCXParser` | `—` | `__init__, _reset, _generate_element_id, _convert_table, _merge_consecutive_lists, parse ...` |
 | `engines/document/parsers/docx_parser/docx_style_parser.py` | `DocxStyleParser` | `—` | `__init__, parse_styles, _parse_style, _parse_run_properties, _parse_paragraph_properties, _parse_table_properties` |
 | `engines/document/parsers/docx_parser/docx_table_parser.py` | `DocxTableParser` | `—` | `__init__, parse_table, parse_all_tables` |
 | `engines/document/parsers/docx_parser/docx_utils.py` | `DocxStyleInfo` | `—` | `__post_init__` |
 | `engines/document/parsers/docx_parser/docx_utils.py` | `DocxNumberingInfo` | `—` | `__post_init__` |
 | `engines/document/parsers/docx_parser/docx_utils.py` | `DocxUtils` | `—` | `extract_text_style, extract_paragraph_style, extract_style_properties, extract_numbering_definition, extract_text_from_element, convert_omml_to_latex ...` |
+| `engines/document/parsers/drawingml/diagram_parser.py` | `DiagramNode` | `—` | `__init__` |
 | `engines/document/parsers/html_parser.py` | `HTMLDocumentParser` | `HTMLParser` | `__init__, _generate_id, _create_rich_text_span, _flush_current_text, handle_starttag, handle_endtag ...` |
-| `engines/document/parsers/html_parser.py` | `HtmlParser` | `BaseDocumentParser` | `__init__, parse, parse_stream, get_supported_media_types, get_supported_extensions, _extract_math_from_html` |
+| `engines/document/parsers/html_parser.py` | `HtmlParser` | `BaseDocumentParser` | `parse_bytes, parse_text, parse_stream, get_supported_media_types, get_supported_extensions, _extract_math_from_html` |
 | `engines/document/parsers/json_parser.py` | `JsonDocumentParser` | `BaseDocumentParser` | `__init__, parse_bytes, parse_path, get_supported_media_types, get_supported_extensions` |
 | `engines/document/parsers/latex_parser.py` | `LatexParser` | `BaseDocumentParser` | `__init__, parse_bytes, parse_stream, _reset_parser_state, _generate_id, _extract_title ...` |
 | `engines/document/parsers/markdown_parser.py` | `MarkdownTreeProcessor` | `Treeprocessor` | `__init__, run, _generate_id, _process_node, _extract_text, _process_list ...` |
 | `engines/document/parsers/markdown_parser.py` | `MarkdownExtension` | `Extension` | `extendMarkdown` |
 | `engines/document/parsers/markdown_parser.py` | `MarkdownParser` | `BaseDocumentParser` | `__init__, parse_bytes, parse_stream` |
+| `engines/document/parsers/msdm_parsers/avro_schema_parser.py` | `AvroSchemaParser` | `BaseMSDMParser` | `_parse_to_msdm, _process_schema_entry, _parse_record, _parse_enum, _parse_fixed, _parse_field ...` |
+| `engines/document/parsers/msdm_parsers/base_msdm_parser.py` | `BaseMSDMParser` | `BaseDocumentParser` | `__init__, parse_bytes, parse_path, parse_stream, _parse_to_msdm` |
+| `engines/document/parsers/msdm_parsers/cql_parser.py` | `CQLParser` | `BaseMSDMParser` | `_parse_to_msdm, _strip_comments, _process_statement, _parse_create_table, _parse_create_type, _parse_create_index ...` |
+| `engines/document/parsers/msdm_parsers/cue_parser.py` | `CueParser` | `BaseMSDMParser` | `_parse_to_msdm, _strip_comments, _parse_cue_text, _tokenize, _peek, _advance ...` |
+| `engines/document/parsers/msdm_parsers/elasticsearch_mapping_parser.py` | `ElasticsearchMappingParser` | `BaseMSDMParser` | `_parse_to_msdm, _store_settings, _parse_mappings, _parse_field, _flatten` |
+| `engines/document/parsers/msdm_parsers/erd_parser.py` | `ERDParser` | `BaseMSDMParser` | `_parse_to_msdm, _parse_json, _parse_json_entity, _parse_json_attribute, _parse_json_relationship, _parse_xml ...` |
+| `engines/document/parsers/msdm_parsers/graphql_schema_parser.py` | `TokenType` | `Enum` | `` |
+| `engines/document/parsers/msdm_parsers/graphql_schema_parser.py` | `GraphQLSchemaParser` | `BaseMSDMParser` | `_parse_to_msdm, _peek, _advance, _skip_comments, _parse_definition, _parse_description ...` |
+| `engines/document/parsers/msdm_parsers/influxdb_schema_parser.py` | `InfluxDBSchemaParser` | `BaseMSDMParser` | `_parse_to_msdm, _strip_comments, _split_statements, _process_statement, _parse_create_measurement, _parse_measurement_fields ...` |
+| `engines/document/parsers/msdm_parsers/json_schema_parser.py` | `JsonSchemaParser` | `BaseMSDMParser` | `_parse_to_msdm, _process_schema, _parse_attribute, _type_to_datatype, _resolve_refs, _store_definitions ...` |
+| `engines/document/parsers/msdm_parsers/mongodb_schema_parser.py` | `MongoDBSchemaParser` | `BaseMSDMParser` | `_parse_to_msdm, _try_json, _parse_validator, _process_validator_object, _parse_validator_field, _bson_type_to_datatype ...` |
+| `engines/document/parsers/msdm_parsers/neo4j_schema_parser.py` | `Neo4jSchemaParser` | `BaseMSDMParser` | `_parse_to_msdm, _strip_comments, _process_statement, _add_prop, _build_entities` |
+| `engines/document/parsers/msdm_parsers/owl_parser.py` | `OWLParser` | `BaseMSDMParser` | `_parse_to_msdm, _collect_entities, _collect_properties, _local_name, _get_child_text, _store_ref_annotation ...` |
+| `engines/document/parsers/msdm_parsers/plantuml_parser.py` | `PlantUMLParser` | `BaseMSDMParser` | `_parse_to_msdm, _finalize_class_block, _parse_type_string, _parse_relationship_line, _to_card` |
+| `engines/document/parsers/msdm_parsers/proto_msdm_parser.py` | `ProtoParser` | `BaseMSDMParser` | `_parse_to_msdm, _tokenize, _peek, _advance, _strip_comments, _parse_top_level ...` |
+| `engines/document/parsers/msdm_parsers/python_model_parser.py` | `PythonModelParser` | `BaseMSDMParser` | `_parse_to_msdm, _process_class, _process_enum, _extract_fields, _annotation_to_datatype, _ast_to_datatype ...` |
+| `engines/document/parsers/msdm_parsers/sql_ddl_parser.py` | `SqlDDLParser` | `BaseMSDMParser` | `_parse_to_msdm, _strip_sql_comments, _split_statements, _parse_create_table, _parse_column_definition, _sql_type_to_datatype ...` |
+| `engines/document/parsers/msdm_parsers/thrift_idl_parser.py` | `ThriftIDLParser` | `BaseMSDMParser` | `_parse_to_msdm, _process_file_directives, _parse_typedef, _parse_enum, _parse_struct, _split_field_lines ...` |
+| `engines/document/parsers/msdm_parsers/typescript_interface_parser.py` | `Token` | `—` | `__init__` |
+| `engines/document/parsers/msdm_parsers/typescript_interface_parser.py` | `TypeScriptInterfaceParser` | `BaseMSDMParser` | `_parse_to_msdm, _peek, _advance, _match, _expect, _parse_declaration ...` |
+| `engines/document/parsers/msdm_parsers/uml_xmi_parser.py` | `UMLXmiParser` | `BaseMSDMParser` | `_parse_to_msdm, _collect_elements, _parse_class, _is_association_end, _parse_attribute, _parse_operation ...` |
+| `engines/document/parsers/msdm_parsers/xsd_parser.py` | `XSDParser` | `BaseMSDMParser` | `_parse_to_msdm, _parse_complex_type, _process_complex_content, _process_base_type, _process_compositor_or_attrs, _process_compositor ...` |
+| `engines/document/parsers/osdm_parsers/airflow_dag_parser.py` | `AirflowDAGParser` | `BaseOSDMParser` | `_parse_to_document, _find_dag_definitions, _is_dag_context, _is_dag_call, _extract_dag_info_from_with, _extract_dag_info_from_assign ...` |
+| `engines/document/parsers/osdm_parsers/aws_step_functions_parser.py` | `AWSStepFunctionsParser` | `BaseOSDMParser` | `_parse_to_document, _build_state_machine, _parse_state, _choice_to_expression` |
+| `engines/document/parsers/osdm_parsers/azure_logic_apps_parser.py` | `AzureLogicAppsParser` | `BaseOSDMParser` | `_parse_to_document, _build_state_machine, _parse_triggers, _parse_action, _parse_iso8601_duration` |
+| `engines/document/parsers/osdm_parsers/base_osdm_parser.py` | `BaseOSDMParser` | `BaseDocumentParser` | `__init__, parse_bytes, parse_path, parse_stream, _parse_to_document, _detect_version ...` |
+| `engines/document/parsers/osdm_parsers/bpmn_xml_parser.py` | `BPMNXMLParser` | `BaseOSDMParser` | `_parse_to_document, _parse_process, _parse_flow_element, _parse_task, _parse_activity_common, _parse_sub_process ...` |
+| `engines/document/parsers/osdm_parsers/cep_parser.py` | `CEPParser` | `BaseOSDMParser` | `_parse_to_document, _parse_definition, _parse_stream, _parse_rule` |
+| `engines/document/parsers/osdm_parsers/cmmn_xml_parser.py` | `CMMNXMLParser` | `BaseOSDMParser` | `_parse_to_document, _parse_case, _parse_stage, _parse_flow_element, _parse_milestone, _parse_event_listener ...` |
+| `engines/document/parsers/osdm_parsers/cncf_serverless_workflow_parser.py` | `CNCFServerlessWorkflowParser` | `BaseOSDMParser` | `_parse_to_document, _build_state_machine, _parse_state, _parse_iso8601_duration` |
+| `engines/document/parsers/osdm_parsers/dmn_xml_parser.py` | `DMNXMLParser` | `BaseOSDMParser` | `_parse_to_document, _parse_definitions, _parse_decision, _resolve_decision_requirements, _parse_information_requirement, _parse_knowledge_requirement ...` |
+| `engines/document/parsers/osdm_parsers/epc_parser.py` | `EPCParser` | `BaseOSDMParser` | `_parse_to_document, _parse_epc, _parse_event, _parse_function, _parse_connector, _parse_arc ...` |
+| `engines/document/parsers/osdm_parsers/graphml_xml_parser.py` | `GraphMLXMLParser` | `BaseOSDMParser` | `_parse_to_document, _parse_graph, _parse_node, _parse_edge, _parse_port` |
+| `engines/document/parsers/osdm_parsers/pnml_xml_parser.py` | `PNMLXMLParser` | `BaseOSDMParser` | `_parse_to_document, _parse_net, _parse_page, _parse_place, _parse_transition, _parse_arc ...` |
+| `engines/document/parsers/osdm_parsers/prefect_dag_parser.py` | `PrefectDAGParser` | `BaseOSDMParser` | `_parse_to_document, _find_flows, _is_decorator_name, _build_state_machine, _build_state_machine_from_tasks, _find_tasks ...` |
+| `engines/document/parsers/osdm_parsers/scxml_parser.py` | `SCXMLParser` | `BaseOSDMParser` | `_parse_to_document, _parse_scxml, _parse_state_or_parallel, _add_to_region, _parse_transition, _parse_on_entry_exit ...` |
+| `engines/document/parsers/osdm_parsers/uml_state_machine_parser.py` | `UMLStateMachineParser` | `BaseOSDMParser` | `_parse_to_document, _parse_state_machine, _parse_region, _parse_state, _parse_activity, _parse_final_state ...` |
+| `engines/document/parsers/osdm_parsers/xpd_parser.py` | `XPDLParser` | `BaseOSDMParser` | `_parse_to_document, _parse_workflow_process, _parse_activity, _parse_transition, _parse_lane, _parse_data_field ...` |
+| `engines/document/parsers/osdm_parsers/yawl_parser.py` | `YAWLParser` | `BaseOSDMParser` | `_parse_to_document, _parse_specification_and_net, _parse_condition, _parse_task, _parse_arc, _parse_cancellation_set ...` |
 | `engines/document/parsers/pdf_parser/content_extractor.py` | `ContentType` | `Enum` | `` |
 | `engines/document/parsers/pdf_parser/content_extractor.py` | `ExtractedText` | `—` | `` |
 | `engines/document/parsers/pdf_parser/content_extractor.py` | `ExtractedTable` | `—` | `to_dataframe, to_csv` |
@@ -1593,8 +2235,71 @@
 | `engines/document/parsers/pdf_parser/utils.py` | `ValidationUtils` | `—` | `is_valid_pdf, is_valid_image, validate_bbox` |
 | `engines/document/parsers/pdf_parser/utils.py` | `PerformanceUtils` | `—` | `timeit, memory_usage, profile_function, wrapper` |
 | `engines/document/parsers/pdf_parser/utils.py` | `Logger` | `—` | `__init__, log, debug, info, warning, error` |
-| `engines/document/parsers/pdf_parser.py` | `PDFParseOptions` | `—` | `` |
-| `engines/document/parsers/pdf_parser.py` | `PDFParser` | `BaseParser` | `__init__, parse, _load_pdf, _merge_options, _extract_metadata, _parse_pdf_date ...` |
+| `engines/document/parsers/pptx_parser/parser.py` | `PPTXParser` | `BaseDocumentParser` | `parse_bytes, parse_path, parse_stream, _parse_to_psdm, _parse_sections, _map_sections_to_slides ...` |
+| `engines/document/parsers/spreadsheet_parser/base_spreadsheet_parser.py` | `BaseSpreadsheetParser` | `BaseDocumentParser` | `parse_bytes, parse_path, parse_stream, _parse_to_workbook` |
+| `engines/document/parsers/spreadsheet_parser/binary_parser.py` | `ColumnarBinaryParser` | `BaseSpreadsheetParser` | `_parse_to_workbook, _convert_arrow_value, _read_table, _get_sheet_name` |
+| `engines/document/parsers/spreadsheet_parser/binary_parser.py` | `ParquetParser` | `ColumnarBinaryParser` | `_read_table` |
+| `engines/document/parsers/spreadsheet_parser/binary_parser.py` | `ArrowIPCParser` | `ColumnarBinaryParser` | `_read_table` |
+| `engines/document/parsers/spreadsheet_parser/binary_parser.py` | `FeatherParser` | `ColumnarBinaryParser` | `_read_table` |
+| `engines/document/parsers/spreadsheet_parser/delimited_parser.py` | `DelimitedParser` | `BaseSpreadsheetParser` | `_parse_to_workbook, _get_sheet_name` |
+| `engines/document/parsers/spreadsheet_parser/delimited_parser.py` | `CSVParser` | `DelimitedParser` | `` |
+| `engines/document/parsers/spreadsheet_parser/delimited_parser.py` | `TSVParser` | `DelimitedParser` | `` |
+| `engines/document/parsers/spreadsheet_parser/fixed_width_parser.py` | `FixedWidthParser` | `BaseSpreadsheetParser` | `_parse_to_workbook, _slice_line, _get_sheet_name` |
+| `engines/document/parsers/spreadsheet_parser/xlsx/parser.py` | `XLSXParser` | `BaseSpreadsheetParser` | `_parse_to_workbook, _load_xml, _load_relationships, _load_sheet_relationships, _resolve_sheets, _find_sheet_relationship ...` |
+| `engines/document/parsers/ssdm_parsers/apib_parser.py` | `APIBlueprintTokenizer` | `—` | `__init__, eof, current, peek, advance, next_non_empty ...` |
+| `engines/document/parsers/ssdm_parsers/apib_parser.py` | `APIBObject` | `—` | `to_dict` |
+| `engines/document/parsers/ssdm_parsers/apib_parser.py` | `APIBMetadata` | `APIBObject` | `__init__` |
+| `engines/document/parsers/ssdm_parsers/apib_parser.py` | `APIBParameter` | `APIBObject` | `__init__` |
+| `engines/document/parsers/ssdm_parsers/apib_parser.py` | `APIBBody` | `APIBObject` | `__init__` |
+| `engines/document/parsers/ssdm_parsers/apib_parser.py` | `APIBAction` | `APIBObject` | `__init__` |
+| `engines/document/parsers/ssdm_parsers/apib_parser.py` | `APIBResource` | `APIBObject` | `__init__` |
+| `engines/document/parsers/ssdm_parsers/apib_parser.py` | `APIBGroup` | `APIBObject` | `__init__` |
+| `engines/document/parsers/ssdm_parsers/apib_parser.py` | `APIBlueprintParser` | `—` | `__init__, parse, _skip_blank, _parse_metadata, _parse_group, _parse_resource ...` |
+| `engines/document/parsers/ssdm_parsers/apib_parser.py` | `APIBlueprintToSSDMParser` | `BaseSSDMParser` | `_parse_to_document, _build_servers, _action_to_operation, _object_to_entity` |
+| `engines/document/parsers/ssdm_parsers/asyncapi_parser.py` | `AsyncAPIParser` | `BaseSSDMParser` | `_parse_to_document, _parse_contact, _parse_license, _parse_servers, _parse_security_schemes, _parse_channel ...` |
+| `engines/document/parsers/ssdm_parsers/base_ssdm_parser.py` | `BaseSSDMParser` | `BaseDocumentParser` | `__init__, parse_bytes, parse_path, parse_stream, _parse_to_document, _detect_version ...` |
+| `engines/document/parsers/ssdm_parsers/cddl_parser.py` | `CDDLTokenType` | `—` | `` |
+| `engines/document/parsers/ssdm_parsers/cddl_parser.py` | `CDDLToken` | `—` | `` |
+| `engines/document/parsers/ssdm_parsers/cddl_parser.py` | `CDDLLexer` | `—` | `__init__, _skip_spaces_and_comments, _make_token, next_token` |
+| `engines/document/parsers/ssdm_parsers/cddl_parser.py` | `CDDLType` | `—` | `__init__, __repr__` |
+| `engines/document/parsers/ssdm_parsers/cddl_parser.py` | `CDDLParser` | `—` | `__init__, _eat, _skip_newlines, parse, _parse_type, _parse_choice ...` |
+| `engines/document/parsers/ssdm_parsers/cddl_parser.py` | `CDDLServiceParser` | `BaseSSDMParser` | `_parse_to_document, _cddl_to_entity, _type_to_string, _primitive_to_type_string` |
+| `engines/document/parsers/ssdm_parsers/graphql_service_parser.py` | `TokenType` | `—` | `` |
+| `engines/document/parsers/ssdm_parsers/graphql_service_parser.py` | `Token` | `—` | `` |
+| `engines/document/parsers/ssdm_parsers/graphql_service_parser.py` | `GraphQLScanner` | `—` | `__init__, peek, next, _next_token, _skip_whitespace_and_comments, _scan_number ...` |
+| `engines/document/parsers/ssdm_parsers/graphql_service_parser.py` | `GraphQLField` | `—` | `__init__` |
+| `engines/document/parsers/ssdm_parsers/graphql_service_parser.py` | `GraphQLType` | `—` | `__init__` |
+| `engines/document/parsers/ssdm_parsers/graphql_service_parser.py` | `GraphQLSchema` | `—` | `__init__` |
+| `engines/document/parsers/ssdm_parsers/graphql_service_parser.py` | `GraphQLParser` | `—` | `__init__, parse, _match, _advance, _peek, _parse_schema_definition ...` |
+| `engines/document/parsers/ssdm_parsers/graphql_service_parser.py` | `GraphQLServiceParser` | `BaseSSDMParser` | `_parse_to_document, _convert_type_to_entity, _map_gql_type_to_string, _fields_to_operations` |
+| `engines/document/parsers/ssdm_parsers/mcp_parser.py` | `MCPParser` | `BaseSSDMParser` | `_parse_to_document, _parse_mcp_binding, _parse_auth, _parse_internal_binding, _parse_tool_binding, _parse_resource_binding ...` |
+| `engines/document/parsers/ssdm_parsers/mib_parser.py` | `MIBLexer` | `—` | `__init__, eof, current_line, advance, skip_blank_and_comments, peek_after_blanks ...` |
+| `engines/document/parsers/ssdm_parsers/mib_parser.py` | `OIDNode` | `—` | `__init__, add_child, get_full_oid` |
+| `engines/document/parsers/ssdm_parsers/mib_parser.py` | `MIBDef` | `—` | `__init__` |
+| `engines/document/parsers/ssdm_parsers/mib_parser.py` | `MIBDocParser` | `—` | `__init__, _parse, _parse_imports, _parse_module_identity, _set_module_field, _parse_object_type ...` |
+| `engines/document/parsers/ssdm_parsers/mib_parser.py` | `MIBParser` | `BaseSSDMParser` | `_parse_to_document, _map_access, _make_get_operation, _make_set_operation, _make_notification_operation` |
+| `engines/document/parsers/ssdm_parsers/openapi_parser.py` | `OpenAPIV3Parser` | `BaseSSDMParser` | `_parse_to_document, _parse_contact, _parse_license, _parse_servers, _parse_security_schemes, _parse_reusable_parameters ...` |
+| `engines/document/parsers/ssdm_parsers/postman_collection_parser.py` | `PostmanCollectionParser` | `BaseSSDMParser` | `_parse_to_document, _process_item, _parse_request, _infer_entity_from_json, _infer_datatype` |
+| `engines/document/parsers/ssdm_parsers/proto_service_parser.py` | `ProtoToken` | `—` | `__init__` |
+| `engines/document/parsers/ssdm_parsers/proto_service_parser.py` | `ProtoLexer` | `—` | `__init__, next_token, _skip_whitespace_and_comments, _scan_string, _scan_number` |
+| `engines/document/parsers/ssdm_parsers/proto_service_parser.py` | `ProtoType` | `—` | `__init__` |
+| `engines/document/parsers/ssdm_parsers/proto_service_parser.py` | `FieldDescriptor` | `—` | `__init__` |
+| `engines/document/parsers/ssdm_parsers/proto_service_parser.py` | `MessageDef` | `—` | `__init__` |
+| `engines/document/parsers/ssdm_parsers/proto_service_parser.py` | `EnumDef` | `—` | `__init__` |
+| `engines/document/parsers/ssdm_parsers/proto_service_parser.py` | `ServiceMethod` | `—` | `__init__` |
+| `engines/document/parsers/ssdm_parsers/proto_service_parser.py` | `ServiceDef` | `—` | `__init__` |
+| `engines/document/parsers/ssdm_parsers/proto_service_parser.py` | `ProtoFile` | `—` | `__init__` |
+| `engines/document/parsers/ssdm_parsers/proto_service_parser.py` | `ProtoParser` | `—` | `__init__, _eat, parse, _parse_syntax, _parse_package, _parse_message ...` |
+| `engines/document/parsers/ssdm_parsers/proto_service_parser.py` | `ProtoServiceParser` | `BaseSSDMParser` | `_parse_to_document, _message_to_entity, _field_to_attribute, _enum_to_entity, _method_to_operation` |
+| `engines/document/parsers/ssdm_parsers/python_service_parser.py` | `PythonServiceParser` | `BaseSSDMParser` | `_parse_to_document, _find_app_instance, _collect_pydantic_models, _pydantic_class_to_entity, _parse_routes, _is_route_decorator ...` |
+| `engines/document/parsers/ssdm_parsers/raml_parser.py` | `RAMLParser` | `BaseSSDMParser` | `_parse_to_document, _parse_resource, _parse_method, _parse_parameter, _parse_raml_type, _raml_prop_to_datatype ...` |
+| `engines/document/parsers/ssdm_parsers/webidl_parser.py` | `Token` | `—` | `__init__` |
+| `engines/document/parsers/ssdm_parsers/webidl_parser.py` | `WebIDLParser` | `BaseSSDMParser` | `_parse_to_document, _peek, _advance, _expect, _match, _parse_definition ...` |
+| `engines/document/parsers/ssdm_parsers/wsdl_parser.py` | `WSDLParser` | `BaseSSDMParser` | `_parse_to_document, _parse_xsd_schema, _xsd_type_to_datatype, _parts_to_parameters, _parts_to_body_entity, _get_child_text` |
+| `engines/document/parsers/ssdm_parsers/yang_parser.py` | `Token` | `—` | `__init__` |
+| `engines/document/parsers/ssdm_parsers/yang_parser.py` | `YANGParser` | `BaseSSDMParser` | `_parse_to_document, _peek, _advance, _match, _expect, _parse_module ...` |
+| `engines/document/parsers/tsdm_parsers/base_tsdm_parser.py` | `BaseTSDMParser` | `BaseDocumentParser` | `parse_bytes, parse_path, parse_stream, _parse_to_tsdm` |
+| `engines/document/parsers/tsdm_parsers/tsdm_json_parser.py` | `TsdmJsonParser` | `BaseTSDMParser` | `_parse_to_tsdm, _parse_tool, _parse_parameters, _parse_outputs` |
 | `engines/document/parsers/xml_parser.py` | `XmlDocumentParser` | `BaseDocumentParser` | `__init__, parse_bytes, parse_path, _dom_to_dsdm, _handle_element_node, _handle_text_node ...` |
 | `engines/document/parsers/yaml_parser.py` | `YamlDocumentParser` | `BaseDocumentParser` | `__init__, parse_bytes, parse_path, get_supported_media_types, get_supported_extensions` |
 | `engines/document/storage/chunk_store.py` | `ChunkStore` | `—` | `__init__, _key, add_chunks, get_chunk, list_chunks_for_document, attach_embeddings ...` |
@@ -1608,6 +2313,49 @@
 | `engines/document/writers/binary_writer.py` | `BinaryWriter` | `BaseDocumentWriter` | `__init__, write_stream, write, write_to_file, _serialize_document, _determine_output_format ...` |
 | `engines/document/writers/json_writer.py` | `JsonDocumentWriter` | `BaseDocumentWriter` | `__init__, write, _document_to_python, _json_default_serializer, write_to_file, get_supported_media_types ...` |
 | `engines/document/writers/latex_writer.py` | `LatexWriter` | `BaseDocumentWriter` | `__init__, write, write_stream, write_to_file, get_supported_media_types, get_supported_extensions ...` |
+| `engines/document/writers/markdown_writer.py` | `MarkdownWriter` | `BaseDocumentWriter` | `__init__, write, write_stream, write_to_file, get_supported_media_types, get_supported_extensions ...` |
+| `engines/document/writers/msdm_writers/avro_schema_writer.py` | `AvroSchemaWriter` | `BaseMSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _entity_to_avro, _is_enum_entity ...` |
+| `engines/document/writers/msdm_writers/base_msdm_writer.py` | `WriteTarget` | `str, Enum` | `` |
+| `engines/document/writers/msdm_writers/base_msdm_writer.py` | `SoftDeleteStrategy` | `str, Enum` | `` |
+| `engines/document/writers/msdm_writers/base_msdm_writer.py` | `ConnectionConfig` | `BaseModel` | `` |
+| `engines/document/writers/msdm_writers/base_msdm_writer.py` | `BaseMSDMWriter` | `BaseDocumentWriter` | `__init__, write_stream, write, write_to_file, apply_to_database, _write_design ...` |
+| `engines/document/writers/msdm_writers/cql_writer.py` | `CQLWriter` | `BaseMSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _write_create_table, _write_create_type ...` |
+| `engines/document/writers/msdm_writers/cue_writer.py` | `CUEWriter` | `BaseMSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _entity_to_cue, _attribute_to_cue ...` |
+| `engines/document/writers/msdm_writers/elasticsearch_mapping_writer.py` | `ElasticsearchMappingWriter` | `BaseMSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _build_index_definition, _attribute_to_es_field ...` |
+| `engines/document/writers/msdm_writers/erd_writer.py` | `ERDWriter` | `BaseMSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _build_json, _entity_to_json ...` |
+| `engines/document/writers/msdm_writers/graphql_schema_writer.py` | `GraphQLSchemaWriter` | `BaseMSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _is_scalar_type, _is_enum_type ...` |
+| `engines/document/writers/msdm_writers/json_schema_writer.py` | `JsonSchemaWriter` | `BaseMSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _entity_to_schema, _attribute_to_property_schema ...` |
+| `engines/document/writers/msdm_writers/mongodb_schema_writer.py` | `MongoDBSchemaWriter` | `BaseMSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _build_validator_schema, _entity_to_json_schema ...` |
+| `engines/document/writers/msdm_writers/neo4j_schema_writer.py` | `Neo4jSchemaWriter` | `BaseMSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _write_node_constraints, _write_edge_constraints ...` |
+| `engines/document/writers/msdm_writers/owl_writer.py` | `OWLWriter` | `BaseMSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _base_uri, _entity_to_uri ...` |
+| `engines/document/writers/msdm_writers/plantuml_writer.py` | `PlantUMLWriter` | `BaseMSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _entity_to_block, _field_to_plantuml ...` |
+| `engines/document/writers/msdm_writers/proto_writer.py` | `ProtoWriter` | `BaseMSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _write_entity, _is_enum_entity ...` |
+| `engines/document/writers/msdm_writers/python_model_writer.py` | `TargetStyle` | `str, Enum` | `` |
+| `engines/document/writers/msdm_writers/python_model_writer.py` | `PythonModelWriter` | `BaseMSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _is_enum_entity, _build_enum ...` |
+| `engines/document/writers/msdm_writers/sql_ddl_writer.py` | `SqlDDLWriter` | `BaseMSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _build_create_table, _column_definition ...` |
+| `engines/document/writers/msdm_writers/thrift_idl_writer.py` | `ThriftIDLWriter` | `BaseMSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _is_typedef, _is_enum ...` |
+| `engines/document/writers/msdm_writers/typescript_interface_writer.py` | `TypeScriptInterfaceWriter` | `BaseMSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _entity_to_declaration, _is_enum ...` |
+| `engines/document/writers/msdm_writers/uml_xmi_writer.py` | `UMLXmiWriter` | `BaseMSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _new_id, _existing_or_new_id ...` |
+| `engines/document/writers/msdm_writers/xsd_writer.py` | `XSDWriter` | `BaseMSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _entity_to_schema_item, _is_simple_entity ...` |
+| `engines/document/writers/osdm_writers/airflow_dag_writer.py` | `AirflowDAGWriter` | `BaseOSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _write_header, _write_dag_definition ...` |
+| `engines/document/writers/osdm_writers/azure_logic_apps_writer.py` | `AzureLogicAppsWriter` | `BaseOSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _build_workflow, _collect_states ...` |
+| `engines/document/writers/osdm_writers/base_osdm_writer.py` | `VersionStrategy` | `str, Enum` | `` |
+| `engines/document/writers/osdm_writers/base_osdm_writer.py` | `VersionIncrement` | `str, Enum` | `` |
+| `engines/document/writers/osdm_writers/base_osdm_writer.py` | `OSDMWriteOptions` | `WriteOptions` | `` |
+| `engines/document/writers/osdm_writers/base_osdm_writer.py` | `BaseOSDMWriter` | `BaseDocumentWriter` | `__init__, write_stream, write, write_to_file, _write_design, get_supported_media_types ...` |
+| `engines/document/writers/osdm_writers/bpmn_xml_writer.py` | `BPMNXMLWriter` | `BaseOSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _obj_id, _add_bpmn_element ...` |
+| `engines/document/writers/osdm_writers/cep_writer.py` | `CEPWriter` | `BaseOSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _definition_to_dict, _stream_to_dict ...` |
+| `engines/document/writers/osdm_writers/cmmn_xml_writer.py` | `CMMNXMLWriter` | `BaseOSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _obj_id, _add_cmmn_element ...` |
+| `engines/document/writers/osdm_writers/cncf_serverless_workflow_writer.py` | `CNCFServerlessWorkflowWriter` | `BaseOSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _build_workflow, _resolve_initial_state ...` |
+| `engines/document/writers/osdm_writers/dmn_xml_writer.py` | `DMNXMLWriter` | `BaseOSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _new_id, _obj_id ...` |
+| `engines/document/writers/osdm_writers/epc_writer.py` | `EPCWriter` | `BaseOSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _write_process, _write_organisational_units ...` |
+| `engines/document/writers/osdm_writers/graphml_xml_writer.py` | `GraphMLXMLWriter` | `BaseOSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _define_attributes, _write_graph ...` |
+| `engines/document/writers/osdm_writers/pnml_xml_writer.py` | `PNMLXMLWriter` | `BaseOSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _is_petri_net, _get_annotation ...` |
+| `engines/document/writers/osdm_writers/prefect_dag_writer.py` | `PrefectDAGWriter` | `BaseOSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _write_header, _write_flow_definition ...` |
+| `engines/document/writers/osdm_writers/scxml_writer.py` | `SCXMLWriter` | `BaseOSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _write_scxml_body, _resolve_initial_state ...` |
+| `engines/document/writers/osdm_writers/uml_state_machine_writer.py` | `UMLStateMachineWriter` | `BaseOSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _new_id, _add_uml_element ...` |
+| `engines/document/writers/osdm_writers/xpd_writer.py` | `XPDLWriter` | `BaseOSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _write_participant, _write_workflow_process ...` |
+| `engines/document/writers/osdm_writers/yawl_writer.py` | `YAWLWriter` | `BaseOSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _write_specification, _write_net ...` |
 | `engines/document/writers/pdf_writer/annotation_writer.py` | `AnnotationType` | `Enum` | `` |
 | `engines/document/writers/pdf_writer/annotation_writer.py` | `AnnotationBorderStyle` | `Enum` | `` |
 | `engines/document/writers/pdf_writer/annotation_writer.py` | `AnnotationFlag` | `Enum` | `` |
@@ -1650,8 +2398,48 @@
 | `engines/document/writers/pdf_writer/utils.py` | `UnitConverter` | `—` | `to_points, from_points, convert, parse_measurement, normalize_measurement` |
 | `engines/document/writers/pdf_writer/utils.py` | `ImageProcessor` | `—` | `__init__, process_image, _resize_image, extract_image_info, convert_to_base64, create_thumbnail` |
 | `engines/document/writers/pdf_writer/utils.py` | `PDFColor` | `—` | `from_hex, from_rgb, from_cmyk, to_pdf_rgb, to_pdf_cmyk, to_pdf_gray ...` |
-| `engines/document/writers/pdf_writer.py` | `PDFWriteOptions` | `WriteOptions` | `` |
-| `engines/document/writers/pdf_writer.py` | `PDFWriter` | `BaseDocumentWriter` | `__init__, write_stream, write, write_to_file, get_supported_media_types, get_supported_extensions ...` |
+| `engines/document/writers/pptx_writer/writer.py` | `PPTXWriter` | `BaseDocumentWriter` | `__init__, write_stream, write, write_to_file, get_supported_media_types, get_supported_extensions ...` |
+| `engines/document/writers/spreadsheet_writer/base.py` | `ESDMWriteOptions` | `WriteOptions` | `` |
+| `engines/document/writers/spreadsheet_writer/base.py` | `ESDMBaseWriter` | `BaseDocumentWriter` | `__init__, write_stream, write, write_to_file, _add_shared_string, _get_shared_strings_xml ...` |
+| `engines/document/writers/spreadsheet_writer/csv_writer.py` | `CSVWriter` | `ESDMBaseWriter` | `__init__, write_stream, write, write_to_file, _write_csv, _get_max_columns ...` |
+| `engines/document/writers/spreadsheet_writer/csv_writer.py` | `TSVWriter` | `CSVWriter` | `__init__, get_supported_media_types, get_supported_extensions` |
+| `engines/document/writers/spreadsheet_writer/esdm_writer.py` | `ESDMWriter` | `—` | `__init__, write_stream, write, write_to_file, _write_csv, _determine_format` |
+| `engines/document/writers/spreadsheet_writer/xlsx/conditional_formatting_writer.py` | `ConditionalFormattingWriter` | `—` | `__init__, write, _write_rule, _get_cf_type, _get_cf_operator, _write_color_scale ...` |
+| `engines/document/writers/spreadsheet_writer/xlsx/data_validation_writer.py` | `DataValidationWriter` | `—` | `__init__, write, _write_data_validation, _get_validation_type, _get_validation_operator` |
+| `engines/document/writers/spreadsheet_writer/xlsx/drawing_writer.py` | `DrawingsWriter` | `—` | `__init__, write_drawing, _process_image, _process_chart, _build_chart_xml, _process_shape ...` |
+| `engines/document/writers/spreadsheet_writer/xlsx/extra_writers.py` | `ContentTypesWriter` | `—` | `__init__, write` |
+| `engines/document/writers/spreadsheet_writer/xlsx/extra_writers.py` | `RelationshipsWriter` | `—` | `__init__, write_root_rels, write_worksheet_rels` |
+| `engines/document/writers/spreadsheet_writer/xlsx/extra_writers.py` | `CommentWriter` | `—` | `__init__, write_legacy_comments_vml, write_threaded_comments_xml` |
+| `engines/document/writers/spreadsheet_writer/xlsx/extra_writers.py` | `HyperlinkWriter` | `—` | `__init__, write_hyperlinks_and_rels` |
+| `engines/document/writers/spreadsheet_writer/xlsx/pivot_writer.py` | `PivotWriter` | `—` | `__init__, write, _write_pivot_cache_definition, _write_pivot_table` |
+| `engines/document/writers/spreadsheet_writer/xlsx/shared_strings_writer.py` | `SharedStringsWriter` | `—` | `__init__, write` |
+| `engines/document/writers/spreadsheet_writer/xlsx/styles_writer.py` | `StylesWriter` | `—` | `__init__, write, _write_number_formats, _write_fonts, _write_fills, _write_borders ...` |
+| `engines/document/writers/spreadsheet_writer/xlsx/table_writer.py` | `TableWriter` | `—` | `__init__, write, _calculate_ref_from_rows, _col_letter` |
+| `engines/document/writers/spreadsheet_writer/xlsx/vba_writer.py` | `VBAWriter` | `—` | `__init__, write` |
+| `engines/document/writers/spreadsheet_writer/xlsx/workbook_writer.py` | `WorkbookWriter` | `—` | `__init__, write` |
+| `engines/document/writers/spreadsheet_writer/xlsx/worksheet_writer.py` | `WorksheetWriter` | `—` | `__init__, write, _write_cell, _write_run_properties, _format_cell_value, _get_sheet_dimension ...` |
+| `engines/document/writers/spreadsheet_writer/xlsx/xlsx_writer.py` | `XLSXWriter` | `ESDMBaseWriter` | `__init__, write_stream, write, write_to_file, _build_xlsx, _write_workbook_xml ...` |
+| `engines/document/writers/spreadsheet_writer/xlsx/zip_packager.py` | `ZipPackager` | `—` | `__init__, pack, _add_extra_parts, _add_image_binaries` |
+| `engines/document/writers/ssdm_writers/apib_writer.py` | `APIBlueprintWriter` | `BaseSSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _write_parameter, _write_body ...` |
+| `engines/document/writers/ssdm_writers/asyncapi_writer.py` | `AsyncAPIWriter` | `BaseSSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _build_info, _build_servers ...` |
+| `engines/document/writers/ssdm_writers/base_ssdm_writer.py` | `VersionStrategy` | `str, Enum` | `` |
+| `engines/document/writers/ssdm_writers/base_ssdm_writer.py` | `VersionIncrement` | `str, Enum` | `` |
+| `engines/document/writers/ssdm_writers/base_ssdm_writer.py` | `SSDMWriteOptions` | `WriteOptions` | `` |
+| `engines/document/writers/ssdm_writers/base_ssdm_writer.py` | `BaseSSDMWriter` | `BaseDocumentWriter` | `__init__, write_stream, write, write_to_file, _write_design, get_supported_media_types ...` |
+| `engines/document/writers/ssdm_writers/cddl_writer.py` | `CDDLWriter` | `BaseSSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _write_entity, _write_operation ...` |
+| `engines/document/writers/ssdm_writers/graphql_service_writer.py` | `GraphQLServiceWriter` | `BaseSSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _is_scalar_type, _is_enum_type ...` |
+| `engines/document/writers/ssdm_writers/mcp_writer.py` | `MCPWriter` | `BaseSSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _build_input_schema, _build_output_schema ...` |
+| `engines/document/writers/ssdm_writers/mib_writer.py` | `MIBWriter` | `BaseSSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _write_object, _quote` |
+| `engines/document/writers/ssdm_writers/openapi_writer.py` | `OpenAPIWriter` | `BaseSSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _build_info, _build_servers ...` |
+| `engines/document/writers/ssdm_writers/postman_collection_writer.py` | `PostmanCollectionWriter` | `BaseSSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _build_request_item, _entity_to_json_example ...` |
+| `engines/document/writers/ssdm_writers/proto_service_writer.py` | `ProtoServiceWriter` | `BaseSSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _prepare_operation_messages, _param_to_proto_type ...` |
+| `engines/document/writers/ssdm_writers/python_service_writer.py` | `PythonServiceWriter` | `BaseSSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _write_pydantic_model, _write_route ...` |
+| `engines/document/writers/ssdm_writers/raml_writer.py` | `RAMLWriter` | `BaseSSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _build_resources, _set_nested_resource ...` |
+| `engines/document/writers/ssdm_writers/webidl_writer.py` | `WebIDLWriter` | `BaseSSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _write_dictionary, _write_operation ...` |
+| `engines/document/writers/ssdm_writers/wsdl_writer.py` | `WSDLWriter` | `BaseSSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _write_types, _write_xsd_entity ...` |
+| `engines/document/writers/ssdm_writers/yang_writer.py` | `YANGWriter` | `BaseSSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _write_module, _write_description ...` |
+| `engines/document/writers/tsdm_writers/base_tsdm_writer.py` | `BaseTSDMWriter` | `BaseDocumentWriter` | `_write_design` |
+| `engines/document/writers/tsdm_writers/tsdm_json_writer.py` | `TsdmJsonWriter` | `BaseTSDMWriter` | `_write_design, _tool_to_dict, _param_to_dict, _output_to_dict` |
 | `engines/document/writers/xml_writer.py` | `XmlDocumentWriter` | `BaseDocumentWriter` | `__init__, write, write_to_file, _document_to_xml_string, _dsdm_to_element, _handle_xml_element ...` |
 | `engines/document/writers/yaml_writer.py` | `YamlDocumentWriter` | `BaseDocumentWriter` | `__init__, write, _document_to_python, write_to_file, get_supported_media_types, get_supported_extensions ...` |
 | `engines/document/writers/yaml_writer.py` | `CustomDumper` | `yaml.SafeDumper` | `datetime_representer, date_representer, bytes_representer, decimal_representer, datavalue_representer, datanode_representer` |
@@ -1860,907 +2648,6 @@
 | `tests/agents/interaction/interaction_unit/test_native_interaction_backend.py` | `DummyOutput` | `—` | `__init__, model_dump` |
 | `tests/agents/interaction/interaction_unit/test_native_interaction_backend.py` | `DummyRegistry2` | `—` | `__init__, execute` |
 | `tests/agents/interaction/interaction_unit/test_native_interaction_backend.py` | `DummyMessageBus` | `MessageBus` | `__init__, publish, subscribe, unsubscribe` |
-| `tools/ai/analysis/chunkers/code_chunker.py` | `ChunkType` | `str, Enum` | `` |
-| `tools/ai/analysis/chunkers/code_chunker.py` | `ChunkGranularity` | `str, Enum` | `` |
-| `tools/ai/analysis/chunkers/code_chunker.py` | `Language` | `str, Enum` | `` |
-| `tools/ai/analysis/chunkers/code_chunker.py` | `CodeChunk` | `—` | `__post_init__` |
-| `tools/ai/analysis/chunkers/code_chunker.py` | `ChunkingResult` | `—` | `` |
-| `tools/ai/analysis/chunkers/code_chunker.py` | `ChunkingConfig` | `—` | `` |
-| `tools/ai/analysis/chunkers/code_chunker.py` | `CodeChunkVisitor` | `ast.NodeVisitor` | `__init__, visit_Module, visit_Import, visit_ImportFrom, visit_ClassDef, visit_FunctionDef ...` |
-| `tools/ai/analysis/chunkers/code_chunker.py` | `CodeChunker` | `—` | `__init__, chunk_file, chunk_directory, chunk_symbols, merge_chunks, split_large_chunks ...` |
-| `tools/ai/analysis/chunkers/doc_chunker.py` | `DocChunkType` | `str, Enum` | `` |
-| `tools/ai/analysis/chunkers/doc_chunker.py` | `DocFormat` | `str, Enum` | `` |
-| `tools/ai/analysis/chunkers/doc_chunker.py` | `DocSection` | `str, Enum` | `` |
-| `tools/ai/analysis/chunkers/doc_chunker.py` | `DocChunk` | `—` | `__post_init__` |
-| `tools/ai/analysis/chunkers/doc_chunker.py` | `DocStructure` | `—` | `` |
-| `tools/ai/analysis/chunkers/doc_chunker.py` | `DocChunkingResult` | `—` | `` |
-| `tools/ai/analysis/chunkers/doc_chunker.py` | `DocChunkingConfig` | `—` | `` |
-| `tools/ai/analysis/chunkers/doc_chunker.py` | `MarkdownParser` | `—` | `__init__, parse, _parse_frontmatter, _parse_table_row, _create_chunk, _detect_sections ...` |
-| `tools/ai/analysis/chunkers/doc_chunker.py` | `DocstringParser` | `—` | `__init__, parse_docstring, _parse_google_style, _section_to_chunk_type` |
-| `tools/ai/analysis/chunkers/doc_chunker.py` | `DocChunker` | `—` | `__init__, chunk_file, chunk_docstring, chunk_directory, merge_chunks, _chunk_rst ...` |
-| `tools/ai/analysis/chunkers/semantic_chunker.py` | `SemanticChunkType` | `str, Enum` | `` |
-| `tools/ai/analysis/chunkers/semantic_chunker.py` | `ChunkingStrategy` | `str, Enum` | `` |
-| `tools/ai/analysis/chunkers/semantic_chunker.py` | `SimilarityMetric` | `str, Enum` | `` |
-| `tools/ai/analysis/chunkers/semantic_chunker.py` | `SemanticChunk` | `—` | `__post_init__` |
-| `tools/ai/analysis/chunkers/semantic_chunker.py` | `TopicSegment` | `—` | `` |
-| `tools/ai/analysis/chunkers/semantic_chunker.py` | `DiscourseMarker` | `—` | `` |
-| `tools/ai/analysis/chunkers/semantic_chunker.py` | `SemanticChunkingResult` | `—` | `` |
-| `tools/ai/analysis/chunkers/semantic_chunker.py` | `SemanticChunkingConfig` | `—` | `` |
-| `tools/ai/analysis/chunkers/semantic_chunker.py` | `DiscourseMarkerDetector` | `—` | `__init__, detect, get_boundary_scores` |
-| `tools/ai/analysis/chunkers/semantic_chunker.py` | `TopicSegmenter` | `—` | `__init__, segment, _cosine_similarity, _extract_keywords, _generate_topic_name` |
-| `tools/ai/analysis/chunkers/semantic_chunker.py` | `SemanticChunker` | `—` | `__init__, chunk, chunk_documents, merge_related_chunks, _similarity_based_chunking, _llm_based_chunking ...` |
-| `tools/ai/analysis/encoders/batch_encoder.py` | `BatchPriority` | `int, Enum` | `` |
-| `tools/ai/analysis/encoders/batch_encoder.py` | `BatchStatus` | `str, Enum` | `` |
-| `tools/ai/analysis/encoders/batch_encoder.py` | `CheckpointStrategy` | `str, Enum` | `` |
-| `tools/ai/analysis/encoders/batch_encoder.py` | `BatchJob` | `—` | `__post_init__, update_progress, to_dict` |
-| `tools/ai/analysis/encoders/batch_encoder.py` | `BatchConfig` | `—` | `` |
-| `tools/ai/analysis/encoders/batch_encoder.py` | `JobQueue` | `—` | `__init__, put, get, peek, remove, get_job ...` |
-| `tools/ai/analysis/encoders/batch_encoder.py` | `CheckpointManager` | `—` | `__init__, save_checkpoint, load_checkpoint, delete_checkpoint, list_checkpoints` |
-| `tools/ai/analysis/encoders/batch_encoder.py` | `MetricsCollector` | `—` | `__init__, record_job_start, record_job_completion, record_batch, get_summary, reset` |
-| `tools/ai/analysis/encoders/batch_encoder.py` | `BatchEncoder` | `—` | `__init__, _load_state, _save_state, _deserialize_job, submit, _generate_job_id ...` |
-| `tools/ai/analysis/encoders/batch_encoder.py` | `RateLimiter` | `—` | `__init__, acquire, _refill` |
-| `tools/ai/analysis/encoders/embedding_store.py` | `CollectionType` | `str, Enum` | `` |
-| `tools/ai/analysis/encoders/embedding_store.py` | `DistanceMetric` | `str, Enum` | `` |
-| `tools/ai/analysis/encoders/embedding_store.py` | `IndexType` | `str, Enum` | `` |
-| `tools/ai/analysis/encoders/embedding_store.py` | `StoreConfig` | `—` | `` |
-| `tools/ai/analysis/encoders/embedding_store.py` | `StoredDocument` | `—` | `__post_init__` |
-| `tools/ai/analysis/encoders/embedding_store.py` | `SearchResult` | `—` | `to_dict` |
-| `tools/ai/analysis/encoders/embedding_store.py` | `CollectionInfo` | `—` | `` |
-| `tools/ai/analysis/encoders/embedding_store.py` | `BatchOperationResult` | `—` | `` |
-| `tools/ai/analysis/encoders/embedding_store.py` | `OllamaEmbeddingFunction` | `EmbeddingFunction` | `__init__, __call__` |
-| `tools/ai/analysis/encoders/embedding_store.py` | `CollectionManager` | `—` | `__init__, create_collection, get_collection, get_or_create_collection, list_collections, delete_collection ...` |
-| `tools/ai/analysis/encoders/embedding_store.py` | `EmbeddingStore` | `—` | `__init__, _create_client, _initialize_default_collections, _get_collection_name, _compute_document_id, _distance_to_similarity ...` |
-| `tools/ai/analysis/encoders/ollama_encoder.py` | `EmbeddingModel` | `str, Enum` | `` |
-| `tools/ai/analysis/encoders/ollama_encoder.py` | `EncodingStatus` | `str, Enum` | `` |
-| `tools/ai/analysis/encoders/ollama_encoder.py` | `PoolingStrategy` | `str, Enum` | `` |
-| `tools/ai/analysis/encoders/ollama_encoder.py` | `EncodingRequest` | `—` | `` |
-| `tools/ai/analysis/encoders/ollama_encoder.py` | `EncodingResult` | `—` | `` |
-| `tools/ai/analysis/encoders/ollama_encoder.py` | `BatchEncodingResult` | `—` | `` |
-| `tools/ai/analysis/encoders/ollama_encoder.py` | `ModelInfo` | `—` | `` |
-| `tools/ai/analysis/encoders/ollama_encoder.py` | `EncoderConfig` | `—` | `` |
-| `tools/ai/analysis/encoders/ollama_encoder.py` | `EmbeddingCache` | `—` | `__init__, _load, save, get, set, clear ...` |
-| `tools/ai/analysis/encoders/ollama_encoder.py` | `OllamaClient` | `—` | `__init__, _create_session, get_available_models, embed, embed_batch, check_health ...` |
-| `tools/ai/analysis/encoders/ollama_encoder.py` | `OllamaEncoder` | `—` | `__init__, _ensure_models, _get_cache, _compute_content_hash, _preprocess_text, _normalize_embedding ...` |
-| `tools/ai/analysis/indexers/code_indexer.py` | `IndexStatus` | `str, Enum` | `` |
-| `tools/ai/analysis/indexers/code_indexer.py` | `SymbolType` | `str, Enum` | `` |
-| `tools/ai/analysis/indexers/code_indexer.py` | `IndexingConfig` | `—` | `` |
-| `tools/ai/analysis/indexers/code_indexer.py` | `IndexingResult` | `—` | `` |
-| `tools/ai/analysis/indexers/code_indexer.py` | `FileIndexState` | `—` | `` |
-| `tools/ai/analysis/indexers/code_indexer.py` | `CodeSearchResult` | `—` | `to_dict` |
-| `tools/ai/analysis/indexers/code_indexer.py` | `CodeIndexer` | `—` | `__init__, _load_state, _save_state, index, _filter_files, _index_file ...` |
-| `tools/ai/analysis/indexers/doc_indexer.py` | `DocIndexStatus` | `str, Enum` | `` |
-| `tools/ai/analysis/indexers/doc_indexer.py` | `DocType` | `str, Enum` | `` |
-| `tools/ai/analysis/indexers/doc_indexer.py` | `DocIndexingConfig` | `—` | `` |
-| `tools/ai/analysis/indexers/doc_indexer.py` | `DocIndexingResult` | `—` | `` |
-| `tools/ai/analysis/indexers/doc_indexer.py` | `DocFileState` | `—` | `` |
-| `tools/ai/analysis/indexers/doc_indexer.py` | `DocSearchResult` | `—` | `to_dict` |
-| `tools/ai/analysis/indexers/doc_indexer.py` | `DocCollection` | `—` | `` |
-| `tools/ai/analysis/indexers/doc_indexer.py` | `DocIndexer` | `—` | `__init__, _load_state, _save_state, _initialize_collections, _find_documentation_files, _should_include_file ...` |
-| `tools/ai/analysis/scanners/api_surface_extractor.py` | `APIVisibility` | `str, Enum` | `` |
-| `tools/ai/analysis/scanners/api_surface_extractor.py` | `APIElementType` | `str, Enum` | `` |
-| `tools/ai/analysis/scanners/api_surface_extractor.py` | `DeprecationStatus` | `str, Enum` | `` |
-| `tools/ai/analysis/scanners/api_surface_extractor.py` | `StabilityLevel` | `str, Enum` | `` |
-| `tools/ai/analysis/scanners/api_surface_extractor.py` | `Parameter` | `—` | `` |
-| `tools/ai/analysis/scanners/api_surface_extractor.py` | `APIElement` | `—` | `` |
-| `tools/ai/analysis/scanners/api_surface_extractor.py` | `APIModule` | `—` | `` |
-| `tools/ai/analysis/scanners/api_surface_extractor.py` | `APIPackage` | `—` | `` |
-| `tools/ai/analysis/scanners/api_surface_extractor.py` | `APISurface` | `—` | `` |
-| `tools/ai/analysis/scanners/api_surface_extractor.py` | `APIExtractorConfig` | `—` | `` |
-| `tools/ai/analysis/scanners/api_surface_extractor.py` | `APIElementExtractor` | `ast.NodeVisitor` | `__init__, visit_Module, visit_Import, visit_ImportFrom, _is_public, _get_visibility ...` |
-| `tools/ai/analysis/scanners/api_surface_extractor.py` | `APISurfaceExtractor` | `—` | `__init__, extract, _detect_project_name, _find_packages, _should_include_package, _extract_package ...` |
-| `tools/ai/analysis/scanners/ast_analyzer.py` | `NodeType` | `str, Enum` | `` |
-| `tools/ai/analysis/scanners/ast_analyzer.py` | `ComplexityType` | `str, Enum` | `` |
-| `tools/ai/analysis/scanners/ast_analyzer.py` | `CodeSmell` | `str, Enum` | `` |
-| `tools/ai/analysis/scanners/ast_analyzer.py` | `ASTMetrics` | `—` | `` |
-| `tools/ai/analysis/scanners/ast_analyzer.py` | `ASTAnalysisResult` | `—` | `` |
-| `tools/ai/analysis/scanners/ast_analyzer.py` | `ASTAnalyzerConfig` | `—` | `` |
-| `tools/ai/analysis/scanners/ast_analyzer.py` | `MetricsVisitor` | `ast.NodeVisitor` | `__init__, _create_metrics, _push_metrics, _pop_metrics, _compute_lines_of_code, _count_comments ...` |
-| `tools/ai/analysis/scanners/ast_analyzer.py` | `ImportExtractor` | `ast.NodeVisitor` | `__init__, visit_Import, visit_ImportFrom, visit_Assign` |
-| `tools/ai/analysis/scanners/ast_analyzer.py` | `ASTAnalyzer` | `—` | `__init__, analyze_file, analyze_directory, _get_module_name, _compute_complexity_score, _compute_maintainability_score ...` |
-| `tools/ai/analysis/scanners/import_graph.py` | `ImportType` | `str, Enum` | `` |
-| `tools/ai/analysis/scanners/import_graph.py` | `DependencyType` | `str, Enum` | `` |
-| `tools/ai/analysis/scanners/import_graph.py` | `GraphFormat` | `str, Enum` | `` |
-| `tools/ai/analysis/scanners/import_graph.py` | `ImportEdge` | `—` | `id` |
-| `tools/ai/analysis/scanners/import_graph.py` | `ModuleNode` | `—` | `` |
-| `tools/ai/analysis/scanners/import_graph.py` | `ImportGraphConfig` | `—` | `` |
-| `tools/ai/analysis/scanners/import_graph.py` | `ImportGraph` | `—` | `` |
-| `tools/ai/analysis/scanners/import_graph.py` | `ImportExtractor` | `ast.NodeVisitor` | `__init__, visit_Import, visit_ImportFrom, visit_If, visit_Try, visit_Call ...` |
-| `tools/ai/analysis/scanners/import_graph.py` | `ImportGraphAnalyzer` | `—` | `__init__, analyze, _find_python_modules, _should_include_file, _get_module_name, _add_module_node ...` |
-| `tools/ai/analysis/scanners/project_scanner.py` | `ScanLevel` | `str, Enum` | `` |
-| `tools/ai/analysis/scanners/project_scanner.py` | `SymbolType` | `str, Enum` | `` |
-| `tools/ai/analysis/scanners/project_scanner.py` | `FileType` | `str, Enum` | `` |
-| `tools/ai/analysis/scanners/project_scanner.py` | `ProjectType` | `str, Enum` | `` |
-| `tools/ai/analysis/scanners/project_scanner.py` | `ScanConfig` | `—` | `` |
-| `tools/ai/analysis/scanners/project_scanner.py` | `CodeSymbol` | `—` | `__post_init__` |
-| `tools/ai/analysis/scanners/project_scanner.py` | `FileInfo` | `—` | `` |
-| `tools/ai/analysis/scanners/project_scanner.py` | `ModuleInfo` | `—` | `` |
-| `tools/ai/analysis/scanners/project_scanner.py` | `PackageInfo` | `—` | `` |
-| `tools/ai/analysis/scanners/project_scanner.py` | `DependencyInfo` | `—` | `` |
-| `tools/ai/analysis/scanners/project_scanner.py` | `ProjectGraph` | `—` | `` |
-| `tools/ai/analysis/scanners/project_scanner.py` | `SymbolExtractor` | `ast.NodeVisitor` | `__init__, visit_Module, visit_Import, visit_ImportFrom, visit_ClassDef, visit_FunctionDef ...` |
-| `tools/ai/analysis/scanners/project_scanner.py` | `DependencyExtractor` | `ast.NodeVisitor` | `__init__, visit_Import, visit_ImportFrom, visit_Call, visit_FunctionDef, visit_AsyncFunctionDef ...` |
-| `tools/ai/analysis/scanners/project_scanner.py` | `ProjectScanner` | `—` | `__init__, scan, scan_incremental, _find_files, _should_include_file, _scan_file ...` |
-| `tools/ai/entry_points/api_entry.py` | `HTTPMethod` | `str, Enum` | `` |
-| `tools/ai/entry_points/api_entry.py` | `APIResponseStatus` | `str, Enum` | `` |
-| `tools/ai/entry_points/api_entry.py` | `AuthMethod` | `str, Enum` | `` |
-| `tools/ai/entry_points/api_entry.py` | `APIResponse` | `BaseModel` | `` |
-| `tools/ai/entry_points/api_entry.py` | `WorkflowRequest` | `BaseModel` | `` |
-| `tools/ai/entry_points/api_entry.py` | `WorkflowResponse` | `BaseModel` | `` |
-| `tools/ai/entry_points/api_entry.py` | `AnalyzeRequest` | `BaseModel` | `` |
-| `tools/ai/entry_points/api_entry.py` | `GenerateRequest` | `BaseModel` | `` |
-| `tools/ai/entry_points/api_entry.py` | `ValidateRequest` | `BaseModel` | `` |
-| `tools/ai/entry_points/api_entry.py` | `HealthResponse` | `BaseModel` | `` |
-| `tools/ai/entry_points/api_entry.py` | `APIConfig` | `EntryPointConfig` | `` |
-| `tools/ai/entry_points/api_entry.py` | `APIEntryPoint` | `BaseEntryPoint` | `__init__, _get_default_config, setup, _setup_middleware, _setup_routes, _setup_authentication ...` |
-| `tools/ai/entry_points/base_entry_point.py` | `EntryPointType` | `str, Enum` | `` |
-| `tools/ai/entry_points/base_entry_point.py` | `ExecutionMode` | `str, Enum` | `` |
-| `tools/ai/entry_points/base_entry_point.py` | `ExitCode` | `int, Enum` | `` |
-| `tools/ai/entry_points/base_entry_point.py` | `EntryPointContext` | `—` | `get_duration_seconds` |
-| `tools/ai/entry_points/base_entry_point.py` | `EntryPointResult` | `—` | `` |
-| `tools/ai/entry_points/base_entry_point.py` | `EntryPointConfig` | `—` | `` |
-| `tools/ai/entry_points/base_entry_point.py` | `SignalHandler` | `—` | `__init__, setup, _handle_signal, restore, is_shutdown_requested` |
-| `tools/ai/entry_points/base_entry_point.py` | `BaseEntryPoint` | `ABC` | `__init__, _get_default_config, run, run_async, _execute_with_retry, _execute_async_with_retry ...` |
-| `tools/ai/entry_points/base_entry_point.py` | `ExampleEntryPoint` | `BaseEntryPoint` | `_get_default_config, parse_arguments, execute` |
-| `tools/ai/entry_points/cli_entry.py` | `OutputFormat` | `str, Enum` | `` |
-| `tools/ai/entry_points/cli_entry.py` | `CLIConfig` | `EntryPointConfig` | `` |
-| `tools/ai/entry_points/cli_entry.py` | `CLIEntryPoint` | `BaseEntryPoint` | `__init__, _get_default_config, _register_commands, parse_arguments, _create_main_parser, _add_subcommands ...` |
-| `tools/ai/entry_points/ide_plugin_entry.py` | `ProtocolType` | `str, Enum` | `` |
-| `tools/ai/entry_points/ide_plugin_entry.py` | `MessageType` | `str, Enum` | `` |
-| `tools/ai/entry_points/ide_plugin_entry.py` | `CommandScope` | `str, Enum` | `` |
-| `tools/ai/entry_points/ide_plugin_entry.py` | `IDEMessage` | `BaseModel` | `` |
-| `tools/ai/entry_points/ide_plugin_entry.py` | `IDERequest` | `BaseModel` | `` |
-| `tools/ai/entry_points/ide_plugin_entry.py` | `IDEResponse` | `BaseModel` | `` |
-| `tools/ai/entry_points/ide_plugin_entry.py` | `Diagnostic` | `BaseModel` | `` |
-| `tools/ai/entry_points/ide_plugin_entry.py` | `CodeAction` | `BaseModel` | `` |
-| `tools/ai/entry_points/ide_plugin_entry.py` | `IDEPluginConfig` | `EntryPointConfig` | `` |
-| `tools/ai/entry_points/ide_plugin_entry.py` | `IDEPluginEntryPoint` | `BaseEntryPoint` | `__init__, _get_default_config, _register_handlers, _handle_initialize, _handle_initialized, _handle_shutdown ...` |
-| `tools/ai/generation/generators/class_generator.py` | `ClassType` | `str, Enum` | `` |
-| `tools/ai/generation/generators/class_generator.py` | `MethodType` | `str, Enum` | `` |
-| `tools/ai/generation/generators/class_generator.py` | `Visibility` | `str, Enum` | `` |
-| `tools/ai/generation/generators/class_generator.py` | `FieldSpec` | `—` | `` |
-| `tools/ai/generation/generators/class_generator.py` | `MethodSpec` | `—` | `` |
-| `tools/ai/generation/generators/class_generator.py` | `PropertySpec` | `—` | `` |
-| `tools/ai/generation/generators/class_generator.py` | `ClassSpec` | `—` | `` |
-| `tools/ai/generation/generators/class_generator.py` | `GeneratedClass` | `—` | `` |
-| `tools/ai/generation/generators/class_generator.py` | `ClassGeneratorConfig` | `—` | `` |
-| `tools/ai/generation/generators/class_generator.py` | `ClassCodeGenerator` | `—` | `__init__, generate, _generate_imports, _generate_typing_imports, _extract_typing_types, _generate_decorators ...` |
-| `tools/ai/generation/generators/class_generator.py` | `ClassGenerator` | `—` | `__init__, generate, generate_from_description, _parse_description, generate_multiple, generate_module ...` |
-| `tools/ai/generation/generators/docstring_generator.py` | `DocstringStyle` | `str, Enum` | `` |
-| `tools/ai/generation/generators/docstring_generator.py` | `DocstringSection` | `str, Enum` | `` |
-| `tools/ai/generation/generators/docstring_generator.py` | `DocstringQuality` | `str, Enum` | `` |
-| `tools/ai/generation/generators/docstring_generator.py` | `ParameterInfo` | `—` | `` |
-| `tools/ai/generation/generators/docstring_generator.py` | `ReturnInfo` | `—` | `` |
-| `tools/ai/generation/generators/docstring_generator.py` | `ExceptionInfo` | `—` | `` |
-| `tools/ai/generation/generators/docstring_generator.py` | `FunctionContext` | `—` | `` |
-| `tools/ai/generation/generators/docstring_generator.py` | `ClassContext` | `—` | `` |
-| `tools/ai/generation/generators/docstring_generator.py` | `ModuleContext` | `—` | `` |
-| `tools/ai/generation/generators/docstring_generator.py` | `GeneratedDocstring` | `—` | `` |
-| `tools/ai/generation/generators/docstring_generator.py` | `DocstringGeneratorConfig` | `—` | `` |
-| `tools/ai/generation/generators/docstring_generator.py` | `ContextExtractor` | `ast.NodeVisitor` | `__init__, extract_function_context, extract_class_context, _extract_decorators, _extract_bases, _extract_parameters ...` |
-| `tools/ai/generation/generators/docstring_generator.py` | `DocstringFormatter` | `—` | `__init__, format_function, format_class, format_module, _format_google_function, _format_numpy_function ...` |
-| `tools/ai/generation/generators/docstring_generator.py` | `DocstringGenerator` | `—` | `__init__, generate_for_function, generate_for_class, generate_for_module, _generate_with_llm, _generate_class_with_llm ...` |
-| `tools/ai/generation/generators/function_generator.py` | `FunctionType` | `str, Enum` | `` |
-| `tools/ai/generation/generators/function_generator.py` | `ReturnStrategy` | `str, Enum` | `` |
-| `tools/ai/generation/generators/function_generator.py` | `ErrorHandling` | `str, Enum` | `` |
-| `tools/ai/generation/generators/function_generator.py` | `Complexity` | `str, Enum` | `` |
-| `tools/ai/generation/generators/function_generator.py` | `ParameterSpec` | `—` | `` |
-| `tools/ai/generation/generators/function_generator.py` | `ReturnSpec` | `—` | `` |
-| `tools/ai/generation/generators/function_generator.py` | `ExceptionSpec` | `—` | `` |
-| `tools/ai/generation/generators/function_generator.py` | `DecoratorSpec` | `—` | `` |
-| `tools/ai/generation/generators/function_generator.py` | `FunctionBodySpec` | `—` | `` |
-| `tools/ai/generation/generators/function_generator.py` | `FunctionSpec` | `—` | `` |
-| `tools/ai/generation/generators/function_generator.py` | `GeneratedFunction` | `—` | `` |
-| `tools/ai/generation/generators/function_generator.py` | `FunctionGeneratorConfig` | `—` | `` |
-| `tools/ai/generation/generators/function_generator.py` | `FunctionCodeGenerator` | `—` | `__init__, generate, _generate_imports, _generate_decorators, _generate_signature, _generate_parameters ...` |
-| `tools/ai/generation/generators/function_generator.py` | `FunctionGenerator` | `—` | `__init__, generate, generate_from_description, _parse_description, _generate_test, generate_multiple ...` |
-| `tools/ai/generation/generators/module_generator.py` | `ModuleType` | `str, Enum` | `` |
-| `tools/ai/generation/generators/module_generator.py` | `ModuleTemplate` | `str, Enum` | `` |
-| `tools/ai/generation/generators/module_generator.py` | `ConstantSpec` | `—` | `` |
-| `tools/ai/generation/generators/module_generator.py` | `ImportSpec` | `—` | `` |
-| `tools/ai/generation/generators/module_generator.py` | `TypeAliasSpec` | `—` | `` |
-| `tools/ai/generation/generators/module_generator.py` | `ModuleSpec` | `—` | `` |
-| `tools/ai/generation/generators/module_generator.py` | `GeneratedModule` | `—` | `` |
-| `tools/ai/generation/generators/module_generator.py` | `ModuleGeneratorConfig` | `—` | `` |
-| `tools/ai/generation/generators/module_generator.py` | `ModuleCodeGenerator` | `—` | `__init__, generate, _generate_module_docstring, _generate_imports, _get_stdlib_modules, _needs_typing_imports ...` |
-| `tools/ai/generation/generators/module_generator.py` | `ModuleGenerator` | `—` | `__init__, generate, generate_from_description, _parse_description, _get_module_path, _generate_test_file ...` |
-| `tools/ai/generation/generators/performance_test_generator.py` | `PerformanceTestType` | `str, Enum` | `` |
-| `tools/ai/generation/generators/performance_test_generator.py` | `MetricsType` | `str, Enum` | `` |
-| `tools/ai/generation/generators/performance_test_generator.py` | `LoadPattern` | `str, Enum` | `` |
-| `tools/ai/generation/generators/performance_test_generator.py` | `AssertionType` | `str, Enum` | `` |
-| `tools/ai/generation/generators/performance_test_generator.py` | `PerformanceMetric` | `—` | `` |
-| `tools/ai/generation/generators/performance_test_generator.py` | `LoadProfile` | `—` | `` |
-| `tools/ai/generation/generators/performance_test_generator.py` | `PerformanceAssertion` | `—` | `` |
-| `tools/ai/generation/generators/performance_test_generator.py` | `ResourceLimit` | `—` | `` |
-| `tools/ai/generation/generators/performance_test_generator.py` | `PerformanceTestSpec` | `—` | `` |
-| `tools/ai/generation/generators/performance_test_generator.py` | `GeneratedPerformanceTest` | `—` | `` |
-| `tools/ai/generation/generators/performance_test_generator.py` | `PerformanceTestGeneratorConfig` | `—` | `` |
-| `tools/ai/generation/generators/performance_test_generator.py` | `PerformanceTestCodeGenerator` | `—` | `__init__, generate, _generate_module_docstring, _generate_imports, _generate_constants, _generate_metrics_collector ...` |
-| `tools/ai/generation/generators/performance_test_generator.py` | `StressTestGenerator` | `—` | `__init__, generate_stress_test, generate_endurance_test, generate_spike_test, generate_scalability_test` |
-| `tools/ai/generation/generators/performance_test_generator.py` | `PerformanceTestGenerator` | `—` | `__init__, generate, generate_from_function, generate_from_description, _parse_description, _estimate_duration ...` |
-| `tools/ai/generation/generators/test_generator.py` | `TestFramework` | `str, Enum` | `` |
-| `tools/ai/generation/generators/test_generator.py` | `TestType` | `str, Enum` | `` |
-| `tools/ai/generation/generators/test_generator.py` | `MockStrategy` | `str, Enum` | `` |
-| `tools/ai/generation/generators/test_generator.py` | `AssertionStyle` | `str, Enum` | `` |
-| `tools/ai/generation/generators/test_generator.py` | `TestCase` | `—` | `` |
-| `tools/ai/generation/generators/test_generator.py` | `FixtureSpec` | `—` | `` |
-| `tools/ai/generation/generators/test_generator.py` | `MockSpec` | `—` | `` |
-| `tools/ai/generation/generators/test_generator.py` | `TestClassSpec` | `—` | `` |
-| `tools/ai/generation/generators/test_generator.py` | `TestModuleSpec` | `—` | `` |
-| `tools/ai/generation/generators/test_generator.py` | `GeneratedTest` | `—` | `` |
-| `tools/ai/generation/generators/test_generator.py` | `TestGeneratorConfig` | `—` | `` |
-| `tools/ai/generation/generators/test_generator.py` | `TestTargetAnalyzer` | `ast.NodeVisitor` | `__init__, analyze_file, visit_Import, visit_ImportFrom, visit_ClassDef, visit_FunctionDef ...` |
-| `tools/ai/generation/generators/test_generator.py` | `TestCodeGenerator` | `—` | `__init__, generate, _generate_module_docstring, _generate_imports, _generate_fixtures, _generate_test_class ...` |
-| `tools/ai/generation/generators/test_generator.py` | `TestGenerator` | `—` | `__init__, generate, generate_from_file, generate_from_description, _build_spec_from_analysis, _generate_test_cases_for_function ...` |
-| `tools/ai/generation/planners/contract_designer.py` | `DesignPrinciple` | `str, Enum` | `` |
-| `tools/ai/generation/planners/contract_designer.py` | `ParameterKind` | `str, Enum` | `` |
-| `tools/ai/generation/planners/contract_designer.py` | `ReturnStyle` | `str, Enum` | `` |
-| `tools/ai/generation/planners/contract_designer.py` | `ErrorStrategy` | `str, Enum` | `` |
-| `tools/ai/generation/planners/contract_designer.py` | `ParameterDesign` | `—` | `` |
-| `tools/ai/generation/planners/contract_designer.py` | `ReturnDesign` | `—` | `` |
-| `tools/ai/generation/planners/contract_designer.py` | `ExceptionDesign` | `—` | `` |
-| `tools/ai/generation/planners/contract_designer.py` | `MethodDesign` | `—` | `` |
-| `tools/ai/generation/planners/contract_designer.py` | `PropertyDesign` | `—` | `` |
-| `tools/ai/generation/planners/contract_designer.py` | `ConstantDesign` | `—` | `` |
-| `tools/ai/generation/planners/contract_designer.py` | `TypeAliasDesign` | `—` | `` |
-| `tools/ai/generation/planners/contract_designer.py` | `ContractDesign` | `—` | `` |
-| `tools/ai/generation/planners/contract_designer.py` | `ContractSignature` | `—` | `` |
-| `tools/ai/generation/planners/contract_designer.py` | `ContractDesignerConfig` | `—` | `` |
-| `tools/ai/generation/planners/contract_designer.py` | `ContractDesignerEngine` | `—` | `__init__, design, _apply_requirements, _enforce_principles, _has_single_responsibility, _is_explicit ...` |
-| `tools/ai/generation/planners/contract_designer.py` | `SignatureGenerator` | `—` | `__init__, generate_signature, _generate_module_docstring, _generate_imports, _generate_property, _generate_method ...` |
-| `tools/ai/generation/planners/contract_designer.py` | `ContractDesigner` | `—` | `__init__, design, design_from_description, design_from_existing, _enhance_with_llm, _generate_contract ...` |
-| `tools/ai/generation/planners/contract_generator.py` | `ContractType` | `str, Enum` | `` |
-| `tools/ai/generation/planners/contract_generator.py` | `ParameterKind` | `str, Enum` | `` |
-| `tools/ai/generation/planners/contract_generator.py` | `ContractVisibility` | `str, Enum` | `` |
-| `tools/ai/generation/planners/contract_generator.py` | `ErrorHandling` | `str, Enum` | `` |
-| `tools/ai/generation/planners/contract_generator.py` | `ParameterSpec` | `—` | `` |
-| `tools/ai/generation/planners/contract_generator.py` | `ReturnSpec` | `—` | `` |
-| `tools/ai/generation/planners/contract_generator.py` | `ExceptionSpec` | `—` | `` |
-| `tools/ai/generation/planners/contract_generator.py` | `MethodSpec` | `—` | `` |
-| `tools/ai/generation/planners/contract_generator.py` | `PropertySpec` | `—` | `` |
-| `tools/ai/generation/planners/contract_generator.py` | `FieldSpec` | `—` | `` |
-| `tools/ai/generation/planners/contract_generator.py` | `TypeVarSpec` | `—` | `` |
-| `tools/ai/generation/planners/contract_generator.py` | `ContractSpec` | `—` | `` |
-| `tools/ai/generation/planners/contract_generator.py` | `GeneratedContract` | `—` | `` |
-| `tools/ai/generation/planners/contract_generator.py` | `ContractGeneratorConfig` | `—` | `` |
-| `tools/ai/generation/planners/contract_generator.py` | `ContractCodeGenerator` | `—` | `__init__, generate, _generate_module_docstring, _generate_imports, _collect_typing_imports, _generate_type_vars ...` |
-| `tools/ai/generation/planners/contract_generator.py` | `ContractGenerator` | `—` | `__init__, generate, generate_from_description, _parse_description, create_service_contract, create_repository_contract ...` |
-| `tools/ai/generation/planners/dependency_planner.py` | `DependencyType` | `str, Enum` | `` |
-| `tools/ai/generation/planners/dependency_planner.py` | `DependencyDirection` | `str, Enum` | `` |
-| `tools/ai/generation/planners/dependency_planner.py` | `LayerType` | `str, Enum` | `` |
-| `tools/ai/generation/planners/dependency_planner.py` | `DependencyRule` | `str, Enum` | `` |
-| `tools/ai/generation/planners/dependency_planner.py` | `ComponentSpec` | `—` | `` |
-| `tools/ai/generation/planners/dependency_planner.py` | `DependencyEdge` | `—` | `` |
-| `tools/ai/generation/planners/dependency_planner.py` | `LayerDefinition` | `—` | `` |
-| `tools/ai/generation/planners/dependency_planner.py` | `DependencyRule_` | `—` | `` |
-| `tools/ai/generation/planners/dependency_planner.py` | `ImportPlan` | `—` | `` |
-| `tools/ai/generation/planners/dependency_planner.py` | `GenerationOrder` | `—` | `` |
-| `tools/ai/generation/planners/dependency_planner.py` | `DependencyPlan` | `—` | `` |
-| `tools/ai/generation/planners/dependency_planner.py` | `DependencyPlannerConfig` | `—` | `` |
-| `tools/ai/generation/planners/dependency_planner.py` | `DependencyGraphBuilder` | `—` | `__init__, add_component, add_dependency, _determine_direction, _generate_import_statement, build ...` |
-| `tools/ai/generation/planners/dependency_planner.py` | `GenerationOrderCalculator` | `—` | `__init__, calculate, _find_circular_groups, _resolve_circular, _extract_cycle, strongconnect ...` |
-| `tools/ai/generation/planners/dependency_planner.py` | `ImportPlanner` | `—` | `__init__, plan_imports, _generate_import, _is_stdlib, _is_third_party` |
-| `tools/ai/generation/planners/dependency_planner.py` | `RuleValidator` | `—` | `__init__, validate, _matches_pattern, _get_layer_definition` |
-| `tools/ai/generation/planners/dependency_planner.py` | `DependencyPlanner` | `—` | `__init__, plan, plan_from_specs, _validate_against_existing, _check_validity, _generate_issues ...` |
-| `tools/ai/generation/planners/module_architect.py` | `ModuleType` | `str, Enum` | `` |
-| `tools/ai/generation/planners/module_architect.py` | `ArchitecturePattern` | `str, Enum` | `` |
-| `tools/ai/generation/planners/module_architect.py` | `Visibility` | `str, Enum` | `` |
-| `tools/ai/generation/planners/module_architect.py` | `ComponentRole` | `str, Enum` | `` |
-| `tools/ai/generation/planners/module_architect.py` | `FileSpec` | `—` | `` |
-| `tools/ai/generation/planners/module_architect.py` | `ComponentSpec` | `—` | `` |
-| `tools/ai/generation/planners/module_architect.py` | `DirectorySpec` | `—` | `` |
-| `tools/ai/generation/planners/module_architect.py` | `LayerSpec` | `—` | `` |
-| `tools/ai/generation/planners/module_architect.py` | `ModuleArchitecture` | `—` | `` |
-| `tools/ai/generation/planners/module_architect.py` | `ModuleArchitectConfig` | `—` | `` |
-| `tools/ai/generation/planners/module_architect.py` | `StructurePlanner` | `—` | `__init__, plan_structure, _plan_layered, _plan_clean, _plan_hexagonal, _plan_ddd ...` |
-| `tools/ai/generation/planners/module_architect.py` | `ModuleArchitect` | `—` | `__init__, design, design_from_description, design_from_existing, _design_interface_for_component, _calculate_dependencies ...` |
-| `tools/ai/generation/planners/skeleton_generator.py` | `StubType` | `str, Enum` | `` |
-| `tools/ai/generation/planners/skeleton_generator.py` | `ImplementationHint` | `str, Enum` | `` |
-| `tools/ai/generation/planners/skeleton_generator.py` | `StubConfig` | `—` | `` |
-| `tools/ai/generation/planners/skeleton_generator.py` | `ClassStub` | `—` | `` |
-| `tools/ai/generation/planners/skeleton_generator.py` | `MethodStub` | `—` | `` |
-| `tools/ai/generation/planners/skeleton_generator.py` | `PropertyStub` | `—` | `` |
-| `tools/ai/generation/planners/skeleton_generator.py` | `ParameterStub` | `—` | `` |
-| `tools/ai/generation/planners/skeleton_generator.py` | `VariableStub` | `—` | `` |
-| `tools/ai/generation/planners/skeleton_generator.py` | `FunctionStub` | `—` | `` |
-| `tools/ai/generation/planners/skeleton_generator.py` | `ConstantStub` | `—` | `` |
-| `tools/ai/generation/planners/skeleton_generator.py` | `TypeAliasStub` | `—` | `` |
-| `tools/ai/generation/planners/skeleton_generator.py` | `ImportStub` | `—` | `` |
-| `tools/ai/generation/planners/skeleton_generator.py` | `ModuleStub` | `—` | `` |
-| `tools/ai/generation/planners/skeleton_generator.py` | `SkeletonGenerationResult` | `—` | `` |
-| `tools/ai/generation/planners/skeleton_generator.py` | `SkeletonGeneratorConfig` | `—` | `` |
-| `tools/ai/generation/planners/skeleton_generator.py` | `StubCodeGenerator` | `—` | `__init__, generate_module, _generate_imports, _is_stdlib, _format_import, _generate_constant ...` |
-| `tools/ai/generation/planners/skeleton_generator.py` | `SkeletonGenerator` | `—` | `__init__, generate_from_architecture, generate_from_interface, _architecture_to_stubs, _component_to_class_stub, _interface_to_stubs ...` |
-| `tools/ai/generation/refiners/base_refiner.py` | `RefinementScope` | `str, Enum` | `` |
-| `tools/ai/generation/refiners/base_refiner.py` | `ChangeType` | `str, Enum` | `` |
-| `tools/ai/generation/refiners/base_refiner.py` | `RefinementContext` | `—` | `` |
-| `tools/ai/generation/refiners/base_refiner.py` | `RefinementResult` | `—` | `` |
-| `tools/ai/generation/refiners/base_refiner.py` | `BaseRefiner` | `ABC` | `__init__, refine, can_handle, get_priority` |
-| `tools/ai/generation/refiners/base_refiner.py` | `SafetyCheck` | `ABC` | `check` |
-| `tools/ai/generation/refiners/feedback_loop.py` | `FeedbackType` | `str, Enum` | `` |
-| `tools/ai/generation/refiners/feedback_loop.py` | `FeedbackSeverity` | `str, Enum` | `` |
-| `tools/ai/generation/refiners/feedback_loop.py` | `LearningMode` | `str, Enum` | `` |
-| `tools/ai/generation/refiners/feedback_loop.py` | `PatternType` | `str, Enum` | `` |
-| `tools/ai/generation/refiners/feedback_loop.py` | `FeedbackItem` | `—` | `__post_init__, _generate_id` |
-| `tools/ai/generation/refiners/feedback_loop.py` | `LearnedPattern` | `—` | `__post_init__` |
-| `tools/ai/generation/refiners/feedback_loop.py` | `FeedbackSession` | `—` | `` |
-| `tools/ai/generation/refiners/feedback_loop.py` | `FeedbackLoopConfig` | `—` | `` |
-| `tools/ai/generation/refiners/feedback_loop.py` | `FeedbackStorage` | `—` | `__init__, _init_database, save_feedback, get_feedback, get_feedback_by_type, get_feedback_by_pattern ...` |
-| `tools/ai/generation/refiners/feedback_loop.py` | `PatternLearner` | `—` | `__init__, learn_from_feedback, _group_similar_feedback, _generate_signature, _normalize_error_message, _normalize_code_snippet ...` |
-| `tools/ai/generation/refiners/feedback_loop.py` | `FeedbackLoop` | `—` | `__init__, start_session, end_session, _generate_session_id, add_feedback, add_validation_errors ...` |
-| `tools/ai/generation/refiners/functionality_preserver.py` | `FunctionalitySignature` | `—` | `to_dict` |
-| `tools/ai/generation/refiners/functionality_preserver.py` | `FunctionalityPreserver` | `SafetyCheck` | `__init__, check, _extract_signatures, _check_public_api, _check_exceptions, _check_side_effects ...` |
-| `tools/ai/generation/refiners/functionality_preserver.py` | `SignatureVisitor` | `ast.NodeVisitor` | `visit_FunctionDef, visit_AsyncFunctionDef, visit_ClassDef, _extract_function_signature, _extract_class_signature, _extract_raises ...` |
-| `tools/ai/generation/refiners/impact_analyzer.py` | `ImpactSeverity` | `str, Enum` | `` |
-| `tools/ai/generation/refiners/impact_analyzer.py` | `ImpactType` | `str, Enum` | `` |
-| `tools/ai/generation/refiners/impact_analyzer.py` | `ChangeCategory` | `str, Enum` | `` |
-| `tools/ai/generation/refiners/impact_analyzer.py` | `ChangeInfo` | `—` | `` |
-| `tools/ai/generation/refiners/impact_analyzer.py` | `ImpactedArtifact` | `—` | `` |
-| `tools/ai/generation/refiners/impact_analyzer.py` | `BreakingChange` | `—` | `` |
-| `tools/ai/generation/refiners/impact_analyzer.py` | `ImpactAnalysisResult` | `—` | `` |
-| `tools/ai/generation/refiners/impact_analyzer.py` | `ImpactAnalyzerConfig` | `—` | `` |
-| `tools/ai/generation/refiners/impact_analyzer.py` | `ChangeDetector` | `—` | `__init__, detect_changes, _detect_code_changes, _detect_line_changes, _detect_git_changes, _extract_symbols ...` |
-| `tools/ai/generation/refiners/impact_analyzer.py` | `ImpactCalculator` | `—` | `__init__, calculate_impact, _build_reverse_dependency_graph, _calculate_change_impact, _file_to_module, _module_to_file ...` |
-| `tools/ai/generation/refiners/impact_analyzer.py` | `ImpactAnalyzer` | `—` | `__init__, analyze, analyze_git_diff, analyze_refinement, _meets_severity_threshold, _save_analysis ...` |
-| `tools/ai/generation/refiners/impact_analyzer.py` | `SymbolVisitor` | `ast.NodeVisitor` | `__init__, visit_ClassDef, visit_FunctionDef, visit_AsyncFunctionDef, _extract_function_info` |
-| `tools/ai/generation/refiners/iterative_refiner.py` | `RefinementStrategy` | `str, Enum` | `` |
-| `tools/ai/generation/refiners/iterative_refiner.py` | `ErrorCategory` | `str, Enum` | `` |
-| `tools/ai/generation/refiners/iterative_refiner.py` | `RefinementPhase` | `str, Enum` | `` |
-| `tools/ai/generation/refiners/iterative_refiner.py` | `ValidationError` | `—` | `` |
-| `tools/ai/generation/refiners/iterative_refiner.py` | `RefinementStep` | `—` | `` |
-| `tools/ai/generation/refiners/iterative_refiner.py` | `RefinementSession` | `—` | `` |
-| `tools/ai/generation/refiners/iterative_refiner.py` | `RefinerConfig` | `—` | `` |
-| `tools/ai/generation/refiners/iterative_refiner.py` | `ErrorParser` | `—` | `parse_mypy_output, parse_ruff_output` |
-| `tools/ai/generation/refiners/iterative_refiner.py` | `CodeAnalyzer` | `—` | `__init__, analyze_syntax, analyze_complexity, analyze_docstrings, calculate_quality_score, __init__ ...` |
-| `tools/ai/generation/refiners/iterative_refiner.py` | `AIRefiner` | `—` | `__init__, refine, _build_refinement_prompt, _extract_code` |
-| `tools/ai/generation/refiners/iterative_refiner.py` | `AutoFixer` | `—` | `fix_trailing_whitespace, fix_missing_newline, apply_all_fixes` |
-| `tools/ai/generation/refiners/iterative_refiner.py` | `IterativeRefiner` | `—` | `__init__, refine, refine_class, refine_function, refine_module, refine_test ...` |
-| `tools/ai/generation/refiners/iterative_refiner.py` | `ComplexityVisitor` | `ast.NodeVisitor` | `__init__, visit_If, visit_While, visit_For, visit_ExceptHandler` |
-| `tools/ai/generation/refiners/scope_manager.py` | `ScopeBoundary` | `—` | `` |
-| `tools/ai/generation/refiners/scope_manager.py` | `ScopeManager` | `SafetyCheck` | `__init__, _load_project_boundaries, check, _extract_symbols, _check_conflicts, _check_encapsulation ...` |
-| `tools/ai/generation/refiners/scope_manager.py` | `SymbolVisitor` | `ast.NodeVisitor` | `__init__, visit_ClassDef, visit_FunctionDef, visit_Assign` |
-| `tools/ai/generation/refiners/scope_manager.py` | `ImportVisitor` | `ast.NodeVisitor` | `visit_Import, visit_ImportFrom` |
-| `tools/ai/orchestration/agent_registry.py` | `AgentStatus` | `Enum` | `` |
-| `tools/ai/orchestration/agent_registry.py` | `AgentType` | `Enum` | `` |
-| `tools/ai/orchestration/agent_registry.py` | `Capability` | `Enum` | `` |
-| `tools/ai/orchestration/agent_registry.py` | `AgentCapability` | `—` | `to_dict, from_dict` |
-| `tools/ai/orchestration/agent_registry.py` | `AgentInfo` | `—` | `to_dict, from_dict` |
-| `tools/ai/orchestration/agent_registry.py` | `AgentHeartbeat` | `—` | `to_dict` |
-| `tools/ai/orchestration/agent_registry.py` | `AgentQuery` | `—` | `` |
-| `tools/ai/orchestration/agent_registry.py` | `AgentRegistry` | `—` | `__init__, _load_data, _save_data, _start_health_monitor, _check_agent_health, _update_agent_scores ...` |
-| `tools/ai/orchestration/analytics/bottleneck_detector.py` | `BottleneckType` | `Enum` | `` |
-| `tools/ai/orchestration/analytics/bottleneck_detector.py` | `Severity` | `Enum` | `` |
-| `tools/ai/orchestration/analytics/bottleneck_detector.py` | `Bottleneck` | `—` | `to_dict` |
-| `tools/ai/orchestration/analytics/bottleneck_detector.py` | `TaskMetrics` | `—` | `total_time, to_dict` |
-| `tools/ai/orchestration/analytics/bottleneck_detector.py` | `AgentMetrics` | `—` | `utilization, to_dict` |
-| `tools/ai/orchestration/analytics/bottleneck_detector.py` | `BottleneckDetector` | `—` | `__init__, _load_thresholds, register_task, start_task, complete_task, register_agent ...` |
-| `tools/ai/orchestration/analytics/performance_tracker.py` | `MetricType` | `Enum` | `` |
-| `tools/ai/orchestration/analytics/performance_tracker.py` | `Aggregation` | `Enum` | `` |
-| `tools/ai/orchestration/analytics/performance_tracker.py` | `MetricPoint` | `—` | `to_dict` |
-| `tools/ai/orchestration/analytics/performance_tracker.py` | `MetricDefinition` | `—` | `to_dict` |
-| `tools/ai/orchestration/analytics/performance_tracker.py` | `MetricSnapshot` | `—` | `to_dict` |
-| `tools/ai/orchestration/analytics/performance_tracker.py` | `PerformanceAlert` | `—` | `to_dict` |
-| `tools/ai/orchestration/analytics/performance_tracker.py` | `RollingWindow` | `—` | `__init__, add, _cleanup, get_values, get_values_in_range, clear ...` |
-| `tools/ai/orchestration/analytics/performance_tracker.py` | `PerformanceTracker` | `—` | `__init__, _register_default_metrics, _start_monitoring, _collect_system_metrics, _cleanup_old_data, _check_alerts ...` |
-| `tools/ai/orchestration/analytics/report_generator.py` | `ReportFormat` | `Enum` | `` |
-| `tools/ai/orchestration/analytics/report_generator.py` | `ReportType` | `Enum` | `` |
-| `tools/ai/orchestration/analytics/report_generator.py` | `ReportConfig` | `—` | `to_dict` |
-| `tools/ai/orchestration/analytics/report_generator.py` | `Report` | `—` | `to_dict` |
-| `tools/ai/orchestration/analytics/report_generator.py` | `ReportGenerator` | `—` | `__init__, generate_report, _generate_performance_report, _generate_bottleneck_report, _generate_skill_gap_report, _generate_workflow_report ...` |
-| `tools/ai/orchestration/analytics/skill_gap_analyzer.py` | `SkillLevel` | `Enum` | `__str__, from_string` |
-| `tools/ai/orchestration/analytics/skill_gap_analyzer.py` | `SkillCategory` | `Enum` | `` |
-| `tools/ai/orchestration/analytics/skill_gap_analyzer.py` | `GapSeverity` | `Enum` | `` |
-| `tools/ai/orchestration/analytics/skill_gap_analyzer.py` | `Skill` | `—` | `to_dict, from_dict` |
-| `tools/ai/orchestration/analytics/skill_gap_analyzer.py` | `HumanExpert` | `—` | `to_dict, from_dict` |
-| `tools/ai/orchestration/analytics/skill_gap_analyzer.py` | `SkillRequirement` | `—` | `to_dict, from_dict` |
-| `tools/ai/orchestration/analytics/skill_gap_analyzer.py` | `SkillGap` | `—` | `to_dict` |
-| `tools/ai/orchestration/analytics/skill_gap_analyzer.py` | `SkillGapReport` | `—` | `to_dict` |
-| `tools/ai/orchestration/analytics/skill_gap_analyzer.py` | `SkillGapAnalyzer` | `—` | `__init__, _load_data, _save_data, _initialize_skill_taxonomy, register_expert, unregister_expert ...` |
-| `tools/ai/orchestration/analytics/workflow_metrics_collector.py` | `WorkflowStatus` | `Enum` | `` |
-| `tools/ai/orchestration/analytics/workflow_metrics_collector.py` | `StepStatus` | `Enum` | `` |
-| `tools/ai/orchestration/analytics/workflow_metrics_collector.py` | `WorkflowMetrics` | `—` | `duration_seconds, success_rate, to_dict` |
-| `tools/ai/orchestration/analytics/workflow_metrics_collector.py` | `StepMetrics` | `—` | `execution_time, to_dict` |
-| `tools/ai/orchestration/analytics/workflow_metrics_collector.py` | `ThroughputMetric` | `—` | `to_dict` |
-| `tools/ai/orchestration/analytics/workflow_metrics_collector.py` | `ResourceMetric` | `—` | `to_dict` |
-| `tools/ai/orchestration/analytics/workflow_metrics_collector.py` | `WorkflowMetricsCollector` | `—` | `__init__, _load_data, _dict_to_workflow_metrics, _dict_to_step_metrics, _dict_to_throughput_metric, _dict_to_resource_metric ...` |
-| `tools/ai/orchestration/base_orchestrator.py` | `OrchestrationStatus` | `Enum` | `` |
-| `tools/ai/orchestration/base_orchestrator.py` | `TaskPriority` | `Enum` | `` |
-| `tools/ai/orchestration/base_orchestrator.py` | `OrchestrationConfig` | `—` | `to_dict` |
-| `tools/ai/orchestration/base_orchestrator.py` | `Task` | `—` | `to_dict, from_dict` |
-| `tools/ai/orchestration/base_orchestrator.py` | `BaseOrchestrator` | `ABC` | `__init__, _register_as_agent, _setup_event_handlers, _start_scheduler, _process_task_queue, _submit_task ...` |
-| `tools/ai/orchestration/co_evolution/co_evolution_engine.py` | `EvolutionType` | `Enum` | `` |
-| `tools/ai/orchestration/co_evolution/co_evolution_engine.py` | `EvolutionSeverity` | `Enum` | `` |
-| `tools/ai/orchestration/co_evolution/co_evolution_engine.py` | `CodeElement` | `—` | `to_dict` |
-| `tools/ai/orchestration/co_evolution/co_evolution_engine.py` | `EvolutionOperation` | `—` | `to_dict` |
-| `tools/ai/orchestration/co_evolution/co_evolution_engine.py` | `EvolutionPlan` | `—` | `to_dict` |
-| `tools/ai/orchestration/co_evolution/co_evolution_engine.py` | `CoEvolutionEngine` | `—` | `__init__, _load_data, _save_data, _register_default_watch_dirs, add_watch_directory, scan_codebase ...` |
-| `tools/ai/orchestration/co_evolution/config_updater.py` | `ConfigFormat` | `Enum` | `` |
-| `tools/ai/orchestration/co_evolution/config_updater.py` | `ChangeType` | `Enum` | `` |
-| `tools/ai/orchestration/co_evolution/config_updater.py` | `ConfigEntry` | `—` | `to_dict, from_dict` |
-| `tools/ai/orchestration/co_evolution/config_updater.py` | `ConfigChange` | `—` | `to_dict, _serialize_value` |
-| `tools/ai/orchestration/co_evolution/config_updater.py` | `ConfigMigration` | `—` | `` |
-| `tools/ai/orchestration/co_evolution/config_updater.py` | `ConfigUpdater` | `—` | `__init__, _load_registry, _save_registry, _initialize_default_entries, register_config_file, scan_and_update ...` |
-| `tools/ai/orchestration/co_evolution/doc_updater.py` | `DocType` | `Enum` | `` |
-| `tools/ai/orchestration/co_evolution/doc_updater.py` | `UpdateTrigger` | `Enum` | `` |
-| `tools/ai/orchestration/co_evolution/doc_updater.py` | `DocSection` | `—` | `` |
-| `tools/ai/orchestration/co_evolution/doc_updater.py` | `DocUpdate` | `—` | `to_dict` |
-| `tools/ai/orchestration/co_evolution/doc_updater.py` | `APIDocEntry` | `—` | `to_dict` |
-| `tools/ai/orchestration/co_evolution/doc_updater.py` | `DocUpdater` | `—` | `__init__, _load_data, _save_data, _initialize_templates, _get_readme_template, _get_changelog_template ...` |
-| `tools/ai/orchestration/co_evolution/example_updater.py` | `ExampleType` | `Enum` | `` |
-| `tools/ai/orchestration/co_evolution/example_updater.py` | `ExampleStatus` | `Enum` | `` |
-| `tools/ai/orchestration/co_evolution/example_updater.py` | `CodeExample` | `—` | `to_dict, from_dict` |
-| `tools/ai/orchestration/co_evolution/example_updater.py` | `APIChange` | `—` | `` |
-| `tools/ai/orchestration/co_evolution/example_updater.py` | `ExampleUpdate` | `—` | `to_dict` |
-| `tools/ai/orchestration/co_evolution/example_updater.py` | `ExampleUpdater` | `—` | `__init__, _load_data, _save_data, _register_default_example_dirs, add_example_directory, scan_examples ...` |
-| `tools/ai/orchestration/co_evolution/test_updater.py` | `TestType` | `Enum` | `` |
-| `tools/ai/orchestration/co_evolution/test_updater.py` | `TestStatus` | `Enum` | `` |
-| `tools/ai/orchestration/co_evolution/test_updater.py` | `TestCase` | `—` | `to_dict, from_dict` |
-| `tools/ai/orchestration/co_evolution/test_updater.py` | `CodeChange` | `—` | `` |
-| `tools/ai/orchestration/co_evolution/test_updater.py` | `TestUpdate` | `—` | `to_dict` |
-| `tools/ai/orchestration/co_evolution/test_updater.py` | `TestUpdater` | `—` | `__init__, _load_data, _save_data, _register_default_test_dirs, add_test_directory, scan_tests ...` |
-| `tools/ai/orchestration/context_manager.py` | `ContextScope` | `Enum` | `` |
-| `tools/ai/orchestration/context_manager.py` | `AccessMode` | `Enum` | `` |
-| `tools/ai/orchestration/context_manager.py` | `VariableType` | `Enum` | `` |
-| `tools/ai/orchestration/context_manager.py` | `ContextVariable` | `—` | `to_dict, _serialize_value, from_dict` |
-| `tools/ai/orchestration/context_manager.py` | `ContextSchema` | `—` | `to_dict, from_dict` |
-| `tools/ai/orchestration/context_manager.py` | `WorkflowContext` | `—` | `to_dict, from_dict` |
-| `tools/ai/orchestration/context_manager.py` | `TaskContext` | `—` | `to_dict, from_dict` |
-| `tools/ai/orchestration/context_manager.py` | `ContextChange` | `—` | `to_dict` |
-| `tools/ai/orchestration/context_manager.py` | `ContextManager` | `—` | `__init__, _register_default_schemas, _load_data, _save_data, create_context, create_task_context ...` |
-| `tools/ai/orchestration/event_bus.py` | `EventType` | `Enum` | `` |
-| `tools/ai/orchestration/event_bus.py` | `EventPriority` | `Enum` | `` |
-| `tools/ai/orchestration/event_bus.py` | `DeliveryMode` | `Enum` | `` |
-| `tools/ai/orchestration/event_bus.py` | `Event` | `—` | `to_dict, from_dict` |
-| `tools/ai/orchestration/event_bus.py` | `Subscription` | `—` | `matches` |
-| `tools/ai/orchestration/event_bus.py` | `EventEnvelope` | `—` | `to_dict` |
-| `tools/ai/orchestration/event_bus.py` | `EventBus` | `—` | `__init__, _load_data, _save_data, _start_processing, _deliver_event, publish ...` |
-| `tools/ai/orchestration/human_task/assignment_engine.py` | `AssignmentStrategy` | `Enum` | `` |
-| `tools/ai/orchestration/human_task/assignment_engine.py` | `AssignmentStatus` | `Enum` | `` |
-| `tools/ai/orchestration/human_task/assignment_engine.py` | `HumanResource` | `—` | `current_load, is_available, to_dict, from_dict` |
-| `tools/ai/orchestration/human_task/assignment_engine.py` | `HumanTask` | `—` | `to_dict, from_dict` |
-| `tools/ai/orchestration/human_task/assignment_engine.py` | `Assignment` | `—` | `to_dict` |
-| `tools/ai/orchestration/human_task/assignment_engine.py` | `AssignmentEngine` | `—` | `__init__, _load_data, _save_data, _start_workers, _process_assignments, _assign_task ...` |
-| `tools/ai/orchestration/human_task/feedback_collector.py` | `FeedbackType` | `Enum` | `` |
-| `tools/ai/orchestration/human_task/feedback_collector.py` | `FeedbackSeverity` | `Enum` | `` |
-| `tools/ai/orchestration/human_task/feedback_collector.py` | `FeedbackStatus` | `Enum` | `` |
-| `tools/ai/orchestration/human_task/feedback_collector.py` | `Feedback` | `—` | `to_dict, from_dict` |
-| `tools/ai/orchestration/human_task/feedback_collector.py` | `FeedbackSummary` | `—` | `to_dict` |
-| `tools/ai/orchestration/human_task/feedback_collector.py` | `HumanSatisfactionMetric` | `—` | `to_dict` |
-| `tools/ai/orchestration/human_task/feedback_collector.py` | `FeedbackCollector` | `—` | `__init__, _load_data, _save_data, submit_feedback, _needs_escalation, submit_task_feedback ...` |
-| `tools/ai/orchestration/human_task/skill_registry.py` | `SkillCategory` | `Enum` | `` |
-| `tools/ai/orchestration/human_task/skill_registry.py` | `SkillType` | `Enum` | `__init__, display_name, from_id, get_by_category` |
-| `tools/ai/orchestration/human_task/skill_registry.py` | `ProficiencyLevel` | `Enum` | `__str__, from_string` |
-| `tools/ai/orchestration/human_task/skill_registry.py` | `SkillValidationStatus` | `Enum` | `` |
-| `tools/ai/orchestration/human_task/skill_registry.py` | `SkillDefinition` | `—` | `from_skill_type, to_dict, from_dict` |
-| `tools/ai/orchestration/human_task/skill_registry.py` | `HumanSkill` | `—` | `to_dict, from_dict` |
-| `tools/ai/orchestration/human_task/skill_registry.py` | `SkillProficiencyMatrix` | `—` | `get_proficiency, get_skill_score, to_dict, from_dict` |
-| `tools/ai/orchestration/human_task/skill_registry.py` | `SkillRegistry` | `—` | `__init__, _load_data, _save_data, _initialize_default_skills_from_enum, get_skill_type, get_skills_by_type_category ...` |
-| `tools/ai/orchestration/human_task/work_item_types.py` | `WorkItemType` | `Enum` | `id, display_name, description, required_skills, default_priority, requires_approval ...` |
-| `tools/ai/orchestration/human_task/work_queue.py` | `QueueType` | `Enum` | `` |
-| `tools/ai/orchestration/human_task/work_queue.py` | `WorkItemStatus` | `Enum` | `` |
-| `tools/ai/orchestration/human_task/work_queue.py` | `WorkItemPriority` | `Enum` | `` |
-| `tools/ai/orchestration/human_task/work_queue.py` | `WorkItem` | `—` | `age_seconds, wait_time_seconds, processing_time_seconds, is_expired, to_dict, from_dict` |
-| `tools/ai/orchestration/human_task/work_queue.py` | `QueueMetrics` | `—` | `to_dict` |
-| `tools/ai/orchestration/human_task/work_queue.py` | `WorkQueue` | `—` | `__init__, _initialize_queues, _load_data, _save_data, _start_workers, _push_to_queue ...` |
-| `tools/ai/orchestration/pipeline_builder.py` | `StageType` | `Enum` | `` |
-| `tools/ai/orchestration/pipeline_builder.py` | `ExecutionStrategy` | `Enum` | `` |
-| `tools/ai/orchestration/pipeline_builder.py` | `FailurePolicy` | `Enum` | `` |
-| `tools/ai/orchestration/pipeline_builder.py` | `StageConfig` | `—` | `to_dict` |
-| `tools/ai/orchestration/pipeline_builder.py` | `PipelineDefinition` | `—` | `to_dict` |
-| `tools/ai/orchestration/pipeline_builder.py` | `PipelineExecution` | `—` | `to_dict` |
-| `tools/ai/orchestration/pipeline_builder.py` | `PipelineBuilder` | `—` | `__init__, _register_default_handlers, add_task, add_workflow, add_parallel, add_conditional ...` |
-| `tools/ai/orchestration/pipeline_executer.py` | `ExecutionStatus` | `Enum` | `` |
-| `tools/ai/orchestration/pipeline_executer.py` | `StageExecutionStatus` | `Enum` | `` |
-| `tools/ai/orchestration/pipeline_executer.py` | `StageExecution` | `—` | `to_dict` |
-| `tools/ai/orchestration/pipeline_executer.py` | `PipelineExecution` | `—` | `progress, total_duration, to_dict` |
-| `tools/ai/orchestration/pipeline_executer.py` | `PipelineExecutor` | `—` | `__init__, _register_default_handlers, _load_executions, _save_executions, _deserialize_execution, execute ...` |
-| `tools/ai/orchestration/session/session_manager.py` | `SessionType` | `Enum` | `` |
-| `tools/ai/orchestration/session/session_manager.py` | `SessionStatus` | `Enum` | `` |
-| `tools/ai/orchestration/session/session_manager.py` | `SessionAuthLevel` | `Enum` | `` |
-| `tools/ai/orchestration/session/session_manager.py` | `SessionContext` | `—` | `to_dict, from_dict` |
-| `tools/ai/orchestration/session/session_manager.py` | `Session` | `—` | `is_expired, idle_minutes, to_dict, from_dict` |
-| `tools/ai/orchestration/session/session_manager.py` | `SessionActivity` | `—` | `to_dict` |
-| `tools/ai/orchestration/session/session_manager.py` | `SessionManager` | `—` | `__init__, _load_data, _save_data, _start_cleanup_worker, _cleanup_expired_sessions, _cleanup_old_activities ...` |
-| `tools/ai/orchestration/session/session_persistence.py` | `PersistenceBackend` | `Enum` | `` |
-| `tools/ai/orchestration/session/session_persistence.py` | `PersistenceConfig` | `—` | `to_dict` |
-| `tools/ai/orchestration/session/session_persistence.py` | `SessionSnapshot` | `—` | `to_dict, from_dict` |
-| `tools/ai/orchestration/session/session_persistence.py` | `SessionArchive` | `—` | `to_dict, from_dict` |
-| `tools/ai/orchestration/session/session_persistence.py` | `SessionPersistence` | `—` | `__init__, _load_metadata, _save_metadata, _start_workers, _auto_save_all_sessions, save_session_state ...` |
-| `tools/ai/orchestration/session/session_types.py` | `SessionCapability` | `Enum` | `` |
-| `tools/ai/orchestration/session/session_types.py` | `SessionIntegration` | `Enum` | `` |
-| `tools/ai/orchestration/session/session_types.py` | `SessionTypeConfig` | `—` | `to_dict` |
-| `tools/ai/orchestration/session/session_types.py` | `SessionTypeRegistry` | `—` | `__new__, _initialize, _register_default_configs, _register_upgrade_paths, register_config, get_config ...` |
-| `tools/ai/orchestration/session/session_types.py` | `SessionTypeMetadata` | `—` | `get_type_description, get_icon, get_color, get_priority, get_rate_limit_headers, is_interactive ...` |
-| `tools/ai/orchestration/session/session_types.py` | `SessionTypeConverter` | `—` | `get_compatible_types, get_downgrade_path, estimate_conversion_cost` |
-| `tools/ai/orchestration/session/session_types.py` | `SessionTypeValidator` | `—` | `validate_session_data, get_required_fields, get_optional_fields` |
-| `tools/ai/orchestration/workflow_engine.py` | `WorkflowStatus` | `Enum` | `` |
-| `tools/ai/orchestration/workflow_engine.py` | `TaskStatus` | `Enum` | `` |
-| `tools/ai/orchestration/workflow_engine.py` | `TaskType` | `Enum` | `` |
-| `tools/ai/orchestration/workflow_engine.py` | `TaskDefinition` | `—` | `to_dict, from_dict` |
-| `tools/ai/orchestration/workflow_engine.py` | `WorkflowDefinition` | `—` | `to_dict, from_dict` |
-| `tools/ai/orchestration/workflow_engine.py` | `WorkflowExecution` | `—` | `to_dict, from_dict` |
-| `tools/ai/orchestration/workflow_engine.py` | `WorkflowEngine` | `—` | `__init__, _load_workflows, _save_workflows, register_workflow, _validate_workflow, unregister_workflow ...` |
-| `tools/ai/orchestration/workflow_executor.py` | `WorkflowExecutor` | `—` | `__init__, _init_analysis_components, _init_generation_components, _init_quality_components, _register_components, load_definition ...` |
-| `tools/ai/planning/arch_ideator.py` | `ArchitectureThought` | `—` | `` |
-| `tools/ai/planning/arch_ideator.py` | `ArchitectureDocument` | `—` | `` |
-| `tools/ai/planning/arch_ideator.py` | `ArchitectureIdeator` | `—` | `__init__, load_or_create_document, add_thought, _get_ai_feedback, refine_architecture, generate_mermaid_diagram ...` |
-| `tools/ai/planning/arch_implementor.py` | `ModuleTask` | `—` | `` |
-| `tools/ai/planning/arch_implementor.py` | `ModulePlan` | `—` | `` |
-| `tools/ai/planning/arch_implementor.py` | `ArchitectureImplementor` | `—` | `__init__, load_architecture, create_directory_structure, _resolve_module_path, _generate_init_content, _generate_module_init ...` |
-| `tools/ai/planning/dependency_analyzer.py` | `DependencyType` | `str, Enum` | `` |
-| `tools/ai/planning/dependency_analyzer.py` | `Severity` | `str, Enum` | `` |
-| `tools/ai/planning/dependency_analyzer.py` | `IssueType` | `str, Enum` | `` |
-| `tools/ai/planning/dependency_analyzer.py` | `DependencyEdge` | `—` | `` |
-| `tools/ai/planning/dependency_analyzer.py` | `ModuleMetrics` | `—` | `` |
-| `tools/ai/planning/dependency_analyzer.py` | `DependencyIssue` | `—` | `` |
-| `tools/ai/planning/dependency_analyzer.py` | `DependencyGraph` | `—` | `` |
-| `tools/ai/planning/dependency_analyzer.py` | `OptimizationSuggestion` | `—` | `` |
-| `tools/ai/planning/dependency_analyzer.py` | `DependencyAnalyzer` | `—` | `__init__, analyze, _build_from_project_graph, _scan_and_build, _should_skip, _get_module_name ...` |
-| `tools/ai/planning/progress_tracker.py` | `TaskStatus` | `str, Enum` | `` |
-| `tools/ai/planning/progress_tracker.py` | `EpicStatus` | `str, Enum` | `` |
-| `tools/ai/planning/progress_tracker.py` | `Priority` | `str, Enum` | `` |
-| `tools/ai/planning/progress_tracker.py` | `HealthStatus` | `str, Enum` | `` |
-| `tools/ai/planning/progress_tracker.py` | `Task` | `—` | `is_overdue, progress_percentage` |
-| `tools/ai/planning/progress_tracker.py` | `Epic` | `—` | `calculate_progress, is_overdue` |
-| `tools/ai/planning/progress_tracker.py` | `Module` | `—` | `calculate_progress` |
-| `tools/ai/planning/progress_tracker.py` | `Milestone` | `—` | `is_overdue` |
-| `tools/ai/planning/progress_tracker.py` | `DailySnapshot` | `—` | `` |
-| `tools/ai/planning/progress_tracker.py` | `ProgressReport` | `—` | `` |
-| `tools/ai/planning/progress_tracker.py` | `ProgressTracker` | `—` | `__init__, _load_state, _save_state, _serialize_task, _deserialize_task, _serialize_epic ...` |
-| `tools/ai/planning/task_decomposer.py` | `TaskComplexity` | `str, Enum` | `` |
-| `tools/ai/planning/task_decomposer.py` | `TaskCategory` | `str, Enum` | `` |
-| `tools/ai/planning/task_decomposer.py` | `DependencyType` | `str, Enum` | `` |
-| `tools/ai/planning/task_decomposer.py` | `TaskTemplate` | `—` | `` |
-| `tools/ai/planning/task_decomposer.py` | `DecompositionRule` | `—` | `` |
-| `tools/ai/planning/task_decomposer.py` | `TaskDependency` | `—` | `` |
-| `tools/ai/planning/task_decomposer.py` | `DecompositionResult` | `—` | `` |
-| `tools/ai/planning/task_decomposer.py` | `WorkBreakdownStructure` | `—` | `` |
-| `tools/ai/planning/task_decomposer.py` | `WBSNode` | `—` | `` |
-| `tools/ai/planning/task_decomposer.py` | `TaskDecomposer` | `—` | `__init__, _load_templates, _save_templates, _get_default_templates, _load_rules, _save_rules ...` |
-| `tools/ai/quality/debuggers/error_analyzer.py` | `ErrorCategory` | `str, Enum` | `` |
-| `tools/ai/quality/debuggers/error_analyzer.py` | `ErrorSeverity` | `str, Enum` | `` |
-| `tools/ai/quality/debuggers/error_analyzer.py` | `RootCauseType` | `str, Enum` | `` |
-| `tools/ai/quality/debuggers/error_analyzer.py` | `ConfidenceLevel` | `str, Enum` | `` |
-| `tools/ai/quality/debuggers/error_analyzer.py` | `StackFrame` | `—` | `` |
-| `tools/ai/quality/debuggers/error_analyzer.py` | `ErrorInfo` | `—` | `` |
-| `tools/ai/quality/debuggers/error_analyzer.py` | `RootCause` | `—` | `` |
-| `tools/ai/quality/debuggers/error_analyzer.py` | `FixSuggestion` | `—` | `` |
-| `tools/ai/quality/debuggers/error_analyzer.py` | `ErrorAnalysisReport` | `—` | `` |
-| `tools/ai/quality/debuggers/error_analyzer.py` | `ErrorAnalyzerConfig` | `—` | `` |
-| `tools/ai/quality/debuggers/error_analyzer.py` | `ErrorParser` | `—` | `__init__, parse_exception, parse_traceback, parse_syntax_error, _categorize_error, _determine_severity ...` |
-| `tools/ai/quality/debuggers/error_analyzer.py` | `RootCauseAnalyzer` | `—` | `__init__, analyze, _analyze_import_error, _analyze_name_error, _analyze_attribute_error, _analyze_type_error ...` |
-| `tools/ai/quality/debuggers/error_analyzer.py` | `FixSuggestionGenerator` | `—` | `__init__, generate, _is_auto_fixable, _estimate_effort, _suggest_import_fixes, _suggest_name_fixes ...` |
-| `tools/ai/quality/debuggers/error_analyzer.py` | `ErrorAnalyzer` | `—` | `__init__, analyze, analyze_current_exception, _load_error_history, _save_error_history, _find_similar_errors ...` |
-| `tools/ai/quality/debuggers/runtime_inspector.py` | `VariableScope` | `str, Enum` | `` |
-| `tools/ai/quality/debuggers/runtime_inspector.py` | `VariableState` | `str, Enum` | `` |
-| `tools/ai/quality/debuggers/runtime_inspector.py` | `ExecutionState` | `str, Enum` | `` |
-| `tools/ai/quality/debuggers/runtime_inspector.py` | `TraceEvent` | `str, Enum` | `` |
-| `tools/ai/quality/debuggers/runtime_inspector.py` | `VariableInfo` | `—` | `__post_init__, _estimate_size` |
-| `tools/ai/quality/debuggers/runtime_inspector.py` | `CallFrame` | `—` | `` |
-| `tools/ai/quality/debuggers/runtime_inspector.py` | `Breakpoint` | `—` | `` |
-| `tools/ai/quality/debuggers/runtime_inspector.py` | `Watchpoint` | `—` | `` |
-| `tools/ai/quality/debuggers/runtime_inspector.py` | `TraceEvent_` | `—` | `` |
-| `tools/ai/quality/debuggers/runtime_inspector.py` | `RuntimeSnapshot` | `—` | `` |
-| `tools/ai/quality/debuggers/runtime_inspector.py` | `RuntimeInspectionReport` | `—` | `` |
-| `tools/ai/quality/debuggers/runtime_inspector.py` | `RuntimeInspectorConfig` | `—` | `` |
-| `tools/ai/quality/debuggers/runtime_inspector.py` | `VariableInspector` | `—` | `__init__, inspect_frame, _should_inspect_variable, _create_variable_info, _format_value, _format_value_recursive ...` |
-| `tools/ai/quality/debuggers/runtime_inspector.py` | `TraceCollector` | `—` | `__init__, start, stop, _trace_callback, _map_event_type, _create_call_frame ...` |
-| `tools/ai/quality/debuggers/runtime_inspector.py` | `BreakpointManager` | `—` | `__init__, add_breakpoint, remove_breakpoint, add_watchpoint, remove_watchpoint, check_breakpoint ...` |
-| `tools/ai/quality/debuggers/runtime_inspector.py` | `SnapshotManager` | `—` | `__init__, take_snapshot, get_snapshots, compare_snapshots` |
-| `tools/ai/quality/debuggers/runtime_inspector.py` | `RuntimeInspector` | `—` | `__init__, start, stop, pause, resume, inspect ...` |
-| `tools/ai/quality/debuggers/runtime_inspector.py` | `InspectContext` | `—` | `__init__, __enter__, __exit__` |
-| `tools/ai/quality/debuggers/stack_trace_parser.py` | `FrameType` | `str, Enum` | `` |
-| `tools/ai/quality/debuggers/stack_trace_parser.py` | `ErrorCategory` | `str, Enum` | `` |
-| `tools/ai/quality/debuggers/stack_trace_parser.py` | `Severity` | `str, Enum` | `` |
-| `tools/ai/quality/debuggers/stack_trace_parser.py` | `StackFrame` | `—` | `` |
-| `tools/ai/quality/debuggers/stack_trace_parser.py` | `StackTrace` | `—` | `` |
-| `tools/ai/quality/debuggers/stack_trace_parser.py` | `CodeSnippet` | `—` | `` |
-| `tools/ai/quality/debuggers/stack_trace_parser.py` | `StackTraceAnalysis` | `—` | `` |
-| `tools/ai/quality/debuggers/stack_trace_parser.py` | `StackTraceParserConfig` | `—` | `` |
-| `tools/ai/quality/debuggers/stack_trace_parser.py` | `StackTraceParser` | `—` | `__init__, _compile_patterns, parse, parse_exception, _determine_frame_type, _categorize_error ...` |
-| `tools/ai/quality/debuggers/stack_trace_parser.py` | `StackTraceAnalyzer` | `—` | `__init__, analyze, _find_root_cause, _extract_error_snippet, _extract_related_snippets, _analyze_imports ...` |
-| `tools/ai/quality/debuggers/stack_trace_parser.py` | `StackTraceParserTool` | `—` | `__init__, analyze, analyze_file, export_analysis, close` |
-| `tools/ai/quality/documenters/api_doc_generator.py` | `APIFramework` | `Enum` | `` |
-| `tools/ai/quality/documenters/api_doc_generator.py` | `HttpMethod` | `Enum` | `` |
-| `tools/ai/quality/documenters/api_doc_generator.py` | `AuthType` | `Enum` | `` |
-| `tools/ai/quality/documenters/api_doc_generator.py` | `APIEndpoint` | `—` | `to_dict` |
-| `tools/ai/quality/documenters/api_doc_generator.py` | `GraphQLSchema` | `—` | `to_dict` |
-| `tools/ai/quality/documenters/api_doc_generator.py` | `DataModel` | `—` | `to_dict` |
-| `tools/ai/quality/documenters/api_doc_generator.py` | `APIDocGenerator` | `—` | `__init__, generate, _detect_framework, _search_in_files, _scan_endpoints, _scan_fastapi_endpoints ...` |
-| `tools/ai/quality/documenters/architecture_doc.py` | `DiagramFormat` | `Enum` | `` |
-| `tools/ai/quality/documenters/architecture_doc.py` | `ArchitectureLevel` | `Enum` | `` |
-| `tools/ai/quality/documenters/architecture_doc.py` | `DocumentationStyle` | `Enum` | `` |
-| `tools/ai/quality/documenters/architecture_doc.py` | `Component` | `—` | `` |
-| `tools/ai/quality/documenters/architecture_doc.py` | `DataFlow` | `—` | `` |
-| `tools/ai/quality/documenters/architecture_doc.py` | `ArchitectureDecision` | `—` | `` |
-| `tools/ai/quality/documenters/architecture_doc.py` | `ArchitectureDocGenerator` | `—` | `__init__, generate, _analyze_codebase, _analyze_file, _get_decorator_name, _get_return_annotation ...` |
-| `tools/ai/quality/documenters/changelog_generator.py` | `ChangeType` | `Enum` | `` |
-| `tools/ai/quality/documenters/changelog_generator.py` | `VersionBump` | `Enum` | `` |
-| `tools/ai/quality/documenters/changelog_generator.py` | `Commit` | `—` | `to_dict` |
-| `tools/ai/quality/documenters/changelog_generator.py` | `Release` | `—` | `changes_by_type, has_breaking_changes, to_dict` |
-| `tools/ai/quality/documenters/changelog_generator.py` | `ChangelogConfig` | `—` | `to_dict` |
-| `tools/ai/quality/documenters/changelog_generator.py` | `ChangelogGenerator` | `—` | `__init__, generate, _fetch_git_history, _parse_conventional_commits, _detect_versions, _group_commits_by_release ...` |
-| `tools/ai/quality/testers/coverage_analyzer.py` | `CoverageLevel` | `str, Enum` | `` |
-| `tools/ai/quality/testers/coverage_analyzer.py` | `CoverageType` | `str, Enum` | `` |
-| `tools/ai/quality/testers/coverage_analyzer.py` | `GapSeverity` | `str, Enum` | `` |
-| `tools/ai/quality/testers/coverage_analyzer.py` | `GapCategory` | `str, Enum` | `` |
-| `tools/ai/quality/testers/coverage_analyzer.py` | `CoverageMetric` | `—` | `` |
-| `tools/ai/quality/testers/coverage_analyzer.py` | `FileCoverage` | `—` | `` |
-| `tools/ai/quality/testers/coverage_analyzer.py` | `ModuleCoverage` | `—` | `` |
-| `tools/ai/quality/testers/coverage_analyzer.py` | `CoverageGap` | `—` | `` |
-| `tools/ai/quality/testers/coverage_analyzer.py` | `TestRecommendation` | `—` | `` |
-| `tools/ai/quality/testers/coverage_analyzer.py` | `CoverageReport` | `—` | `` |
-| `tools/ai/quality/testers/coverage_analyzer.py` | `CoverageAnalyzerConfig` | `—` | `` |
-| `tools/ai/quality/testers/coverage_analyzer.py` | `CoverageParser` | `—` | `__init__, parse, _run_coverage, _parse_coverage_json, _parse_coverage_xml, _parse_lcov ...` |
-| `tools/ai/quality/testers/coverage_analyzer.py` | `GapDetector` | `—` | `__init__, detect_gaps, _file_to_module, _is_uncovered_function, _is_uncovered_class, _create_function_gap ...` |
-| `tools/ai/quality/testers/coverage_analyzer.py` | `RecommendationGenerator` | `—` | `__init__, generate, _create_file_recommendation, _generate_test_template` |
-| `tools/ai/quality/testers/coverage_analyzer.py` | `CoverageAnalyzer` | `—` | `__init__, analyze, _calculate_overall_metrics, _get_coverage_level, _build_module_coverages, _create_coverage_metrics ...` |
-| `tools/ai/quality/testers/mutation_tester.py` | `MutationOperator` | `str, Enum` | `` |
-| `tools/ai/quality/testers/mutation_tester.py` | `MutationStatus` | `str, Enum` | `` |
-| `tools/ai/quality/testers/mutation_tester.py` | `MutationCategory` | `str, Enum` | `` |
-| `tools/ai/quality/testers/mutation_tester.py` | `Mutation` | `—` | `` |
-| `tools/ai/quality/testers/mutation_tester.py` | `MutationResult` | `—` | `` |
-| `tools/ai/quality/testers/mutation_tester.py` | `TestCoverage` | `—` | `` |
-| `tools/ai/quality/testers/mutation_tester.py` | `MutationReport` | `—` | `` |
-| `tools/ai/quality/testers/mutation_tester.py` | `MutationTesterConfig` | `—` | `` |
-| `tools/ai/quality/testers/mutation_tester.py` | `MutationGenerator` | `ast.NodeTransformer` | `__init__, generate, _create_mutation, _get_category, visit_FunctionDef, visit_ClassDef ...` |
-| `tools/ai/quality/testers/mutation_tester.py` | `MutationExecutor` | `—` | `__init__, check_test_suite_passing, _build_test_command, execute_mutation, _apply_mutation, execute_mutations ...` |
-| `tools/ai/quality/testers/mutation_tester.py` | `MutationTester` | `—` | `__init__, test, _create_empty_report, _find_source_files, _should_ignore, _generate_mutations ...` |
-| `tools/ai/quality/testers/test_runner.py` | `TestStatus` | `str, Enum` | `` |
-| `tools/ai/quality/testers/test_runner.py` | `TestFramework` | `str, Enum` | `` |
-| `tools/ai/quality/testers/test_runner.py` | `TestSelectionStrategy` | `str, Enum` | `` |
-| `tools/ai/quality/testers/test_runner.py` | `ExecutionMode` | `str, Enum` | `` |
-| `tools/ai/quality/testers/test_runner.py` | `FailureCategory` | `str, Enum` | `` |
-| `tools/ai/quality/testers/test_runner.py` | `TestCase` | `—` | `` |
-| `tools/ai/quality/testers/test_runner.py` | `TestSuite` | `—` | `total` |
-| `tools/ai/quality/testers/test_runner.py` | `TestRun` | `—` | `pass_rate, is_success` |
-| `tools/ai/quality/testers/test_runner.py` | `TestFailureAnalysis` | `—` | `` |
-| `tools/ai/quality/testers/test_runner.py` | `TestReport` | `—` | `` |
-| `tools/ai/quality/testers/test_runner.py` | `TestRunnerConfig` | `—` | `` |
-| `tools/ai/quality/testers/test_runner.py` | `TestDiscovery` | `—` | `__init__, discover, _discover_pytest, _discover_unittest, _discover_generic, _should_ignore` |
-| `tools/ai/quality/testers/test_runner.py` | `TestSelector` | `—` | `__init__, select, _select_changed, _select_affected, _select_failed, _select_by_tag ...` |
-| `tools/ai/quality/testers/test_runner.py` | `TestExecutor` | `—` | `__init__, execute, _execute_pytest, _execute_unittest, _execute_generic, _parse_pytest_output ...` |
-| `tools/ai/quality/testers/test_runner.py` | `FailureAnalyzer` | `—` | `__init__, analyze, _analyze_failure, _generate_fix_suggestions` |
-| `tools/ai/quality/testers/test_runner.py` | `FlakyDetector` | `—` | `__init__, detect` |
-| `tools/ai/quality/testers/test_runner.py` | `TestRunner` | `—` | `__init__, run, run_specific, run_changed, run_affected, run_failed ...` |
-| `tools/ai/quality/validators/api_consistency.py` | `ChangeType` | `str, Enum` | `` |
-| `tools/ai/quality/validators/api_consistency.py` | `SemVerImpact` | `str, Enum` | `` |
-| `tools/ai/quality/validators/api_consistency.py` | `CompatibilityStatus` | `str, Enum` | `` |
-| `tools/ai/quality/validators/api_consistency.py` | `APIChange` | `—` | `` |
-| `tools/ai/quality/validators/api_consistency.py` | `APICompatibilityReport` | `—` | `` |
-| `tools/ai/quality/validators/api_consistency.py` | `APIValidatorConfig` | `—` | `` |
-| `tools/ai/quality/validators/api_consistency.py` | `APIComparator` | `—` | `__init__, compare, _should_ignore, _compare_elements, _compare_signatures, _compare_bases` |
-| `tools/ai/quality/validators/api_consistency.py` | `APIConsistencyValidator` | `—` | `__init__, validate, validate_string, validate_module, _get_module_code, _deserialize_elements ...` |
-| `tools/ai/quality/validators/architecture_validator.py` | `LayerType` | `str, Enum` | `` |
-| `tools/ai/quality/validators/architecture_validator.py` | `DependencyRule` | `str, Enum` | `` |
-| `tools/ai/quality/validators/architecture_validator.py` | `RuleSeverity` | `str, Enum` | `` |
-| `tools/ai/quality/validators/architecture_validator.py` | `PatternType` | `str, Enum` | `` |
-| `tools/ai/quality/validators/architecture_validator.py` | `LayerDefinition` | `—` | `` |
-| `tools/ai/quality/validators/architecture_validator.py` | `ArchitectureRule` | `—` | `` |
-| `tools/ai/quality/validators/architecture_validator.py` | `RuleViolation` | `—` | `` |
-| `tools/ai/quality/validators/architecture_validator.py` | `ArchitectureMetrics` | `—` | `` |
-| `tools/ai/quality/validators/architecture_validator.py` | `ArchitectureValidationReport` | `—` | `` |
-| `tools/ai/quality/validators/architecture_validator.py` | `ArchitectureValidatorConfig` | `—` | `` |
-| `tools/ai/quality/validators/architecture_validator.py` | `ArchitecturePatterns` | `—` | `clean_architecture, hexagonal_architecture, layered_architecture, ddd_architecture` |
-| `tools/ai/quality/validators/architecture_validator.py` | `LayerDetector` | `—` | `__init__, _compile_patterns, _pattern_to_regex, detect_layer, get_layer_definition` |
-| `tools/ai/quality/validators/architecture_validator.py` | `RuleValidator` | `—` | `__init__, validate_dependency, _matches_pattern` |
-| `tools/ai/quality/validators/architecture_validator.py` | `ArchitectureValidator` | `—` | `__init__, _load_pattern, validate, _find_import_line, _detect_circular_dependencies, _calculate_metrics ...` |
-| `tools/ai/quality/validators/compatibility_validator.py` | `CompatibilityStatus` | `str, Enum` | `` |
-| `tools/ai/quality/validators/compatibility_validator.py` | `PythonVersion` | `str, Enum` | `` |
-| `tools/ai/quality/validators/compatibility_validator.py` | `IssueSeverity` | `str, Enum` | `` |
-| `tools/ai/quality/validators/compatibility_validator.py` | `FeatureCategory` | `str, Enum` | `` |
-| `tools/ai/quality/validators/compatibility_validator.py` | `PythonFeatureRegistry` | `—` | `get_minimum_version, get_category, get_all_features` |
-| `tools/ai/quality/validators/compatibility_validator.py` | `VersionConstraint` | `—` | `` |
-| `tools/ai/quality/validators/compatibility_validator.py` | `CompatibilityIssue` | `—` | `` |
-| `tools/ai/quality/validators/compatibility_validator.py` | `DependencyInfo` | `—` | `` |
-| `tools/ai/quality/validators/compatibility_validator.py` | `PythonVersionInfo` | `—` | `` |
-| `tools/ai/quality/validators/compatibility_validator.py` | `CompatibilityReport` | `—` | `` |
-| `tools/ai/quality/validators/compatibility_validator.py` | `CompatibilityValidatorConfig` | `—` | `` |
-| `tools/ai/quality/validators/compatibility_validator.py` | `SyntaxFeatureDetector` | `ast.NodeVisitor` | `__init__, detect, visit_Match, visit_MatchAs, visit_MatchOr, visit_NamedExpr ...` |
-| `tools/ai/quality/validators/compatibility_validator.py` | `DependencyAnalyzer` | `—` | `__init__, _load_installed_packages, analyze_requirements, analyze_pyproject, analyze_setup_py, _analyze_dependency ...` |
-| `tools/ai/quality/validators/compatibility_validator.py` | `CompatibilityValidator` | `—` | `__init__, validate, _detect_project_name, _detect_project_version, _get_python_requires, _validate_python_version ...` |
-| `tools/ai/quality/validators/compatibility_validator.py` | `ImportVisitor` | `ast.NodeVisitor` | `visit_Import, visit_ImportFrom, _check_import` |
-| `tools/ai/quality/validators/complexity_validator.py` | `ComplexityMetric` | `str, Enum` | `` |
-| `tools/ai/quality/validators/complexity_validator.py` | `Severity` | `str, Enum` | `` |
-| `tools/ai/quality/validators/complexity_validator.py` | `Scope` | `str, Enum` | `` |
-| `tools/ai/quality/validators/complexity_validator.py` | `ComplexityThreshold` | `—` | `` |
-| `tools/ai/quality/validators/complexity_validator.py` | `ComplexityViolation` | `—` | `` |
-| `tools/ai/quality/validators/complexity_validator.py` | `ComplexityMetrics` | `—` | `` |
-| `tools/ai/quality/validators/complexity_validator.py` | `ComplexityReport` | `—` | `` |
-| `tools/ai/quality/validators/complexity_validator.py` | `ComplexityValidatorConfig` | `—` | `` |
-| `tools/ai/quality/validators/complexity_validator.py` | `ComplexityAnalyzer` | `ast.NodeVisitor` | `__init__, analyze, _create_module_metrics, _module_name, visit_ClassDef, visit_FunctionDef ...` |
-| `tools/ai/quality/validators/complexity_validator.py` | `ComplexityValidator` | `—` | `__init__, validate, _analyze_file, _check_thresholds, _get_suggestion, _calculate_project_metrics ...` |
-| `tools/ai/quality/validators/coverage_validator.py` | `CoverageType` | `str, Enum` | `` |
-| `tools/ai/quality/validators/coverage_validator.py` | `CoverageFormat` | `str, Enum` | `` |
-| `tools/ai/quality/validators/coverage_validator.py` | `Severity` | `str, Enum` | `` |
-| `tools/ai/quality/validators/coverage_validator.py` | `CoverageThreshold` | `—` | `` |
-| `tools/ai/quality/validators/coverage_validator.py` | `CoverageViolation` | `—` | `` |
-| `tools/ai/quality/validators/coverage_validator.py` | `FileCoverage` | `—` | `` |
-| `tools/ai/quality/validators/coverage_validator.py` | `ModuleCoverage` | `—` | `` |
-| `tools/ai/quality/validators/coverage_validator.py` | `CoverageReport` | `—` | `` |
-| `tools/ai/quality/validators/coverage_validator.py` | `CoverageValidatorConfig` | `—` | `` |
-| `tools/ai/quality/validators/coverage_validator.py` | `CoverageParser` | `—` | `parse_coverage_json, parse_coverage_xml, parse_lcov, run_pytest_cov` |
-| `tools/ai/quality/validators/coverage_validator.py` | `CoverageValidator` | `—` | `__init__, validate, _get_coverage_data, _calculate_overall_metrics, _build_module_coverages, _check_thresholds ...` |
-| `tools/ai/quality/validators/dependency_validator.py` | `DependencySource` | `str, Enum` | `` |
-| `tools/ai/quality/validators/dependency_validator.py` | `DependencyType` | `str, Enum` | `` |
-| `tools/ai/quality/validators/dependency_validator.py` | `Severity` | `str, Enum` | `` |
-| `tools/ai/quality/validators/dependency_validator.py` | `VulnerabilitySeverity` | `str, Enum` | `` |
-| `tools/ai/quality/validators/dependency_validator.py` | `LicenseCompatibility` | `str, Enum` | `` |
-| `tools/ai/quality/validators/dependency_validator.py` | `Vulnerability` | `—` | `` |
-| `tools/ai/quality/validators/dependency_validator.py` | `LicenseInfo` | `—` | `` |
-| `tools/ai/quality/validators/dependency_validator.py` | `DependencyInfo` | `—` | `` |
-| `tools/ai/quality/validators/dependency_validator.py` | `DependencyIssue` | `—` | `` |
-| `tools/ai/quality/validators/dependency_validator.py` | `LicenseViolation` | `—` | `` |
-| `tools/ai/quality/validators/dependency_validator.py` | `DependencyReport` | `—` | `` |
-| `tools/ai/quality/validators/dependency_validator.py` | `DependencyValidatorConfig` | `—` | `` |
-| `tools/ai/quality/validators/dependency_validator.py` | `DependencyParser` | `—` | `__init__, parse_all, parse_requirements, parse_pyproject, parse_poetry_lock, parse_pipfile_lock ...` |
-| `tools/ai/quality/validators/dependency_validator.py` | `VulnerabilityChecker` | `—` | `__init__, check_package, _map_safety_severity` |
-| `tools/ai/quality/validators/dependency_validator.py` | `LicenseChecker` | `—` | `__init__, check_license, _analyze_license` |
-| `tools/ai/quality/validators/dependency_validator.py` | `DependencyValidator` | `—` | `__init__, validate, _enrich_with_installed_versions, _enrich_with_pypi_info, _get_pypi_info, _check_dependency_issues ...` |
-| `tools/ai/quality/validators/docstring_validator.py` | `DocstringStyle` | `str, Enum` | `` |
-| `tools/ai/quality/validators/docstring_validator.py` | `DocstringSection` | `str, Enum` | `` |
-| `tools/ai/quality/validators/docstring_validator.py` | `Severity` | `str, Enum` | `` |
-| `tools/ai/quality/validators/docstring_validator.py` | `EntityType` | `str, Enum` | `` |
-| `tools/ai/quality/validators/docstring_validator.py` | `DocstringIssue` | `—` | `` |
-| `tools/ai/quality/validators/docstring_validator.py` | `DocstringMetrics` | `—` | `` |
-| `tools/ai/quality/validators/docstring_validator.py` | `DocstringReport` | `—` | `` |
-| `tools/ai/quality/validators/docstring_validator.py` | `DocstringValidatorConfig` | `—` | `` |
-| `tools/ai/quality/validators/docstring_validator.py` | `DocstringParser` | `—` | `__init__, analyze, _detect_style, _parse_sections, _parse_google_style, _parse_numpy_style ...` |
-| `tools/ai/quality/validators/docstring_validator.py` | `DocstringValidator` | `—` | `__init__, validate, _validate_file, _calculate_overall_score, _calculate_overall_grade, _should_ignore ...` |
-| `tools/ai/quality/validators/docstring_validator.py` | `DocstringVisitor` | `ast.NodeVisitor` | `__init__, visit_Module, visit_ClassDef, visit_FunctionDef, visit_AsyncFunctionDef, _visit_function ...` |
-| `tools/ai/quality/validators/import_validator.py` | `ImportType` | `str, Enum` | `` |
-| `tools/ai/quality/validators/import_validator.py` | `Severity` | `str, Enum` | `` |
-| `tools/ai/quality/validators/import_validator.py` | `ImportGroup` | `str, Enum` | `` |
-| `tools/ai/quality/validators/import_validator.py` | `ImportStatement` | `—` | `` |
-| `tools/ai/quality/validators/import_validator.py` | `ImportIssue` | `—` | `` |
-| `tools/ai/quality/validators/import_validator.py` | `ModuleImports` | `—` | `` |
-| `tools/ai/quality/validators/import_validator.py` | `ImportReport` | `—` | `` |
-| `tools/ai/quality/validators/import_validator.py` | `ImportValidatorConfig` | `—` | `` |
-| `tools/ai/quality/validators/import_validator.py` | `ImportParser` | `—` | `__init__, parse_file, _get_stdlib_modules, classify_import` |
-| `tools/ai/quality/validators/import_validator.py` | `ImportVisitor` | `ast.NodeVisitor` | `__init__, visit_Module, _collect_used_names, visit_Import, visit_ImportFrom, visit_If ...` |
-| `tools/ai/quality/validators/import_validator.py` | `ImportValidator` | `—` | `__init__, validate, _aggregate_statistics, _detect_circular_dependencies, _calculate_overall_score, _calculate_grade ...` |
-| `tools/ai/quality/validators/import_validator.py` | `NameCollector` | `ast.NodeVisitor` | `__init__, visit_Name, visit_Attribute` |
-| `tools/ai/quality/validators/mypy_validator.py` | `MypyErrorCode` | `str, Enum` | `` |
-| `tools/ai/quality/validators/mypy_validator.py` | `Severity` | `str, Enum` | `` |
-| `tools/ai/quality/validators/mypy_validator.py` | `MypyErrorCategory` | `str, Enum` | `` |
-| `tools/ai/quality/validators/mypy_validator.py` | `MypyError` | `—` | `__str__` |
-| `tools/ai/quality/validators/mypy_validator.py` | `TypeCoverageInfo` | `—` | `` |
-| `tools/ai/quality/validators/mypy_validator.py` | `MypyReport` | `—` | `` |
-| `tools/ai/quality/validators/mypy_validator.py` | `MypyValidatorConfig` | `—` | `` |
-| `tools/ai/quality/validators/mypy_validator.py` | `MypyOutputParser` | `—` | `parse, parse_json, parse_coverage, _parse_line, _parse_error_code` |
-| `tools/ai/quality/validators/mypy_validator.py` | `MypyValidator` | `—` | `__init__, validate, validate_string, validate_string_return_output, _run_mypy, _run_mypy_on_file ...` |
-| `tools/ai/quality/validators/naming_spellcheck_validator.py` | `NamingConvention` | `str, Enum` | `` |
-| `tools/ai/quality/validators/naming_spellcheck_validator.py` | `EntityType` | `str, Enum` | `` |
-| `tools/ai/quality/validators/naming_spellcheck_validator.py` | `Severity` | `str, Enum` | `` |
-| `tools/ai/quality/validators/naming_spellcheck_validator.py` | `SpellcheckLanguage` | `str, Enum` | `` |
-| `tools/ai/quality/validators/naming_spellcheck_validator.py` | `NamingRule` | `—` | `` |
-| `tools/ai/quality/validators/naming_spellcheck_validator.py` | `NamingViolation` | `—` | `` |
-| `tools/ai/quality/validators/naming_spellcheck_validator.py` | `SpellingViolation` | `—` | `` |
-| `tools/ai/quality/validators/naming_spellcheck_validator.py` | `NamingSpellcheckReport` | `—` | `` |
-| `tools/ai/quality/validators/naming_spellcheck_validator.py` | `NamingSpellcheckConfig` | `—` | `` |
-| `tools/ai/quality/validators/naming_spellcheck_validator.py` | `NamingValidator` | `ast.NodeVisitor` | `__init__, validate, visit_Module, visit_ClassDef, _is_exception_class, visit_FunctionDef ...` |
-| `tools/ai/quality/validators/naming_spellcheck_validator.py` | `SpellcheckValidator` | `ast.NodeVisitor` | `__init__, validate, visit_FunctionDef, visit_ClassDef, visit_Assign, visit_Constant ...` |
-| `tools/ai/quality/validators/naming_spellcheck_validator.py` | `NamingSpellcheckValidator` | `—` | `__init__, validate, _check_banned_names, _should_ignore, _calculate_overall_score, _calculate_grade ...` |
-| `tools/ai/quality/validators/performance_validator.py` | `PerformanceIssueType` | `str, Enum` | `` |
-| `tools/ai/quality/validators/performance_validator.py` | `Severity` | `str, Enum` | `` |
-| `tools/ai/quality/validators/performance_validator.py` | `ComplexityClass` | `str, Enum` | `` |
-| `tools/ai/quality/validators/performance_validator.py` | `ComplexityAnalysis` | `—` | `` |
-| `tools/ai/quality/validators/performance_validator.py` | `ProfileResult` | `—` | `` |
-| `tools/ai/quality/validators/performance_validator.py` | `MemoryProfile` | `—` | `` |
-| `tools/ai/quality/validators/performance_validator.py` | `BenchmarkResult` | `—` | `` |
-| `tools/ai/quality/validators/performance_validator.py` | `PerformanceIssue` | `—` | `` |
-| `tools/ai/quality/validators/performance_validator.py` | `PerformanceReport` | `—` | `` |
-| `tools/ai/quality/validators/performance_validator.py` | `PerformanceValidatorConfig` | `—` | `` |
-| `tools/ai/quality/validators/performance_validator.py` | `ComplexityAnalyzer` | `ast.NodeVisitor` | `__init__, analyze_file, visit_FunctionDef, visit_AsyncFunctionDef, visit_For, visit_While ...` |
-| `tools/ai/quality/validators/performance_validator.py` | `PerformanceIssueDetector` | `ast.NodeVisitor` | `__init__, analyze_file, visit_FunctionDef, visit_For, visit_While, visit_BinOp ...` |
-| `tools/ai/quality/validators/performance_validator.py` | `CodeProfiler` | `—` | `__init__, profile_file` |
-| `tools/ai/quality/validators/performance_validator.py` | `MemoryProfiler` | `—` | `__init__, profile_file` |
-| `tools/ai/quality/validators/performance_validator.py` | `Benchmarker` | `—` | `__init__, benchmark_function` |
-| `tools/ai/quality/validators/performance_validator.py` | `PerformanceValidator` | `—` | `__init__, validate, _is_complexity_problematic, _should_ignore, _calculate_overall_score, _calculate_grade ...` |
-| `tools/ai/quality/validators/pytest_validator.py` | `TestStatus` | `str, Enum` | `` |
-| `tools/ai/quality/validators/pytest_validator.py` | `TestOutcome` | `str, Enum` | `` |
-| `tools/ai/quality/validators/pytest_validator.py` | `Severity` | `str, Enum` | `` |
-| `tools/ai/quality/validators/pytest_validator.py` | `TestCase` | `—` | `` |
-| `tools/ai/quality/validators/pytest_validator.py` | `TestFile` | `—` | `` |
-| `tools/ai/quality/validators/pytest_validator.py` | `TestSuite` | `—` | `` |
-| `tools/ai/quality/validators/pytest_validator.py` | `TestIssue` | `—` | `` |
-| `tools/ai/quality/validators/pytest_validator.py` | `PytestReport` | `—` | `` |
-| `tools/ai/quality/validators/pytest_validator.py` | `PytestValidatorConfig` | `—` | `` |
-| `tools/ai/quality/validators/pytest_validator.py` | `PytestOutputParser` | `—` | `parse_junit_xml, parse_json_report, parse_text_output` |
-| `tools/ai/quality/validators/pytest_validator.py` | `PytestValidator` | `—` | `__init__, validate, validate_file, _run_pytest, _run_coverage, _detect_flaky_tests ...` |
-| `tools/ai/quality/validators/ruff_validator.py` | `RuffRuleCategory` | `str, Enum` | `` |
-| `tools/ai/quality/validators/ruff_validator.py` | `Severity` | `str, Enum` | `` |
-| `tools/ai/quality/validators/ruff_validator.py` | `FixAvailability` | `str, Enum` | `` |
-| `tools/ai/quality/validators/ruff_validator.py` | `RuffViolation` | `—` | `__str__` |
-| `tools/ai/quality/validators/ruff_validator.py` | `FileViolations` | `—` | `` |
-| `tools/ai/quality/validators/ruff_validator.py` | `RuffReport` | `—` | `` |
-| `tools/ai/quality/validators/ruff_validator.py` | `RuffValidatorConfig` | `—` | `` |
-| `tools/ai/quality/validators/ruff_validator.py` | `RuleCategoryMapper` | `—` | `get_category` |
-| `tools/ai/quality/validators/ruff_validator.py` | `RuffOutputParser` | `—` | `parse, parse_json, _parse_line, _parse_fix_availability` |
-| `tools/ai/quality/validators/ruff_validator.py` | `RuffValidator` | `—` | `__init__, validate, validate_string, validate_string_return_output, fix, _run_ruff ...` |
-| `tools/ai/quality/validators/security_validator.py` | `SecuritySeverity` | `str, Enum` | `` |
-| `tools/ai/quality/validators/security_validator.py` | `VulnerabilityType` | `str, Enum` | `` |
-| `tools/ai/quality/validators/security_validator.py` | `SecurityCategory` | `str, Enum` | `` |
-| `tools/ai/quality/validators/security_validator.py` | `Confidence` | `str, Enum` | `` |
-| `tools/ai/quality/validators/security_validator.py` | `SecurityIssue` | `—` | `` |
-| `tools/ai/quality/validators/security_validator.py` | `SecretFinding` | `—` | `` |
-| `tools/ai/quality/validators/security_validator.py` | `DependencyVulnerability` | `—` | `` |
-| `tools/ai/quality/validators/security_validator.py` | `SecurityReport` | `—` | `` |
-| `tools/ai/quality/validators/security_validator.py` | `SecurityValidatorConfig` | `—` | `` |
-| `tools/ai/quality/validators/security_validator.py` | `SecretDetector` | `—` | `__init__, _compile_patterns, scan_file, _should_ignore_line, _calculate_entropy` |
-| `tools/ai/quality/validators/security_validator.py` | `SecurityVisitor` | `ast.NodeVisitor` | `__init__, visit_Import, visit_ImportFrom, visit_FunctionDef, visit_Call, visit_Assign ...` |
-| `tools/ai/quality/validators/security_validator.py` | `DependencyScanner` | `—` | `__init__, scan, _scan_pip_audit, _scan_safety, _map_severity` |
-| `tools/ai/quality/validators/security_validator.py` | `SecurityValidator` | `—` | `__init__, validate, _update_severity_stats, _should_ignore, _calculate_overall_score, _calculate_grade ...` |
-| `tools/ai/shared/config.py` | `ConfigFormat` | `str, Enum` | `` |
-| `tools/ai/shared/config.py` | `LogLevel` | `str, Enum` | `` |
-| `tools/ai/shared/config.py` | `Environment` | `str, Enum` | `` |
-| `tools/ai/shared/config.py` | `LLMProvider` | `str, Enum` | `` |
-| `tools/ai/shared/config.py` | `LoggingConfig` | `—` | `` |
-| `tools/ai/shared/config.py` | `LLMConfig` | `—` | `` |
-| `tools/ai/shared/config.py` | `OllamaConfig` | `—` | `` |
-| `tools/ai/shared/config.py` | `VectorStoreConfig` | `—` | `` |
-| `tools/ai/shared/config.py` | `StateConfig` | `—` | `` |
-| `tools/ai/shared/config.py` | `GitConfig` | `—` | `` |
-| `tools/ai/shared/config.py` | `AnalysisConfig` | `—` | `` |
-| `tools/ai/shared/config.py` | `GenerationConfig` | `—` | `` |
-| `tools/ai/shared/config.py` | `ValidationConfig` | `—` | `` |
-| `tools/ai/shared/config.py` | `TestingConfig` | `—` | `` |
-| `tools/ai/shared/config.py` | `EntryPointConfig` | `—` | `` |
-| `tools/ai/shared/config.py` | `OrchestrationConfig` | `—` | `` |
-| `tools/ai/shared/config.py` | `MetricsConfig` | `—` | `` |
-| `tools/ai/shared/config.py` | `SecurityConfig` | `—` | `` |
-| `tools/ai/shared/config.py` | `ExperimentalConfig` | `—` | `` |
-| `tools/ai/shared/config.py` | `Config` | `—` | `__post_init__, load, load_from_dict, _detect_format, _load_from_default_locations, _load_json ...` |
-| `tools/ai/shared/file_utils.py` | `FileWatcher` | `—` | `__init__, take_snapshot, get_changes` |
-| `tools/ai/shared/file_utils.py` | `FileLock` | `—` | `__init__, acquire, release, __enter__, __exit__` |
-| `tools/ai/shared/git_utils.py` | `GitStatus` | `str, Enum` | `` |
-| `tools/ai/shared/git_utils.py` | `ChangeType` | `str, Enum` | `` |
-| `tools/ai/shared/git_utils.py` | `MergeStrategy` | `str, Enum` | `` |
-| `tools/ai/shared/git_utils.py` | `CommitType` | `str, Enum` | `` |
-| `tools/ai/shared/git_utils.py` | `GitFileStatus` | `—` | `` |
-| `tools/ai/shared/git_utils.py` | `GitCommit` | `—` | `` |
-| `tools/ai/shared/git_utils.py` | `GitBranch` | `—` | `` |
-| `tools/ai/shared/git_utils.py` | `GitTag` | `—` | `` |
-| `tools/ai/shared/git_utils.py` | `GitRemote` | `—` | `` |
-| `tools/ai/shared/git_utils.py` | `GitDiff` | `—` | `` |
-| `tools/ai/shared/git_utils.py` | `GitStash` | `—` | `` |
-| `tools/ai/shared/git_utils.py` | `GitUtils` | `—` | `__init__, is_repo, git_dir, init, get_config, set_config ...` |
-| `tools/ai/shared/llm_client.py` | `MessageRole` | `str, Enum` | `` |
-| `tools/ai/shared/llm_client.py` | `ResponseFormat` | `str, Enum` | `` |
-| `tools/ai/shared/llm_client.py` | `FinishReason` | `str, Enum` | `` |
-| `tools/ai/shared/llm_client.py` | `Message` | `—` | `` |
-| `tools/ai/shared/llm_client.py` | `LLMResponse` | `—` | `` |
-| `tools/ai/shared/llm_client.py` | `StreamingChunk` | `—` | `` |
-| `tools/ai/shared/llm_client.py` | `Tool` | `—` | `` |
-| `tools/ai/shared/llm_client.py` | `LLMConfig` | `—` | `` |
-| `tools/ai/shared/llm_client.py` | `BaseLLMClient` | `—` | `__init__, _create_session, session, _get_cache_key, _load_cache, _save_cache ...` |
-| `tools/ai/shared/llm_client.py` | `DeepSeekClient` | `BaseLLMClient` | `__init__, complete, complete_json, _extract_json, chat, stream ...` |
-| `tools/ai/shared/llm_client.py` | `OllamaClient` | `BaseLLMClient` | `__init__, complete, complete_json, chat, stream, _format_messages` |
-| `tools/ai/shared/llm_client.py` | `OpenAIClient` | `BaseLLMClient` | `__init__, complete, complete_json, chat, stream, _format_messages` |
-| `tools/ai/shared/llm_client.py` | `LLMClient` | `—` | `__init__, _init_client, complete, complete_json, chat, stream ...` |
-| `tools/ai/shared/logger.py` | `LogFormat` | `str, Enum` | `` |
-| `tools/ai/shared/logger.py` | `LogDestination` | `str, Enum` | `` |
-| `tools/ai/shared/logger.py` | `LoggerConfig` | `—` | `` |
-| `tools/ai/shared/logger.py` | `LogEntry` | `—` | `` |
-| `tools/ai/shared/logger.py` | `ConsoleFormatter` | `logging.Formatter` | `__init__, format` |
-| `tools/ai/shared/logger.py` | `JSONFormatter` | `logging.Formatter` | `__init__, format, _redact` |
-| `tools/ai/shared/logger.py` | `DetailedFormatter` | `logging.Formatter` | `__init__` |
-| `tools/ai/shared/logger.py` | `BufferedHandler` | `logging.Handler` | `__init__, emit, flush, close` |
-| `tools/ai/shared/logger.py` | `LoggerManager` | `—` | `__new__, __init__, _configure, _get_logging_level, _create_console_handler, _create_file_handler ...` |
-| `tools/ai/shared/logger.py` | `LogContext` | `—` | `__init__, __enter__, __exit__, add` |
-| `tools/ai/shared/logger.py` | `ContextFilter` | `logging.Filter` | `__init__, filter` |
-| `tools/ai/shared/state_manager.py` | `StorageBackend` | `str, Enum` | `` |
-| `tools/ai/shared/state_manager.py` | `CompressionType` | `str, Enum` | `` |
-| `tools/ai/shared/state_manager.py` | `EncryptionType` | `str, Enum` | `` |
-| `tools/ai/shared/state_manager.py` | `StateScope` | `str, Enum` | `` |
-| `tools/ai/shared/state_manager.py` | `StateEntry` | `—` | `is_expired, touch` |
-| `tools/ai/shared/state_manager.py` | `StateSnapshot` | `—` | `` |
-| `tools/ai/shared/state_manager.py` | `StateConfig` | `—` | `` |
-| `tools/ai/shared/state_manager.py` | `StorageBackendBase` | `—` | `__init__, load, save, close` |
-| `tools/ai/shared/state_manager.py` | `JSONStorageBackend` | `StorageBackendBase` | `__init__, load, save` |
-| `tools/ai/shared/state_manager.py` | `SQLiteStorageBackend` | `StorageBackendBase` | `__init__, _init_db, _get_connection, load, save, close` |
-| `tools/ai/shared/state_manager.py` | `MemoryStorageBackend` | `StorageBackendBase` | `__init__, load, save` |
-| `tools/ai/shared/state_manager.py` | `StateManager` | `—` | `__init__, _create_backend, _load, _ensure_loaded, _schedule_save, _auto_save ...` |
-| `tools/ai/shared/state_manager.py` | `StateNamespace` | `—` | `__init__, _key, get, set, delete, exists ...` |
 | `tools/analyze_architecture.py` | `ClassInfo` | `—` | `` |
 | `tools/analyze_architecture.py` | `FileInfo` | `—` | `` |
 | `tools/analyze_architecture.py` | `ASTParser` | `—` | `parse, _extract, _parse_class, _is_top_level, _name` |
@@ -3238,20 +3125,17 @@ BaseModel  →  DataSchemaReference
 BaseModel  →  DataDocumentCapabilities
 BaseModel  →  DataNode
 BaseDocument  →  DataDocument
+BaseDocument  →  ESDMDocument
 DocumentBaseModel  →  WorkbookProperties
 DocumentBaseModel  →  Relationship
 DocumentBaseModel  →  RelationshipCollection
 DocumentBaseModel  →  SharedStrings
-DocumentBaseModel  →  SheetDimensions
-DocumentBaseModel  →  WorksheetProperties
 DocumentBaseModel  →  Cell
 DocumentBaseModel  →  Row
 DocumentBaseModel  →  Column
 DocumentBaseModel  →  CellRange
 CellRange  →  MergedCellRange
 DocumentBaseModel  →  NamedRange
-DocumentBaseModel  →  Worksheet
-BaseDocument  →  Workbook
 DocumentBaseModel  →  NumberFormat
 DocumentBaseModel  →  NumberFormatCollection
 Enum  →  FontUnderline
@@ -3273,14 +3157,11 @@ DocumentBaseModel  →  Alignment
 DocumentBaseModel  →  Protection
 DocumentBaseModel  →  CellFormat
 DocumentBaseModel  →  CellFormatCollection
-DocumentBaseModel  →  CellStyle
-DocumentBaseModel  →  CellStyleCollection
+CharacterStyle  →  CellStyle
 DocumentBaseModel  →  DifferentialFormat
-DocumentBaseModel  →  DifferentialFormatCollection
 DocumentBaseModel  →  TableStyleElement
 DocumentBaseModel  →  ExcelTableStyle
-DocumentBaseModel  →  TableStyleCollection
-DocumentBaseModel  →  Stylesheet
+StyleSheet  →  SpreadsheetStyleSheet
 Enum  →  DynamicFilterType
 Enum  →  FilterOperator
 DocumentBaseModel  →  CustomFilter
@@ -3291,7 +3172,6 @@ DocumentBaseModel  →  TableColumn
 DocumentBaseModel  →  ExcelTableRow
 DocumentBaseModel  →  TableStyleInfo
 DocumentBaseModel  →  Table
-DocumentBaseModel  →  TableCollection
 Enum  →  CFType
 Enum  →  CFOperator
 DocumentBaseModel  →  CFValueObject
@@ -3302,47 +3182,39 @@ DocumentBaseModel  →  IconCriterion
 DocumentBaseModel  →  IconSet
 DocumentBaseModel  →  CFRule
 DocumentBaseModel  →  ConditionalFormatting
-DocumentBaseModel  →  ConditionalFormattingCollection
 Enum  →  FormulaTokenType
 DocumentBaseModel  →  FormulaToken
 DocumentBaseModel  →  FormulaAST
 DocumentBaseModel  →  SharedFormula
-DocumentBaseModel  →  SharedFormulaCollection
 DocumentBaseModel  →  DefinedName
-DocumentBaseModel  →  DefinedNameCollection
 DocumentBaseModel  →  ExternalReference
 DocumentBaseModel  →  ExternalLink
-DocumentBaseModel  →  ExternalLinkCollection
 DocumentBaseModel  →  CellFormula
 Enum  →  DataValidationType
 Enum  →  DataValidationOperator
 DocumentBaseModel  →  DataValidationRule
 DocumentBaseModel  →  DataValidation
-DocumentBaseModel  →  DataValidationCollection
 DocumentBaseModel  →  Hyperlink
-DocumentBaseModel  →  HyperlinkCollection
 DocumentBaseModel  →  Author
 DocumentBaseModel  →  CommentTextRun
 DocumentBaseModel  →  CommentText
 DocumentBaseModel  →  Comment
 DocumentBaseModel  →  CommentCollection
 DocumentBaseModel  →  ThreadedComment
-DocumentBaseModel  →  ThreadedCommentCollection
 DocumentBaseModel  →  SheetProperties
 DocumentBaseModel  →  SheetProtection
 Enum  →  Orientation
 DocumentBaseModel  →  PageMargins
 DocumentBaseModel  →  PageSetup
+DocumentBaseModel  →  SheetDimensions
 DocumentBaseModel  →  CalcChainEntry
 DocumentBaseModel  →  CalculationChain
-DocumentBaseModel  →  RichTextRun
-DocumentBaseModel  →  RichText
 DocumentBaseModel  →  PivotField
 DocumentBaseModel  →  PivotCacheReference
 DocumentBaseModel  →  PivotCache
 DocumentBaseModel  →  PivotTable
-DocumentBaseModel  →  PivotCacheCollection
-DocumentBaseModel  →  PivotTableCollection
+DocumentBaseModel  →  Worksheet
+DocumentBaseModel  →  Workbook
 Exception  →  DocumentError
 DocumentError  →  DocumentParseError
 DocumentError  →  DocumentWriteError
@@ -3361,15 +3233,412 @@ Enum  →  MediaContentKind
 str  →  MediaRawType
 Enum  →  MediaRawType
 BaseModel  →  MediaType
+str  →  ScalarSupport
+Enum  →  ScalarSupport
+str  →  CompositeSupport
+Enum  →  CompositeSupport
+str  →  ConstraintCapability
+Enum  →  ConstraintCapability
+str  →  IndexCapability
+Enum  →  IndexCapability
+str  →  NestingDepth
+Enum  →  NestingDepth
+str  →  InheritanceSupport
+Enum  →  InheritanceSupport
+str  →  RelationshipModel
+Enum  →  RelationshipModel
+str  →  AnnotationSupport
+Enum  →  AnnotationSupport
+Flag  →  TimeSeriesSupport
+str  →  NamespaceSupport
+Enum  →  NamespaceSupport
+Flag  →  EnumCapability
+str  →  EntityKind
+Enum  →  EntityKind
+str  →  Cardinality
+Enum  →  Cardinality
+str  →  ConstraintType
+Enum  →  ConstraintType
+str  →  ScalarType
+Enum  →  ScalarType
+str  →  XSDFacet
+Enum  →  XSDFacet
+str  →  ProtobufOption
+Enum  →  ProtobufOption
+str  →  AvroLogicalType
+Enum  →  AvroLogicalType
+str  →  GraphQLDirective
+Enum  →  GraphQLDirective
+BaseDocument  →  MSDMDocument
+str  →  YAWLJoinType
+Enum  →  YAWLJoinType
+str  →  YAWLSplitType
+Enum  →  YAWLSplitType
+str  →  ParticipantBandKind
+Enum  →  ParticipantBandKind
+str  →  MessageVisibleKind
+Enum  →  MessageVisibleKind
+str  →  AlignmentKind
+Enum  →  AlignmentKind
+str  →  TransactionMethod
+Enum  →  TransactionMethod
+str  →  TimerCalculationType
+Enum  →  TimerCalculationType
+str  →  TimeReference
+Enum  →  TimeReference
+str  →  DurationResolution
+Enum  →  DurationResolution
+str  →  EscapeType
+Enum  →  EscapeType
+str  →  CorrelationPropertyType
+Enum  →  CorrelationPropertyType
+str  →  CaseFileMultiplicity
+Enum  →  CaseFileMultiplicity
+str  →  EventListenerType
+Enum  →  EventListenerType
+BaseElement  →  SentryExpression
+BaseElement  →  DecisionTable
+BaseElement  →  ActionList
+str  →  ActivityType
+Enum  →  ActivityType
+str  →  TaskType
+Enum  →  TaskType
+str  →  SubProcessType
+Enum  →  SubProcessType
+str  →  GatewayType
+Enum  →  GatewayType
+str  →  EventType
+Enum  →  EventType
+str  →  LoopType
+Enum  →  LoopType
+str  →  MultiInstanceBehavior
+Enum  →  MultiInstanceBehavior
+str  →  AdHocOrdering
+Enum  →  AdHocOrdering
+str  →  ScriptLanguage
+Enum  →  ScriptLanguage
+str  →  CallActivityType
+Enum  →  CallActivityType
+str  →  ProcessType
+Enum  →  ProcessType
+str  →  GatewayDirection
+Enum  →  GatewayDirection
+str  →  AssociationDirection
+Enum  →  AssociationDirection
+str  →  EventBasedGatewayType
+Enum  →  EventBasedGatewayType
+str  →  ItemKind
+Enum  →  ItemKind
+str  →  TimerEventType
+Enum  →  TimerEventType
+str  →  RelationshipDirection
+Enum  →  RelationshipDirection
+str  →  CEPOperator
+Enum  →  CEPOperator
+str  →  WorkflowStateType
+Enum  →  WorkflowStateType
+str  →  ResourceParameterType
+Enum  →  ResourceParameterType
+str  →  ResourceRoleType
+Enum  →  ResourceRoleType
+str  →  PotentialOwnerType
+Enum  →  PotentialOwnerType
+str  →  InteractionNodeType
+Enum  →  InteractionNodeType
+str  →  EventDefinitionType
+Enum  →  EventDefinitionType
+str  →  ChoreographyLoopType
+Enum  →  ChoreographyLoopType
+str  →  DecisionLogicType
+Enum  →  DecisionLogicType
+str  →  PseudoStateKind
+Enum  →  PseudoStateKind
+str  →  InteractionStrategy
+Enum  →  InteractionStrategy
+BaseElement  →  RootElement
+BaseElement  →  StateNode
+BaseElement  →  Transition
+BaseElement  →  DiagramElement
+DiagramElement  →  Edge
+DiagramElement  →  Shape
+DiagramElement  →  BPMNPlane
+Shape  →  BPMNShape
+Edge  →  BPMNEdge
+BaseElement  →  BpmnExpression
+BpmnExpression  →  FormalExpression
+RootElement  →  ItemDefinition
+RootElement  →  Resource
+BaseElement  →  ResourceParameter
+BaseElement  →  ResourceAssignmentExpression
+BaseElement  →  ResourceParameterBinding
+BaseElement  →  ResourceRole
+ResourceRole  →  HumanPerformer
+HumanPerformer  →  Performer
+HumanPerformer  →  PotentialOwner
+BaseElement  →  FlowElement
+FlowElement  →  FlowNode
+FlowNode  →  Activity
+Activity  →  Task
+Task  →  ServiceTask
+Task  →  SendTask
+Task  →  ReceiveTask
+Task  →  UserTask
+Task  →  ManualTask
+BaseElement  →  Script
+Task  →  ScriptTask
+Task  →  BusinessRuleTask
+Activity  →  CallActivity
+Activity  →  SubProcess
+SubProcess  →  TransactionSubProcess
+SubProcess  →  AdHocSubProcess
+RootElement  →  GlobalTask
+GlobalTask  →  GlobalUserTask
+GlobalTask  →  GlobalScriptTask
+GlobalTask  →  GlobalManualTask
+GlobalTask  →  GlobalBusinessRuleTask
+BaseElement  →  Rendering
+Rendering  →  RenderingForm
+BaseElement  →  LoopCharacteristics
+LoopCharacteristics  →  StandardLoopCharacteristics
+LoopCharacteristics  →  MultiInstanceLoopCharacteristics
+BaseElement  →  ComplexBehaviorDefinition
+BaseElement  →  InputOutputSpecification
+BaseElement  →  InputSet
+BaseElement  →  OutputSet
+FlowNode  →  Event
+Event  →  CatchEvent
+Event  →  ThrowEvent
+CatchEvent  →  StartEvent
+ThrowEvent  →  EndEvent
+CatchEvent  →  IntermediateCatchEvent
+ThrowEvent  →  IntermediateThrowEvent
+CatchEvent  →  BoundaryEvent
+ThrowEvent  →  ImplicitThrowEvent
+RootElement  →  EventDefinition
+EventDefinition  →  MessageEventDefinition
+EventDefinition  →  TimerEventDefinition
+EventDefinition  →  SignalEventDefinition
+EventDefinition  →  ErrorEventDefinition
+EventDefinition  →  EscalationEventDefinition
+EventDefinition  →  CompensateEventDefinition
+EventDefinition  →  ConditionalEventDefinition
+EventDefinition  →  LinkEventDefinition
+EventDefinition  →  CancelEventDefinition
+EventDefinition  →  TerminateEventDefinition
+FlowElement  →  DataFlowElement
+DataFlowElement  →  DataObject
+DataFlowElement  →  DataObjectReference
+RootElement  →  DataStore
+DataFlowElement  →  DataStoreReference
+BaseElement  →  DataState
+BaseElement  →  DataElement
+DataElement  →  Property
+BaseElement  →  DataAssociation
+DataAssociation  →  DataInputAssociation
+DataAssociation  →  DataOutputAssociation
+BaseElement  →  Assignment
+FlowElement  →  SequenceFlow
+BaseElement  →  MessageFlow
+FlowNode  →  Gateway
+Gateway  →  ExclusiveGateway
+Gateway  →  InclusiveGateway
+Gateway  →  ParallelGateway
+Gateway  →  EventBasedGateway
+Gateway  →  ComplexGateway
+BaseElement  →  Lane
+BaseElement  →  LaneSet
+RootElement  →  Process
+RootElement  →  Collaboration
+BaseElement  →  Artifact
+Artifact  →  Association
+Artifact  →  Group
+Artifact  →  TextAnnotation
+BaseElement  →  Auditing
+BaseElement  →  Monitoring
+RootElement  →  Interface
+BaseElement  →  Operation
+RootElement  →  EndPoint
+RootElement  →  Message
+RootElement  →  Signal
+RootElement  →  Error
+RootElement  →  Escalation
+BaseElement  →  CorrelationKey
+RootElement  →  CorrelationProperty
+BaseElement  →  CorrelationPropertyRetrievalExpression
+BaseElement  →  CorrelationSubscription
+BaseElement  →  CorrelationPropertyBinding
+RootElement  →  Category
+BaseElement  →  CategoryValue
+BaseElement  →  MessageFlowAssociation
+BaseElement  →  Participant
+BaseElement  →  ParticipantAssociation
+RootElement  →  PartnerEntity
+RootElement  →  PartnerRole
+BaseElement  →  ConversationNode
+ConversationNode  →  Conversation
+ConversationNode  →  CallConversation
+ConversationNode  →  GlobalConversation
+ConversationNode  →  SubConversation
+BaseElement  →  ConversationAssociation
+BaseElement  →  ConversationLink
+FlowNode  →  ChoreographyActivity
+ChoreographyActivity  →  ChoreographyTask
+ChoreographyActivity  →  CallChoreography
+ChoreographyActivity  →  SubChoreography
+Collaboration  →  Choreography
+Choreography  →  GlobalChoreographyTask
+BaseElement  →  PlanItem
+PlanItem  →  DiscretionaryItem
+BaseElement  →  CaseFileItem
+Activity  →  CaseTask
+Activity  →  ProcessTask
+Activity  →  HumanTask
+BaseElement  →  ApplicabilityRule
+BaseElement  →  EntryCriterion
+BaseElement  →  ExitCriterion
+FlowNode  →  Stage
+FlowNode  →  Milestone
+FlowNode  →  EventListener
+BaseElement  →  Sentry
+BaseElement  →  InformationRequirement
+BaseElement  →  KnowledgeRequirement
+BaseElement  →  AuthorityRequirement
+BaseElement  →  DecisionService
+FlowNode  →  Decision
+FlowNode  →  BusinessKnowledgeModel
+FlowNode  →  InputData
+FlowNode  →  KnowledgeSource
+str  →  ErrorHandlingOperator
+Enum  →  ErrorHandlingOperator
+float  →  RetryBackoffRate
+Enum  →  RetryBackoffRate
+StateNode  →  State
+Transition  →  StateTransition
+BaseElement  →  StateMachineRegion
+StateNode  →  PseudoState
+State  →  Place
+BaseElement  →  YAWLTaskDecorator
+Transition  →  PnTransition
+Transition  →  Arc
+BaseElement  →  InteractionProtocol
+BaseDocument  →  BaseOSDMDocument
+BaseOSDMDocument  →  BPMNDocument
+BaseOSDMDocument  →  CMMNDocument
+BaseOSDMDocument  →  StateMachineDocument
+BaseOSDMDocument  →  DMNDocument
+BaseOSDMDocument  →  CEPDocument
+BaseOSDMDocument  →  MultiAgentInteractionDocument
+str  →  PlaceholderType
+Enum  →  PlaceholderType
+str  →  TransitionType
+Enum  →  TransitionType
+str  →  AnimationType
+Enum  →  AnimationType
+str  →  TriggerType
+Enum  →  TriggerType
+str  →  ShowType
+Enum  →  ShowType
+BaseDocument  →  PSDMDocument
+str  →  ParameterNesting
+Enum  →  ParameterNesting
+str  →  BodyMediaType
+Enum  →  BodyMediaType
+str  →  SecurityFeature
+Enum  →  SecurityFeature
+str  →  TransportBinding
+Enum  →  TransportBinding
+str  →  SchemaKind
+Enum  →  SchemaKind
+str  →  OperationModel
+Enum  →  OperationModel
+str  →  HttpMethod
+Enum  →  HttpMethod
+str  →  ParameterLocation
+Enum  →  ParameterLocation
+str  →  SecurityType
+Enum  →  SecurityType
+str  →  OAuth2Flow
+Enum  →  OAuth2Flow
+str  →  ApiKeyLocation
+Enum  →  ApiKeyLocation
+str  →  OperationType
+Enum  →  OperationType
+str  →  YangStatement
+Enum  →  YangStatement
+str  →  SnmpAccess
+Enum  →  SnmpAccess
+str  →  SnmpStatus
+Enum  →  SnmpStatus
+BaseDocument  →  SSDM_DOCUMENT
+str  →  Transport
+Enum  →  Transport
+str  →  AuthMethod
+Enum  →  AuthMethod
+str  →  ApiKeyLocation
+Enum  →  ApiKeyLocation
+str  →  ValueSource
+Enum  →  ValueSource
+str  →  OAuth2Flow
+Enum  →  OAuth2Flow
+str  →  RetryPolicy
+Enum  →  RetryPolicy
+str  →  PortProtocol
+Enum  →  PortProtocol
+str  →  HealthProbeType
+Enum  →  HealthProbeType
+str  →  PerformedBy
+Enum  →  PerformedBy
+str  →  DiscoveryBackend
+Enum  →  DiscoveryBackend
+str  →  ServiceType
+Enum  →  ServiceType
+str  →  MeshRuleType
+Enum  →  MeshRuleType
+str  →  MessageFormat
+Enum  →  MessageFormat
+str  →  SubscriptionType
+Enum  →  SubscriptionType
+str  →  InternalComponentType
+Enum  →  InternalComponentType
+str  →  CoordinationProtocol
+Enum  →  CoordinationProtocol
+ServiceBinding  →  NorthBoundBinding
 str  →  DocumentStandard
 Enum  →  DocumentStandard
 str  →  MediaCategory
 Enum  →  MediaCategory
-BaseDocument  →  USDMDcoument
-LogicalContent  →  LaTeXEnvironmentContent
-LogicalContent  →  LaTeXCommandContent
-LogicalContent  →  SemanticHTMLContent
-LogicalContent  →  CanvasContent
+str  →  ToolKind
+Enum  →  ToolKind
+str  →  ParameterSource
+Enum  →  ParameterSource
+str  →  ParameterType
+Enum  →  ParameterType
+str  →  HttpMethod
+Enum  →  HttpMethod
+str  →  LoadBalanceStrategy
+Enum  →  LoadBalanceStrategy
+str  →  SnmpVersion
+Enum  →  SnmpVersion
+str  →  NetconfProtocol
+Enum  →  NetconfProtocol
+Tool  →  DbQueryTool
+Tool  →  DbStatementTool
+Tool  →  HttpServiceTool
+Tool  →  GrpcServiceTool
+Tool  →  GraphQLTool
+Tool  →  TcpSocketTool
+Tool  →  MessageBusTool
+Tool  →  CliTool
+Tool  →  PythonFunctionTool
+Tool  →  MCPTool
+Tool  →  YangNetconfTool
+Tool  →  MibSnmpTool
+Tool  →  FileReadTool
+Tool  →  FileWriteTool
+Tool  →  AiModelTool
+Tool  →  CompositeTool
+BaseDocument  →  TSDMDocument
+BaseDocument  →  USDMDocument
 ABC  →  FormatPlugin
 BaseModel  →  ParseOptions
 ABC  →  BaseDocumentParser
@@ -3396,6 +3665,44 @@ BaseDocumentParser  →  LatexParser
 Treeprocessor  →  MarkdownTreeProcessor
 Extension  →  MarkdownExtension
 BaseDocumentParser  →  MarkdownParser
+BaseMSDMParser  →  AvroSchemaParser
+BaseDocumentParser  →  BaseMSDMParser
+BaseMSDMParser  →  CQLParser
+BaseMSDMParser  →  CueParser
+BaseMSDMParser  →  ElasticsearchMappingParser
+BaseMSDMParser  →  ERDParser
+Enum  →  TokenType
+BaseMSDMParser  →  GraphQLSchemaParser
+BaseMSDMParser  →  InfluxDBSchemaParser
+BaseMSDMParser  →  JsonSchemaParser
+BaseMSDMParser  →  MongoDBSchemaParser
+BaseMSDMParser  →  Neo4jSchemaParser
+BaseMSDMParser  →  OWLParser
+BaseMSDMParser  →  PlantUMLParser
+BaseMSDMParser  →  ProtoParser
+BaseMSDMParser  →  PythonModelParser
+BaseMSDMParser  →  SqlDDLParser
+BaseMSDMParser  →  ThriftIDLParser
+BaseMSDMParser  →  TypeScriptInterfaceParser
+BaseMSDMParser  →  UMLXmiParser
+BaseMSDMParser  →  XSDParser
+BaseOSDMParser  →  AirflowDAGParser
+BaseOSDMParser  →  AWSStepFunctionsParser
+BaseOSDMParser  →  AzureLogicAppsParser
+BaseDocumentParser  →  BaseOSDMParser
+BaseOSDMParser  →  BPMNXMLParser
+BaseOSDMParser  →  CEPParser
+BaseOSDMParser  →  CMMNXMLParser
+BaseOSDMParser  →  CNCFServerlessWorkflowParser
+BaseOSDMParser  →  DMNXMLParser
+BaseOSDMParser  →  EPCParser
+BaseOSDMParser  →  GraphMLXMLParser
+BaseOSDMParser  →  PNMLXMLParser
+BaseOSDMParser  →  PrefectDAGParser
+BaseOSDMParser  →  SCXMLParser
+BaseOSDMParser  →  UMLStateMachineParser
+BaseOSDMParser  →  XPDLParser
+BaseOSDMParser  →  YAWLParser
 Enum  →  ContentType
 Enum  →  FontType
 Enum  →  FontEncoding
@@ -3429,7 +3736,40 @@ PDFObject  →  PDFInfo
 Enum  →  StructuralElementType
 Enum  →  TextDirection
 Enum  →  Language
-BaseParser  →  PDFParser
+BaseDocumentParser  →  PPTXParser
+BaseDocumentParser  →  BaseSpreadsheetParser
+BaseSpreadsheetParser  →  ColumnarBinaryParser
+ColumnarBinaryParser  →  ParquetParser
+ColumnarBinaryParser  →  ArrowIPCParser
+ColumnarBinaryParser  →  FeatherParser
+BaseSpreadsheetParser  →  DelimitedParser
+DelimitedParser  →  CSVParser
+DelimitedParser  →  TSVParser
+BaseSpreadsheetParser  →  FixedWidthParser
+BaseSpreadsheetParser  →  XLSXParser
+APIBObject  →  APIBMetadata
+APIBObject  →  APIBParameter
+APIBObject  →  APIBBody
+APIBObject  →  APIBAction
+APIBObject  →  APIBResource
+APIBObject  →  APIBGroup
+BaseSSDMParser  →  APIBlueprintToSSDMParser
+BaseSSDMParser  →  AsyncAPIParser
+BaseDocumentParser  →  BaseSSDMParser
+BaseSSDMParser  →  CDDLServiceParser
+BaseSSDMParser  →  GraphQLServiceParser
+BaseSSDMParser  →  MCPParser
+BaseSSDMParser  →  MIBParser
+BaseSSDMParser  →  OpenAPIV3Parser
+BaseSSDMParser  →  PostmanCollectionParser
+BaseSSDMParser  →  ProtoServiceParser
+BaseSSDMParser  →  PythonServiceParser
+BaseSSDMParser  →  RAMLParser
+BaseSSDMParser  →  WebIDLParser
+BaseSSDMParser  →  WSDLParser
+BaseSSDMParser  →  YANGParser
+BaseDocumentParser  →  BaseTSDMParser
+BaseTSDMParser  →  TsdmJsonParser
 BaseDocumentParser  →  XmlDocumentParser
 BaseDocumentParser  →  YamlDocumentParser
 BaseModel  →  WriteOptions
@@ -3437,6 +3777,54 @@ ABC  →  BaseDocumentWriter
 BaseDocumentWriter  →  BinaryWriter
 BaseDocumentWriter  →  JsonDocumentWriter
 BaseDocumentWriter  →  LatexWriter
+BaseDocumentWriter  →  MarkdownWriter
+BaseMSDMWriter  →  AvroSchemaWriter
+str  →  WriteTarget
+Enum  →  WriteTarget
+str  →  SoftDeleteStrategy
+Enum  →  SoftDeleteStrategy
+BaseModel  →  ConnectionConfig
+BaseDocumentWriter  →  BaseMSDMWriter
+BaseMSDMWriter  →  CQLWriter
+BaseMSDMWriter  →  CUEWriter
+BaseMSDMWriter  →  ElasticsearchMappingWriter
+BaseMSDMWriter  →  ERDWriter
+BaseMSDMWriter  →  GraphQLSchemaWriter
+BaseMSDMWriter  →  JsonSchemaWriter
+BaseMSDMWriter  →  MongoDBSchemaWriter
+BaseMSDMWriter  →  Neo4jSchemaWriter
+BaseMSDMWriter  →  OWLWriter
+BaseMSDMWriter  →  PlantUMLWriter
+BaseMSDMWriter  →  ProtoWriter
+str  →  TargetStyle
+Enum  →  TargetStyle
+BaseMSDMWriter  →  PythonModelWriter
+BaseMSDMWriter  →  SqlDDLWriter
+BaseMSDMWriter  →  ThriftIDLWriter
+BaseMSDMWriter  →  TypeScriptInterfaceWriter
+BaseMSDMWriter  →  UMLXmiWriter
+BaseMSDMWriter  →  XSDWriter
+BaseOSDMWriter  →  AirflowDAGWriter
+BaseOSDMWriter  →  AzureLogicAppsWriter
+str  →  VersionStrategy
+Enum  →  VersionStrategy
+str  →  VersionIncrement
+Enum  →  VersionIncrement
+WriteOptions  →  OSDMWriteOptions
+BaseDocumentWriter  →  BaseOSDMWriter
+BaseOSDMWriter  →  BPMNXMLWriter
+BaseOSDMWriter  →  CEPWriter
+BaseOSDMWriter  →  CMMNXMLWriter
+BaseOSDMWriter  →  CNCFServerlessWorkflowWriter
+BaseOSDMWriter  →  DMNXMLWriter
+BaseOSDMWriter  →  EPCWriter
+BaseOSDMWriter  →  GraphMLXMLWriter
+BaseOSDMWriter  →  PNMLXMLWriter
+BaseOSDMWriter  →  PrefectDAGWriter
+BaseOSDMWriter  →  SCXMLWriter
+BaseOSDMWriter  →  UMLStateMachineWriter
+BaseOSDMWriter  →  XPDLWriter
+BaseOSDMWriter  →  YAWLWriter
 Enum  →  AnnotationType
 Enum  →  AnnotationBorderStyle
 Enum  →  AnnotationFlag
@@ -3452,8 +3840,34 @@ PDFObject  →  PDFStream
 PDFObject  →  PDFPage
 PDFObject  →  PDFCatalog
 PDFObject  →  PDFInfo
-WriteOptions  →  PDFWriteOptions
-BaseDocumentWriter  →  PDFWriter
+BaseDocumentWriter  →  PPTXWriter
+WriteOptions  →  ESDMWriteOptions
+BaseDocumentWriter  →  ESDMBaseWriter
+ESDMBaseWriter  →  CSVWriter
+CSVWriter  →  TSVWriter
+ESDMBaseWriter  →  XLSXWriter
+BaseSSDMWriter  →  APIBlueprintWriter
+BaseSSDMWriter  →  AsyncAPIWriter
+str  →  VersionStrategy
+Enum  →  VersionStrategy
+str  →  VersionIncrement
+Enum  →  VersionIncrement
+WriteOptions  →  SSDMWriteOptions
+BaseDocumentWriter  →  BaseSSDMWriter
+BaseSSDMWriter  →  CDDLWriter
+BaseSSDMWriter  →  GraphQLServiceWriter
+BaseSSDMWriter  →  MCPWriter
+BaseSSDMWriter  →  MIBWriter
+BaseSSDMWriter  →  OpenAPIWriter
+BaseSSDMWriter  →  PostmanCollectionWriter
+BaseSSDMWriter  →  ProtoServiceWriter
+BaseSSDMWriter  →  PythonServiceWriter
+BaseSSDMWriter  →  RAMLWriter
+BaseSSDMWriter  →  WebIDLWriter
+BaseSSDMWriter  →  WSDLWriter
+BaseSSDMWriter  →  YANGWriter
+BaseDocumentWriter  →  BaseTSDMWriter
+BaseTSDMWriter  →  TsdmJsonWriter
 BaseDocumentWriter  →  XmlDocumentWriter
 BaseDocumentWriter  →  YamlDocumentWriter
 yaml.SafeDumper  →  CustomDumper
@@ -3583,526 +3997,6 @@ MessageBus  →  DummyMessageBus2
 BaseOrchestrationBackend  →  DummyBackend
 InteractionResult  →  Result
 MessageBus  →  DummyMessageBus
-str  →  ChunkType
-Enum  →  ChunkType
-str  →  ChunkGranularity
-Enum  →  ChunkGranularity
-str  →  Language
-Enum  →  Language
-ast.NodeVisitor  →  CodeChunkVisitor
-str  →  DocChunkType
-Enum  →  DocChunkType
-str  →  DocFormat
-Enum  →  DocFormat
-str  →  DocSection
-Enum  →  DocSection
-str  →  SemanticChunkType
-Enum  →  SemanticChunkType
-str  →  ChunkingStrategy
-Enum  →  ChunkingStrategy
-str  →  SimilarityMetric
-Enum  →  SimilarityMetric
-int  →  BatchPriority
-Enum  →  BatchPriority
-str  →  BatchStatus
-Enum  →  BatchStatus
-str  →  CheckpointStrategy
-Enum  →  CheckpointStrategy
-str  →  CollectionType
-Enum  →  CollectionType
-str  →  DistanceMetric
-Enum  →  DistanceMetric
-str  →  IndexType
-Enum  →  IndexType
-EmbeddingFunction  →  OllamaEmbeddingFunction
-str  →  EmbeddingModel
-Enum  →  EmbeddingModel
-str  →  EncodingStatus
-Enum  →  EncodingStatus
-str  →  PoolingStrategy
-Enum  →  PoolingStrategy
-str  →  IndexStatus
-Enum  →  IndexStatus
-str  →  SymbolType
-Enum  →  SymbolType
-str  →  DocIndexStatus
-Enum  →  DocIndexStatus
-str  →  DocType
-Enum  →  DocType
-str  →  APIVisibility
-Enum  →  APIVisibility
-str  →  APIElementType
-Enum  →  APIElementType
-str  →  DeprecationStatus
-Enum  →  DeprecationStatus
-str  →  StabilityLevel
-Enum  →  StabilityLevel
-ast.NodeVisitor  →  APIElementExtractor
-str  →  NodeType
-Enum  →  NodeType
-str  →  ComplexityType
-Enum  →  ComplexityType
-str  →  CodeSmell
-Enum  →  CodeSmell
-ast.NodeVisitor  →  MetricsVisitor
-ast.NodeVisitor  →  ImportExtractor
-str  →  ImportType
-Enum  →  ImportType
-str  →  DependencyType
-Enum  →  DependencyType
-str  →  GraphFormat
-Enum  →  GraphFormat
-ast.NodeVisitor  →  ImportExtractor
-str  →  ScanLevel
-Enum  →  ScanLevel
-str  →  SymbolType
-Enum  →  SymbolType
-str  →  FileType
-Enum  →  FileType
-str  →  ProjectType
-Enum  →  ProjectType
-ast.NodeVisitor  →  SymbolExtractor
-ast.NodeVisitor  →  DependencyExtractor
-str  →  HTTPMethod
-Enum  →  HTTPMethod
-str  →  APIResponseStatus
-Enum  →  APIResponseStatus
-str  →  AuthMethod
-Enum  →  AuthMethod
-BaseModel  →  APIResponse
-BaseModel  →  WorkflowRequest
-BaseModel  →  WorkflowResponse
-BaseModel  →  AnalyzeRequest
-BaseModel  →  GenerateRequest
-BaseModel  →  ValidateRequest
-BaseModel  →  HealthResponse
-EntryPointConfig  →  APIConfig
-BaseEntryPoint  →  APIEntryPoint
-str  →  EntryPointType
-Enum  →  EntryPointType
-str  →  ExecutionMode
-Enum  →  ExecutionMode
-int  →  ExitCode
-Enum  →  ExitCode
-ABC  →  BaseEntryPoint
-BaseEntryPoint  →  ExampleEntryPoint
-str  →  OutputFormat
-Enum  →  OutputFormat
-EntryPointConfig  →  CLIConfig
-BaseEntryPoint  →  CLIEntryPoint
-str  →  ProtocolType
-Enum  →  ProtocolType
-str  →  MessageType
-Enum  →  MessageType
-str  →  CommandScope
-Enum  →  CommandScope
-BaseModel  →  IDEMessage
-BaseModel  →  IDERequest
-BaseModel  →  IDEResponse
-BaseModel  →  Diagnostic
-BaseModel  →  CodeAction
-EntryPointConfig  →  IDEPluginConfig
-BaseEntryPoint  →  IDEPluginEntryPoint
-str  →  ClassType
-Enum  →  ClassType
-str  →  MethodType
-Enum  →  MethodType
-str  →  Visibility
-Enum  →  Visibility
-str  →  DocstringStyle
-Enum  →  DocstringStyle
-str  →  DocstringSection
-Enum  →  DocstringSection
-str  →  DocstringQuality
-Enum  →  DocstringQuality
-ast.NodeVisitor  →  ContextExtractor
-str  →  FunctionType
-Enum  →  FunctionType
-str  →  ReturnStrategy
-Enum  →  ReturnStrategy
-str  →  ErrorHandling
-Enum  →  ErrorHandling
-str  →  Complexity
-Enum  →  Complexity
-str  →  ModuleType
-Enum  →  ModuleType
-str  →  ModuleTemplate
-Enum  →  ModuleTemplate
-str  →  PerformanceTestType
-Enum  →  PerformanceTestType
-str  →  MetricsType
-Enum  →  MetricsType
-str  →  LoadPattern
-Enum  →  LoadPattern
-str  →  AssertionType
-Enum  →  AssertionType
-str  →  TestFramework
-Enum  →  TestFramework
-str  →  TestType
-Enum  →  TestType
-str  →  MockStrategy
-Enum  →  MockStrategy
-str  →  AssertionStyle
-Enum  →  AssertionStyle
-ast.NodeVisitor  →  TestTargetAnalyzer
-str  →  DesignPrinciple
-Enum  →  DesignPrinciple
-str  →  ParameterKind
-Enum  →  ParameterKind
-str  →  ReturnStyle
-Enum  →  ReturnStyle
-str  →  ErrorStrategy
-Enum  →  ErrorStrategy
-str  →  ContractType
-Enum  →  ContractType
-str  →  ParameterKind
-Enum  →  ParameterKind
-str  →  ContractVisibility
-Enum  →  ContractVisibility
-str  →  ErrorHandling
-Enum  →  ErrorHandling
-str  →  DependencyType
-Enum  →  DependencyType
-str  →  DependencyDirection
-Enum  →  DependencyDirection
-str  →  LayerType
-Enum  →  LayerType
-str  →  DependencyRule
-Enum  →  DependencyRule
-str  →  ModuleType
-Enum  →  ModuleType
-str  →  ArchitecturePattern
-Enum  →  ArchitecturePattern
-str  →  Visibility
-Enum  →  Visibility
-str  →  ComponentRole
-Enum  →  ComponentRole
-str  →  StubType
-Enum  →  StubType
-str  →  ImplementationHint
-Enum  →  ImplementationHint
-str  →  RefinementScope
-Enum  →  RefinementScope
-str  →  ChangeType
-Enum  →  ChangeType
-ABC  →  BaseRefiner
-ABC  →  SafetyCheck
-str  →  FeedbackType
-Enum  →  FeedbackType
-str  →  FeedbackSeverity
-Enum  →  FeedbackSeverity
-str  →  LearningMode
-Enum  →  LearningMode
-str  →  PatternType
-Enum  →  PatternType
-SafetyCheck  →  FunctionalityPreserver
-ast.NodeVisitor  →  SignatureVisitor
-str  →  ImpactSeverity
-Enum  →  ImpactSeverity
-str  →  ImpactType
-Enum  →  ImpactType
-str  →  ChangeCategory
-Enum  →  ChangeCategory
-ast.NodeVisitor  →  SymbolVisitor
-str  →  RefinementStrategy
-Enum  →  RefinementStrategy
-str  →  ErrorCategory
-Enum  →  ErrorCategory
-str  →  RefinementPhase
-Enum  →  RefinementPhase
-ast.NodeVisitor  →  ComplexityVisitor
-SafetyCheck  →  ScopeManager
-ast.NodeVisitor  →  SymbolVisitor
-ast.NodeVisitor  →  ImportVisitor
-Enum  →  AgentStatus
-Enum  →  AgentType
-Enum  →  Capability
-Enum  →  BottleneckType
-Enum  →  Severity
-Enum  →  MetricType
-Enum  →  Aggregation
-Enum  →  ReportFormat
-Enum  →  ReportType
-Enum  →  SkillLevel
-Enum  →  SkillCategory
-Enum  →  GapSeverity
-Enum  →  WorkflowStatus
-Enum  →  StepStatus
-Enum  →  OrchestrationStatus
-Enum  →  TaskPriority
-ABC  →  BaseOrchestrator
-Enum  →  EvolutionType
-Enum  →  EvolutionSeverity
-Enum  →  ConfigFormat
-Enum  →  ChangeType
-Enum  →  DocType
-Enum  →  UpdateTrigger
-Enum  →  ExampleType
-Enum  →  ExampleStatus
-Enum  →  TestType
-Enum  →  TestStatus
-Enum  →  ContextScope
-Enum  →  AccessMode
-Enum  →  VariableType
-Enum  →  EventType
-Enum  →  EventPriority
-Enum  →  DeliveryMode
-Enum  →  AssignmentStrategy
-Enum  →  AssignmentStatus
-Enum  →  FeedbackType
-Enum  →  FeedbackSeverity
-Enum  →  FeedbackStatus
-Enum  →  SkillCategory
-Enum  →  SkillType
-Enum  →  ProficiencyLevel
-Enum  →  SkillValidationStatus
-Enum  →  WorkItemType
-Enum  →  QueueType
-Enum  →  WorkItemStatus
-Enum  →  WorkItemPriority
-Enum  →  StageType
-Enum  →  ExecutionStrategy
-Enum  →  FailurePolicy
-Enum  →  ExecutionStatus
-Enum  →  StageExecutionStatus
-Enum  →  SessionType
-Enum  →  SessionStatus
-Enum  →  SessionAuthLevel
-Enum  →  PersistenceBackend
-Enum  →  SessionCapability
-Enum  →  SessionIntegration
-Enum  →  WorkflowStatus
-Enum  →  TaskStatus
-Enum  →  TaskType
-str  →  DependencyType
-Enum  →  DependencyType
-str  →  Severity
-Enum  →  Severity
-str  →  IssueType
-Enum  →  IssueType
-str  →  TaskStatus
-Enum  →  TaskStatus
-str  →  EpicStatus
-Enum  →  EpicStatus
-str  →  Priority
-Enum  →  Priority
-str  →  HealthStatus
-Enum  →  HealthStatus
-str  →  TaskComplexity
-Enum  →  TaskComplexity
-str  →  TaskCategory
-Enum  →  TaskCategory
-str  →  DependencyType
-Enum  →  DependencyType
-str  →  ErrorCategory
-Enum  →  ErrorCategory
-str  →  ErrorSeverity
-Enum  →  ErrorSeverity
-str  →  RootCauseType
-Enum  →  RootCauseType
-str  →  ConfidenceLevel
-Enum  →  ConfidenceLevel
-str  →  VariableScope
-Enum  →  VariableScope
-str  →  VariableState
-Enum  →  VariableState
-str  →  ExecutionState
-Enum  →  ExecutionState
-str  →  TraceEvent
-Enum  →  TraceEvent
-str  →  FrameType
-Enum  →  FrameType
-str  →  ErrorCategory
-Enum  →  ErrorCategory
-str  →  Severity
-Enum  →  Severity
-Enum  →  APIFramework
-Enum  →  HttpMethod
-Enum  →  AuthType
-Enum  →  DiagramFormat
-Enum  →  ArchitectureLevel
-Enum  →  DocumentationStyle
-Enum  →  ChangeType
-Enum  →  VersionBump
-str  →  CoverageLevel
-Enum  →  CoverageLevel
-str  →  CoverageType
-Enum  →  CoverageType
-str  →  GapSeverity
-Enum  →  GapSeverity
-str  →  GapCategory
-Enum  →  GapCategory
-str  →  MutationOperator
-Enum  →  MutationOperator
-str  →  MutationStatus
-Enum  →  MutationStatus
-str  →  MutationCategory
-Enum  →  MutationCategory
-ast.NodeTransformer  →  MutationGenerator
-str  →  TestStatus
-Enum  →  TestStatus
-str  →  TestFramework
-Enum  →  TestFramework
-str  →  TestSelectionStrategy
-Enum  →  TestSelectionStrategy
-str  →  ExecutionMode
-Enum  →  ExecutionMode
-str  →  FailureCategory
-Enum  →  FailureCategory
-str  →  ChangeType
-Enum  →  ChangeType
-str  →  SemVerImpact
-Enum  →  SemVerImpact
-str  →  CompatibilityStatus
-Enum  →  CompatibilityStatus
-str  →  LayerType
-Enum  →  LayerType
-str  →  DependencyRule
-Enum  →  DependencyRule
-str  →  RuleSeverity
-Enum  →  RuleSeverity
-str  →  PatternType
-Enum  →  PatternType
-str  →  CompatibilityStatus
-Enum  →  CompatibilityStatus
-str  →  PythonVersion
-Enum  →  PythonVersion
-str  →  IssueSeverity
-Enum  →  IssueSeverity
-str  →  FeatureCategory
-Enum  →  FeatureCategory
-ast.NodeVisitor  →  SyntaxFeatureDetector
-ast.NodeVisitor  →  ImportVisitor
-str  →  ComplexityMetric
-Enum  →  ComplexityMetric
-str  →  Severity
-Enum  →  Severity
-str  →  Scope
-Enum  →  Scope
-ast.NodeVisitor  →  ComplexityAnalyzer
-str  →  CoverageType
-Enum  →  CoverageType
-str  →  CoverageFormat
-Enum  →  CoverageFormat
-str  →  Severity
-Enum  →  Severity
-str  →  DependencySource
-Enum  →  DependencySource
-str  →  DependencyType
-Enum  →  DependencyType
-str  →  Severity
-Enum  →  Severity
-str  →  VulnerabilitySeverity
-Enum  →  VulnerabilitySeverity
-str  →  LicenseCompatibility
-Enum  →  LicenseCompatibility
-str  →  DocstringStyle
-Enum  →  DocstringStyle
-str  →  DocstringSection
-Enum  →  DocstringSection
-str  →  Severity
-Enum  →  Severity
-str  →  EntityType
-Enum  →  EntityType
-ast.NodeVisitor  →  DocstringVisitor
-str  →  ImportType
-Enum  →  ImportType
-str  →  Severity
-Enum  →  Severity
-str  →  ImportGroup
-Enum  →  ImportGroup
-ast.NodeVisitor  →  ImportVisitor
-ast.NodeVisitor  →  NameCollector
-str  →  MypyErrorCode
-Enum  →  MypyErrorCode
-str  →  Severity
-Enum  →  Severity
-str  →  MypyErrorCategory
-Enum  →  MypyErrorCategory
-str  →  NamingConvention
-Enum  →  NamingConvention
-str  →  EntityType
-Enum  →  EntityType
-str  →  Severity
-Enum  →  Severity
-str  →  SpellcheckLanguage
-Enum  →  SpellcheckLanguage
-ast.NodeVisitor  →  NamingValidator
-ast.NodeVisitor  →  SpellcheckValidator
-str  →  PerformanceIssueType
-Enum  →  PerformanceIssueType
-str  →  Severity
-Enum  →  Severity
-str  →  ComplexityClass
-Enum  →  ComplexityClass
-ast.NodeVisitor  →  ComplexityAnalyzer
-ast.NodeVisitor  →  PerformanceIssueDetector
-str  →  TestStatus
-Enum  →  TestStatus
-str  →  TestOutcome
-Enum  →  TestOutcome
-str  →  Severity
-Enum  →  Severity
-str  →  RuffRuleCategory
-Enum  →  RuffRuleCategory
-str  →  Severity
-Enum  →  Severity
-str  →  FixAvailability
-Enum  →  FixAvailability
-str  →  SecuritySeverity
-Enum  →  SecuritySeverity
-str  →  VulnerabilityType
-Enum  →  VulnerabilityType
-str  →  SecurityCategory
-Enum  →  SecurityCategory
-str  →  Confidence
-Enum  →  Confidence
-ast.NodeVisitor  →  SecurityVisitor
-str  →  ConfigFormat
-Enum  →  ConfigFormat
-str  →  LogLevel
-Enum  →  LogLevel
-str  →  Environment
-Enum  →  Environment
-str  →  LLMProvider
-Enum  →  LLMProvider
-str  →  GitStatus
-Enum  →  GitStatus
-str  →  ChangeType
-Enum  →  ChangeType
-str  →  MergeStrategy
-Enum  →  MergeStrategy
-str  →  CommitType
-Enum  →  CommitType
-str  →  MessageRole
-Enum  →  MessageRole
-str  →  ResponseFormat
-Enum  →  ResponseFormat
-str  →  FinishReason
-Enum  →  FinishReason
-BaseLLMClient  →  DeepSeekClient
-BaseLLMClient  →  OllamaClient
-BaseLLMClient  →  OpenAIClient
-str  →  LogFormat
-Enum  →  LogFormat
-str  →  LogDestination
-Enum  →  LogDestination
-logging.Formatter  →  ConsoleFormatter
-logging.Formatter  →  JSONFormatter
-logging.Formatter  →  DetailedFormatter
-logging.Handler  →  BufferedHandler
-logging.Filter  →  ContextFilter
-str  →  StorageBackend
-Enum  →  StorageBackend
-str  →  CompressionType
-Enum  →  CompressionType
-str  →  EncryptionType
-Enum  →  EncryptionType
-str  →  StateScope
-Enum  →  StateScope
-StorageBackendBase  →  JSONStorageBackend
-StorageBackendBase  →  SQLiteStorageBackend
-StorageBackendBase  →  MemoryStorageBackend
 ```
 
 ---
@@ -4163,142 +4057,148 @@ StorageBackendBase  →  MemoryStorageBackend
   - متدها: `create_index`, `upsert`, `batch_upsert`, `query`, `delete`, `search`, `add_embeddings`, `delete_embeddings`
 - **`VectorStorage`** (`engines/storage/vector/base.py`)
   - متدها: `upsert`, `delete`, `query`
-- **`BaseEntryPoint`** (`tools/ai/entry_points/base_entry_point.py`)
-  - متدها: `__init__`, `_get_default_config`, `run`, `run_async`, `_execute_with_retry`, `_execute_async_with_retry`, `execute`, `parse_arguments`, `_create_argument_parser`, `load_configuration`, `setup`, `setup_async`, `validate`, `execute_async`, `teardown`, `teardown_async`, `shutdown`, `shutdown_async`, `_setup_logging`, `_on_shutdown_signal`, `create_workflow_context`, `run_workflow`, `run_workflow_async`, `get_metrics`, `health_check`, `request_shutdown`, `is_shutdown_requested`, `create_success_result`, `create_error_result`, `main`
-- **`BaseRefiner`** (`tools/ai/generation/refiners/base_refiner.py`)
-  - متدها: `__init__`, `refine`, `can_handle`, `get_priority`
-- **`SafetyCheck`** (`tools/ai/generation/refiners/base_refiner.py`)
-  - متدها: `check`
-- **`BaseOrchestrator`** (`tools/ai/orchestration/base_orchestrator.py`)
-  - متدها: `__init__`, `_register_as_agent`, `_setup_event_handlers`, `_start_scheduler`, `_process_task_queue`, `_submit_task`, `_select_agent_for_task`, `_execute_task`, `_complete_task`, `submit_task`, `start_workflow`, `_schedule_workflow_tasks`, `get_task_status`, `get_workflow_status`, `cancel_task`, `cancel_workflow`, `_check_stalled_tasks`, `_update_health`, `_handle_task_completed_event`, `_handle_task_failed_event`, `_handle_workflow_completed_event`, `_handle_workflow_failed_event`, `_handle_agent_status_event`, `_reassign_agent_tasks`, `_load_state`, `_save_state`, `on_task_complete`, `on_workflow_complete`, `on_error`, `_notify_task_complete`, `_notify_task_failed`, `_notify_workflow_complete`, `_notify_workflow_failed`, `get_metrics`, `pause`, `resume`, `stop`, `get_capabilities`, `handle_custom_event`, `scheduler_loop`
 
 ---
 
 ## 🔍 تحلیل مشکلات احتمالی
 
 ### ⚠️ خطاهای Parse
-- `engines/document/parsers/docx_parser/docx_parser.py`: SyntaxError: '(' was never closed (docx_parser.py, line 1393)
-- `engines/document/writers/html_writer.py`: SyntaxError: unexpected indent (html_writer.py, line 1)
-- `engines/document/writers/markdown_writer.py`: SyntaxError: unterminated f-string literal (detected at line 199) (markdown_writer.py, line 199)
+- `engines/document/writers/msdm_writers/influxdb_schema_writer.py`: SyntaxError: invalid syntax (influxdb_schema_writer.py, line 271)
+- `engines/document/writers/osdm_writers/aws_step_functions_writer.py`: SyntaxError: invalid syntax (aws_step_functions_writer.py, line 18)
 
 ### 🔴 کلاس‌های بزرگ (بیش از ۱۵ متد — نشانه نقض SRP)
-- `DOCXExtractor` در `engines/document/parsers/docx_parser/docx_extractor.py` — 64 متد
+- `DOCXExtractor` در `engines/document/parsers/docx_parser/docx_extractor.py` — 68 متد
 - `DOCXImageExtractor` در `engines/document/parsers/docx_parser/docx_image_extractor.py` — 18 متد
 - `OMMLParser` در `engines/document/parsers/docx_parser/docx_math_parser.py` — 28 متد
+- `DOCXParser` در `engines/document/parsers/docx_parser/docx_parser.py` — 61 متد
 - `DocxUtils` در `engines/document/parsers/docx_parser/docx_utils.py` — 36 متد
-- `HTMLDocumentParser` در `engines/document/parsers/html_parser.py` — 30 متد
+- `HTMLDocumentParser` در `engines/document/parsers/html_parser.py` — 31 متد
 - `LatexParser` در `engines/document/parsers/latex_parser.py` — 35 متد
+- `CueParser` در `engines/document/parsers/msdm_parsers/cue_parser.py` — 17 متد
+- `GraphQLSchemaParser` در `engines/document/parsers/msdm_parsers/graphql_schema_parser.py` — 21 متد
+- `ProtoParser` در `engines/document/parsers/msdm_parsers/proto_msdm_parser.py` — 18 متد
+- `TypeScriptInterfaceParser` در `engines/document/parsers/msdm_parsers/typescript_interface_parser.py` — 17 متد
+- `AirflowDAGParser` در `engines/document/parsers/osdm_parsers/airflow_dag_parser.py` — 19 متد
+- `BPMNXMLParser` در `engines/document/parsers/osdm_parsers/bpmn_xml_parser.py` — 55 متد
+- `CMMNXMLParser` در `engines/document/parsers/osdm_parsers/cmmn_xml_parser.py` — 17 متد
 - `ContentExtractor` در `engines/document/parsers/pdf_parser/content_extractor.py` — 27 متد
 - `FontHandler` در `engines/document/parsers/pdf_parser/font_handler.py` — 20 متد
-- `PDFMetadataExtractor` در `engines/document/parsers/pdf_parser/metadata_extractor.py` — 23 متد
-- `PDFParser` در `engines/document/parsers/pdf_parser.py` — 18 متد
+- `PDFMetadataExtractor` در `engines/document/parsers/pdf_parser/metadata_extractor.py` — 24 متد
+- `APIBlueprintParser` در `engines/document/parsers/ssdm_parsers/apib_parser.py` — 16 متد
+- `GraphQLParser` در `engines/document/parsers/ssdm_parsers/graphql_service_parser.py` — 19 متد
+- `MIBDocParser` در `engines/document/parsers/ssdm_parsers/mib_parser.py` — 16 متد
+- `OpenAPIV3Parser` در `engines/document/parsers/ssdm_parsers/openapi_parser.py` — 25 متد
+- `ProtoParser` در `engines/document/parsers/ssdm_parsers/proto_service_parser.py` — 17 متد
+- `PythonServiceParser` در `engines/document/parsers/ssdm_parsers/python_service_parser.py` — 17 متد
+- `WebIDLParser` در `engines/document/parsers/ssdm_parsers/webidl_parser.py` — 20 متد
+- `YANGParser` در `engines/document/parsers/ssdm_parsers/yang_parser.py` — 23 متد
 - `LatexWriter` در `engines/document/writers/latex_writer.py` — 24 متد
+- `MarkdownWriter` در `engines/document/writers/markdown_writer.py` — 19 متد
+- `AvroSchemaWriter` در `engines/document/writers/msdm_writers/avro_schema_writer.py` — 16 متد
+- `CQLWriter` در `engines/document/writers/msdm_writers/cql_writer.py` — 23 متد
+- `GraphQLSchemaWriter` در `engines/document/writers/msdm_writers/graphql_schema_writer.py` — 21 متد
+- `ProtoWriter` در `engines/document/writers/msdm_writers/proto_writer.py` — 16 متد
+- `SqlDDLWriter` در `engines/document/writers/msdm_writers/sql_ddl_writer.py` — 20 متد
+- `TypeScriptInterfaceWriter` در `engines/document/writers/msdm_writers/typescript_interface_writer.py` — 16 متد
+- `XSDWriter` در `engines/document/writers/msdm_writers/xsd_writer.py` — 16 متد
+- `BPMNXMLWriter` در `engines/document/writers/osdm_writers/bpmn_xml_writer.py` — 63 متد
+- `CMMNXMLWriter` در `engines/document/writers/osdm_writers/cmmn_xml_writer.py` — 22 متد
+- `DMNXMLWriter` در `engines/document/writers/osdm_writers/dmn_xml_writer.py` — 20 متد
 - `AnnotationWriter` در `engines/document/writers/pdf_writer/annotation_writer.py` — 27 متد
 - `PDFEncryptor` در `engines/document/writers/pdf_writer/encryption.py` — 30 متد
 - `FontManager` در `engines/document/writers/pdf_writer/font_manager.py` — 31 متد
 - `MetadataWriter` در `engines/document/writers/pdf_writer/metadata_writer.py` — 18 متد
 - `PDFOptimizer` در `engines/document/writers/pdf_writer/optimizer.py` — 33 متد
 - `OutlineBuilder` در `engines/document/writers/pdf_writer/outline_builder.py` — 17 متد
-- `PDFWriter` در `engines/document/writers/pdf_writer.py` — 28 متد
-- `CodeChunkVisitor` در `tools/ai/analysis/chunkers/code_chunker.py` — 18 متد
-- `CodeChunker` در `tools/ai/analysis/chunkers/code_chunker.py` — 26 متد
-- `DocChunker` در `tools/ai/analysis/chunkers/doc_chunker.py` — 22 متد
-- `SemanticChunker` در `tools/ai/analysis/chunkers/semantic_chunker.py` — 28 متد
-- `BatchEncoder` در `tools/ai/analysis/encoders/batch_encoder.py` — 27 متد
-- `EmbeddingStore` در `tools/ai/analysis/encoders/embedding_store.py` — 31 متد
-- `OllamaEncoder` در `tools/ai/analysis/encoders/ollama_encoder.py` — 29 متد
-- `CodeIndexer` در `tools/ai/analysis/indexers/code_indexer.py` — 24 متد
-- `DocIndexer` در `tools/ai/analysis/indexers/doc_indexer.py` — 31 متد
-- `APIElementExtractor` در `tools/ai/analysis/scanners/api_surface_extractor.py` — 18 متد
-- `APISurfaceExtractor` در `tools/ai/analysis/scanners/api_surface_extractor.py` — 20 متد
-- `MetricsVisitor` در `tools/ai/analysis/scanners/ast_analyzer.py` — 28 متد
-- `ASTAnalyzer` در `tools/ai/analysis/scanners/ast_analyzer.py` — 17 متد
-- `ImportGraphAnalyzer` در `tools/ai/analysis/scanners/import_graph.py` — 36 متد
-- `SymbolExtractor` در `tools/ai/analysis/scanners/project_scanner.py` — 17 متد
-- `ProjectScanner` در `tools/ai/analysis/scanners/project_scanner.py` — 27 متد
-- `APIEntryPoint` در `tools/ai/entry_points/api_entry.py` — 45 متد
-- `BaseEntryPoint` در `tools/ai/entry_points/base_entry_point.py` — 30 متد
-- `CLIEntryPoint` در `tools/ai/entry_points/cli_entry.py` — 87 متد
-- `IDEPluginEntryPoint` در `tools/ai/entry_points/ide_plugin_entry.py` — 47 متد
-- `ClassCodeGenerator` در `tools/ai/generation/generators/class_generator.py` — 16 متد
-- `DocstringFormatter` در `tools/ai/generation/generators/docstring_generator.py` — 17 متد
-- `DocstringGenerator` در `tools/ai/generation/generators/docstring_generator.py` — 20 متد
-- `ModuleGenerator` در `tools/ai/generation/generators/module_generator.py` — 21 متد
-- `TestGenerator` در `tools/ai/generation/generators/test_generator.py` — 17 متد
-- `ContractCodeGenerator` در `tools/ai/generation/planners/contract_generator.py` — 18 متد
-- `ModuleArchitect` در `tools/ai/generation/planners/module_architect.py` — 23 متد
-- `StubCodeGenerator` در `tools/ai/generation/planners/skeleton_generator.py` — 16 متد
-- `SkeletonGenerator` در `tools/ai/generation/planners/skeleton_generator.py` — 17 متد
-- `FeedbackLoop` در `tools/ai/generation/refiners/feedback_loop.py` — 22 متد
-- `FunctionalityPreserver` در `tools/ai/generation/refiners/functionality_preserver.py` — 17 متد
-- `ChangeDetector` در `tools/ai/generation/refiners/impact_analyzer.py` — 16 متد
-- `ImpactCalculator` در `tools/ai/generation/refiners/impact_analyzer.py` — 26 متد
-- `ScopeManager` در `tools/ai/generation/refiners/scope_manager.py` — 18 متد
-- `AgentRegistry` در `tools/ai/orchestration/agent_registry.py` — 32 متد
-- `BottleneckDetector` در `tools/ai/orchestration/analytics/bottleneck_detector.py` — 21 متد
-- `PerformanceTracker` در `tools/ai/orchestration/analytics/performance_tracker.py` — 30 متد
-- `ReportGenerator` در `tools/ai/orchestration/analytics/report_generator.py` — 29 متد
-- `SkillGapAnalyzer` در `tools/ai/orchestration/analytics/skill_gap_analyzer.py` — 29 متد
-- `WorkflowMetricsCollector` در `tools/ai/orchestration/analytics/workflow_metrics_collector.py` — 33 متد
-- `BaseOrchestrator` در `tools/ai/orchestration/base_orchestrator.py` — 40 متد
-- `CoEvolutionEngine` در `tools/ai/orchestration/co_evolution/co_evolution_engine.py` — 35 متد
-- `ConfigUpdater` در `tools/ai/orchestration/co_evolution/config_updater.py` — 32 متد
-- `DocUpdater` در `tools/ai/orchestration/co_evolution/doc_updater.py` — 29 متد
-- `ExampleUpdater` در `tools/ai/orchestration/co_evolution/example_updater.py` — 27 متد
-- `TestUpdater` در `tools/ai/orchestration/co_evolution/test_updater.py` — 29 متد
-- `ContextManager` در `tools/ai/orchestration/context_manager.py` — 27 متد
-- `EventBus` در `tools/ai/orchestration/event_bus.py` — 33 متد
-- `AssignmentEngine` در `tools/ai/orchestration/human_task/assignment_engine.py` — 27 متد
-- `FeedbackCollector` در `tools/ai/orchestration/human_task/feedback_collector.py` — 31 متد
-- `SkillRegistry` در `tools/ai/orchestration/human_task/skill_registry.py` — 31 متد
-- `WorkQueue` در `tools/ai/orchestration/human_task/work_queue.py` — 30 متد
-- `PipelineBuilder` در `tools/ai/orchestration/pipeline_builder.py` — 49 متد
-- `PipelineExecutor` در `tools/ai/orchestration/pipeline_executer.py` — 46 متد
-- `SessionManager` در `tools/ai/orchestration/session/session_manager.py` — 38 متد
-- `SessionPersistence` در `tools/ai/orchestration/session/session_persistence.py` — 26 متد
-- `WorkflowEngine` در `tools/ai/orchestration/workflow_engine.py` — 47 متد
-- `WorkflowExecutor` در `tools/ai/orchestration/workflow_executor.py` — 21 متد
-- `DependencyAnalyzer` در `tools/ai/planning/dependency_analyzer.py` — 32 متد
-- `ProgressTracker` در `tools/ai/planning/progress_tracker.py` — 35 متد
-- `TaskDecomposer` در `tools/ai/planning/task_decomposer.py` — 31 متد
-- `RootCauseAnalyzer` در `tools/ai/quality/debuggers/error_analyzer.py` — 20 متد
-- `RuntimeInspector` در `tools/ai/quality/debuggers/runtime_inspector.py` — 30 متد
-- `APIDocGenerator` در `tools/ai/quality/documenters/api_doc_generator.py` — 26 متد
-- `ArchitectureDocGenerator` در `tools/ai/quality/documenters/architecture_doc.py` — 42 متد
-- `GapDetector` در `tools/ai/quality/testers/coverage_analyzer.py` — 17 متد
-- `MutationTester` در `tools/ai/quality/testers/mutation_tester.py` — 18 متد
-- `TestRunner` در `tools/ai/quality/testers/test_runner.py` — 22 متد
-- `SyntaxFeatureDetector` در `tools/ai/quality/validators/compatibility_validator.py` — 21 متد
-- `CompatibilityValidator` در `tools/ai/quality/validators/compatibility_validator.py` — 19 متد
-- `ComplexityAnalyzer` در `tools/ai/quality/validators/complexity_validator.py` — 29 متد
-- `ComplexityValidator` در `tools/ai/quality/validators/complexity_validator.py` — 16 متد
-- `CoverageValidator` در `tools/ai/quality/validators/coverage_validator.py` — 17 متد
-- `DependencyValidator` در `tools/ai/quality/validators/dependency_validator.py` — 18 متد
-- `ImportVisitor` در `tools/ai/quality/validators/import_validator.py` — 16 متد
-- `MypyValidator` در `tools/ai/quality/validators/mypy_validator.py` — 16 متد
-- `ComplexityAnalyzer` در `tools/ai/quality/validators/performance_validator.py` — 18 متد
-- `PytestValidator` در `tools/ai/quality/validators/pytest_validator.py` — 17 متد
-- `RuffValidator` در `tools/ai/quality/validators/ruff_validator.py` — 17 متد
-- `SecurityVisitor` در `tools/ai/quality/validators/security_validator.py` — 20 متد
-- `Config` در `tools/ai/shared/config.py` — 34 متد
-- `GitUtils` در `tools/ai/shared/git_utils.py` — 60 متد
-- `LoggerManager` در `tools/ai/shared/logger.py` — 16 متد
-- `StateManager` در `tools/ai/shared/state_manager.py` — 40 متد
+- `PPTXWriter` در `engines/document/writers/pptx_writer/writer.py` — 19 متد
+- `ESDMBaseWriter` در `engines/document/writers/spreadsheet_writer/base.py` — 19 متد
+- `GraphQLServiceWriter` در `engines/document/writers/ssdm_writers/graphql_service_writer.py` — 24 متد
+- `OpenAPIWriter` در `engines/document/writers/ssdm_writers/openapi_writer.py` — 16 متد
+- `YANGWriter` در `engines/document/writers/ssdm_writers/yang_writer.py` — 20 متد
 
 ### 🟡 فایل‌های خالی یا فقط شامل import
 - `config/settings.py` [22 lines]
 - `engines/agents/base_agents/base_research_agent/metadata.py` [0 lines]
 - `engines/agents/base_agents/base_research_agent/prompts.py` [0 lines]
 - `engines/agents/base_agents/base_research_agent/rag_config.py` [0 lines]
+- `engines/communication/bindings/binding_parser.py` [0 lines]
+- `engines/communication/bindings/binding_writer.py` [0 lines]
+- `engines/communication/bindings/mcp_binding_writer.py` [0 lines]
+- `engines/communication/common/auth/api_key.py` [0 lines]
+- `engines/communication/common/auth/auth_manager.py` [0 lines]
+- `engines/communication/common/auth/jwt.py` [0 lines]
+- `engines/communication/common/auth/mtls.py` [0 lines]
+- `engines/communication/common/auth/oauth2.py` [0 lines]
+- `engines/communication/common/serialization/avro_serializer.py` [0 lines]
+- `engines/communication/common/serialization/json_serializer.py` [0 lines]
+- `engines/communication/common/serialization/protobuf_serializer.py` [0 lines]
+- `engines/communication/common/transport/amqp_client.py` [0 lines]
+- `engines/communication/common/transport/base.py` [0 lines]
+- `engines/communication/common/transport/grpc_client.py` [0 lines]
+- `engines/communication/common/transport/http_client.py` [0 lines]
+- `engines/communication/common/transport/kafka_client.py` [0 lines]
+- `engines/communication/common/transport/mcp_adapter.py` [0 lines]
+- `engines/communication/consumption/binding_loader.py` [0 lines]
+- `engines/communication/consumption/circuit_breaker.py` [0 lines]
+- `engines/communication/consumption/client_generator.py` [0 lines]
+- `engines/communication/consumption/mcp_binding_loader.py` [0 lines]
+- `engines/communication/consumption/mcp_client_adapter.py` [0 lines]
+- `engines/communication/consumption/service_discovery.py` [0 lines]
+- `engines/communication/exposure/docker_compose_writer.py` [0 lines]
+- `engines/communication/exposure/gateway_config_writer.py` [0 lines]
+- `engines/communication/exposure/kubernetes_manifest_writer.py` [0 lines]
+- `engines/communication/exposure/mcp_server_writer.py` [0 lines]
+- `engines/communication/exposure/server_builder.py` [0 lines]
+- `engines/communication/messaging/adapters/amqp_adapter.py` [0 lines]
+- `engines/communication/messaging/adapters/kafka_adapter.py` [0 lines]
+- `engines/communication/messaging/adapters/nats_adapter.py` [0 lines]
+- `engines/communication/messaging/channel_manager.py` [0 lines]
+- `engines/communication/messaging/message_binding_parser.py` [0 lines]
+- `engines/communication/messaging/message_binding_writer.py` [0 lines]
+- `engines/document/model_tools/configuration.py` [0 lines]
+- `engines/document/model_tools/diff_engine.py` [0 lines]
+- `engines/document/model_tools/diff_sql_writer.py` [0 lines]
+- `engines/document/model_tools/format_converters/converter_base.py` [0 lines]
+- `engines/document/model_tools/format_converters/docx_to_pdf.py` [0 lines]
+- `engines/document/model_tools/format_converters/docx_to_pptx.py` [0 lines]
+- `engines/document/model_tools/format_converters/generic_converter.py` [0 lines]
+- `engines/document/model_tools/format_converters/json_to_docx.py` [0 lines]
+- `engines/document/model_tools/format_converters/json_to_pdf.py` [0 lines]
+- `engines/document/model_tools/format_converters/markdown_to_docx.py` [0 lines]
+- `engines/document/model_tools/format_converters/markdown_to_pdf.py` [0 lines]
+- `engines/document/model_tools/format_converters/pdf_to_docx.py` [0 lines]
+- `engines/document/model_tools/format_converters/ppt_to_docx.py` [0 lines]
+- `engines/document/model_tools/format_converters/ppt_to_pdf.py` [0 lines]
+- `engines/document/model_tools/format_converters/xlsx_to_docx.py` [0 lines]
+- `engines/document/model_tools/format_converters/xlsx_to_pdf.py` [0 lines]
+- `engines/document/model_tools/format_converters/xlsx_to_ppt.py` [0 lines]
+- `engines/document/model_tools/model_standard_converters/csdm_to_usdm_adapter.py` [0 lines]
+- `engines/document/model_tools/model_standard_converters/esdm_to_usdm_adapter.py` [0 lines]
+- `engines/document/model_tools/model_standard_converters/psdm_to_usdm_adapter.py` [0 lines]
+- `engines/document/model_tools/model_standard_converters/usdm_to_pdf_adapter.py` [0 lines]
+- `engines/document/model_tools/report_generators/data_aggregated_list_report_generator.py` [0 lines]
+- `engines/document/model_tools/report_generators/data_aggregated_list_with_content_report_generator.py` [0 lines]
+- `engines/document/model_tools/report_generators/data_aggregated_list_with_related_list_report_generator.py` [0 lines]
+- `engines/document/model_tools/report_generators/data_aggregated_list_with_sub_list_report_generator.py` [0 lines]
+- `engines/document/model_tools/report_generators/data_aggregated_page_report_generator.py` [0 lines]
+- `engines/document/model_tools/report_generators/data_aggregated_page_with_related_list_report_generator.py` [0 lines]
+- `engines/document/model_tools/report_generators/data_aggregated_page_with_sub_list_report_generator.py` [0 lines]
+- `engines/document/model_tools/report_generators/data_simple_list_report_generator.py` [0 lines]
+- `engines/document/model_tools/report_generators/data_simple_list_with_content_report_generator.py` [0 lines]
+- `engines/document/model_tools/report_generators/data_simple_list_with_related_list_report_generator.py` [0 lines]
+- `engines/document/model_tools/report_generators/data_simple_page_report_generator.py` [0 lines]
+- `engines/document/model_tools/report_generators/data_simple_page_with_related_list_report_generator.py` [0 lines]
+- `engines/document/model_tools/report_generators/schema_report_generator.py` [0 lines]
+- `engines/document/model_tools/report_generators/service_report_generator.py` [0 lines]
 - `engines/document/parsers/cad_parser/csdm_loader.py` [641 lines]
 - `engines/document/parsers/cad_parser/csdm_parser.py` [74 lines]
 - `engines/document/parsers/cad_parser/csdm_relationships.py` [281 lines]
 - `engines/document/parsers/cad_parser/oda_bridge.py` [273 lines]
 - `engines/document/parsers/cad_parser.py` [133 lines]
-- `engines/document/parsers/csv_parser.py` [535 lines]
-- `engines/document/parsers/docx_parser.py` [218 lines]
-- `engines/document/parsers/excel_parser.py` [307 lines]
-- `engines/document/parsers/excel_parser0-notvalid.py` [1487 lines]
+- `engines/document/parsers/pptx_parser/constants.py` [108 lines]
+- `engines/document/parsers/spreadsheet_parser/xlsx/constants.py` [245 lines]
+- `engines/document/parsers/spreadsheet_parser/xlsx/namespaces.py` [16 lines]
+- `engines/document/parsers/spreadsheet_parser/xlsx/shared_strings_builder.py` [0 lines]
 - `engines/document/utils/docx_utils.py` [0 lines]
 - `engines/document/utils/ooxml_constants.py` [0 lines]
 - `engines/document/utils/xml_parser.py` [0 lines]
@@ -4324,13 +4224,33 @@ StorageBackendBase  →  MemoryStorageBackend
 - `engines/document/writers/docx_writer/docx_writer.py` [0 lines]
 - `engines/document/writers/docx_writer.py` [306 lines]
 - `engines/document/writers/excel_writer.py` [1660 lines]
+- `engines/document/writers/html_writer.py` [279 lines]
 - `engines/document/writers/pdf_writer/init.py` [24 lines]
+- `engines/document/writers/pptx_writer/constants.py` [76 lines]
+- `engines/document/writers/spreadsheet_writer/xlsx/const.py` [7 lines]
 - `engines/orchestration/base_workflow_model.py` [0 lines]
 - `engines/orchestration/bpmn2_model.py` [0 lines]
 - `engines/orchestration/dag_model.py` [0 lines]
 - `engines/orchestration/event_driven_model.py` [0 lines]
 - `engines/orchestration/petri_net_model.py` [0 lines]
 - `engines/orchestration/state_machine_model.py` [0 lines]
+- `engines/tools/adapters/ai_model_executor.py` [0 lines]
+- `engines/tools/adapters/cli_executor.py` [0 lines]
+- `engines/tools/adapters/composite_executor.py` [0 lines]
+- `engines/tools/adapters/db_query_executor.py` [0 lines]
+- `engines/tools/adapters/file_executor.py` [0 lines]
+- `engines/tools/adapters/grpc_tool_executor.py` [0 lines]
+- `engines/tools/adapters/http_service_executor.py` [0 lines]
+- `engines/tools/adapters/http_tool_executor.py` [0 lines]
+- `engines/tools/adapters/mcp_tool_executor.py` [0 lines]
+- `engines/tools/adapters/message_bus_executor.py` [0 lines]
+- `engines/tools/adapters/mib_snmp_executor.py` [0 lines]
+- `engines/tools/adapters/python_function_executor.py` [0 lines]
+- `engines/tools/adapters/tcp_socket_executor.py` [0 lines]
+- `engines/tools/adapters/yang_netconf_executor.py` [0 lines]
+- `engines/tools/base_executor.py` [0 lines]
+- `engines/tools/parameter_mapper.py` [0 lines]
+- `engines/tools/tool_registry.py` [0 lines]
 
 ### 🟠 کلاس‌های بدون Base Class (احتمال عدم رعایت interface مشترک)
 - `DocumentEmbeddingService` در `engines/document/embedding/service.py`
@@ -4338,13 +4258,16 @@ StorageBackendBase  →  MemoryStorageBackend
 - `AsyncIngestService` در `engines/document/ingestion/services/async_ingest_service.py`
 - `BatchIngestService` در `engines/document/ingestion/services/batch_ingest_service.py`
 - `UploadService` در `engines/document/ingestion/services/upload_service.py`
+- `GraphQLService` در `engines/document/models/ssdm_models.py`
+- `ServiceExposure` در `engines/document/models/ssdm_models.py`
+- `ServiceBinding` در `engines/document/models/ssdm_models.py`
+- `InternalServiceBinding` در `engines/document/models/ssdm_models.py`
 - `FontHandler` در `engines/document/parsers/pdf_parser/font_handler.py`
+- `ServiceMethod` در `engines/document/parsers/ssdm_parsers/proto_service_parser.py`
+- `ServiceDef` در `engines/document/parsers/ssdm_parsers/proto_service_parser.py`
 - `PDFSecurityHandler` در `engines/document/writers/pdf_writer/encryption.py`
 - `InteractionStrategy` در `engines/interaction/base_strategy.py`
 - `VectorService` در `engines/rag/vector_service.py`
-- `SignalHandler` در `tools/ai/entry_points/base_entry_point.py`
-- `EventBus` در `tools/ai/orchestration/event_bus.py`
-- `StorageBackendBase` در `tools/ai/shared/state_manager.py`
 
 ---
 

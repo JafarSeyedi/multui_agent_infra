@@ -27,3 +27,4 @@ data/status_db.json
 venv/
 env/
 .venv/
+mypy_errors.txt

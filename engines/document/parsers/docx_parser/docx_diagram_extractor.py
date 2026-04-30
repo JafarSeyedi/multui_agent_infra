@@ -6,8 +6,9 @@ Builds a full hierarchical tree of DiagramNode objects.
 
 from xml.etree.ElementTree import Element
 from typing import Dict, List, Optional
-from .docx_models import DOCXDiagram, DiagramNode
+from .docx_models import DOCXDiagram
 from .docx_utils import safe_find, safe_findall, NS
+from ..drawingml.diagram_parser import DiagramNode
 
 # Namespace mapping for diagram
 DGM = 'http://schemas.openxmlformats.org/drawingml/2006/diagram'

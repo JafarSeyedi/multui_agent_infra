@@ -9,7 +9,7 @@ from typing import Optional
 from .utils import (
     xml_find, xml_findall, xml_attr, xml_text, xml_float, xml_int,
 )
-from engines.document.models.usdm_models import (
+from ....models.usdm_models import (
     ChartContent, ChartSeriesContent, ChartAxisContent,
 )
 

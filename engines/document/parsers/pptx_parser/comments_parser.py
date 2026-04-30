@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Dict, List, Optional
 from xml.etree.ElementTree import Element
 
-from engines.document.models.psdm_models import SlideComment
+from ...models.psdm_models import SlideComment
 from .constants import NAMESPACES
 
 NS = {

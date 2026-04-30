@@ -7,7 +7,7 @@ All colour, font, format scheme data restored, including unknown children.
 from __future__ import annotations
 from xml.etree.ElementTree import Element, SubElement
 
-from engines.document.models.psdm_models import Theme
+from ...models.psdm_models import Theme
 from .constants import NAMESPACES
 from ..drawingml_helpers import set_color, write_fill, write_line, write_effects
 from .utils import dict_to_element

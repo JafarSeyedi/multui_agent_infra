@@ -9,13 +9,13 @@ is not applied to DDL; the script always reflects the current model.
 from __future__ import annotations
 from typing import Optional, Dict, Any, List, Tuple, Set
 
-from .base_msdm_writer import BaseMSDMWriter, WriteTarget, SoftDeleteStrategy, ConnectionConfig
 import asyncio
 from sqlalchemy import create_engine, inspect, MetaData, Table, Column, text, DDL
 from sqlalchemy.engine import Engine, Connection
 from sqlalchemy.types import TypeEngine, String as SAString, Integer, BigInteger, Float, Date, DateTime, Boolean, LargeBinary
-from engines.document.writers.base import WriteOptions
-from engines.document.models.msdm_models import (
+from ..base import WriteOptions
+from .base_msdm_writer import BaseMSDMWriter, WriteTarget, SoftDeleteStrategy, ConnectionConfig
+from ...models.msdm_models import (
     MSDMDocument,
     Entity,
     Attribute,

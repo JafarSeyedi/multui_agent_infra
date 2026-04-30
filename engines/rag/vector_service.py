@@ -19,7 +19,7 @@ from engines.rag.retrieval.hybrid_retriever_super import HybridRetrieverSuper
 from engines.rag.retrieval.topk_optimizer import TopKOptimizer
 from engines.rag.retrieval.vector_retriever import VectorRetriever
 from engines.rag.retrieval.weight_manager import WeightManager
-from engines.document.storage.document_store import DocumentStore
+from ..document.storage.document_store import DocumentStore
 from engines.storage.vector.base import VectorDBAdapter
 
 

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from engines.document.ingestion.ingestion_context import IngestionContext
-from engines.document.ingestion.ingestion_errors import ChunkingFailed
+from ..ingestion_context import IngestionContext
+from ..ingestion_errors import ChunkingFailed
 
 async def step_chunk(ctx: IngestionContext) -> IngestionContext:
     """

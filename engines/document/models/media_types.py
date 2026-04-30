@@ -71,7 +71,9 @@ class DocumentFormat(str, Enum):
     INFLUXDB_SCHEMA = "influxdb_schema"             # InfluxDB measurements
     ELASTICSEARCH_MAPPING = "elasticsearch_mapping" # Elasticsearch
     NEO4J_SCHEMA = "neo4j_schema"                   # Neo4j / Cypher schema
-    
+    PYTHON_MODEL = "python_model"          # or "py_model"
+    TYPESCRIPT_INTERFACE = "typescript_interface"
+        
     # SSDM formats
     OPENAPI_JSON = "openapi_json"
     OPENAPI_YAML = "openapi_yaml"
@@ -84,6 +86,28 @@ class DocumentFormat(str, Enum):
     WEB_IDL = "webidl"
     POSTMAN_COLLECTION = "postman_collection"
     CDDL = "cddl"
+    MCP = "mcp"
+    
+    TSDM_JSON = "tsdm_json"
+
+    # OSDM formats
+    BPMN_XML = "bpmn_xml"
+    CMMN_XML = "cmmn_xml"
+    DMN_XML = "dmn_xml"
+    PNML_XML = "pnml_xml"
+    GRAPHML_XML = "graphml_xml"
+    CNCF_SERVERLESS_WORKFLOW_JSON = "cncf_serverless_workflow_json"
+    CNCF_SERVERLESS_WORKFLOW_YAML = "cncf_serverless_workflow_yaml"
+    CEP_JSON = "cep_json"
+    UML_STATE_MACHINE_XML = "uml_state_machine_xml"
+    SCXML_XML = "scxml_xml"
+    EPC_XML = "epc_xml"
+    AWS_STEP_FUNCTIONS_JSON = "aws_step_functions_json"
+    AZURE_LOGIC_APPS_JSON = "azure_logic_apps_json"
+    AIRFLOW_DAG_PY = "airflow_dag_py"
+    PREFECT_DAG_PY = "prefect_dag_py"
+    YAWL_XML = "yawl_xml"
+    XPDL_XML = "xpd_xml"    
     
     UNKNOWN = "unknown"
 
@@ -102,7 +126,8 @@ class MediaContentKind(str, Enum):
     GEOMETRIC = "geometric"
     PRESENTATION = "presentation"
     SCHEMA_DEFINITION = "schema_definition"
-    SERVICE_DEFINITION = "service_definition"    
+    SERVICE_DEFINITION = "service_definition"
+    ORCHESTRATION_DEFINITION = "orchestration_definition"    
     UNKNOWN = "unknown"
 
 
@@ -620,6 +645,24 @@ MEDIA_TYPES: Dict[str, MediaType] = {
         raw_type=MediaRawType.TEXT,
         description="Neo4j Cypher Schema"
     ),    
+    "python_model": MediaType(
+        mime="text/plain",
+        format=DocumentFormat.PYTHON_MODEL,
+        standard=DocumentStandard.MSDM,
+        extensions=[".py"],
+        kind=MediaContentKind.SCHEMA_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="Python class for model definition"
+    ),    
+    "typescript_interface": MediaType(
+        mime="text/plain",
+        format=DocumentFormat.TYPESCRIPT_INTERFACE,
+        standard=DocumentStandard.MSDM,
+        extensions=[".ts"],
+        kind=MediaContentKind.SCHEMA_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="Python class for model definition"
+    ),    
 
     # ======================
     # SSDM
@@ -723,8 +766,161 @@ MEDIA_TYPES: Dict[str, MediaType] = {
         raw_type=MediaRawType.TEXT,
         description="CBOR Data Definition Language"
     ),
-    
-        
+    "mcp": MediaType(
+        mime="application/json",
+        format=DocumentFormat.MCP,
+        standard=DocumentStandard.SSDM,
+        extensions=[".mcp.json"],
+        kind=MediaContentKind.SERVICE_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="Model Context Protocol Server Manifest"
+    ),
+
+    # ======================
+    # TSDM
+    # ======================
+    "tsdm_json": MediaType(
+        mime="application/json",
+        format=DocumentFormat.TSDM_JSON,
+        standard=DocumentStandard.TSDM,
+        extensions=[".tsdm.json", ".tools.json"],
+        kind=MediaContentKind.STRUCTURED,   # or a new kind "tool_definition"
+        raw_type=MediaRawType.TEXT,
+        description="TSDM Tool Definition (JSON)"
+    ),    
+
+    # ======================
+    # OSDM
+    # ======================
+    "bpmn_xml": MediaType(
+        mime="application/xml",
+        format=DocumentFormat.BPMN_XML,
+        standard=DocumentStandard.OSDM,
+        extensions=[".bpmn", ".bpmn2"],
+        kind=MediaContentKind.ORCHESTRATION_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="BPMN 2.0 XML"
+    ),
+    "cmmn_xml": MediaType(
+        mime="application/xml",
+        format=DocumentFormat.CMMN_XML,
+        standard=DocumentStandard.OSDM,
+        extensions=[".cmmn"],
+        kind=MediaContentKind.ORCHESTRATION_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="CMMN 1.1 XML"
+    ),
+    "dmn_xml": MediaType(
+        mime="application/xml",
+        format=DocumentFormat.DMN_XML,
+        standard=DocumentStandard.OSDM,
+        extensions=[".dmn"],
+        kind=MediaContentKind.ORCHESTRATION_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="DMN 1.x XML"
+    ),
+    "pnml_xml": MediaType(
+        mime="application/xml",
+        format=DocumentFormat.PNML_XML,
+        standard=DocumentStandard.OSDM,
+        extensions=[".pnml"],
+        kind=MediaContentKind.ORCHESTRATION_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="Petri Net Markup Language"
+    ),
+    "graphml_xml": MediaType(
+        mime="application/xml",
+        format=DocumentFormat.GRAPHML_XML,
+        standard=DocumentStandard.OSDM,
+        extensions=[".graphml"],
+        kind=MediaContentKind.ORCHESTRATION_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="GraphML"
+    ),
+    "cncf_serverless_workflow_json": MediaType(
+        mime="application/json",
+        format=DocumentFormat.CNCF_SERVERLESS_WORKFLOW_JSON,
+        standard=DocumentStandard.OSDM,
+        extensions=[".sw.json"],
+        kind=MediaContentKind.ORCHESTRATION_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="CNCF Serverless Workflow JSON"
+    ),
+    "cncf_serverless_workflow_yaml": MediaType(
+        mime="application/x-yaml",
+        format=DocumentFormat.CNCF_SERVERLESS_WORKFLOW_YAML,
+        standard=DocumentStandard.OSDM,
+        extensions=[".sw.yaml", ".sw.yml"],
+        kind=MediaContentKind.ORCHESTRATION_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="CNCF Serverless Workflow YAML"
+    ),
+    "cep_json": MediaType(
+        mime="application/json",
+        format=DocumentFormat.CEP_JSON,
+        standard=DocumentStandard.OSDM,
+        extensions=[".cep.json"],
+        kind=MediaContentKind.ORCHESTRATION_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="Complex Event Processing Definition (JSON)"
+    ),
+
+
+
+    "uml_state_machine_xml": MediaType(
+        mime="application/xml", format=DocumentFormat.UML_STATE_MACHINE_XML,
+        standard=DocumentStandard.OSDM, extensions=[".uml", ".xmi"],
+        kind=MediaContentKind.ORCHESTRATION_DEFINITION,
+        raw_type=MediaRawType.TEXT, description="UML State Machine (XMI or XML)"
+    ),
+    "scxml_xml": MediaType(
+        mime="application/xml", format=DocumentFormat.SCXML_XML,
+        standard=DocumentStandard.OSDM, extensions=[".scxml"],
+        kind=MediaContentKind.ORCHESTRATION_DEFINITION,
+        raw_type=MediaRawType.TEXT, description="SCXML State Chart"
+    ),
+    "epc_xml": MediaType(
+        mime="application/xml", format=DocumentFormat.EPC_XML,
+        standard=DocumentStandard.OSDM, extensions=[".epc", ".epml"],
+        kind=MediaContentKind.ORCHESTRATION_DEFINITION,
+        raw_type=MediaRawType.TEXT, description="Event‑driven Process Chain"
+    ),
+    "aws_step_functions_json": MediaType(
+        mime="application/json", format=DocumentFormat.AWS_STEP_FUNCTIONS_JSON,
+        standard=DocumentStandard.OSDM, extensions=[".asl.json"],
+        kind=MediaContentKind.ORCHESTRATION_DEFINITION,
+        raw_type=MediaRawType.TEXT, description="AWS Step Functions ASL JSON"
+    ),
+    "azure_logic_apps_json": MediaType(
+        mime="application/json", format=DocumentFormat.AZURE_LOGIC_APPS_JSON,
+        standard=DocumentStandard.OSDM, extensions=[".logicapp.json"],
+        kind=MediaContentKind.ORCHESTRATION_DEFINITION,
+        raw_type=MediaRawType.TEXT, description="Azure Logic Apps Workflow JSON"
+    ),
+    "airflow_dag_py": MediaType(
+        mime="text/x-python", format=DocumentFormat.AIRFLOW_DAG_PY,
+        standard=DocumentStandard.OSDM, extensions=[".py"],
+        kind=MediaContentKind.ORCHESTRATION_DEFINITION,
+        raw_type=MediaRawType.TEXT, description="Apache Airflow DAG (Python)"
+    ),
+    "prefect_dag_py": MediaType(
+        mime="text/x-python", format=DocumentFormat.PREFECT_DAG_PY,
+        standard=DocumentStandard.OSDM, extensions=[".py"],
+        kind=MediaContentKind.ORCHESTRATION_DEFINITION,
+        raw_type=MediaRawType.TEXT, description="Prefect DAG (Python)"
+    ),
+    "yawl_xml": MediaType(
+        mime="application/xml", format=DocumentFormat.YAWL_XML,
+        standard=DocumentStandard.OSDM, extensions=[".yawl"],
+        kind=MediaContentKind.ORCHESTRATION_DEFINITION,
+        raw_type=MediaRawType.TEXT, description="YAWL Specification"
+    ),
+    "xpd_xml": MediaType(
+        mime="application/xml", format=DocumentFormat.XPDL_XML,
+        standard=DocumentStandard.OSDM, extensions=[".xpdl", ".xml"],
+        kind=MediaContentKind.ORCHESTRATION_DEFINITION,
+        raw_type=MediaRawType.TEXT, description="XPDL Process Definition"
+    ),
     # ======================
     # FALLBACK TYPES
     # ======================

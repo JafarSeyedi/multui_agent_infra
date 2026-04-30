@@ -5,15 +5,15 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, List
 
-from engines.document.models.media_types import MediaType, MEDIA_TYPES
-from engines.document.ingestion.ingestion_context import IngestionContext
-from engines.document.ingestion.ingestion_errors import IngestionError, IngestionStepFailed
+from ..models.media_types import MediaType, MEDIA_TYPES
+from .ingestion_context import IngestionContext
+from .ingestion_errors import IngestionError, IngestionStepFailed
 
-from engines.document.ingestion.steps.step_extract import step_extract
-from engines.document.ingestion.steps.step_parse import step_parse
-from engines.document.ingestion.steps.step_chunk import step_chunk
-from engines.document.ingestion.steps.step_embed import step_embed
-from engines.document.ingestion.steps.step_store import step_store
+from .steps.step_extract import step_extract
+from .steps.step_parse import step_parse
+from .steps.step_chunk import step_chunk
+from .steps.step_embed import step_embed
+from .steps.step_store import step_store
 
 logger = logging.getLogger(__name__)
 

@@ -8,8 +8,8 @@ from __future__ import annotations
 from typing import Dict, List, Optional, Tuple
 from xml.etree.ElementTree import Element
 
-from engines.document.models.esdm_models import ShapeContent
-from engines.document.models.usdm_models import (
+from ....models.esdm_models import ShapeContent
+from ....models.usdm_models import (
     ImageContent,
     ChartContent,
     RichTextContent,

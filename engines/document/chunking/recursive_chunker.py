@@ -3,8 +3,8 @@ from __future__ import annotations
 import hashlib
 from typing import List, Sequence
 
-from engines.document.ingestion.ingestion_models import ChunkRecord
-from engines.document.models.base import BaseDocument
+from ..ingestion.ingestion_models import ChunkRecord
+from ..models.base import BaseDocument
 
 from .base import BaseChunker
 from .models import ChunkingConfig

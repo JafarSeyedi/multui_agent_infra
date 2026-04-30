@@ -8,7 +8,7 @@ from typing import Optional, Any, Dict, Iterable, Sequence, Union, AsyncIterator
 from pydantic import BaseModel
 
 
-from engines.document.models.base import BaseDocument
+from ..models.base import BaseDocument
 
 class ParseOptions(BaseModel):
     """Options for document parsing across all standards."""

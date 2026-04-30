@@ -22,7 +22,7 @@
 # from typing import Any
 
 # from .base_context import WriterContext
-# from engines.document.models.base.csdm_tables import (
+# from ...models.base.csdm_tables import (
 #     CSDMLayerTable,
 #     CSDMLinetypeTable,
 #     CSDMTextStyleTable,
@@ -36,7 +36,7 @@
 #     CSDMAppIdTable,
 #     CSDMLightTable,
 # )
-# from engines.document.models.base.csdm_core import CSDMDocument
+# from ...models.base.csdm_core import CSDMDocument
 
 
 # class TableWriter:

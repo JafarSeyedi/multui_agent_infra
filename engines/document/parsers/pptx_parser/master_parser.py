@@ -9,13 +9,13 @@ from __future__ import annotations
 from typing import Dict, List, Optional, Any
 from xml.etree.ElementTree import Element
 
-from engines.document.models.psdm_models import (
+from ...models.psdm_models import (
     SlideMaster,
     SlideLayout,
     Placeholder,
     PlaceholderType,
 )
-from engines.document.models.usdm_models import (
+from ...models.usdm_models import (
     CharacterStyle,
     ShapeContent,
 )
@@ -108,13 +108,13 @@ def parse_master(
             # solid fill
             solid = bg_pr.find("a:solidFill", NS)
             if solid is not None:
-                from engines.document.parsers.drawingml.shape_parser import _parse_color
+                from ..drawingml.shape_parser import _parse_color
                 master.background_color = _parse_color(solid, NS)
             # image fill
             blip_fill = bg_pr.find("a:blipFill", NS)
             if blip_fill is not None:
                 # store as image content
-                from engines.document.models.usdm_models import ImageContent
+                from ...models.usdm_models import ImageContent
                 blip = blip_fill.find("a:blip", NS)
                 if blip is not None:
                     embed = blip.get(f"{{{NS['r']}}}embed")
@@ -169,7 +169,7 @@ def _parse_def_rpr(def_rpr: Element) -> CharacterStyle:
     # Color
     solid = def_rpr.find("a:solidFill", NS)
     if solid is not None:
-        from engines.document.parsers.drawingml.shape_parser import _parse_color
+        from ..drawingml.shape_parser import _parse_color
         cs.color = _parse_color(solid, NS)
 
     # Other attributes

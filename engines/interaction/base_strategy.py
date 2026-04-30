@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 from datetime import datetime
-from engines.agents.models import AgentInput, AgentOutput
-from engines.buses.base_message_bus import MessageBus
-from engines.interaction.interaction_models import AgentMessage
+from ..agents.models import AgentInput, AgentOutput
+from ..buses.base_message_bus import MessageBus
+from .interaction_models import AgentMessage
 
 class InteractionStrategy:
     scenario_name: str = "base"

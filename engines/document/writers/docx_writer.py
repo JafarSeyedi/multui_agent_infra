@@ -10,13 +10,13 @@
 # from docx.oxml import OxmlElement
 # from docx.oxml.ns import qn
 
-# from engines.document.models.base import (
+# from ..models.base import (
 #     BaseDocument,
 #     DocumentElement,
 #     ElementType,
 # )
-# from engines.document.writers.base import BaseDocumentWriter
-# from engines.document.models.base import DocumentFormat
+# from .base import BaseDocumentWriter
+# from ..models.base import DocumentFormat
 
 
 # class DocxWriter(BaseDocumentWriter):

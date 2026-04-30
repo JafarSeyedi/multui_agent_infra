@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from engines.agents.models import AgentInput, AgentOutput
+from ...models import AgentInput, AgentOutput
 from typing import List, Optional, Dict, Literal
 from datetime import datetime
 

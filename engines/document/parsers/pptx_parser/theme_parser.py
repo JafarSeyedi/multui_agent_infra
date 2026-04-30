@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import Dict, Optional, Any
 from xml.etree.ElementTree import Element
 
-from engines.document.models.psdm_models import Theme
+from ...models.psdm_models import Theme
 from .constants import NAMESPACES
 
 NS = NAMESPACES
@@ -125,17 +125,17 @@ def _serialize_format_scheme(fmt_scheme: Element) -> Dict[str, Any]:
 
 def _serialize_fill(elem: Element) -> Dict[str, Any]:
     # delegate to the shape parser's fill serialization
-    from engines.document.parsers.drawingml.shape_parser import _parse_fill
+    from ..drawingml.shape_parser import _parse_fill
     return _parse_fill(elem, NS)
 
 
 def _serialize_line(elem: Element) -> Dict[str, Any]:
-    from engines.document.parsers.drawingml.shape_parser import _parse_line
+    from ..drawingml.shape_parser import _parse_line
     return _parse_line(elem, NS)
 
 
 def _serialize_effect_style(elem: Element) -> Dict[str, Any]:
-    from engines.document.parsers.drawingml.shape_parser import _serialize_effect_list
+    from ..drawingml.shape_parser import _serialize_effect_list
     return _serialize_effect_list(elem.find("a:effectLst", NS) or elem, NS)
 
 

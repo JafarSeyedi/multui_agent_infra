@@ -5,7 +5,7 @@ from .common import Evidence, ReasoningTrace
 from .learning_objects import (
     LearningObjective, Question, Lesson
 )
-from engines.agents.models import AgentInput, AgentOutput
+from ...models import AgentInput, AgentOutput
 
 
 # -------------------------------------------------------

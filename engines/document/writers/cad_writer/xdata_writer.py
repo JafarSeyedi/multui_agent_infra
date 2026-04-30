@@ -24,7 +24,7 @@
 # from typing import Any
 
 # from .base_context import WriterContext
-# from engines.document.models.base.csdm_core import CSDMXData, CSDMXDataEntry
+# from ...models.base.csdm_core import CSDMXData, CSDMXDataEntry
 
 
 # class XDataWriter:

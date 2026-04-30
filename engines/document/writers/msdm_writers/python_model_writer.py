@@ -19,8 +19,8 @@ from typing import Optional, Dict, Any, List, Set, Union
 from enum import Enum
 
 from .base_msdm_writer import BaseMSDMWriter, WriteTarget, SoftDeleteStrategy
-from engines.document.writers.base import WriteOptions
-from engines.document.models.msdm_models import (
+from ..base import WriteOptions
+from ...models.msdm_models import (
     MSDMDocument,
     Entity,
     Attribute,

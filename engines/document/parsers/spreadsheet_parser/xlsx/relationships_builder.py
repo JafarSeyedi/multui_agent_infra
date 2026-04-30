@@ -13,7 +13,7 @@ from .namespaces import MAIN, REL
 from .utils import (
     xml_find, xml_findall, xml_attr, xml_text, xml_bool, xml_int,
 )
-from engines.document.models.esdm_models import (
+from ....models.esdm_models import (
     Relationship, RelationshipCollection,
     ExternalLink, ExternalReference,
     DefinedName, Hyperlink,

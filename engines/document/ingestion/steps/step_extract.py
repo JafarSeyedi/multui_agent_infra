@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 from typing import Optional
-from engines.document.ingestion.ingestion_context import IngestionContext
-from engines.document.ingestion.ingestion_errors import ExtractionFailed
+from ..ingestion_context import IngestionContext
+from ..ingestion_errors import ExtractionFailed
 
 
 async def step_extract(ctx: IngestionContext) -> IngestionContext:

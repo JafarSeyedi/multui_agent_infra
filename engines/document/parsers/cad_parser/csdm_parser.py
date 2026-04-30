@@ -5,9 +5,9 @@
 # import traceback
 # from typing import Optional
 
-# from engines.document.parsers.base_document_parser import BaseDocumentParser, BaseDocument
+# from ...parsers.base_document_parser import BaseDocumentParser, BaseDocument
 
-# from engines.document.models.base.csdm_core import CSDMDocument
+# from ...models.base.csdm_core import CSDMDocument
 
 # from .oda_bridge import ODABridge
 # from .csdm_loader import CSDMLoader
