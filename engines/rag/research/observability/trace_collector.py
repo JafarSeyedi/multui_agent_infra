@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from collections import deque
-from typing import Iterable, List
+from collections.abc import Iterable
+
 from .telemetry import TelemetryEvent
 
 
@@ -16,7 +17,7 @@ class TraceCollector:
         for event in events:
             self.collect(event)
 
-    def get_recent(self, n: int = 100) -> List[TelemetryEvent]:
+    def get_recent(self, n: int = 100) -> list[TelemetryEvent]:
         return list(self.events)[-n:]
 
     def clear(self) -> None:

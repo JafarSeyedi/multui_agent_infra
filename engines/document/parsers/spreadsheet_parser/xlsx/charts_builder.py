@@ -3,15 +3,17 @@
 Complete Chart XML parser → ChartContent with all explicit fields.
 No XML leakage – every field is a clean Python type.
 """
-
 from xml.etree.ElementTree import Element
-from typing import Optional
-from .utils import (
-    xml_find, xml_findall, xml_attr, xml_text, xml_float, xml_int,
-)
-from ....models.usdm_models import (
-    ChartContent, ChartSeriesContent, ChartAxisContent,
-)
+
+from ....models.usdm_models import ChartAxisContent
+from ....models.usdm_models import ChartContent
+from ....models.usdm_models import ChartSeriesContent
+from .utils import xml_attr
+from .utils import xml_find
+from .utils import xml_findall
+from .utils import xml_float
+from .utils import xml_int
+from .utils import xml_text
 
 C = "http://schemas.openxmlformats.org/drawingml/2006/chart"
 A = "http://schemas.openxmlformats.org/drawingml/2006/main"
@@ -61,7 +63,7 @@ def _identify_type(chart_el: Element):
     return "unknown", None
 
 
-def _extract_title(chart_el: Element) -> Optional[str]:
+def _extract_title(chart_el: Element) -> str | None:
     title_el = xml_find(chart_el, "c:title", NS)
     if title_el is None:
         return None
@@ -116,5 +118,5 @@ def _parse_axis(axis_el: Element, axis_type: str) -> ChartAxisContent:
     num_fmt = xml_find(axis_el, "c:numFmt", NS)
     if num_fmt is not None:
         axis.format_code = xml_attr(num_fmt, "formatCode")
-    axis.axis_id = xml_int(axis_el, "axId", 0)
+    axis.axis_id=xml_int(axis_el, "axId", 0)
     return axis

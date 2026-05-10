@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass
-from typing import Any, List, Dict
+from typing import Any
 
 
 @dataclass
@@ -19,8 +19,8 @@ class RelationBuilder:
     def __init__(self, llm: Any = None):
         self.llm = llm
 
-    async def build_relations(self, chunk, entities) -> List[CandidateRelation]:
-        relations: List[CandidateRelation] = []
+    async def build_relations(self, chunk, entities) -> list[CandidateRelation]:
+        relations: list[CandidateRelation] = []
         relations.extend(await self._llm_relations(chunk.text, entities, chunk.chunk_id))
         relations.extend(self._pattern_relations(chunk.text, entities, chunk.chunk_id))
         relations.extend(self._cooccurrence_relations(entities, chunk.chunk_id))
@@ -96,8 +96,8 @@ class RelationBuilder:
                 )
         return output
 
-    def _deduplicate(self, relations: List[CandidateRelation]) -> List[CandidateRelation]:
-        best: Dict[tuple[str, str, str], CandidateRelation] = {}  # ← instance واقعی
+    def _deduplicate(self, relations: list[CandidateRelation]) -> list[CandidateRelation]:
+        best: dict[tuple[str, str, str], CandidateRelation] = {}  # ← instance واقعی
         for relation in relations:
             key = (relation.src.casefold(), relation.dst.casefold(), relation.relation.casefold())
             current = best.get(key)

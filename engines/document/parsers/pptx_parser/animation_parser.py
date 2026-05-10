@@ -1,26 +1,25 @@
 # engines/document/parsers/pptx_parser/animation_parser.py
 """
 Parses slide transitions and animations from PPTX slide XML.
-Produces PSDM Transition and list of Animation objects.
+Produces PSDM PresentationTransition and list of Animation objects.
 """
-
 from __future__ import annotations
-from typing import List, Optional, Dict, Any
+
 from xml.etree.ElementTree import Element
 
-from ...models.psdm_models import (
-    Transition,
-    Animation,
-    TransitionType,
-    AnimationType,
-    TriggerType,
-)
-from .constants import NAMESPACES, PPTX_TRANSITION_MAP, PPTX_ANIM_MAP
+from ...models.psdm_models import Animation
+from ...models.psdm_models import AnimationType
+from ...models.psdm_models import PresentationTransition
+from ...models.psdm_models import TransitionType
+from ...models.psdm_models import TriggerType
+from .constants import NAMESPACES
+from .constants import PPTX_ANIM_MAP
+from .constants import PPTX_TRANSITION_MAP
 
 NS = NAMESPACES
 
 
-def parse_slide_transition(slide_xml: Element) -> Transition:
+def parse_slide_transition(slide_xml: Element) -> PresentationTransition:
     """
     Extract transition from a <p:sld> element.
 
@@ -28,7 +27,7 @@ def parse_slide_transition(slide_xml: Element) -> Transition:
     """
     trans_elem = slide_xml.find("p:transition", NS)
     if trans_elem is None:
-        return Transition()
+        return PresentationTransition()
 
     # Determine the transition type – it's the local name of the first child element
     trans_type = TransitionType.NO_TRANSITION
@@ -50,21 +49,21 @@ def parse_slide_transition(slide_xml: Element) -> Transition:
                 advance = _parse_duration_ms(adv_str)
             break
 
-    return Transition(
+    return PresentationTransition(
         type=trans_type,
         duration_ms=duration,
         advance_after_ms=advance,
     )
 
 
-def parse_slide_animations(slide_xml: Element) -> List[Animation]:
+def parse_slide_animations(slide_xml: Element) -> list[Animation]:
     """
     Extract animations from a <p:sld> element.
 
     Animations are stored under <p:timing> structure.
     We search for <p:animEffect>, <p:animMotion>, <p:anim>, etc.
     """
-    animations: List[Animation] = []
+    animations: list[Animation] = []
 
     timing = slide_xml.find("p:timing", NS)
     if timing is None:
@@ -78,8 +77,8 @@ def parse_slide_animations(slide_xml: Element) -> List[Animation]:
 
 def _process_timing_node(
     elem: Element,
-    animations: List[Animation],
-    parent_trigger: Optional[TriggerType],
+    animations: list[Animation],
+    parent_trigger: TriggerType | None,
     cumulative_delay: float,
 ) -> None:
     """Recursively traverse a <p:timing> subtree and collect animations."""
@@ -115,9 +114,9 @@ def _process_timing_node(
 
 def _parse_anim_effect(
     elem: Element,
-    parent_trigger: Optional[TriggerType],
+    parent_trigger: TriggerType | None,
     cumulative_delay: float,
-) -> Optional[Animation]:
+) -> Animation | None:
     """Parse a <p:animEffect> element into an Animation."""
     # Target shape
     target = elem.get("spid", "")

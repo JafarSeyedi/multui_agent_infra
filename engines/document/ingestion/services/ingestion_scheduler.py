@@ -1,15 +1,13 @@
 # engines/document/ingestion/services/ingestion_scheduler.py
-
 from __future__ import annotations
 
-from typing import Iterable, Dict, Any
 import asyncio
+from collections.abc import Iterable
 from pathlib import Path
+from typing import Any
 
-from .upload_service import UploadService
-from ..ingestion_context import IngestionContext
-from ...models.media_types import MediaType
 from ...models.media_detection import detect_media_type
+from .upload_service import UploadService
 
 
 class IngestionScheduler:
@@ -47,7 +45,7 @@ class IngestionScheduler:
             )
 
     # ------------------------------------------------------------------
-    async def ingest_iterable(self, items: Iterable[Dict[str, Any]]):
+    async def ingest_iterable(self, items: Iterable[dict[str, Any]]):
         """
         items example:
         {

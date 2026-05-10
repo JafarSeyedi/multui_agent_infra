@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 import re
-from typing import Any, List
+from typing import Any
 
 
 class GapDetector:
     def __init__(self, llm: Any = None):
         self.llm = llm
 
-    async def detect_gaps(self, query: str, evidence: List[Any]) -> List[str]:
+    async def detect_gaps(self, query: str, evidence: list[Any]) -> list[str]:
         snippets = [self._to_text(item) for item in evidence[:20] if self._to_text(item)]
         if not snippets:
             return [f"Need baseline evidence for: {query}"]
@@ -26,9 +26,9 @@ class GapDetector:
 
         return self._heuristic_gaps(query, snippets)
 
-    def _heuristic_gaps(self, query: str, snippets: List[str]) -> List[str]:
+    def _heuristic_gaps(self, query: str, snippets: list[str]) -> list[str]:
         text_blob = " ".join(snippets).casefold()
-        gaps: List[str] = []
+        gaps: list[str] = []
         for token in [token.casefold() for token in re.findall(r"\w+", query) if len(token) > 4]:
             if token not in text_blob:
                 gaps.append(f"Need evidence covering '{token}'")

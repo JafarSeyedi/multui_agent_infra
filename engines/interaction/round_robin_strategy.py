@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Sequence, Optional
+from typing import Any
 
-from ..buses.base_message_bus import MessageBus
 from ..agents.models import AgentOutput
-from .interaction_models import InteractionRequest, InteractionResult
+from ..buses.base_message_bus import MessageBus
 from .base_strategy import InteractionStrategy
+from .interaction_models import InteractionRequest
+from .interaction_models import InteractionResult
 
 
 class RoundRobinStrategy(InteractionStrategy):
@@ -17,10 +18,10 @@ class RoundRobinStrategy(InteractionStrategy):
     scenario_name = "round_robin"
 
     def __init__(
-        self, 
-        agent_registry, 
-        message_bus: Optional[MessageBus] = None, 
-        storage = None, 
+        self,
+        agent_registry,
+        message_bus: MessageBus | None = None,
+        storage = None,
         default_rounds: int = 1
     ):
         super().__init__(agent_registry, message_bus, storage)
@@ -42,16 +43,16 @@ class RoundRobinStrategy(InteractionStrategy):
         stop_on_failure = bool(request.metadata.get("stop_on_failure", False))
 
         # مدیریت حافظه و کانتکست
-        history: List[Dict[str, Any]] = list(request.context.get("history", []))
-        shared_context: Dict[str, Any] = dict(request.context)
-        results: List[AgentOutput] = []
+        history: list[dict[str, Any]] = list(request.context.get("history", []))
+        shared_context: dict[str, Any] = dict(request.context)
+        results: list[AgentOutput] = []
 
         for round_index in range(max_rounds):
             shared_context["current_round"] = round_index
-            
+
             for turn_index, agent_spec in enumerate(agents, start=1):
                 agent_id = agent_spec.agent_id or f"{agent_spec.agent_name}_{round_index}_{turn_index}"
-                
+
                 # آماده‌سازی Payload برای ارسال به عامل
                 execution_payload = {
                     "history": list(history),
@@ -95,7 +96,7 @@ class RoundRobinStrategy(InteractionStrategy):
                 else:
                     # در صورت موفقیت، خروجی را به تاریخچه و کانتکست اضافه می‌کنیم
                     agent_data = output.payload or {"message": output.message}
-                    
+
                     history_entry = {
                         "agent": agent_spec.agent_name,
                         "agent_id": agent_id,
@@ -104,7 +105,7 @@ class RoundRobinStrategy(InteractionStrategy):
                         "output": agent_data,
                     }
                     history.append(history_entry)
-                    
+
                     # ثبت خروجی در کانتکست برای دسترسی سایر لایه‌ها
                     shared_context[f"round_{round_index}_{agent_spec.agent_name}"] = agent_data
 
@@ -123,7 +124,7 @@ class RoundRobinStrategy(InteractionStrategy):
 
         # محاسبه موفقیت کلی: اگر هیچ عاملی خطا نداده باشد
         overall_success = all(res.error is None for res in results)
-        
+
         final_context = dict(shared_context)
         final_context["history"] = history
 

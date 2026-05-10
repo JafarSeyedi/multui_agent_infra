@@ -1,12 +1,11 @@
 # tests/agents/orchestration/interaction/performance/test_debate_strategy_performance.py
-
 import time
 
 import pytest
+
+from engines.agents.base_agents.base_agent import BaseAgent
 from engines.interaction.debate_strategy import DebateStrategy
 from engines.interaction.interaction_models import InteractionRequest
-from engines.agents.base_agents.base_agent import BaseAgent
-
 from tests.agents.interaction.interaction_unit.conftest import TestAgent
 
 

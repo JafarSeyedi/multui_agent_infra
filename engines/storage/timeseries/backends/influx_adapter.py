@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ..base import TimeSeriesStorage
 
@@ -17,9 +17,9 @@ class InfluxDBStorageAdapter(TimeSeriesStorage):
         self.org = org
         self.bucket = bucket
 
-        self._client: Optional[Any] = None
-        self._write_api: Optional[Any] = None
-        self._query_api: Optional[Any] = None
+        self._client: Any | None = None
+        self._write_api: Any | None = None
+        self._query_api: Any | None = None
 
     async def connect(self) -> None:
         try:
@@ -56,8 +56,8 @@ class InfluxDBStorageAdapter(TimeSeriesStorage):
         self,
         measurement: str,
         timestamp: datetime,
-        fields: Dict[str, Any],
-        tags: Optional[Dict[str, str]] = None,
+        fields: dict[str, Any],
+        tags: dict[str, str] | None = None,
     ) -> None:
 
         if self._client is None:
@@ -86,7 +86,7 @@ class InfluxDBStorageAdapter(TimeSeriesStorage):
         measurement: str,
         start: datetime,
         end: datetime,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
 
         if self._query_api is None:
             await self.connect()
@@ -101,7 +101,7 @@ class InfluxDBStorageAdapter(TimeSeriesStorage):
 
         tables = self._query_api.query(flux, org=self.org)
 
-        rows: List[Dict[str, Any]] = []
+        rows: list[dict[str, Any]] = []
 
         for table in tables:
             for record in table.records:

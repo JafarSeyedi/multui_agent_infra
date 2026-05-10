@@ -3,20 +3,17 @@ Complete implementation of drawing (images, charts, shapes) for Excel XLSX.
 
 Generates drawing1.xml, chart1.xml, and necessary relationships.
 """
-
 from __future__ import annotations
 
 import xml.etree.ElementTree as ET
-from typing import TYPE_CHECKING, List, Tuple, Optional, Dict, Any, Union
 from pathlib import Path
-from datetime import datetime
+from typing import TYPE_CHECKING
 
-from .const import XML_NAMESPACES
 
 if TYPE_CHECKING:
     from ....models.esdm_models import (
         Workbook, Worksheet, ImageContent, ChartContent, ShapeContent,
-        RichTextContent, CharacterStyle
+        CharacterStyle
     )
     from ..base import ESDMBaseWriter
 
@@ -48,7 +45,7 @@ class DrawingsWriter:
         worksheet: Worksheet,
         sheet_index: int,
         workbook: Workbook
-    ) -> Tuple[Optional[str], Optional[List[Tuple[str, str, str]]]]:
+    ) -> tuple[str | None, list[tuple[str, str, str]] | None]:
         """Generate drawing XML and relationships."""
         images = getattr(worksheet, 'floating_images', [])
         charts = getattr(worksheet, 'floating_charts', [])
@@ -58,7 +55,7 @@ class DrawingsWriter:
             return None, None
 
         self._drawing_counter += 1
-        rels: List[Tuple[str, str, str]] = []
+        rels: list[tuple[str, str, str]] = []
 
         root = ET.Element('xdr:wsDr', {
             'xmlns:xdr': 'http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing',
@@ -92,7 +89,7 @@ class DrawingsWriter:
         sheet_idx: int,
         idx: int,
         workbook: Workbook
-    ) -> Tuple[ET.Element, List[Tuple[str, str, str]]]:
+    ) -> tuple[ET.Element, list[tuple[str, str, str]]]:
         self._image_counter += 1
         image_id = self._image_counter
         rel_id = f'image_{sheet_idx}_{idx}_{image_id}'
@@ -130,7 +127,7 @@ class DrawingsWriter:
         sheet_idx: int,
         idx: int,
         workbook: Workbook
-    ) -> Tuple[ET.Element, List[Tuple[str, str, str]]]:
+    ) -> tuple[ET.Element, list[tuple[str, str, str]]]:
         self._chart_counter += 1
         chart_id = self._chart_counter
         rel_id = f'chart_{sheet_idx}_{idx}_{chart_id}'
@@ -255,7 +252,7 @@ class DrawingsWriter:
         sheet_idx: int,
         idx: int,
         workbook: Workbook
-    ) -> Tuple[ET.Element, List[Tuple[str, str, str]]]:
+    ) -> tuple[ET.Element, list[tuple[str, str, str]]]:
         self._shape_counter += 1
         shape_id = self._shape_counter
 
@@ -357,9 +354,9 @@ class DrawingsWriter:
 
     def _resolve_character_style(
         self,
-        style_name: Optional[str],
+        style_name: str | None,
         workbook: Workbook
-    ) -> Optional[CharacterStyle]:
+    ) -> CharacterStyle | None:
         """Look up a CharacterStyle by name from the workbook's stylesheet."""
         if not style_name:
             return None
@@ -370,7 +367,7 @@ class DrawingsWriter:
             return workbook.stylesheet.character_styles.get(style_name)
         return None
 
-    def _normalize_drawing_color(self, color: Optional[str]) -> Optional[str]:
+    def _normalize_drawing_color(self, color: str | None) -> str | None:
         """Normalize color (#RRGGBB -> RRGGBB)."""
         if not color:
             return None

@@ -1,15 +1,14 @@
 # rag/research/graph/temporal_graph.py
 from __future__ import annotations
 
-from typing import Dict, List
 import time
 
 
 class TemporalGraph:
 
     def __init__(self) -> None:
-        self.nodes: Dict[str, float] = {}
-        self.edges: List[dict] = []
+        self.nodes: dict[str, float] = {}
+        self.edges: list[dict] = []
 
     def add_entity(self, name: str):
         now = time.time()

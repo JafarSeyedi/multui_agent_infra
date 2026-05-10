@@ -1,5 +1,6 @@
+from collections.abc import AsyncIterator
+
 import httpx
-from typing import AsyncIterator
 
 from .base_llm import BaseLLM
 

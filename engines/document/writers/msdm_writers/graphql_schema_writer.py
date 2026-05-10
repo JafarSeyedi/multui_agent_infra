@@ -5,24 +5,19 @@ Handles objects, interfaces, enums, unions, inputs, scalars, schema root,
 directives, field arguments, and type references while preserving the
 original type annotations used in the source schema for lossless round‑trip.
 """
-
 from __future__ import annotations
-import json
-from typing import Optional, Dict, Any, List, Union
 
-from .base_msdm_writer import BaseMSDMWriter, WriteTarget, SoftDeleteStrategy
+import json
+
+from ...models.msdm_models import Attribute
+from ...models.msdm_models import DataType
+from ...models.msdm_models import Entity
+from ...models.msdm_models import MSDMDocument
+from ...models.msdm_models import ScalarType, CompositionType
 from ..base import WriteOptions
-from ...models.msdm_models import (
-    MSDMDocument,
-    Entity,
-    Attribute,
-    DataType,
-    Constraint,
-    ConstraintType,
-    Annotation,
-    EntityKind,
-    ScalarType,
-)
+from .base_msdm_writer import BaseMSDMWriter
+from .base_msdm_writer import SoftDeleteStrategy
+from .base_msdm_writer import WriteTarget
 
 
 class GraphQLSchemaWriter(BaseMSDMWriter):
@@ -32,7 +27,7 @@ class GraphQLSchemaWriter(BaseMSDMWriter):
 
     def __init__(
         self,
-        options: Optional[WriteOptions] = None,
+        options: WriteOptions | None = None,
         target_mode: WriteTarget = WriteTarget.DESIGN_FILE,
         soft_delete_strategy: SoftDeleteStrategy = SoftDeleteStrategy.NONE,
     ):
@@ -80,13 +75,13 @@ class GraphQLSchemaWriter(BaseMSDMWriter):
                 lines.append("")
 
         sdl = "\n".join(lines).strip()
-        return sdl.encode(self.options.encoding or "utf-8")
+        return sdl.encode(getattr(self.options, "encoding", "utf-8") or "utf-8")
 
-    async def get_supported_media_types(self) -> list[str]:
+    def get_supported_media_types(self) -> list[str]:
         return ["text/plain"]
 
-    async def get_supported_extensions(self) -> list[str]:
-        return self.supported_extensions
+    def get_supported_extensions(self) -> list[str]:
+        return list(self.supported_extensions)
 
     # ── Type detection helpers ─────────────────────────────────────
     def _is_scalar_type(self, entity: Entity) -> bool:
@@ -111,7 +106,7 @@ class GraphQLSchemaWriter(BaseMSDMWriter):
         return bool(entity.attributes)
 
     def _is_union_type(self, entity: Entity) -> bool:
-        return bool(self._get_annotation(entity, "union_members"))
+        return entity.composition is not None and entity.composition.composition_type == CompositionType.ONE_OF
 
     def _is_input_type(self, entity: Entity) -> bool:
         # Inputs are marked by annotation "graphql_type" == "input" from TS parser? No TS parser uses "ts_type": "input"? Not reliable.
@@ -121,7 +116,7 @@ class GraphQLSchemaWriter(BaseMSDMWriter):
         # Better: we simply output all non‑interface/non‑union objects as types; inputs are a separate concern. We'll omit dedicated input writing for now unless marked.
         return False
 
-    def _get_annotation(self, entity_or_attr, key: str) -> Optional[str]:
+    def _get_annotation(self, entity_or_attr, key: str) -> str | None:
         """Return the first annotation value for the given key, or None."""
         if isinstance(entity_or_attr, Entity):
             return next((a.value for a in entity_or_attr.annotations if a.key == key), None)
@@ -130,7 +125,7 @@ class GraphQLSchemaWriter(BaseMSDMWriter):
         return None
 
     # ── Schema definition ─────────────────────────────────────────
-    def _build_schema_def(self, doc: MSDMDocument) -> Optional[str]:
+    def _build_schema_def(self, doc: MSDMDocument) -> str | None:
         query_type = self._get_doc_annotation(doc, "root_query")
         mutation_type = self._get_doc_annotation(doc, "root_mutation")
         subscription_type = self._get_doc_annotation(doc, "root_subscription")
@@ -147,7 +142,7 @@ class GraphQLSchemaWriter(BaseMSDMWriter):
         parts.append("}")
         return "\n".join(parts)
 
-    def _get_doc_annotation(self, doc: MSDMDocument, key: str) -> Optional[str]:
+    def _get_doc_annotation(self, doc: MSDMDocument, key: str) -> str | None:
         return next((a.value for a in doc.annotations if a.key == key), None)
 
     # ── Object type ────────────────────────────────────────────────
@@ -163,7 +158,7 @@ class GraphQLSchemaWriter(BaseMSDMWriter):
                 implements.append(a.value)
         header = f"type {entity.name}"
         if entity.implements:
-            implements.extend(entity.implements)
+            implements.extend([imp.name for imp in entity.implements])
         if implements:
             header += " implements " + " & ".join(implements)
         header += " {"
@@ -211,9 +206,8 @@ class GraphQLSchemaWriter(BaseMSDMWriter):
         lines = []
         if desc:
             lines.append(f'"""{desc}"""')
-        members_raw = self._get_annotation(entity, "union_members")
-        if members_raw:
-            members = json.loads(members_raw)
+        if entity.composition:
+            members = [member.name for member in entity.composition.members]
         else:
             members = []
         member_str = " | ".join(members) if members else " /* no members */"
@@ -284,8 +278,8 @@ class GraphQLSchemaWriter(BaseMSDMWriter):
                 type_name = f"[{inner}]"
             else:
                 type_name = "[_]"
-        if base == ScalarType.REF:
-            type_name = dt.ref_entity or "Unknown"
+        if base == ScalarType.REF and dt.ref_entity:
+            type_name = dt.ref_entity.name or "Unknown"
         if base == ScalarType.STRUCT:
             type_name = "Object"
 
@@ -295,7 +289,7 @@ class GraphQLSchemaWriter(BaseMSDMWriter):
         return type_name
 
     @staticmethod
-    def _scalar_to_graphql_name(base: ScalarType, dt: Optional[DataType] = None) -> str:
+    def _scalar_to_graphql_name(base: ScalarType, dt: DataType | None = None) -> str:
         mapping = {
             ScalarType.STRING:    "String",
             ScalarType.INT:       "Int",

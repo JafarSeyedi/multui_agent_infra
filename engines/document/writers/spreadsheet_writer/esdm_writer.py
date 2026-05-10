@@ -3,24 +3,27 @@
 Facade for ESDM writers – automatically selects XLSX, CSV, or TSV writer.
 Delegates to XLSXWriter for .xlsx/.xlsm, handles CSV/TSV internally.
 """
-
 from __future__ import annotations
+
 import csv
 import io
-from pathlib import Path
-from typing import Optional, Dict, Any, AsyncIterator, cast
+from collections.abc import AsyncIterator
 from datetime import datetime
+from pathlib import Path
+from typing import Any
+from typing import cast
 
 from ...models.base import BaseDocument
-from ...models.esdm_models import ESDMDocument, Workbook
-from ...models.media_types import DocumentFormat
+from ...models.esdm_models import ESDMDocument
+from ...models.esdm_models import Workbook
 from ...models.exceptions import UnsupportedFormatError
+from ...models.media_types import DocumentFormat
 from .base import ESDMWriteOptions
-from .xlsx import XLSXWriter      # import from package, not inner module
+from .xlsx.xlsx_writer import XLSXWriter
 
 
 class ESDMWriter:
-    def __init__(self, options: Optional[ESDMWriteOptions] = None):
+    def __init__(self, options: ESDMWriteOptions | None = None):
         self._options = options or ESDMWriteOptions()
 
     async def write_stream(self, document: BaseDocument) -> AsyncIterator[bytes]:
@@ -32,6 +35,8 @@ class ESDMWriter:
     async def write(self, document: BaseDocument) -> bytes:
         doc = cast(ESDMDocument, document)
         workbook = doc.workbook
+        if workbook is None:
+            raise ValueError("Document has no workbook data")
         fmt = self._determine_format(workbook)
         if fmt == DocumentFormat.XLSX:
             writer = XLSXWriter(self._options)
@@ -47,10 +52,12 @@ class ESDMWriter:
         self,
         document: BaseDocument,
         target: Path,
-        options: Optional[Dict[str, Any]] = None
+        options: dict[str, Any] | None = None
     ) -> None:
         doc = cast(ESDMDocument, document)
         workbook = doc.workbook
+        if workbook is None:
+            raise ValueError("Document has no workbook data")
         fmt = self._determine_format(workbook, target.suffix)
         if fmt == DocumentFormat.XLSX:
             writer = XLSXWriter(self._options)
@@ -105,7 +112,7 @@ class ESDMWriter:
     # ------------------------------------------------------------------
     # Format detection
     # ------------------------------------------------------------------
-    def _determine_format(self, workbook: Workbook, extension_hint: Optional[str] = None) -> DocumentFormat:
+    def _determine_format(self, workbook: Workbook, extension_hint: str | None = None) -> DocumentFormat:
         """Determine output format from document metadata or file extension."""
         # 1) From existing media_type
         if hasattr(workbook, 'media_type') and workbook.media_type:

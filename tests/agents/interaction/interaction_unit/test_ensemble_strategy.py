@@ -1,10 +1,10 @@
 # tests/agents/orchestration/interaction/unit/test_ensemble_strategy.py
-
 import pytest
+
 from engines.interaction.ensemble_strategy import EnsembleStrategy
 from engines.interaction.interaction_models import InteractionRequest
-
-from tests.agents.interaction.interaction_unit.conftest import TestAgent, make_agent
+from tests.agents.interaction.interaction_unit.conftest import make_agent
+from tests.agents.interaction.interaction_unit.conftest import TestAgent
 
 
 @pytest.mark.asyncio

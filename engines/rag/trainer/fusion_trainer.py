@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from .base_trainer import BaseTrainer
 
 class FusionTrainer(BaseTrainer):

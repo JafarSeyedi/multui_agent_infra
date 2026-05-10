@@ -3,15 +3,15 @@
 Write slide master and slide layout XML elements from SlideMaster and SlideLayout.
 Complete round‑trip: all placeholders, backgrounds, text styles, and metadata.
 """
-
 from __future__ import annotations
-from typing import Optional
-from xml.etree.ElementTree import Element, SubElement
 
-from ...models.psdm_models import SlideMaster, SlideLayout, Placeholder
-from ...models.usdm_models import ImageContent
+from xml.etree.ElementTree import Element
+from xml.etree.ElementTree import SubElement
+
+from ...models.psdm_models import SlideLayout
+from ...models.psdm_models import SlideMaster
 from .constants import NAMESPACES
-from .drawingml_helpers import set_solid_color, write_rich_text_body
+from ..drawingml_helpers import set_solid_color
 from .shape_writer import write_shape
 from .style_writer import write_tx_styles
 
@@ -64,7 +64,7 @@ def write_master(master: SlideMaster) -> Element:
     return root
 
 
-def write_layout(layout: SlideLayout, master_name: Optional[str] = None) -> Element:
+def write_layout(layout: SlideLayout, master_name: str | None = None) -> Element:
     """Generate a <p:sldLayout> element."""
     root = Element(f"{P}sldLayout")
     # Layout name

@@ -1,9 +1,9 @@
 # tests/agents/unit/test_base_agent.py
 import pytest
-from pydantic import BaseModel
 
 from engines.agents.base_agents.base_agent import BaseAgent
-from engines.agents.models import AgentInput, AgentOutput
+from engines.agents.models import AgentInput
+from engines.agents.models import AgentOutput
 
 
 class InputModel(AgentInput):
@@ -17,7 +17,7 @@ class EchoAgent(BaseAgent[InputModel, OutputModel]):
     agent_name = "echo-agent"
     input_model_class = InputModel
     output_model_class = OutputModel
-    
+
     async def execute(self, input_model: InputModel) -> OutputModel:
         return OutputModel(doubled=input_model.value * 2, agent_name=self.agent_name)
 

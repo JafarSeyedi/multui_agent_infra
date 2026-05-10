@@ -1,9 +1,15 @@
 import logging
-from typing import Dict, List
+
 import aio_pika
-from aio_pika import Message, DeliveryMode
-from aio_pika.abc import AbstractChannel, AbstractExchange, AbstractQueue, AbstractIncomingMessage
-from .base_message_bus import MessageBus, HandlerType
+from aio_pika import DeliveryMode
+from aio_pika import Message
+from aio_pika.abc import AbstractChannel
+from aio_pika.abc import AbstractExchange
+from aio_pika.abc import AbstractIncomingMessage
+from aio_pika.abc import AbstractQueue
+
+from .base_message_bus import HandlerType
+from .base_message_bus import MessageBus
 from engines.interaction.interaction_models import AgentMessage
 
 logger = logging.getLogger(__name__)
@@ -17,7 +23,7 @@ class RabbitMQMessageBus(MessageBus):
         self._exchange_name = exchange_name
         self._channel: AbstractChannel | None = None
         self._exchange: AbstractExchange | None = None
-        self._consumers: Dict[str, List[AbstractQueue]] = {}
+        self._consumers: dict[str, list[AbstractQueue]] = {}
 
     async def start(self) -> None:
         self._channel = await self._conn.channel()

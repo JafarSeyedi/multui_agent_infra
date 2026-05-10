@@ -1,7 +1,7 @@
-from typing import List, Optional, Dict
-from ...models import AgentInput, AgentOutput
-
-from .common import ConfidenceScore, Recommendation
+from ...models import AgentInput
+from ...models import AgentOutput
+from .common import ConfidenceScore
+from .common import Recommendation
 
 
 # -------------------------------------------------
@@ -12,16 +12,16 @@ class LearningSessionPlannerInput(AgentInput):
 
     student_id: str
 
-    learning_goals: List[str]
+    learning_goals: list[str]
 
-    available_time_minutes: Optional[int]
+    available_time_minutes: int | None
 
 
 class LearningSessionPlannerOutput(AgentOutput):
 
-    session_plan: List[str]
+    session_plan: list[str]
 
-    estimated_duration: Optional[int]
+    estimated_duration: int | None
 
 
 # -------------------------------------------------
@@ -32,14 +32,14 @@ class AgentWorkflowPlannerInput(AgentInput):
 
     task_description: str
 
-    available_agents: List[str]
+    available_agents: list[str]
 
 
 class AgentWorkflowPlannerOutput(AgentOutput):
 
-    workflow_steps: List[str]
+    workflow_steps: list[str]
 
-    reasoning: Optional[str]
+    reasoning: str | None
 
 
 # -------------------------------------------------
@@ -53,7 +53,7 @@ class TaskDecomposerInput(AgentInput):
 
 class TaskDecomposerOutput(AgentOutput):
 
-    subtasks: List[str]
+    subtasks: list[str]
 
 
 # -------------------------------------------------
@@ -64,14 +64,14 @@ class AgentSelectorInput(AgentInput):
 
     task: str
 
-    candidate_agents: List[str]
+    candidate_agents: list[str]
 
 
 class AgentSelectorOutput(AgentOutput):
 
     selected_agent: str
 
-    confidence: Optional[ConfidenceScore]
+    confidence: ConfidenceScore | None
 
 
 # # -------------------------------------------------
@@ -98,7 +98,7 @@ class AgentSelectorOutput(AgentOutput):
 
 class ContextManagerInput(AgentInput):
 
-    conversation_history: List[str]
+    conversation_history: list[str]
 
     current_task: str
 
@@ -116,14 +116,14 @@ class WorkflowStateTrackerInput(AgentInput):
 
     workflow_id: str
 
-    completed_steps: List[str]
+    completed_steps: list[str]
 
-    pending_steps: List[str]
+    pending_steps: list[str]
 
 
 class WorkflowStateTrackerOutput(AgentOutput):
 
-    next_step: Optional[str]
+    next_step: str | None
 
     workflow_complete: bool
 
@@ -193,7 +193,7 @@ class LongTermMemoryOutput(AgentOutput):
 
     stored: bool
 
-    memory_reference: Optional[str]
+    memory_reference: str | None
 
 
 # -------------------------------------------------
@@ -202,16 +202,16 @@ class LongTermMemoryOutput(AgentOutput):
 
 class WorkflowOptimizerInput(AgentInput):
 
-    workflow_steps: List[str]
+    workflow_steps: list[str]
 
-    performance_metrics: Optional[Dict]
+    performance_metrics: dict | None
 
 
 class WorkflowOptimizerOutput(AgentOutput):
 
-    optimized_steps: List[str]
+    optimized_steps: list[str]
 
-    improvement_reason: Optional[str]
+    improvement_reason: str | None
 
 
 # -------------------------------------------------
@@ -220,16 +220,16 @@ class WorkflowOptimizerOutput(AgentOutput):
 
 class CostEfficiencyAnalyzerInput(AgentInput):
 
-    workflow_steps: List[str]
+    workflow_steps: list[str]
 
-    token_usage: Optional[Dict]
+    token_usage: dict | None
 
 
 class CostEfficiencyAnalyzerOutput(AgentOutput):
 
     cost_score: float
 
-    optimization_recommendations: Optional[List[Recommendation]]
+    optimization_recommendations: list[Recommendation] | None
 
 
 # -------------------------------------------------
@@ -240,14 +240,14 @@ class AgentPerformanceMonitorInput(AgentInput):
 
     agent_name: str
 
-    execution_logs: List[str]
+    execution_logs: list[str]
 
 
 class AgentPerformanceMonitorOutput(AgentOutput):
 
     performance_score: float
 
-    detected_issues: Optional[List[str]]
+    detected_issues: list[str] | None
 
 
 # -------------------------------------------------
@@ -256,15 +256,15 @@ class AgentPerformanceMonitorOutput(AgentOutput):
 
 class SystemHealthEvaluatorInput(AgentInput):
 
-    active_agents: List[str]
+    active_agents: list[str]
 
-    system_metrics: Optional[Dict]
+    system_metrics: dict | None
 
 
 class SystemHealthEvaluatorOutput(AgentOutput):
 
     health_score: float
 
-    issues: Optional[List[str]]
+    issues: list[str] | None
 
-    recommendations: Optional[List[Recommendation]]
+    recommendations: list[Recommendation] | None

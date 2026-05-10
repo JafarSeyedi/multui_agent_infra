@@ -32,4 +32,3 @@ Answer in one sentence.
             )
 
         return explanations
-

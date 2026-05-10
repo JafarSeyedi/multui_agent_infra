@@ -2,28 +2,28 @@
 """
 Base classes and shared utilities for ESDM writers (Excel, CSV, TSV).
 """
-
 from __future__ import annotations
 
-import zipfile
 import io
 import xml.etree.ElementTree as ET
+import zipfile
 from abc import abstractmethod
+from collections.abc import AsyncIterator
 from pathlib import Path
-from typing import Optional, Dict, Any, List, AsyncIterator, Tuple, Union
-from datetime import datetime
+from typing import Any
+from zipfile import ZipFile, ZIP_DEFLATED
 
-from ...writers.base import BaseDocumentWriter, WriteOptions
 from ...models.base import BaseDocument
-from ...models.exceptions import DocumentWriteError
-from ...models.esdm_models import (
-    Workbook, Worksheet, Cell, Row, Column,
-    SpreadsheetStyleSheet, CellFormat, Font, Fill, Border,
-    NumberFormat, CellStyle, Table, Hyperlink, Comment, DataValidation,
-    BorderSide, BorderStyle, PatternFill, PatternType,
-    HorizontalAlign, VerticalAlign, Protection, Alignment,
-    GradientFill, ColorScale, IconSet, DataBar
-)
+from ...models.esdm_models import Border
+from ...models.esdm_models import BorderSide
+from ...models.esdm_models import CellFormat
+from ...models.esdm_models import Fill
+from ...models.esdm_models import Font
+from ...models.esdm_models import NumberFormat
+from ...models.esdm_models import Workbook
+from ...models.esdm_models import Worksheet
+from ...writers.base import BaseDocumentWriter
+from ...writers.base import WriteOptions
 
 
 class ESDMWriteOptions(WriteOptions):
@@ -56,7 +56,7 @@ class ESDMBaseWriter(BaseDocumentWriter):
         'vt': 'http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes',
     }
 
-    def __init__(self, options: Optional[ESDMWriteOptions] = None):
+    def __init__(self, options: ESDMWriteOptions | None = None):
         # Ensure options are of the correct type
         if options is None:
             options = ESDMWriteOptions()
@@ -67,27 +67,27 @@ class ESDMBaseWriter(BaseDocumentWriter):
         self._esdm_options = options
 
         # Caches for XLSX generation
-        self._shared_strings: List[str] = []              # index -> string
-        self._shared_strings_index: Dict[str, int] = {}   # string -> index
+        self._shared_strings: list[str] = []              # index -> string
+        self._shared_strings_index: dict[str, int] = {}   # string -> index
 
-        self._style_cache: Dict[Tuple, int] = {}          # (key) -> xf_id
-        self._font_cache: Dict[Tuple, int] = {}
-        self._fill_cache: Dict[Tuple, int] = {}
-        self._border_cache: Dict[Tuple, int] = {}
-        self._numfmt_cache: Dict[str, int] = {}           # format_code -> custom id
+        self._style_cache: dict[tuple, int] = {}          # (key) -> xf_id
+        self._font_cache: dict[tuple, int] = {}
+        self._fill_cache: dict[tuple, int] = {}
+        self._border_cache: dict[tuple, int] = {}
+        self._numfmt_cache: dict[str, int] = {}           # format_code -> custom id
 
         # We will store the actual objects for later XML generation
-        self._fonts: List[Font] = []
-        self._fills: List[Fill] = []
-        self._borders: List[Border] = []
-        self._numfmts: List[NumberFormat] = []
-        self._cell_formats: List[CellFormat] = []
+        self._fonts: list[Font] = []
+        self._fills: list[Fill] = []
+        self._borders: list[Border] = []
+        self._numfmts: list[NumberFormat] = []
+        self._cell_formats: list[CellFormat] = []
 
-        self._extra_parts: Dict[str, Union[str, bytes]] = {}
-        self._image_binaries: Dict[str, bytes] = {}
-        self._chart_xmls: Dict[str, str] = {}
-        self._pivot_cache_xmls: Dict[str, str] = {}
-        self._comment_authors: List[str] = []        
+        self._extra_parts: dict[str, str | bytes] = {}
+        self._image_binaries: dict[str, bytes] = {}
+        self._chart_xmls: dict[str, str] = {}
+        self._pivot_cache_xmls: dict[str, str] = {}
+        self._comment_authors: list[str] = []
 
     # ------------------------------------------------------------------
     # Abstract methods from BaseDocumentWriter (must be overridden)
@@ -107,10 +107,9 @@ class ESDMBaseWriter(BaseDocumentWriter):
         self,
         document: BaseDocument,
         target: Path,
-        options: Optional[Dict[str, Any]] = None
+        options: dict[str, Any] | None = None
     ) -> None:
         """Write directly to a file."""
-        pass
 
     # ------------------------------------------------------------------
     # Shared string table management
@@ -143,7 +142,7 @@ class ESDMBaseWriter(BaseDocumentWriter):
     # ------------------------------------------------------------------
     # Style subsystem (fonts, fills, borders, number formats, cellXfs)
     # ------------------------------------------------------------------
-    def _normalize_color(self, color: Optional[str]) -> Optional[str]:
+    def _normalize_color(self, color: str | None) -> str | None:
         """Convert color to RRGGBB (no leading #) or None."""
         if color is None:
             return None
@@ -168,7 +167,7 @@ class ESDMBaseWriter(BaseDocumentWriter):
 
     def _register_fill(self, fill: Fill) -> int:
         """Register a fill (pattern or gradient) and return its index."""
-        key: Tuple
+        key: tuple
         if fill.pattern:
             key = ('pattern',
                    fill.pattern.pattern_type.value,
@@ -241,14 +240,14 @@ class ESDMBaseWriter(BaseDocumentWriter):
     async def _build_zip_package(
         self,
         workbook: Workbook,
-        parts: Dict[str, Union[str, bytes]]
+        parts: dict[str, str | bytes]
     ) -> bytes:
         """
         Build a ZIP archive from a dictionary of internal paths -> content.
         Adds mandatory [Content_Types].xml and _rels/.rels.
         """
         with io.BytesIO() as buffer:
-            with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
+            with ZipFile(buffer, 'w', ZIP_DEFLATED) as zf:
                 # Write provided parts
                 for path, content in parts.items():
                     if isinstance(content, str):
@@ -303,14 +302,11 @@ class ESDMBaseWriter(BaseDocumentWriter):
     @abstractmethod
     def _write_workbook_xml(self, workbook: Workbook) -> str:
         """Generate workbook.xml content."""
-        pass
 
     @abstractmethod
     def _write_worksheet_xml(self, worksheet: Worksheet, sheet_id: int) -> str:
         """Generate sheetX.xml for a single worksheet."""
-        pass
 
     @abstractmethod
     def _write_styles_xml(self) -> str:
         """Generate styles.xml from collected fonts, fills, borders, etc."""
-        pass

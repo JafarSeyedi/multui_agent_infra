@@ -1,10 +1,11 @@
 # storage/vector/backends/qdrant_adapter.py
-
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Sequence
+from collections.abc import Sequence
+from typing import Any
 
-from qdrant_client import QdrantClient, models
+from qdrant_client import models
+from qdrant_client import QdrantClient
 from qdrant_client.models import ScoredPoint
 
 from ..base import VectorDBAdapter
@@ -27,7 +28,7 @@ class QdrantAdapter(VectorDBAdapter):
         self,
         name: str,
         dimension: int,
-        config: Optional[Dict[str, Any]] = None,
+        config: dict[str, Any] | None = None,
     ) -> None:
         """Creates or recreates a Qdrant collection."""
         self.collection_name = name
@@ -59,9 +60,9 @@ class QdrantAdapter(VectorDBAdapter):
 
     async def upsert(
         self,
-        ids: List[str],
-        vectors: List[List[float]],
-        metadata: List[Dict[str, Any]],
+        ids: list[str],
+        vectors: list[list[float]],
+        metadata: list[dict[str, Any]],
     ) -> None:
         """Upserts points into the Qdrant collection."""
         if not ids:
@@ -90,7 +91,7 @@ class QdrantAdapter(VectorDBAdapter):
             f"into collection '{self.collection_name}'."
         )
 
-    async def batch_upsert(self, items: List[Dict[str, Any]]) -> None:
+    async def batch_upsert(self, items: list[dict[str, Any]]) -> None:
         """Upserts items in batches."""
         if not items:
             return
@@ -102,16 +103,16 @@ class QdrantAdapter(VectorDBAdapter):
 
     async def query(
         self,
-        vector: List[float],
+        vector: list[float],
         top_k: int = 5,
-        filters: Optional[Dict[str, Any]] = None,
-    ) -> List[Dict[str, Any]]:
+        filters: dict[str, Any] | None = None,
+    ) -> list[dict[str, Any]]:
         """Queries the Qdrant collection for nearest neighbours."""
         normalized_query_vector = normalize_embedding(vector)
 
-        qdrant_filter: Optional[models.Filter] = None
+        qdrant_filter: models.Filter | None = None
         if filters:
-            filter_conditions: List[models.FieldCondition] = []
+            filter_conditions: list[models.FieldCondition] = []
 
             for key, value in filters.items():
                 # ── نکته: bool باید قبل از int چک شود ──
@@ -177,7 +178,7 @@ class QdrantAdapter(VectorDBAdapter):
             print(f"QdrantAdapter: Error during query: {e}")
             return []
 
-        formatted_results: List[Dict[str, Any]] = []
+        formatted_results: list[dict[str, Any]] = []
         raw_points = (
             search_result.points
             if hasattr(search_result, "points")
@@ -198,7 +199,7 @@ class QdrantAdapter(VectorDBAdapter):
             )
         return formatted_results
 
-    async def delete(self, ids: List[str]) -> None:
+    async def delete(self, ids: list[str]) -> None:
         """Deletes points by their IDs."""
         if not ids:
             return

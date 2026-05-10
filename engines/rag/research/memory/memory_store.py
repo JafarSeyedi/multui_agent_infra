@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Dict
 
 
 @dataclass(slots=True)
@@ -11,16 +10,16 @@ class MemoryItem:
     query: str
     answer_summary: str
     timestamp: float
-    tags: List[str]
+    tags: list[str]
 
 
 class MemoryStore:
 
     def __init__(self) -> None:
-        self._items: Dict[int, MemoryItem] = {}
+        self._items: dict[int, MemoryItem] = {}
         self._next_id = 1
 
-    def add(self, query: str, answer_summary: str, tags: List[str], timestamp: float):
+    def add(self, query: str, answer_summary: str, tags: list[str], timestamp: float):
         mid = self._next_id
         self._next_id += 1
 

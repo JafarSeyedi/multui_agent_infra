@@ -1,4 +1,5 @@
 import hashlib
+
 from .base import BinaryPayload
 
 class ChunkedBinaryPayload(BinaryPayload):

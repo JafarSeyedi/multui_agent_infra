@@ -1,13 +1,16 @@
 # engines/document/parsers/spreadsheet_parser/base_spreadsheet_parser.py
 from __future__ import annotations
-from abc import abstractmethod
-from pathlib import Path
-from typing import Optional, Dict, Any, Union, AsyncIterator
-import io
 
-from ..base import BaseDocumentParser, ParseOptions
-from ...models.esdm_models import ESDMDocument, Workbook
+from abc import abstractmethod
+from collections.abc import AsyncIterator
+from pathlib import Path
+from typing import Any
+
+from ...models.esdm_models import ESDMDocument
+from ...models.esdm_models import Workbook
 from ...models.media_detection import detect_media_type
+from ..base import BaseDocumentParser
+from ..base import ParseOptions
 
 
 class BaseSpreadsheetParser(BaseDocumentParser):
@@ -21,8 +24,8 @@ class BaseSpreadsheetParser(BaseDocumentParser):
         data: bytes,
         document_id: str,
         source_name: str,
-        metadata: Optional[Dict[str, Any]] = None,
-        options: Optional[ParseOptions] = None,
+        metadata: dict[str, Any] | None = None,
+        options: ParseOptions | None = None,
     ) -> ESDMDocument:
         options = options or ParseOptions()
         # Detect media type from data (or use extension if available)
@@ -43,10 +46,10 @@ class BaseSpreadsheetParser(BaseDocumentParser):
 
     async def parse_path(
         self,
-        path: Union[str, Path],
+        path: str | Path,
         document_id: str,
-        metadata: Optional[Dict[str, Any]] = None,
-        options: Optional[ParseOptions] = None,
+        metadata: dict[str, Any] | None = None,
+        options: ParseOptions | None = None,
     ) -> ESDMDocument:
         file_path = Path(path)
         data = file_path.read_bytes()
@@ -63,8 +66,8 @@ class BaseSpreadsheetParser(BaseDocumentParser):
         stream: AsyncIterator[bytes],
         document_id: str,
         source_name: str,
-        metadata: Optional[Dict[str, Any]] = None,
-        options: Optional[ParseOptions] = None,
+        metadata: dict[str, Any] | None = None,
+        options: ParseOptions | None = None,
     ) -> ESDMDocument:
         chunks = []
         async for chunk in stream:

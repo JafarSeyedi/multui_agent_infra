@@ -1,5 +1,4 @@
 # rag/research/memory/reasoning/event_types.py
-
 from enum import Enum
 
 

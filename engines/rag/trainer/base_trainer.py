@@ -1,5 +1,6 @@
 # rag/retrieval/base_trainer.py
-from abc import ABC, abstractmethod
+from abc import ABC
+from abc import abstractmethod
 
 class BaseTrainer(ABC):
     """قرارداد مشترک تمام Trainer ها"""

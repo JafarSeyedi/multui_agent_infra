@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import hashlib
-from typing import List, Sequence
+from collections.abc import Sequence
 
 from ..ingestion.ingestion_models import ChunkRecord
 from ..models.base import BaseDocument
-
 from .base import BaseChunker
 from .models import ChunkingConfig
 
@@ -17,7 +16,7 @@ class RecursiveTextChunker(BaseChunker):
         self,
         document: BaseDocument,
         config: ChunkingConfig | None = None,
-    ) -> List[ChunkRecord]:
+    ) -> list[ChunkRecord]:
         effective = config or ChunkingConfig()
         if not document.raw_text:
             return []
@@ -30,7 +29,7 @@ class RecursiveTextChunker(BaseChunker):
             for index, chunk_text in enumerate(merged)
         ]
 
-    def _split_text(self, text: str, separators: Sequence[str], max_size: int) -> List[str]:
+    def _split_text(self, text: str, separators: Sequence[str], max_size: int) -> list[str]:
         if len(text) <= max_size:
             return [text]
         if not separators:
@@ -41,7 +40,7 @@ class RecursiveTextChunker(BaseChunker):
         if len(pieces) == 1:
             return self._split_text(text, separators[1:], max_size)
 
-        results: List[str] = []
+        results: list[str] = []
         current = ""
         for piece in pieces:
             candidate = piece if not current else current + separator + piece
@@ -55,11 +54,11 @@ class RecursiveTextChunker(BaseChunker):
             results.extend(self._split_text(current, separators[1:], max_size))
         return results
 
-    def _hard_split(self, text: str, max_size: int) -> List[str]:
+    def _hard_split(self, text: str, max_size: int) -> list[str]:
         return [text[i : i + max_size] for i in range(0, len(text), max_size)]
 
-    def _merge_segments(self, segments: Sequence[str], config: ChunkingConfig) -> List[str]:
-        chunks: List[str] = []
+    def _merge_segments(self, segments: Sequence[str], config: ChunkingConfig) -> list[str]:
+        chunks: list[str] = []
         current = ""
         for segment in segments:
             stripped = segment.strip()
@@ -88,7 +87,7 @@ class RecursiveTextChunker(BaseChunker):
     def _build_chunk(self, document: BaseDocument, index: int, text: str, full_text: str) -> ChunkRecord:
         start = full_text.find(text)
         end = start + len(text) if start >= 0 else 0
-        digest = hashlib.sha1(f"{document.document_id}:{index}:{text}".encode("utf-8")).hexdigest()
+        digest = hashlib.sha1(f"{document.document_id}:{index}:{text}".encode()).hexdigest()
         return ChunkRecord(
             chunk_id=f"chunk_{digest}",
             document_id=document.document_id,

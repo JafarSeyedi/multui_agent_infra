@@ -1,24 +1,29 @@
 # engines/document/models/usdm_models.py
 from __future__ import annotations
-from dataclasses import dataclass, field
-from enum import Enum
-from .media_types import DocumentStandard
 
-from .base import BaseDocument, ElementType
-
-from typing import List, Optional, Dict, Any, Union, Literal, Type, Callable, Tuple
-from abc import ABC, abstractmethod
+from abc import ABC
+from abc import abstractmethod
+from collections.abc import Callable
+from dataclasses import dataclass
+from dataclasses import field
 from datetime import datetime
+from typing import Any
+from typing import Literal
+from typing import Union
+
+from .base import BaseDocument
+from .base import ElementType
+from .media_types import DocumentStandard
 
 class USDMDocument(BaseDocument):
     kind: DocumentStandard = DocumentStandard.USDM
-    sections: List[Section] = field(default_factory=list)
-    pages: List[Page] = field(default_factory=list)
+    sections: list[Section] = field(default_factory=list)
+    pages: list[Page] = field(default_factory=list)
 # elements: لایه‌ی منطقی (Logical tree) → محتوای واقعی سند
 # sections: لایه‌ی سازمانی/سرفصلی → ساختار معنایی سند
 # pages: لایه‌ی فیزیکی/صفحه‌بندی → خروجی صفحه‌بندی شده (PDF-like)
-    elements: List[DocumentElement] = field(default_factory=list)
-    logical_elements: List[LogicalElement] = field(default_factory=list)
+    elements: list[DocumentElement] = field(default_factory=list)
+    logical_elements: list[LogicalElement] = field(default_factory=list)
     stylesheet: StyleSheet = field(default_factory=StyleSheet)
 
 
@@ -26,26 +31,26 @@ class USDMDocument(BaseDocument):
 class DocumentElement:
     element_id: str
     element_type: ElementType
-    metadata: Dict[str, Any] = field(default_factory=dict) 
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 @dataclass
 class Section:
     section_id: str = ""
-    title: Optional[HeadingContent] = None
-    elements: List[DocumentElement] = field(default_factory=list)
-    section_type: Optional[str] = None  # e.g. "body", "header", "footer"
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    title: HeadingContent | None = None
+    elements: list[DocumentElement] = field(default_factory=list)
+    section_type: str | None = None  # e.g. "body", "header", "footer"
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 @dataclass
 class PageContent:
-    number: Optional[int] = None
-    elements: List[DocumentElement] = field(default_factory=list)
-    page_width: Optional[float] = None
-    page_height: Optional[float] = None
-    margin_top: Optional[float] = None
-    margin_bottom: Optional[float] = None
-    margin_left: Optional[float] = None
-    margin_right: Optional[float] = None
+    number: int | None = None
+    elements: list[DocumentElement] = field(default_factory=list)
+    page_width: float | None = None
+    page_height: float | None = None
+    margin_top: float | None = None
+    margin_bottom: float | None = None
+    margin_left: float | None = None
+    margin_right: float | None = None
 
 
 @dataclass
@@ -53,7 +58,11 @@ class LogicalElement:
     element_id: str
     element_type: ElementType
     content: Any
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def _meta(self) -> dict[str, Any]:
+        return self.metadata
 
 
 # ============================================================
@@ -63,16 +72,23 @@ class LogicalElement:
 @dataclass
 class RichTextSpan:
     text: str = ""
-    character_style: Optional[str] = None  # key into StyleSheet.character_styles
+    character_style: str | None = None  # key into StyleSheet.character_styles
     code: bool = False
-    background: Optional[str] = None
-    href: Optional[str] = None
-    math: Optional[str] = None  # inline math
+    background: str | None = None
+    href: str | None = None
+    math: str | None = None  # inline math
     display_math: bool = False
 
+    # New fields for inline formatting (Excel rich text)
+    bold: bool = False
+    italic: bool = False
+    underline: bool = False
+    color: str | None = None      # e.g. "#FF0000"
+    font: str | None = None       # font name
+    
 @dataclass
 class RichTextContent:
-    spans: List[RichTextSpan] = field(default_factory=list)
+    spans: list[RichTextSpan] = field(default_factory=list)
 
 
 # ============================================================
@@ -82,7 +98,7 @@ class RichTextContent:
 @dataclass
 class ParagraphContent:
     text: RichTextContent
-    style: Optional[str] = None
+    style: str | None = None
 
 
 @dataclass
@@ -100,57 +116,57 @@ class MathContent:
 @dataclass
 class CodeContent:
     code: str
-    language: Optional[str] = None
+    language: str | None = None
 
 
 @dataclass
 class ImageContent:
     src: str
-    width: Optional[float] = None
-    height: Optional[float] = None
-    alt: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    width: float | None = None
+    height: float | None = None
+    alt: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class ListItemContent:
-    elements: List[LogicalElement]
+    elements: list[LogicalElement]
 
 
 @dataclass
 class ListContent:
     ordered: bool
-    items: List[ListItemContent]
+    items: list[ListItemContent]
 
 
 # TABLES
 @dataclass
 class TableCell:
-    content: List[LogicalElement]
+    content: list[LogicalElement]
     row_span: int = 1
     col_span: int = 1
     is_header: bool = False
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class TableRow:
-    cells: List[TableCell] = []
-    is_header: bool = False    
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    cells: list[TableCell] = []
+    is_header: bool = False
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class TableContent:
-    rows: List[TableRow]
-    grid: Optional[List[int]] = None     # Word-style table grid definition
-    caption: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    rows: list[TableRow]
+    grid: list[int] | None = None     # Word-style table grid definition
+    caption: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class QuoteContent:
-    elements: List[LogicalElement]
+    elements: list[LogicalElement]
 
 
 @dataclass
@@ -169,10 +185,10 @@ class TextRun:
     y: float
     font: str
     size: float
-    color: Optional[str] = None
-    style_id: Optional[str] = None
-    bbox: Optional[Dict[str, float]] = None
-    language: Optional[str] = None
+    color: str | None = None
+    style_id: str | None = None
+    bbox: dict[str, float] | None = None
+    language: str | None = None
 
 @dataclass
 class ImageObject:
@@ -182,15 +198,15 @@ class ImageObject:
     width: float
     height: float
     format: str = 'jpg'
-    bbox: Optional[Dict[str, float]] = None
+    bbox: dict[str, float] | None = None
 
 @dataclass
 class VectorPath:
-    commands: List[str]
-    stroke_color: Optional[str] = None
-    fill_color: Optional[str] = None
-    stroke_width: Optional[float] = None
-    points: Optional[List[Dict[str, float]]] = None
+    commands: list[str]
+    stroke_color: str | None = None
+    fill_color: str | None = None
+    stroke_width: float | None = None
+    points: list[dict[str, float]] | None = None
 
 
 @dataclass
@@ -200,7 +216,7 @@ class AnnotationObject:
     width: float
     height: float
     subtype: str
-    contents: Optional[str] = None
+    contents: str | None = None
 
 
 @dataclass
@@ -208,7 +224,7 @@ class Page:
     page_number: int
     width: float
     height: float
-    elements: List[Union[TextRun, ImageObject, VectorPath, AnnotationObject]] = field(default_factory=list)
+    elements: list[TextRun | ImageObject | VectorPath | AnnotationObject] = field(default_factory=list)
 
 
 
@@ -219,103 +235,104 @@ class Page:
 @dataclass
 class CharacterStyle:
     name: str
-    bold: Optional[bool] = None
-    italic: Optional[bool] = None
-    underline: Optional[bool] = None
-    underline_type: Optional[str] = None
-    color: Optional[str] = None
-    highlight: Optional[str] = None
-    background: Optional[str] = None
-    font: Optional[str] = None
-    font_family: Optional[str] = None
-    font_charset: Optional[str] = None
-    font_pitch: Optional[str] = None
-    size: Optional[float] = None
-    size_cs: Optional[float] = None
-    strike: Optional[bool] = None
-    double_strike: Optional[bool] = None
-    superscript: Optional[bool] = None
-    subscript: Optional[bool] = None
-    small_caps: Optional[bool] = None
-    all_caps: Optional[bool] = None
-    kerning: Optional[float] = None
-    spacing: Optional[float] = None
-    position: Optional[float] = None
-    shadow: Optional[bool] = None
-    outline: Optional[bool] = None
-    emboss: Optional[bool] = None
-    imprint: Optional[bool] = None
-    vanished: Optional[bool] = None
-    web_hidden: Optional[bool] = None
-    language: Optional[str] = None
-    no_proof: Optional[bool] = None
-    style_id: Optional[str] = None
-    based_on: Optional[str] = None
-    next_style: Optional[str] = None
-    linked_style: Optional[str] = None
-
+    bold: bool | None = None
+    italic: bool | None = None
+    underline: bool | None = None
+    underline_type: str | None = None
+    color: str | None = None
+    highlight: str | None = None
+    background: str | None = None
+    font: str | None = None
+    font_family: str | None = None
+    font_charset: str | None = None
+    font_pitch: str | None = None
+    size: float | None = None
+    size_cs: float | None = None
+    strike: bool | None = None
+    double_strike: bool | None = None
+    superscript: bool | None = None
+    subscript: bool | None = None
+    small_caps: bool | None = None
+    all_caps: bool | None = None
+    kerning: float | None = None
+    spacing: float | None = None
+    position: float | None = None
+    shadow: bool | None = None
+    outline: bool | None = None
+    emboss: bool | None = None
+    imprint: bool | None = None
+    vanished: bool | None = None
+    web_hidden: bool | None = None
+    language: str | None = None
+    no_proof: bool | None = None
+    style_id: str | None = None
+    based_on: str | None = None
+    next_style: str | None = None
+    linked_style: str | None = None
+    _meta: dict[str, Any] = field(default_factory=dict)
+    
 @dataclass
 class ParagraphStyle:
     name: str
-    alignment: Optional[str] = None  # "left", "right", "center", "justify"
-    spacing_before: Optional[float] = None
-    spacing_after: Optional[float] = None
-    line_spacing: Optional[float] = None
-    indent_left: Optional[float] = None
-    indent_right: Optional[float] = None
-    first_line_indent: Optional[float] = None
+    alignment: str | None = None  # "left", "right", "center", "justify"
+    spacing_before: float | None = None
+    spacing_after: float | None = None
+    line_spacing: float | None = None
+    indent_left: float | None = None
+    indent_right: float | None = None
+    first_line_indent: float | None = None
 
-    line_spacing_rule: Optional[str] = None
-    indent_hanging: Optional[float] = None
-    keep_lines_together: Optional[bool] = None
-    keep_with_next: Optional[bool] = None
-    page_break_before: Optional[bool] = None
-    widow_control: Optional[bool] = None
-    borders: Optional[Dict[str, Any]] = None
-    shading: Optional[Dict[str, Any]] = None
-    outline_level: Optional[int] = None
-    text_direction: Optional[str] = None   # "ltr", "rtl", etc.
-    tabs: Optional[List[Dict[str, Any]]] = None
-    frame_properties: Optional[Dict[str, Any]] = None
-    style_id: Optional[str] = None
-    based_on: Optional[str] = None
-    next_style: Optional[str] = None
+    line_spacing_rule: str | None = None
+    indent_hanging: float | None = None
+    keep_lines_together: bool | None = None
+    keep_with_next: bool | None = None
+    page_break_before: bool | None = None
+    widow_control: bool | None = None
+    borders: dict[str, Any] | None = None
+    shading: dict[str, Any] | None = None
+    outline_level: int | None = None
+    text_direction: str | None = None   # "ltr", "rtl", etc.
+    tabs: list[dict[str, Any]] | None = None
+    frame_properties: dict[str, Any] | None = None
+    style_id: str | None = None
+    based_on: str | None = None
+    next_style: str | None = None
 
 @dataclass
 class TableStyle:
     name: str
-    border_color: Optional[str] = None
-    border_width: Optional[float] = None
-    cell_spacing: Optional[float] = None
-    header_row: Optional[bool] = None
-    banded_rows: Optional[bool] = None
-    banded_columns: Optional[bool] = None
+    border_color: str | None = None
+    border_width: float | None = None
+    cell_spacing: float | None = None
+    header_row: bool | None = None
+    banded_rows: bool | None = None
+    banded_columns: bool | None = None
 
-    alignment: Optional[str] = None               # "left", "center", "right"
-    indent_left: Optional[float] = None
-    width: Optional[float] = None
-    layout_type: Optional[str] = None             # "fixed", "auto"
-    borders: Optional[Dict[str, Any]] = None
-    cell_margins: Optional[Dict[str, float]] = None
-    shading: Optional[Dict[str, Any]] = None
-    first_row: Optional[bool] = None              # special formatting for first row
-    last_row: Optional[bool] = None
-    first_column: Optional[bool] = None
-    last_column: Optional[bool] = None
-    style_id: Optional[str] = None
-    based_on: Optional[str] = None
+    alignment: str | None = None               # "left", "center", "right"
+    indent_left: float | None = None
+    width: float | None = None
+    layout_type: str | None = None             # "fixed", "auto"
+    borders: dict[str, Any] | None = None
+    cell_margins: dict[str, float] | None = None
+    shading: dict[str, Any] | None = None
+    first_row: bool | None = None              # special formatting for first row
+    last_row: bool | None = None
+    first_column: bool | None = None
+    last_column: bool | None = None
+    style_id: str | None = None
+    based_on: str | None = None
 
 @dataclass
 class ListStyle:
     name: str
-    level_styles: Dict[int, Dict[str, Any]] = field(default_factory=dict)
+    level_styles: dict[int, dict[str, Any]] = field(default_factory=dict)
 
 @dataclass
 class StyleSheet:
-    character_styles: Dict[str, CharacterStyle] = field(default_factory=dict)
-    paragraph_styles: Dict[str, ParagraphStyle] = field(default_factory=dict)
-    table_styles: Dict[str, TableStyle] = field(default_factory=dict)
-    list_styles: Dict[str, ListStyle] = field(default_factory=dict)
+    character_styles: dict[str, CharacterStyle] = field(default_factory=dict)
+    paragraph_styles: dict[str, ParagraphStyle] = field(default_factory=dict)
+    table_styles: dict[str, TableStyle] = field(default_factory=dict)
+    list_styles: dict[str, ListStyle] = field(default_factory=dict)
 
 
 
@@ -351,10 +368,10 @@ class CommentContent:
     """Content for comment."""
     comment_id: str
     author: str
-    date: Optional[str] = None
+    date: str | None = None
     text: str = ""
-    elements: List[LogicalElement] = field(default_factory=list)
-    parent_id: Optional[str] = None
+    elements: list[LogicalElement] = field(default_factory=list)
+    parent_id: str | None = None
     resolved: bool = False
 
 @dataclass
@@ -375,73 +392,69 @@ class PDFTextRun:
     text: str
     x: float
     y: float
-    font: Optional[str]
-    size: Optional[float]
+    font: str | None
+    size: float | None
 
 @dataclass
 class PDFVectorPath:
-    commands: List[str]
-    stroke_color: Optional[str] = None
-    fill_color: Optional[str] = None
+    commands: list[str]
+    stroke_color: str | None = None
+    fill_color: str | None = None
 
 @dataclass
 class LaTeXEnvironmentContent:
     """محیط‌های LaTeX مانند theorem, proof, figure"""
     environment_type: str  # "theorem", "lemma", "figure", "table"
-    label: Optional[str]
-    caption: Optional[str]
-    parameters: Dict[str, str] = field(default_factory=dict)
-    content: List[LogicalContent] = field(default_factory=list)
+    label: str | None
+    caption: str | None
+    parameters: dict[str, str] = field(default_factory=dict)
+    content: list[LogicalContent] = field(default_factory=list)
 
-@dataclass  
+@dataclass
 class LaTeXCommandContent:
     """دستورات LaTeX مانند \\section{}, \\cite{}"""
     command: str
-    arguments: List[str] = field(default_factory=list)
-    options: Dict[str, str] = field(default_factory=dict)
+    arguments: list[str] = field(default_factory=list)
+    options: dict[str, str] = field(default_factory=dict)
 
 @dataclass
 class SemanticHTMLContent:
     """عناصر معنایی HTML5"""
     element_type: Literal["article", "section", "nav", "aside", "header", "footer"]
-    role: Optional[str]  # برای ARIA roles
-    aria_attributes: Dict[str, str] = field(default_factory=dict)
+    role: str | None  # برای ARIA roles
+    aria_attributes: dict[str, str] = field(default_factory=dict)
 
 @dataclass
 class CanvasOperation:
     """Placeholder for canvas operations."""
-    pass
 
 @dataclass
 class PDFInfo:
     """Placeholder for PDF metadata."""
-    pass
 
 @dataclass
 class DOCXProperties:
     """Placeholder for DOCX properties."""
-    pass
 
 @dataclass
 class Change:
     """Placeholder for tracked changes."""
-    pass
 
 @dataclass
 class CanvasContent:
     """محتوای <canvas> در HTML5"""
     canvas_id: str
-    drawing_operations: List[CanvasOperation]
+    drawing_operations: list[CanvasOperation]
 
 @dataclass
 class DocumentMetadata:
     """متادیتای جامع برای همه فرمت‌ها"""
     # متادیتای عمومی
-    title: Optional[str] = None
-    authors: List[str] = field(default_factory=list)
-    creation_date: Optional[datetime] = None
-    modification_date: Optional[datetime] = None
-    
+    title: str | None = None
+    authors: list[str] = field(default_factory=list)
+    creation_date: datetime | None = None
+    modification_date: datetime | None = None
+
     # subject: Optional[str] = None
     # keywords: Optional[List[str]] = field(default_factory=list)
     # creator: Optional[str] = None
@@ -449,18 +462,18 @@ class DocumentMetadata:
     # license: Optional[str] = None
     # copyright: Optional[str] = None
     # language: Optional[str] = None
-        
+
     # متادیتای فرمت‌خاص
-    format_specific: Dict[str, Any] = field(default_factory=dict)
-    
+    format_specific: dict[str, Any] = field(default_factory=dict)
+
     # برای PDF
-    pdf_info: Optional[PDFInfo] = None
-    
+    pdf_info: PDFInfo | None = None
+
     # برای DOCX
-    docx_properties: Optional[DOCXProperties] = None
-    
+    docx_properties: DOCXProperties | None = None
+
     # برای HTML
-    meta_tags: Dict[str, str] = field(default_factory=dict)
+    meta_tags: dict[str, str] = field(default_factory=dict)
 
 @dataclass
 class CrossReference:
@@ -468,54 +481,54 @@ class CrossReference:
     source_id: str
     target_id: str
     reference_type: Literal["internal", "external", "bibliography", "footnote"]
-    context: Optional[str] = None
-    
+    context: str | None = None
+
 @dataclass
 class BibliographyEntry:
     """ورودی‌های کتاب‌شناسی"""
     key: str
     entry_type: str  # "article", "book", "inproceedings"
-    fields: Dict[str, str] = field(default_factory=dict)
+    fields: dict[str, str] = field(default_factory=dict)
 
 @dataclass
 class ChangeTracking:
     """ردیابی تغییرات (مهم برای DOCX و Google Docs)"""
-    revisions: List[Revision] = field(default_factory=list)
-    comments: List[CommentContent] = field(default_factory=list)
+    revisions: list[Revision] = field(default_factory=list)
+    comments: list[CommentContent] = field(default_factory=list)
     track_changes_enabled: bool = False
 
 @dataclass
 class Revision:
     author: str
     timestamp: datetime
-    changes: List[Change] = field(default_factory=list)
+    changes: list[Change] = field(default_factory=list)
     accepted: bool = False
 
 @dataclass
 class PresentationHint:
     """نشانه‌های ارائه برای تبدیل بین فرمت‌ها"""
-    css_classes: List[str] = field(default_factory=list)
-    latex_packages: List[str] = field(default_factory=list)
+    css_classes: list[str] = field(default_factory=list)
+    latex_packages: list[str] = field(default_factory=list)
     priority: int = 0  # اولویت در تبدیل
 
 class FormatPlugin(ABC):
     @abstractmethod
     def to_usdm(self, document) -> USDMDocument: ...
-    
+
     @abstractmethod
     def from_usdm(self, usdm_document): ...
 
 @dataclass
 class TransformationRule:
-    source_type: Type[LogicalContent]
-    target_type: Type[LogicalContent]
+    source_type: type[LogicalContent]
+    target_type: type[LogicalContent]
     converter: Callable
     loss_level: Literal["none", "minimal", "moderate", "high"]
-    
+
 class TransformationPipeline:
     def __init__(self) -> None:
-        self.rules: Dict[Tuple[str, str], TransformationRule] = {}
-    
+        self.rules: dict[tuple[str, str], TransformationRule] = {}
+
     def add_rule(self, source_format: str, target_format: str, rule: TransformationRule):
         self.rules[(source_format, target_format)] = rule
 
@@ -524,8 +537,8 @@ class ConversionQuality:
     semantic_preservation: float  # 0.0 to 1.0
     style_preservation: float
     layout_preservation: float
-    information_loss: List[str]  # لیست اطلاعات از دست رفته
-    warnings: List[str]
+    information_loss: list[str]  # لیست اطلاعات از دست رفته
+    warnings: list[str]
 
 
 
@@ -534,41 +547,41 @@ class ConversionQuality:
 class BookmarkContent:
     """Content for bookmark."""
     name: str
-    text: Optional[str] = None
+    text: str | None = None
 
 
 @dataclass
 class FootnoteContent:
     """Content for footnote."""
     note_id: str
-    elements: List[LogicalElement] = field(default_factory=list)
-    reference_text: Optional[str] = None
+    elements: list[LogicalElement] = field(default_factory=list)
+    reference_text: str | None = None
 
 
 @dataclass
 class EndnoteContent:
     """Content for endnote."""
     note_id: str
-    elements: List[LogicalElement] = field(default_factory=list)
-    reference_text: Optional[str] = None
+    elements: list[LogicalElement] = field(default_factory=list)
+    reference_text: str | None = None
 
 
 
 @dataclass
 class EmbeddedObjectContent:
     """Content for embedded object."""
-    name: Optional[str] = None
-    mime_type: Optional[str] = None
-    data: Optional[bytes] = None
-    relationship_id: Optional[str] = None
+    name: str | None = None
+    mime_type: str | None = None
+    data: bytes | None = None
+    relationship_id: str | None = None
 
 
 @dataclass
 class OLEObjectContent:
     """Content for OLE object."""
-    prog_id: Optional[str] = None
-    data: Optional[bytes] = None
-    relationship_id: Optional[str] = None
+    prog_id: str | None = None
+    data: bytes | None = None
+    relationship_id: str | None = None
     display_as_icon: bool = False
 
 
@@ -576,9 +589,9 @@ class OLEObjectContent:
 class VideoContent:
     """Content for video."""
     src: str
-    width: Optional[int] = None
-    height: Optional[int] = None
-    poster: Optional[str] = None
+    width: int | None = None
+    height: int | None = None
+    poster: str | None = None
     autoplay: bool = False
     controls: bool = True
 
@@ -600,41 +613,42 @@ class ShapeContent:
     y: int = 0                                   # position in EMU (top)
     width: int = 100                             # width in EMU (1/12700 cm)
     height: int = 100                            # height in EMU
-    name: Optional[str] = None                   # shape name
-    text: Optional[RichTextContent] = None       # text content (for textbox)
-    fill_color: Optional[str] = None             # hex color (e.g., "#FF0000")
-    line_color: Optional[str] = None             # stroke color
+    name: str | None = None                   # shape name
+    text: RichTextContent | None = None       # text content (for textbox)
+    fill_color: str | None = None             # hex color (e.g., "#FF0000")
+    line_color: str | None = None             # stroke color
     line_width: int = 12700                      # stroke width in EMU (1 pt = 12700 EMU)
     rotation: int = 0                            # rotation in degrees
     hidden: bool = False
-    _meta: Dict[str, Any] = field(default_factory=dict, repr=False, init=False)
+    _meta: dict[str, Any] = field(default_factory=dict, repr=False, init=False)
     # data: Dict[str, Any] = field(default_factory=dict)
 
 @dataclass
 class DrawingContent:
     """Content for drawings and vector graphics."""
     vector_data: str  # SVG or other vector format
-    width: Optional[float] = None
-    height: Optional[float] = None
-
+    width: float | None = None
+    height: float | None = None
+    _diagram_rId: str | None = None
+    _meta: dict[str, Any] = field(default_factory=dict)
 
 @dataclass
 class ChartSeriesContent:
     """A data series within a chart – mapped from chart XML."""
-    name: Optional[str] = None               # series name (e.g., "Sales")
-    categories_ref: Optional[str] = None     # formula like "Sheet1!$A$2:$A$10"
-    values_ref: Optional[str] = None         # formula like "Sheet1!$B$2:$B$10"
-    fill_color: Optional[str] = None         # hex color of the series fill
-    line_color: Optional[str] = None         # hex color of the series line
+    name: str | None = None               # series name (e.g., "Sales")
+    categories_ref: str | None = None     # formula like "Sheet1!$A$2:$A$10"
+    values_ref: str | None = None         # formula like "Sheet1!$B$2:$B$10"
+    fill_color: str | None = None         # hex color of the series fill
+    line_color: str | None = None         # hex color of the series line
 
 @dataclass
 class ChartAxisContent:
     """Axis descriptor."""
     axis_type: str = "category"              # "category", "value", "date"
-    title: Optional[str] = None
-    min_value: Optional[float] = None
-    max_value: Optional[float] = None
-    format_code: Optional[str] = None
+    title: str | None = None
+    min_value: float | None = None
+    max_value: float | None = None
+    format_code: str | None = None
     axis_id: int = 0
 
 
@@ -642,32 +656,34 @@ class ChartAxisContent:
 class ChartContent:
     """Complete chart description – extended with semantic fields."""
     chart_type: str = "unknown"              # "bar", "line", "pie", etc.
-    grouping: Optional[str] = None           # "clustered", "stacked", etc.
-    direction: Optional[str] = None          # "bar" or "col" for bar charts
-    title: Optional[str] = None
-    series: List[ChartSeriesContent] = field(default_factory=list)
-    category_axis: Optional[ChartAxisContent] = None
-    value_axis: Optional[ChartAxisContent] = None
-    width: Optional[float] = None
-    height: Optional[float] = None
-
+    grouping: str | None = None           # "clustered", "stacked", etc.
+    direction: str | None = None          # "bar" or "col" for bar charts
+    title: str | None = None
+    series: list[ChartSeriesContent] = field(default_factory=list)
+    category_axis: ChartAxisContent | None = None
+    value_axis: ChartAxisContent | None = None
+    width: float | None = None
+    height: float | None = None
+    _chart_rId: str | None = None   # transient, for linking
+    _meta: dict[str, Any] = field(default_factory=dict)
+        
 @dataclass
 class DataContent:
     """Content for data fields (PAGE, DATE, etc.)."""
     field_type: str  # "PAGE", "DATE", "NUMPAGES", etc.
-    value: Optional[str] = None
-    format: Optional[str] = None
+    value: str | None = None
+    format: str | None = None
 
 
 @dataclass
 class SpreadsheetContent:
     """Content for embedded spreadsheet data."""
     text: str  # CSV or formula DSL
-    sheet_name: Optional[str] = None
+    sheet_name: str | None = None
     rows: int = 0
     columns: int = 0
-    
-    
+
+
 LogicalContent = Union[
     ParagraphContent,
     HeadingContent,

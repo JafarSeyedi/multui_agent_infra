@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import time
-from collections import defaultdict, deque
-from dataclasses import dataclass, field
-from typing import Deque, Dict, Iterable, List, Set
+from collections import defaultdict
+from collections import deque
+from collections.abc import Iterable
+from dataclasses import dataclass
+from dataclasses import field
+from typing import Deque
 
 
 @dataclass
@@ -25,8 +28,8 @@ class GraphEdge:
 
 class GraphIndex:
     def __init__(self) -> None:
-        self.nodes: Dict[str, GraphNode] = {}
-        self.adj: Dict[str, List[GraphEdge]] = defaultdict(list)
+        self.nodes: dict[str, GraphNode] = {}
+        self.adj: dict[str, list[GraphEdge]] = defaultdict(list)
 
     def add_entities(self, entities: Iterable[GraphNode]) -> None:
         for entity in entities:
@@ -57,14 +60,14 @@ class GraphIndex:
             )
         )
 
-    def get_neighbors(self, entity: str, depth: int = 2) -> List[GraphEdge]:
+    def get_neighbors(self, entity: str, depth: int = 2) -> list[GraphEdge]:
         start = entity.lower()
         if start not in self.nodes:
             return []
 
-        visited: Set[str] = {start}
+        visited: set[str] = {start}
         frontier: Deque[tuple[str, int]] = deque([(start, 0)])
-        results: List[GraphEdge] = []
+        results: list[GraphEdge] = []
 
         while frontier:
             node, hop = frontier.popleft()

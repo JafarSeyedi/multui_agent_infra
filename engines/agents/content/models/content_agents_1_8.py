@@ -1,7 +1,9 @@
-from pydantic import BaseModel
-from ...models import AgentInput, AgentOutput
-from typing import List, Optional, Dict
 from datetime import datetime
+
+from pydantic import BaseModel
+
+from ...models import AgentInput
+from ...models import AgentOutput
 
 
 # Agent1: بازنویس متون (Text Rewriter)
@@ -12,9 +14,9 @@ class TextRewriteInput(AgentInput):
 
     grade_level: str
 
-    glossary: Optional[Dict[str,str]] = None
+    glossary: dict[str,str] | None = None
 
-    subject: Optional[str] = None
+    subject: str | None = None
 
     language: str = "fa"
 
@@ -23,16 +25,16 @@ class RewriteChange(BaseModel):
 
     original_segment: str
     rewritten_segment: str
-    reason: Optional[str] = None
+    reason: str | None = None
 
 
 class TextRewriteOutput(AgentOutput):
 
     rewritten_text: str
 
-    changes: List[RewriteChange]
+    changes: list[RewriteChange]
 
-    readability_score: Optional[float]
+    readability_score: float | None
 
     created_at: datetime
 
@@ -43,11 +45,11 @@ class ContentValidationInput(AgentInput):
 
     content_text: str
 
-    trusted_sources: List[str]
+    trusted_sources: list[str]
 
-    subject: Optional[str]
+    subject: str | None
 
-    grade_level: Optional[str]
+    grade_level: str | None
 
 ## Output
 class ValidationIssue(BaseModel):
@@ -55,16 +57,16 @@ class ValidationIssue(BaseModel):
     sentence: str
     issue_type: str
     explanation: str
-    suggested_fix: Optional[str]
+    suggested_fix: str | None
 
 
 class ContentValidationOutput(AgentOutput):
 
-    verified_statements: List[str]
+    verified_statements: list[str]
 
-    suspicious_statements: List[ValidationIssue]
+    suspicious_statements: list[ValidationIssue]
 
-    correction_suggestions: List[str]
+    correction_suggestions: list[str]
 
     overall_trust_score: float
 
@@ -77,22 +79,22 @@ class CitationGenerationInput(AgentInput):
 
     citation_style: str
 
-    preferred_sources: Optional[List[str]]
+    preferred_sources: list[str] | None
 
 ## Output
 class CitationEntry(BaseModel):
 
     reference_id: str
     source_title: str
-    authors: List[str]
-    year: Optional[int]
-    link: Optional[str]
+    authors: list[str]
+    year: int | None
+    link: str | None
 
 class CitationGenerationOutput(AgentOutput):
 
     cited_text: str
 
-    references: List[CitationEntry]
+    references: list[CitationEntry]
 
 
 # Agent 4  واژه‌نامه‌ساز (Glossary Builder)
@@ -101,11 +103,11 @@ class GlossaryBuilderInput(AgentInput):
 
     lesson_text: str
 
-    terminology_database: Optional[List[str]]
+    terminology_database: list[str] | None
 
-    subject: Optional[str]
+    subject: str | None
 
-    grade_level: Optional[str]
+    grade_level: str | None
 
 ## Output
 class GlossaryTerm(BaseModel):
@@ -114,14 +116,14 @@ class GlossaryTerm(BaseModel):
 
     definition: str
 
-    examples: List[str]
+    examples: list[str]
 
-    related_links: Optional[List[str]]
+    related_links: list[str] | None
 
 
 class GlossaryBuilderOutput(AgentOutput):
 
-    glossary_terms: List[GlossaryTerm]
+    glossary_terms: list[GlossaryTerm]
 
 
 # Agent 5 به‌روزرسانی پویا (Dynamic Content Update)
@@ -130,9 +132,9 @@ class DynamicUpdateInput(AgentInput):
 
     current_content: str
 
-    new_sources: List[str]
+    new_sources: list[str]
 
-    subject: Optional[str]
+    subject: str | None
 
 ## Output
 class ContentUpdateSuggestion(BaseModel):
@@ -145,7 +147,7 @@ class ContentUpdateSuggestion(BaseModel):
 
 class DynamicUpdateOutput(AgentOutput):
 
-    updates: List[ContentUpdateSuggestion]
+    updates: list[ContentUpdateSuggestion]
 
     change_summary: str
 
@@ -159,9 +161,9 @@ class NarrativeBuilderInput(AgentInput):
 
     student_age: int
 
-    student_interests: Optional[List[str]]
+    student_interests: list[str] | None
 
-    subject: Optional[str]
+    subject: str | None
 
 ## Output
 class NarrativeElement(BaseModel):
@@ -173,7 +175,7 @@ class NarrativeElement(BaseModel):
 
 class NarrativeBuilderOutput(AgentOutput):
 
-    narrative_lesson: List[NarrativeElement]
+    narrative_lesson: list[NarrativeElement]
 
     narrative_style: str
 
@@ -184,9 +186,9 @@ class StructuringInput(AgentInput):
 
     raw_text: str
 
-    learning_objectives: List[str]
+    learning_objectives: list[str]
 
-    subject: Optional[str]
+    subject: str | None
 
 
 ## Output
@@ -196,14 +198,14 @@ class LessonSection(BaseModel):
 
     content: str
 
-    subsections: Optional[List[str]]
+    subsections: list[str] | None
 
 
 class StructuringOutput(AgentOutput):
 
-    structured_sections: List[LessonSection]
+    structured_sections: list[LessonSection]
 
-    table_of_contents: List[str]
+    table_of_contents: list[str]
 
 
 # Agent 8  پیشینه‌ساز (Prerequisite Builder)
@@ -212,9 +214,9 @@ class PrerequisiteInput(AgentInput):
 
     topic: str
 
-    student_weaknesses: Optional[List[str]]
+    student_weaknesses: list[str] | None
 
-    subject: Optional[str]
+    subject: str | None
 
 ## Output
 class PrerequisiteItem(BaseModel):
@@ -223,14 +225,14 @@ class PrerequisiteItem(BaseModel):
 
     explanation: str
 
-    review_resource_link: Optional[str]
+    review_resource_link: str | None
 
 
 class PrerequisiteOutput(AgentOutput):
 
-    prerequisites: List[PrerequisiteItem]
+    prerequisites: list[PrerequisiteItem]
 
 
-# Agent 
+# Agent
 ## Input
 ## Output

@@ -1,10 +1,9 @@
 # tests/agents/orchestration/interaction/unit/test_broadcast_strategy.py
-
 import pytest
+
+from engines.agents.base_agents.base_agent import BaseAgent
 from engines.interaction.broadcast_strategy import BroadcastStrategy
 from engines.interaction.interaction_models import InteractionRequest
-from engines.agents.base_agents.base_agent import BaseAgent
-
 from tests.agents.interaction.interaction_unit.conftest import TestAgent
 
 

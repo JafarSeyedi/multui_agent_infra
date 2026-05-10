@@ -4,22 +4,26 @@ Extracts chart references from DrawingML graphic frames and resolves
 them into complete ChartContent objects.
 Shared between XLSX and PPTX parsers.
 """
-
 from __future__ import annotations
+
+import xml.etree.ElementTree as ET
+from collections.abc import Callable
+from typing import Optional
 from xml.etree.ElementTree import Element
-from typing import Optional, Dict, Callable, Union
 from zipfile import ZipFile
 
 from ...models.usdm_models import ChartContent
 
 # We reuse the comprehensive chart XML parser from the XLSX module.
 # If the spreadsheet parser is not available, a fallback can be implemented.
+_parse_chart_xml: Optional[Callable[[Element], ChartContent]] = None
 try:
     from ..spreadsheet_parser.xlsx.charts_builder import (
-        parse_chart as _parse_chart_xml,
+        parse_chart as _parse_chart_xml_impl,
     )
+    _parse_chart_xml = _parse_chart_xml_impl
 except ImportError:
-    _parse_chart_xml = None
+    pass
 
 NS = {
     "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
@@ -28,7 +32,7 @@ NS = {
 }
 
 
-def parse_chart_ref(graphic_frame: Element) -> Optional[ChartContent]:
+def parse_chart_ref(graphic_frame: Element) -> ChartContent | None:
     """
     Parse a <a:graphicFrame> (or similar) element and extract the chart reference.
 
@@ -61,10 +65,10 @@ def parse_chart_ref(graphic_frame: Element) -> Optional[ChartContent]:
 
 def resolve_chart(
     r_id: str,
-    drawing_rels: Dict[str, str],
+    drawing_rels: dict[str, str],
     zip_file: ZipFile,
-    relationship_target_resolver: Optional[Callable[[str, str], Optional[str]]] = None,
-) -> Optional[ChartContent]:
+    relationship_target_resolver: Callable[[str, str], str | None] | None = None,
+) -> ChartContent | None:
     """
     Resolve a chart relationship ID to a fully parsed ChartContent.
 
@@ -95,7 +99,7 @@ def resolve_chart(
 
     try:
         chart_xml_bytes = zip_file.read(chart_path)
-        chart_xml = Element.fromstring(chart_xml_bytes)
+        chart_xml = ET.fromstring(chart_xml_bytes)
         if _parse_chart_xml is not None:
             return _parse_chart_xml(chart_xml)
         else:

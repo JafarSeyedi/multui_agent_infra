@@ -1,111 +1,248 @@
 """
-tools/generate_inits.py
-Generates __init__.py files for all packages in the project.
-Exports public classes and functions found in each module.
-"""
+Ultra-Pro __init__.py Generator
+Enterprise-grade API surface builder.
 
+Features:
+- Smart export filtering
+- Enum / TypedDict / dataclass / Pydantic detection
+- Constant detection
+- Deprecated filtering
+- Utility function filtering
+- Versioned API support
+- Deterministic output
+- Optional star-import support
+"""
 import ast
 from pathlib import Path
 
+# ==========================================================
+# CONFIG
+# ==========================================================
 
-def get_public_names(py_file: Path) -> list[str]:
-    """Extract public class and function names from a Python file."""
-    try:
-        source = py_file.read_text(encoding="utf-8")
-        tree = ast.parse(source)
-    except (SyntaxError, OSError):
-        return []
+PACKAGE_API_STAR_IMPORT = False
+INCLUDE_CONSTANTS = True
+API_VERSION = None  # e.g. "v1" to export only matching version
+REQUIRE_PUBLIC_FLAG = False  # if True, requires __public_api__ = True
 
+UTILITY_PREFIXES = (
+    "parse_",
+    "build_",
+    "validate_",
+    "create_",
+    "helper_",
+    "test_",
+)
+
+EXCLUDED_NAMES = {"main", "cli", "run"}
+
+# ==========================================================
+# AST DETECTION HELPERS
+# ==========================================================
+
+
+def has_decorator(node: ast.ClassDef, name: str) -> bool:
+    for deco in node.decorator_list:
+        if isinstance(deco, ast.Name) and deco.id == name:
+            return True
+        if isinstance(deco, ast.Attribute) and deco.attr == name:
+            return True
+    return False
+
+
+def is_enum(node: ast.ClassDef) -> bool:
+    return any(
+        isinstance(base, ast.Name) and base.id == "Enum"
+        or isinstance(base, ast.Attribute) and base.attr == "Enum"
+        for base in node.bases
+    )
+
+
+def is_typeddict(node: ast.ClassDef) -> bool:
+    return any(
+        isinstance(base, ast.Name) and base.id == "TypedDict"
+        or isinstance(base, ast.Attribute) and base.attr == "TypedDict"
+        for base in node.bases
+    )
+
+
+def is_pydantic_model(node: ast.ClassDef) -> bool:
+    return any(
+        isinstance(base, ast.Name) and base.id == "BaseModel"
+        or isinstance(base, ast.Attribute) and base.attr == "BaseModel"
+        for base in node.bases
+    )
+
+
+def is_dataclass(node: ast.ClassDef) -> bool:
+    return has_decorator(node, "dataclass")
+
+
+# ==========================================================
+# FILTERING LOGIC
+# ==========================================================
+
+
+def is_constant(node: ast.Assign) -> list[str]:
     names = []
-    for node in tree.body:
-        if isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
-            if not node.name.startswith("_"):
-                names.append(node.name)
-
+    for target in node.targets:
+        if isinstance(target, ast.Name):
+            if target.id.isupper():
+                names.append(target.id)
     return names
 
 
-def generate_init(folder: Path, dry_run: bool = False) -> str | None:
-    """Generate __init__.py content for a folder."""
-    lines = []
+def is_deprecated(node: ast.AST) -> bool:
+    if isinstance(node, ast.ClassDef):
+        return has_decorator(node, "deprecated")
+    return False
+
+
+def has_public_flag(tree: ast.Module) -> bool:
+    for node in tree.body:
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name) and target.id == "__public_api__":
+                    if isinstance(node.value, ast.Constant) and node.value.value is True:
+                        return True
+    return False
+
+
+def matches_version(tree: ast.Module) -> bool:
+    if API_VERSION is None:
+        return True
+    for node in tree.body:
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name) and target.id == "__api_version__":
+                    if isinstance(node.value, ast.Constant):
+                        return node.value.value == API_VERSION
+    return False
+
+
+# ==========================================================
+# EXPORT EXTRACTION
+# ==========================================================
+
+
+def extract_exports(py_file: Path) -> list[str]:
+    try:
+        source = py_file.read_text(encoding="utf-8")
+        tree = ast.parse(source)
+    except Exception:
+        return []
+
+    if REQUIRE_PUBLIC_FLAG and not has_public_flag(tree):
+        return []
+
+    if not matches_version(tree):
+        return []
+
+    exports = []
+
+    for node in tree.body:
+
+        # ----- Class -----
+        if isinstance(node, ast.ClassDef):
+            name = node.name
+
+            if name.startswith("_") or name in EXCLUDED_NAMES:
+                continue
+            if is_deprecated(node):
+                continue
+
+            exports.append(name)
+
+        # ----- Function -----
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            name = node.name
+
+            if name.startswith("_"):
+                continue
+            if name in EXCLUDED_NAMES:
+                continue
+            if name.startswith(UTILITY_PREFIXES):
+                continue
+
+            exports.append(name)
+
+        # ----- Constant -----
+        elif INCLUDE_CONSTANTS and isinstance(node, ast.Assign):
+            exports.extend(is_constant(node))
+
+    return sorted(set(exports))
+
+
+# ==========================================================
+# INIT GENERATOR
+# ==========================================================
+
+
+def generate_init(folder: Path, dry_run=False):
+    modules = {}
 
     for py_file in sorted(folder.glob("*.py")):
         if py_file.name.startswith("_"):
             continue
 
-        names = get_public_names(py_file)
-        if not names:
-            continue
+        names = extract_exports(py_file)
+        if names:
+            modules[py_file.stem] = names
 
-        module = py_file.stem
-        names_str = ", ".join(names)
-        lines.append(f"from .{module} import {names_str}")
-
-    if not lines:
+    if not modules:
         return None
 
-    content = "\n".join(lines) + "\n"
+    lines = []
+    all_names = []
 
-    init_file = folder / "__init__.py"
+    for module, names in modules.items():
+        lines.append(f"from .{module} import {', '.join(names)}")
+        if PACKAGE_API_STAR_IMPORT:
+            lines.append(f"from .{module} import *")
+        lines.append("")
+        all_names.extend(names)
+
+    all_names_sorted = sorted(set(all_names))
+    lines.append("__all__ = [")
+    for name in all_names_sorted:
+        lines.append(f'    "{name}",')
+    lines.append("]")
+    lines.append("")
+
+    content = "\n".join(lines)
 
     if dry_run:
-        print(f"\n{'='*50}")
-        print(f"📁 {init_file}")
         print(content)
         return content
 
-    # # Backup existing __init__.py if it has content
-    # if init_file.exists():
-    #     existing = init_file.read_text(encoding="utf-8").strip()
-    #     if existing and existing != content.strip():
-    #         backup = init_file.with_suffix(".py.bak")
-    #         backup.write_text(existing, encoding="utf-8")
-    #         print(f"  ⚠️  Backed up existing {init_file.name} → {backup.name}")
-
-    init_file.write_text(content, encoding="utf-8")
-    print(f"  ✅ {init_file}")
+    (folder / "__init__.py").write_text(content, encoding="utf-8")
+    print(f"✅ wrote {folder / '__init__.py'}")
     return content
 
 
-def is_package(folder: Path) -> bool:
-    """A folder is a package if it contains .py files (excluding __init__.py itself)."""
-    return any(
-        f for f in folder.glob("*.py")
-        if not f.name.startswith("_")
-    )
+# ==========================================================
+# CLI
+# ==========================================================
 
 
-def run(root: str, dry_run: bool = False):
+def run(root: str, dry_run=False):
     root_path = Path(root).resolve()
-
-    # Folders to skip
-    skip = {"__pycache__", ".git", ".venv", "venv", "node_modules", "dist", "build"}
-
-    print(f"{'[DRY RUN] ' if dry_run else ''}Scanning: {root_path}\n")
-
     count = 0
+
     for folder in sorted(root_path.rglob("*")):
-        if not folder.is_dir():
-            continue
-        if any(part in skip for part in folder.parts):
-            continue
-        if not is_package(folder):
-            continue
+        if folder.is_dir():
+            result = generate_init(folder, dry_run=dry_run)
+            if result:
+                count += 1
 
-        result = generate_init(folder, dry_run=dry_run)
-        if result:
-            count += 1
-
-    print(f"\n{'Would generate' if dry_run else 'Generated'} {count} __init__.py file(s)")
+    print(f"\nGenerated {count} package APIs")
 
 
 def main():
     import argparse
-    parser = argparse.ArgumentParser(description="Generate __init__.py files for Python packages")
-    parser.add_argument("path", help="Root path of the project")
-    parser.add_argument("--dry-run", action="store_true", help="Preview without writing files")
+    parser = argparse.ArgumentParser(description="Ultra-Pro API generator")
+    parser.add_argument("path")
+    parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
-
     run(args.path, dry_run=args.dry_run)
 
 

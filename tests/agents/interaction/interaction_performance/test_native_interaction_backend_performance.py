@@ -1,10 +1,7 @@
 # tests/agents/orchestration/performance/test_native_orchestration_backend_performance.py
-import time
 from types import SimpleNamespace
 
-import pytest
 
-from engines.interaction.backends.native_backend import NativeOrchestrationBackend
 
 
 class DummyOutput:
@@ -38,4 +35,3 @@ def make_request(scenario, tasks):
         max_rounds=len(tasks),
         selected_agent=None,
     )
-

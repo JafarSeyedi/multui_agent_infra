@@ -2,9 +2,14 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any, Awaitable, Dict, List, Optional, Union, Mapping, cast
+from collections.abc import Awaitable
+from collections.abc import Mapping
+from typing import Any
+from typing import cast
+from typing import Union
 
-from redis.asyncio import Redis, Sentinel
+from redis.asyncio import Redis
+from redis.asyncio import Sentinel
 from redis.asyncio.cluster import RedisCluster
 from redis.asyncio.retry import Retry
 from redis.backoff import ExponentialBackoff
@@ -21,9 +26,9 @@ RedisPayload = Mapping[RedisField, RedisField]
 class RedisManagerStream:
     """Redis connection manager for stream backends."""
 
-    def __init__(self, config: Dict[str, Any]) -> None:
+    def __init__(self, config: dict[str, Any]) -> None:
         self.config = config
-        self.client: Optional[RedisClient] = None
+        self.client: RedisClient | None = None
         self.logger = logging.getLogger("RedisManagerStream")
 
         self._retry: Retry = Retry(
@@ -123,12 +128,12 @@ class RedisStreamAdapter(StreamStorage):
     async def publish(
         self,
         topic: str,
-        message: Dict[str, Any],
+        message: dict[str, Any],
     ) -> None:
 
         client = await self._client()
 
-        payload: Dict[str, Union[str, int, float]] = {}
+        payload: dict[str, str | int | float] = {}
 
         for key, value in message.items():
             if isinstance(value, (dict, list)):
@@ -138,7 +143,7 @@ class RedisStreamAdapter(StreamStorage):
             else:
                 payload[key] = str(value)
 
-        redis_payload = cast(Dict[RedisField, RedisField], payload)
+        redis_payload = cast(dict[RedisField, RedisField], payload)
 
         await client.xadd(
             topic,
@@ -151,7 +156,7 @@ class RedisStreamAdapter(StreamStorage):
         self,
         topic: str,
         group: str,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
 
         client = await self._client()
         consumer_name = f"{group}-consumer"
@@ -173,12 +178,12 @@ class RedisStreamAdapter(StreamStorage):
             count=100,
         )
 
-        messages: List[Dict[str, Any]] = []
+        messages: list[dict[str, Any]] = []
 
         for _, entries in records:
             for entry_id, payload in entries:
 
-                normalized: Dict[str, Any] = {}
+                normalized: dict[str, Any] = {}
 
                 for key, value in payload.items():
                     try:
@@ -197,7 +202,7 @@ class RedisStreamAdapter(StreamStorage):
     async def add_event(
         self,
         stream_name: str,
-        data: Dict[str, Any],
+        data: dict[str, Any],
     ) -> None:
         await self.publish(stream_name, data)
 
@@ -206,7 +211,7 @@ class RedisStreamAdapter(StreamStorage):
         stream_name: str,
         group_name: str,
         consumer_name: str,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
 
         client = await self._client()
 

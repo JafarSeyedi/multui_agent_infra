@@ -2,30 +2,32 @@
 """
 Base class for all SSDM (Service Standard Definition Model) parsers.
 """
-
 from __future__ import annotations
-from abc import abstractmethod
-from pathlib import Path
-from typing import Optional, Dict, Any, Union, AsyncIterator
 
-from ..base import BaseDocumentParser, ParseOptions
-from ...models.ssdm_models import SSDM_DOCUMENT
+from abc import abstractmethod
+from collections.abc import AsyncIterator
+from pathlib import Path
+from typing import Any
+
 from ...models.base import BaseDocument
+from ...models.ssdm_models import SSDMDocument 
+from ..base import BaseDocumentParser
+from ..base import ParseOptions
 
 
 class BaseSSDMParser(BaseDocumentParser):
     """
-    Common base for parsers that produce an SSDM_DOCUMENT.
+    Common base for parsers that produce an SSDMDocument .
 
     Subclasses must implement:
-    - `_parse_to_document(data, source_name, options) -> SSDM_DOCUMENT`
+    - `_parse_to_document(data, source_name, options) -> SSDMDocument `
     - `supported_extensions` (class attribute)
     """
 
     name: str = "ssdm"
     supported_extensions: tuple[str, ...] = ()
 
-    def __init__(self, options: Optional[ParseOptions] = None):
+    def __init__(self, options: ParseOptions | None = None):
         self.options = options or ParseOptions()
 
     # ── Core parse methods ──────────────────────────────────────
@@ -34,9 +36,9 @@ class BaseSSDMParser(BaseDocumentParser):
         data: bytes,
         document_id: str,
         source_name: str,
-        metadata: Optional[Dict[str, Any]] = None,
-        options: Optional[ParseOptions] = None,
-    ) -> SSDM_DOCUMENT:
+        metadata: dict[str, Any] | None = None,
+        options: ParseOptions | None = None,
+    ) -> SSDMDocument :
         opts = options or self.options
         doc = await self._parse_to_document(data, source_name, opts)
         doc.document_id = document_id
@@ -48,11 +50,11 @@ class BaseSSDMParser(BaseDocumentParser):
 
     async def parse_path(
         self,
-        path: Union[str, Path],
+        path: str | Path,
         document_id: str,
-        metadata: Optional[Dict[str, Any]] = None,
-        options: Optional[ParseOptions] = None,
-    ) -> SSDM_DOCUMENT:
+        metadata: dict[str, Any] | None = None,
+        options: ParseOptions | None = None,
+    ) -> SSDMDocument :
         file_path = Path(path)
         data = file_path.read_bytes()
         return await self.parse_bytes(data, document_id, file_path.name, metadata, options)
@@ -62,9 +64,9 @@ class BaseSSDMParser(BaseDocumentParser):
         stream: AsyncIterator[bytes],
         document_id: str,
         source_name: str,
-        metadata: Optional[Dict[str, Any]] = None,
-        options: Optional[ParseOptions] = None,
-    ) -> SSDM_DOCUMENT:
+        metadata: dict[str, Any] | None = None,
+        options: ParseOptions | None = None,
+    ) -> SSDMDocument :
         chunks = []
         async for chunk in stream:
             chunks.append(chunk)
@@ -75,9 +77,9 @@ class BaseSSDMParser(BaseDocumentParser):
     @abstractmethod
     async def _parse_to_document(
         self, data: bytes, source_name: str, options: ParseOptions
-    ) -> SSDM_DOCUMENT:
+    ) -> SSDMDocument :
         """
-        Subclasses must implement this to produce an SSDM_DOCUMENT.
+        Subclasses must implement this to produce an SSDMDocument .
         """
         ...
 
@@ -87,11 +89,3 @@ class BaseSSDMParser(BaseDocumentParser):
         import re
         match = re.search(r"_v(\d+\.\d+\.\d+)", source_name)
         return match.group(1) if match else "1.0.0"
-
-    def _create_base_document(self, source_name: str, options: ParseOptions) -> SSDM_DOCUMENT:
-        """Create a new SSDM_DOCUMENT with default metadata."""
-        doc = SSDM_DOCUMENT(
-            title=Path(source_name).stem,
-            version=self._detect_version(source_name),
-        )
-        return doc

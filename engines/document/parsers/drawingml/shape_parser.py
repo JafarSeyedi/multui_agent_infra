@@ -4,16 +4,14 @@ Complete DrawingML shape parser.
 Handles <p:sp> (PPTX) and <xdr:sp> (XLSX) elements, producing a fully typed
 ShapeContent with all visual properties captured for round‑trip fidelity.
 """
-
 from __future__ import annotations
-from typing import Optional, Dict, Any, List, Tuple
+
+from typing import Any
 from xml.etree.ElementTree import Element
 
-from ...models.usdm_models import (
-    ShapeContent,
-    RichTextContent,
-    RichTextSpan,
-)
+from ...models.usdm_models import RichTextContent
+from ...models.usdm_models import RichTextSpan
+from ...models.usdm_models import ShapeContent
 
 # ── Namespaces ──────────────────────────────────────────────────
 NS = {
@@ -27,7 +25,7 @@ NS = {
 # ── Public entry point ───────────────────────────────────────────
 def parse_shape(
     sp_element: Element,
-    ns: Optional[Dict[str, str]] = None,
+    ns: dict[str, str] | None = None,
 ) -> ShapeContent:
     """
     Parse a <p:sp> or <xdr:sp> element into ShapeContent.
@@ -58,7 +56,7 @@ def parse_shape(
     fill_color = None
     line_color = None
     line_width = 12700
-    meta: Dict[str, Any] = {}
+    meta: dict[str, Any] = {}
 
     if sp_pr is not None:
         # Transform
@@ -131,9 +129,9 @@ def parse_shape(
 
 
 # ── Fill parsing ─────────────────────────────────────────────────
-def _parse_fill(sp_pr: Element, ns: Dict[str, str]) -> Dict[str, Any]:
+def _parse_fill(sp_pr: Element, ns: dict[str, str]) -> dict[str, Any]:
     """Parse fill properties (solid, gradient, pattern, noFill) and return a dict."""
-    fill_info: Dict[str, Any] = {}
+    fill_info: dict[str, Any] = {}
 
     # noFill
     if sp_pr.find("a:noFill", ns) is not None:
@@ -187,7 +185,7 @@ def _parse_fill(sp_pr: Element, ns: Dict[str, str]) -> Dict[str, Any]:
     return fill_info
 
 
-def _parse_color(parent: Element, ns: Dict[str, str]) -> Optional[str]:
+def _parse_color(parent: Element, ns: dict[str, str]) -> str | None:
     """Extract a color string from a container element (schemeClr, srgbClr, etc.)."""
     for color_type in ("a:srgbClr", "a:schemeClr", "a:sysClr", "a:scrgbClr", "a:prstClr", "a:hslClr"):
         elem = parent.find(color_type, ns)
@@ -214,9 +212,9 @@ def _parse_color(parent: Element, ns: Dict[str, str]) -> Optional[str]:
 
 
 # ── Line parsing ─────────────────────────────────────────────────
-def _parse_line(ln: Element, ns: Dict[str, str]) -> Dict[str, Any]:
+def _parse_line(ln: Element, ns: dict[str, str]) -> dict[str, Any]:
     """Parse line properties and return a structured dict."""
-    line_info: Dict[str, Any] = {}
+    line_info: dict[str, Any] = {}
     line_info["width"] = ln.get("w")
 
     # Cap, join, dash
@@ -259,9 +257,9 @@ def _parse_line(ln: Element, ns: Dict[str, str]) -> Dict[str, Any]:
 
 
 # ── Rich text parsing ────────────────────────────────────────────
-def _parse_text_body(tx_body: Element, ns: Dict[str, str]) -> RichTextContent:
+def _parse_text_body(tx_body: Element, ns: dict[str, str]) -> RichTextContent:
     """Parse <p:txBody> (or <xdr:txBody>) into RichTextContent."""
-    spans: List[RichTextSpan] = []
+    spans: list[RichTextSpan] = []
 
     for p_elem in tx_body.findall("a:p", ns):
         # Paragraph properties (can be stored if needed)
@@ -295,9 +293,9 @@ def _parse_text_body(tx_body: Element, ns: Dict[str, str]) -> RichTextContent:
 
 
 # ── Effect list serialization ────────────────────────────────────
-def _serialize_effect_list(effect_lst: Element, ns: Dict[str, str]) -> Dict[str, Any]:
+def _serialize_effect_list(effect_lst: Element, ns: dict[str, str]) -> dict[str, Any]:
     """Convert <a:effectLst> to a dict for round‑trip."""
-    effects: Dict[str, Any] = {}
+    effects: dict[str, Any] = {}
     # Outer shadow
     outer_shdw = effect_lst.find("a:outerShdw", ns)
     if outer_shdw is not None:

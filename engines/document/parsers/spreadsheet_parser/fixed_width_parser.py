@@ -3,16 +3,16 @@
 Parser for fixed‑width (fixed‑column) text files.
 Column widths are passed via ParseOptions.custom["column_widths"].
 """
-
 from __future__ import annotations
 
-import io
 from pathlib import Path
-from typing import Optional, Dict, Any, List
 
-from ..spreadsheet_parser.base_spreadsheet_parser import BaseSpreadsheetParser
+from ...models.esdm_models import Cell
+from ...models.esdm_models import Row
+from ...models.esdm_models import Workbook
+from ...models.esdm_models import Worksheet
 from ..base import ParseOptions
-from ...models.esdm_models import Workbook, Worksheet, Row, Cell
+from ..spreadsheet_parser.base_spreadsheet_parser import BaseSpreadsheetParser
 
 
 class FixedWidthParser(BaseSpreadsheetParser):
@@ -31,7 +31,7 @@ class FixedWidthParser(BaseSpreadsheetParser):
 
         # Column widths must be supplied in the custom options.
         # Example: options.custom["column_widths"] = [10, 15, 20]
-        column_widths: List[int] = []
+        column_widths: list[int] = []
         custom = options.custom or {}
         if "column_widths" in custom:
             # Accept a list of ints
@@ -51,7 +51,7 @@ class FixedWidthParser(BaseSpreadsheetParser):
 
         # --- Header handling -----------------------------------------------------
         has_header = header_row_idx is not None and header_row_idx >= 0
-        column_names: List[str] = []
+        column_names: list[str] = []
         data_start_idx = 0
 
         if has_header and header_row_idx < len(lines_after_skip):
@@ -99,7 +99,7 @@ class FixedWidthParser(BaseSpreadsheetParser):
         return wb
 
     @staticmethod
-    def _slice_line(line: str, widths: List[int]) -> List[str]:
+    def _slice_line(line: str, widths: list[int]) -> list[str]:
         """
         Slice a line into fields of given widths, stripping trailing spaces.
         If the line is shorter than total widths, remaining fields are empty.
@@ -118,8 +118,8 @@ class FixedWidthParser(BaseSpreadsheetParser):
             return options.sheet_names[0]
         base = Path(source_name).stem
         return base if base else "Sheet1"
-    
-    
+
+
 # usage:
 # options = ParseOptions(
 #     custom={"column_widths": [10, 15, 12, 8]},
@@ -128,4 +128,4 @@ class FixedWidthParser(BaseSpreadsheetParser):
 #     encoding="utf-8"
 # )
 # parser = FixedWidthParser()
-# doc = await parser.parse_path("data.prn", "doc-1", options=options)    
+# doc = await parser.parse_path("data.prn", "doc-1", options=options)

@@ -1,10 +1,9 @@
 # engines/document/ingestion/utils/retry_policy.py
-
 from __future__ import annotations
 
 import asyncio
-import time
-from typing import Callable, Any, Optional, Type
+from collections.abc import Callable
+from typing import Any
 
 
 class RetryPolicy:
@@ -22,7 +21,7 @@ class RetryPolicy:
         retries: int = 3,
         backoff: float = 0.5,
         max_backoff: float = 8.0,
-        retry_exceptions: tuple[Type[BaseException], ...] = (Exception,),
+        retry_exceptions: tuple[type[BaseException], ...] = (Exception,),
         jitter: float = 0.1,
     ):
         self.retries = retries

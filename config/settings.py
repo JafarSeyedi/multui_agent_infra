@@ -1,5 +1,4 @@
 # Configuration settings for the project
-
 # API Keys (use environment variables in production)
 OPENAI_API_KEY = "YOUR_OPENAI_API_KEY"
 AZURE_OPENAI_API_KEY = "YOUR_AZURE_OPENAI_API_KEY" # if using Azure

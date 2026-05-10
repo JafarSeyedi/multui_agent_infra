@@ -1,25 +1,20 @@
 # engines/document/models/msdm_registry.py
-
 # Registry populated at module level
-from typing import Dict
 from .media_types import DocumentFormat
-from .msdm_capabilities import (
-    NestingDepth,
-    MSDM_FormatCapability, 
-    ConstraintCapability,
-    InheritanceSupport,
-    AnnotationSupport,
-    ScalarSupport,
-    CompositeSupport,
-    TimeSeriesSupport,
-    NamespaceSupport,
-    EnumCapability,
-    MSDM_FormatCapability,
-    RelationshipModel,
-    IndexCapability
-)
+from .msdm_capabilities import AnnotationSupport
+from .msdm_capabilities import CompositeSupport
+from .msdm_capabilities import ConstraintCapability
+from .msdm_capabilities import EnumCapability
+from .msdm_capabilities import IndexCapability
+from .msdm_capabilities import InheritanceSupport
+from .msdm_capabilities import MSDM_FormatCapability
+from .msdm_capabilities import NamespaceSupport
+from .msdm_capabilities import NestingDepth
+from .msdm_capabilities import RelationshipModel
+from .msdm_capabilities import ScalarSupport
+from .msdm_capabilities import TimeSeriesSupport
 
-MSDM_FORMAT_CAPABILITY_REGISTRY: Dict[DocumentFormat, MSDM_FormatCapability] = {}
+MSDM_FORMAT_CAPABILITY_REGISTRY: dict[DocumentFormat, MSDM_FormatCapability] = {}
 
 
 def _reg(cap: MSDM_FormatCapability):
@@ -174,30 +169,30 @@ _reg(MSDM_FormatCapability(
 ))
 
 # ── Avro Schema ─────────────────────────────────────────────────
-_reg(MSDM_FormatCapability(
-    format=DocumentFormat.AVRO_SCHEMA,
-    description="Apache Avro Schema",
-    scalar_types=[ScalarSupport.STRING, ScalarSupport.INT, ScalarSupport.LONG,
-                  ScalarSupport.FLOAT, ScalarSupport.DOUBLE, ScalarSupport.BOOLEAN,
-                  ScalarSupport.BINARY, ScalarSupport.UUID, ScalarSupport.DECIMAL,
-                  ScalarSupport.DATE, ScalarSupport.TIME, ScalarSupport.TIMESTAMP],
-    composite_types=[CompositeSupport.ARRAY, CompositeSupport.MAP,
-                     CompositeSupport.STRUCT, CompositeSupport.ENUM,
-                     CompositeSupport.UNION],
-    nesting_depth=NestingDepth.DEEP,
-    constraints=[ConstraintCapability.DEFAULT],
-    indexes=[],
-    inheritance=InheritanceSupport.NONE,
-    relationship_model=RelationshipModel.NONE,
-    annotations=AnnotationSupport.SIMPLE_COMMENT,
-    time_series=TimeSeriesSupport.TIMESTAMP_FIELD,
-    namespace=NamespaceSupport.FLAT,
-    enum_support=EnumCapability.STRING_ENUM,
-    has_entity_concept=True,
-    supports_reuse=True,
-    supports_streaming=True,
-    is_binary=True,
-))
+# _reg(MSDM_FormatCapability(
+#     format=DocumentFormat.AVRO_SCHEMA,
+#     description="Apache Avro Schema",
+#     scalar_types=[ScalarSupport.STRING, ScalarSupport.INT, ScalarSupport.LONG,
+#                   ScalarSupport.FLOAT, ScalarSupport.DOUBLE, ScalarSupport.BOOLEAN,
+#                   ScalarSupport.BINARY, ScalarSupport.UUID, ScalarSupport.DECIMAL,
+#                   ScalarSupport.DATE, ScalarSupport.TIME, ScalarSupport.TIMESTAMP],
+#     composite_types=[CompositeSupport.ARRAY, CompositeSupport.MAP,
+#                      CompositeSupport.STRUCT, CompositeSupport.ENUM,
+#                      CompositeSupport.UNION],
+#     nesting_depth=NestingDepth.DEEP,
+#     constraints=[ConstraintCapability.DEFAULT],
+#     indexes=[],
+#     inheritance=InheritanceSupport.NONE,
+#     relationship_model=RelationshipModel.NONE,
+#     annotations=AnnotationSupport.SIMPLE_COMMENT,
+#     time_series=TimeSeriesSupport.TIMESTAMP_FIELD,
+#     namespace=NamespaceSupport.FLAT,
+#     enum_support=EnumCapability.STRING_ENUM,
+#     has_entity_concept=True,
+#     supports_reuse=True,
+#     supports_streaming=True,
+#     is_binary=True,
+# ))
 
 # ── Thrift IDL ───────────────────────────────────────────────────
 _reg(MSDM_FormatCapability(
@@ -262,29 +257,6 @@ _reg(MSDM_FormatCapability(
     annotations=AnnotationSupport.SIMPLE_COMMENT,
     time_series=TimeSeriesSupport.NONE,
     namespace=NamespaceSupport.HIERARCHICAL,
-    enum_support=EnumCapability.STRING_ENUM,
-    has_entity_concept=True,
-    supports_reuse=True,
-    supports_streaming=False,
-    is_binary=False,
-))
-
-# ── CUE ──────────────────────────────────────────────────────────
-_reg(MSDM_FormatCapability(
-    format=DocumentFormat.CUE,
-    description="CUE Data Language",
-    scalar_types=[ScalarSupport.STRING, ScalarSupport.INT, ScalarSupport.FLOAT,
-                  ScalarSupport.BOOLEAN, ScalarSupport.DATE],
-    composite_types=[CompositeSupport.ARRAY, CompositeSupport.STRUCT,
-                     CompositeSupport.ENUM, CompositeSupport.UNION],
-    nesting_depth=NestingDepth.DEEP,
-    constraints=[ConstraintCapability.CHECK, ConstraintCapability.DEFAULT],
-    indexes=[],
-    inheritance=InheritanceSupport.NONE,
-    relationship_model=RelationshipModel.NONE,
-    annotations=AnnotationSupport.NONE,
-    time_series=TimeSeriesSupport.NONE,
-    namespace=NamespaceSupport.FLAT,
     enum_support=EnumCapability.STRING_ENUM,
     has_entity_concept=True,
     supports_reuse=True,

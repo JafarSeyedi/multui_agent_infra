@@ -31,7 +31,7 @@ class BaseStorage(ABC):
         if not self.is_connected:
             await self.connect()
 
-    async def __aenter__(self) -> "BaseStorage":
+    async def __aenter__(self) -> BaseStorage:
         await self.connect()
         return self
 

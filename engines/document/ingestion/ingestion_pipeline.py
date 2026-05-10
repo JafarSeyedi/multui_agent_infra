@@ -1,18 +1,16 @@
 # engines/document/ingestion/ingestion_pipeline.py
-
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List
 
-from ..models.media_types import MediaType, MEDIA_TYPES
+from ..models.media_types import MEDIA_TYPES
 from .ingestion_context import IngestionContext
-from .ingestion_errors import IngestionError, IngestionStepFailed
-
-from .steps.step_extract import step_extract
-from .steps.step_parse import step_parse
+from .ingestion_errors import IngestionError
+from .ingestion_errors import IngestionStepFailed
 from .steps.step_chunk import step_chunk
 from .steps.step_embed import step_embed
+from .steps.step_extract import step_extract
+from .steps.step_parse import step_parse
 from .steps.step_store import step_store
 
 logger = logging.getLogger(__name__)
@@ -38,7 +36,7 @@ class IngestionPipeline:
     async def run(
         self,
         ctx: IngestionContext,
-        workflow: List[str],
+        workflow: list[str],
     ) -> IngestionContext:
         """
         Executes the given workflow steps sequentially on the provided context.

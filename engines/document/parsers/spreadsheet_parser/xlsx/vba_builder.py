@@ -11,11 +11,10 @@ Optional (if olefile is installed):
 
 Requirements for extra parsing: pip install olefile
 """
-
 from __future__ import annotations
-from typing import Dict, Optional
-import struct
+
 import io
+import struct
 
 # ──────────────────────────────────────────────
 # Public API
@@ -36,7 +35,7 @@ def build_vba_project(vba_bin: bytes) -> bytes:
     return vba_bin
 
 
-def extract_vba_modules(vba_bin: bytes) -> Dict[str, str]:
+def extract_vba_modules(vba_bin: bytes) -> dict[str, str]:
     """
     Extract VBA module names and source code from the binary OLE compound file.
     Requires the olefile library.

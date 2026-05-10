@@ -1,37 +1,23 @@
-# engines/document/writers/msdm_writers/sql_ddl_writer.py
 """
 SQL DDL Writer – converts an MSDMDocument into a SQL DDL script (.sql).
 Supports CREATE TABLE with all columns, constraints (PRIMARY KEY, UNIQUE,
-CHECK, FOREIGN KEY), indexes, and CREATE VIEW statements.  Soft‑delete
-is not applied to DDL; the script always reflects the current model.
+CHECK, FOREIGN KEY), indexes, and CREATE VIEW statements.
 """
-
 from __future__ import annotations
-from typing import Optional, Dict, Any, List, Tuple, Set
 
-import asyncio
-from sqlalchemy import create_engine, inspect, MetaData, Table, Column, text, DDL
-from sqlalchemy.engine import Engine, Connection
-from sqlalchemy.types import TypeEngine, String as SAString, Integer, BigInteger, Float, Date, DateTime, Boolean, LargeBinary
+import warnings
+from typing import Optional, List
+
+from sqlalchemy import inspect, text
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncConnection, AsyncEngine
+
+from ...models.msdm_models import Attribute, Constraint, ConstraintType, DataType, Entity
+from ...models.msdm_models import EntityKind, Index, MSDMDocument, ScalarType
 from ..base import WriteOptions
-from .base_msdm_writer import BaseMSDMWriter, WriteTarget, SoftDeleteStrategy, ConnectionConfig
-from ...models.msdm_models import (
-    MSDMDocument,
-    Entity,
-    Attribute,
-    DataType,
-    Constraint,
-    ConstraintType,
-    Index,
-    Annotation,
-    EntityKind,
-    ScalarType,
-)
+from .base_msdm_writer import BaseMSDMWriter, ConnectionConfig, SoftDeleteStrategy, WriteTarget
 
 
-
-# ── ScalarType to SQL type string (generic ANSI SQL) ──────────────
-_SCALAR_TO_SQL: Dict[ScalarType, str] = {
+_SCALAR_TO_SQL: dict[ScalarType, str] = {
     ScalarType.STRING:    "VARCHAR",
     ScalarType.INT:       "INTEGER",
     ScalarType.LONG:      "BIGINT",
@@ -52,81 +38,67 @@ _SCALAR_TO_SQL: Dict[ScalarType, str] = {
 
 
 class SqlDDLWriter(BaseMSDMWriter):
-    """Writer for SQL DDL script (.sql, .ddl)."""
     name = "sql_ddl"
     supported_extensions = (".sql", ".ddl")
 
     def __init__(
         self,
-        options: Optional[WriteOptions] = None,
+        options: WriteOptions | None = None,
         target_mode: WriteTarget = WriteTarget.DESIGN_FILE,
         soft_delete_strategy: SoftDeleteStrategy = SoftDeleteStrategy.NONE,
     ):
         super().__init__(options, target_mode, soft_delete_strategy)
 
     async def _write_design(self, document: MSDMDocument) -> bytes:
-        lines: List[str] = []
+        lines: list[str] = []
 
-        # Separate view entities from table entities
-        tables: List[Entity] = [e for e in document.entities
-                                if e.kind in (EntityKind.TABLE,)]
-        views: List[Entity] = [e for e in document.entities
-                               if e.kind == EntityKind.VIEW]
+        tables = [e for e in document.entities if e.kind == EntityKind.TABLE]
+        views = [e for e in document.entities if e.kind == EntityKind.VIEW]
 
-        # Write CREATE TABLE statements
         for entity in tables:
             lines.append(self._build_create_table(entity))
             lines.append("")
 
-        # Write indexes (standalone CREATE INDEX)
         for entity in tables:
             for idx in entity.indexes:
                 lines.append(self._build_create_index(idx, entity.name))
 
-        # Write CREATE VIEW statements
         for entity in views:
-            # Views store the original DDL in an annotation
-            ddl = self._get_annotation(entity, "view_definition")
-            if ddl:
-                lines.append(ddl)
+            # Retrieve view definition from annotations if available
+            if hasattr(entity, "annotations"):
+                ddl = next((a.value for a in entity.annotations if a.key == "view_definition"), None)
+                if ddl:
+                    lines.append(ddl)
+                else:
+                    lines.append(f"CREATE VIEW {self._quote(entity.name)} AS SELECT * FROM ...")
             else:
                 lines.append(f"CREATE VIEW {self._quote(entity.name)} AS SELECT * FROM ...")
             lines.append("")
 
-        # Append raw DDL statements that were preserved from parser
-        for ann in document.annotations:
-            if ann.key == "raw_ddl":
-                lines.append(ann.value)
+        # Raw DDL stored in document annotations
+        if hasattr(document, "annotations"):
+            for ann in document.annotations:
+                if ann.key == "raw_ddl":
+                    lines.append(ann.value)
 
         script = ";\n\n".join(line for line in lines if line) + ";\n"
-        return script.encode(self.options.encoding or "utf-8")
+        encoding = self.options.encoding if self.options else "utf-8"
+        return script.encode(encoding or "utf-8")
 
-    async def get_supported_media_types(self) -> list[str]:
+    def get_supported_media_types(self) -> list[str]:
         return ["text/plain"]
 
-    async def get_supported_extensions(self) -> list[str]:
-        return self.supported_extensions
-
-
-    # ── CREATE TABLE ─────────────────────────────────────────────
+    def get_supported_extensions(self) -> list[str]:
+        return list(self.supported_extensions)
+    
+    # ------------------------------------------------------------------
+    # DDL generation
+    # ------------------------------------------------------------------
     def _build_create_table(self, entity: Entity) -> str:
         table_name = self._quote(entity.name)
-        # Columns
-        columns: List[str] = []
-        constraints: List[str] = []
-
-        for attr in entity.attributes:
-            col_def = self._column_definition(attr)
-            columns.append(col_def)
-            # Inline constraints from attribute are included in _column_definition
-
-        # Table‑level constraints
-        for c in entity.constraints:
-            constr_sql = self._constraint_to_sql(c, table_name)
-            if constr_sql:
-                constraints.append(constr_sql)
-
-        all_parts = columns + constraints
+        columns = [self._column_definition(attr) for attr in entity.attributes]
+        constraints = [self._constraint_to_sql(c, table_name) for c in entity.constraints if self._constraint_to_sql(c, table_name)]
+        all_parts = [p for p in columns + constraints if p is not None]
         body = ",\n  ".join(all_parts)
         return f"CREATE TABLE {table_name} (\n  {body}\n)"
 
@@ -134,34 +106,22 @@ class SqlDDLWriter(BaseMSDMWriter):
         name = self._quote(attr.name)
         type_str = self._datatype_to_sql(attr.data_type)
         parts = [f"{name} {type_str}"]
-
-        # Inline constraints
         for c in attr.constraints:
             if c.type == ConstraintType.NOT_NULL:
                 parts.append("NOT NULL")
             elif c.type == ConstraintType.PRIMARY_KEY:
-                # Inline PK (single column)
                 parts.append("PRIMARY KEY")
             elif c.type == ConstraintType.UNIQUE:
                 parts.append("UNIQUE")
-            elif c.type == ConstraintType.CHECK:
-                if c.expression:
-                    parts.append(f"CHECK ({c.expression})")
-            elif c.type == ConstraintType.DEFAULT:
-                if c.expression:
-                    parts.append(f"DEFAULT {c.expression}")
-            elif c.type == ConstraintType.FOREIGN_KEY:
-                # Inline FK cannot be fully expressed here; will be table-level
-                pass
-
-        # Additional modifiers from annotations (e.g., AUTO_INCREMENT)
-        if any(a.key == "auto_increment" for a in attr.annotations):
+            elif c.type == ConstraintType.CHECK and c.expression:
+                parts.append(f"CHECK ({c.expression})")
+            elif c.type == ConstraintType.DEFAULT and c.expression:
+                parts.append(f"DEFAULT {c.expression}")
+        if hasattr(attr, "annotations") and any(a.key == "auto_increment" for a in attr.annotations):
             parts.append("AUTO_INCREMENT")
-
         return " ".join(parts)
 
-    def _constraint_to_sql(self, c: Constraint, table_name: str) -> Optional[str]:
-        """Convert a table‑level constraint to SQL fragment."""
+    def _constraint_to_sql(self, c: Constraint, table_name: str) -> str | None:
         name_part = f"CONSTRAINT {self._quote(c.name)} " if c.name else ""
         if c.type == ConstraintType.PRIMARY_KEY:
             cols = self._normalize_columns(c.expression)
@@ -173,85 +133,83 @@ class SqlDDLWriter(BaseMSDMWriter):
             return f"{name_part}CHECK ({c.expression})" if c.expression else None
         if c.type == ConstraintType.FOREIGN_KEY:
             local_cols = self._normalize_columns(c.expression)
-            if c.referenced_entity and c.referenced_attributes:
-                ref_cols = [self._quote(col) for col in c.referenced_attributes]
-                ref_table = self._quote(c.referenced_entity)
+            if c.ref_entity and c.ref_attr_ids:
+                ref_cols = [self._quote(col) for col in c.ref_attr_ids]
+                ref_table = self._quote(c.ref_entity.name)
                 return f"{name_part}FOREIGN KEY ({', '.join(local_cols)}) REFERENCES {ref_table} ({', '.join(ref_cols)})"
         return None
 
-    # ── CREATE INDEX ────────────────────────────────────────────
     def _build_create_index(self, idx: Index, table_name: str) -> str:
         unique = "UNIQUE " if idx.unique else ""
-        name = self._quote(idx.name or f"idx_{table_name}_{'_'.join(idx.attributes)}")
-        cols = ", ".join(self._quote(c) for c in idx.attributes)
+        name = self._quote(idx.name or f"idx_{table_name}_{'_'.join([attr.name for attr in idx.attributes])}")
+        cols = ", ".join(self._quote(c.name) for c in idx.attributes)
         return f"CREATE {unique}INDEX {name} ON {self._quote(table_name)} ({cols})"
 
-    # ── DataType conversion ─────────────────────────────────────
-    def _datatype_to_sql(self, dt: DataType) -> str:
+    @staticmethod
+    def _datatype_to_sql(dt: DataType) -> str:
         base = dt.base
         if base in _SCALAR_TO_SQL:
             sql = _SCALAR_TO_SQL[base]
         else:
             sql = "TEXT"
-
-        # Add precision/scale for DECIMAL
         if base == ScalarType.DECIMAL:
             p = dt.precision or 10
             s = dt.scale or 0
             sql = f"DECIMAL({p},{s})"
-        # For ARRAY, MAP, STRUCT we can't map directly; fallback to TEXT
-        if base == ScalarType.ARRAY:
-            sql = "TEXT"
-        elif base == ScalarType.MAP:
-            sql = "TEXT"
-        elif base == ScalarType.STRUCT:
+        elif base in (ScalarType.ARRAY, ScalarType.MAP, ScalarType.STRUCT):
             sql = "TEXT"
         return sql
 
-    # ── Helpers ──────────────────────────────────────────────────
-    def _normalize_columns(self, expr: Optional[str]) -> List[str]:
-        """Normalize a comma‑separated list of column names."""
+    def _normalize_columns(self, expr: str | None) -> list[str]:
         if not expr:
             return []
         return [self._quote(c.strip()) for c in expr.split(",") if c.strip()]
 
-    def _get_annotation(self, obj, key: str) -> Optional[str]:
-        if isinstance(obj, Entity):
-            return next((a.value for a in obj.annotations if a.key == key), None)
-        if isinstance(obj, Attribute):
-            return next((a.value for a in obj.annotations if a.key == key), None)
-        return None
-
     @staticmethod
-    def _quote(name: str) -> str:
-        """Double‑quote an SQL identifier."""
+    def _quote(name: str | None) -> str:
+        if name is None:
+            return '""'
         escaped = name.replace('"', '""')
-        return f'"{escaped}"'
-    
+        return f'"{escaped}"'    
 
-
-    async def apply_to_database(self, document: MSDMDocument, connection: ConnectionConfig = None):
+    # ------------------------------------------------------------------
+    # Database application (async)
+    # ------------------------------------------------------------------
+    async def apply_to_database(
+        self, document: MSDMDocument, connection: Optional[ConnectionConfig] = None
+    ) -> None:
         if connection is None:
             raise ValueError("ConnectionConfig required for database target")
-
-        engine = _build_sqlalchemy_engine(connection)
+        engine = await self._build_sqlalchemy_engine(connection)
         try:
-            with engine.begin() as conn:
+            async with engine.begin() as conn:
                 await self._execute_migration(conn, document)
         finally:
-            engine.dispose()
+            await engine.dispose()
 
-    async def _execute_migration(self, conn: Connection, document: MSDMDocument):
-        inspector = inspect(conn.engine)
+    @staticmethod
+    async def _build_sqlalchemy_engine(config: ConnectionConfig) -> AsyncEngine:
+        dialect = getattr(config, "dialect", None)
+        if dialect == "postgresql":
+            url = f"postgresql+asyncpg://{config.username}:{config.password}@{config.host}:{config.port}/{config.database}"
+        elif dialect == "mysql":
+            url = f"mysql+aiomysql://{config.username}:{config.password}@{config.host}:{config.port}/{config.database}"
+        else:
+            # Default to SQLite async
+            url = "sqlite+aiosqlite:///./temp.db"
+        return create_async_engine(url, echo=False)
+
+    async def _execute_migration(self, conn: AsyncConnection, document: MSDMDocument):
+        def _sync_inspect(sync_conn):
+            return inspect(sync_conn)
+
+        inspector = await conn.run_sync(_sync_inspect)
         existing_tables = set(inspector.get_table_names())
         model_tables = {e.name for e in document.entities if e.kind == EntityKind.TABLE}
 
-        # Tables to drop (soft delete via rename or actual DROP)
-        to_drop = existing_tables - model_tables
-        for table in to_drop:
+        for table in existing_tables - model_tables:
             await self._remove_table(conn, table)
 
-        # Process each model entity
         for entity in document.entities:
             if entity.kind == EntityKind.TABLE:
                 if entity.name in existing_tables:
@@ -259,42 +217,32 @@ class SqlDDLWriter(BaseMSDMWriter):
                 else:
                     await conn.execute(text(self._build_create_table(entity)))
             elif entity.kind == EntityKind.VIEW:
-                # Views are handled as raw DDL; either recreate or skip
-                ddl = next((a.value for a in entity.annotations if a.key == "view_definition"), None)
+                ddl = None
+                if hasattr(entity, "annotations"):
+                    ddl = next((a.value for a in entity.annotations if a.key == "view_definition"), None)
                 if ddl:
                     await conn.execute(text(ddl))
+                else:
+                    await conn.execute(text(f"CREATE OR REPLACE VIEW {self._quote(entity.name)} AS SELECT * FROM ..."))
 
-        # Indexes (create if not exist, drop if removed? We'll just create missing ones)
         await self._sync_indexes(conn, inspector, document)
 
-        # Raw DDL annotations (kept for round‑trip)
-        for ann in document.annotations:
-            if ann.key == "raw_ddl":
-                await conn.execute(text(ann.value))
-
-    async def _sync_table(self, conn: Connection, inspector, entity: Entity):
-        """Alter an existing table to match the model."""
+    async def _sync_table(self, conn: AsyncConnection, inspector, entity: Entity):
         table_name = entity.name
         existing_cols = {col["name"]: col for col in inspector.get_columns(table_name)}
         model_cols = {attr.name: attr for attr in entity.attributes}
 
-        # Add missing columns
         for name, attr in model_cols.items():
             if name not in existing_cols:
                 col_def = self._column_definition_sql(attr)
                 await conn.execute(text(f"ALTER TABLE {self._quote(table_name)} ADD COLUMN {col_def}"))
 
-        # Drop/rename columns present in DB but not in model
         for name in existing_cols.keys() - model_cols.keys():
             await self._remove_column(conn, table_name, name)
 
-        # Modify column types? Not safe; we skip.
-        # Constraints: we can't easily diff inline constraints; we'll rely on table‑level constraint recreation.
-        # Drop all existing FK / unique / check constraints and recreate from model.
         await self._recreate_constraints(conn, table_name, entity)
 
-    async def _remove_table(self, conn: Connection, table_name: str):
-        """Apply soft‑delete strategy to a table."""
+    async def _remove_table(self, conn: AsyncConnection, table_name: str):
         if self.soft_delete_strategy == SoftDeleteStrategy.NONE:
             await conn.execute(text(f"DROP TABLE IF EXISTS {self._quote(table_name)}"))
         elif self.soft_delete_strategy == SoftDeleteStrategy.PREFIX:
@@ -303,13 +251,14 @@ class SqlDDLWriter(BaseMSDMWriter):
         elif self.soft_delete_strategy == SoftDeleteStrategy.SUFFIX:
             new_name = f"{table_name}_deleted"
             await conn.execute(text(f"ALTER TABLE {self._quote(table_name)} RENAME TO {self._quote(new_name)}"))
-        # ANNOTATE: cannot represent in DB; leave as is (but we might add a comment)
-        # We'll store a comment annotation if possible.
-        if self.soft_delete_strategy == SoftDeleteStrategy.ANNOTATE:
-            await conn.execute(text(f"COMMENT ON TABLE {self._quote(table_name)} IS 'deprecated'"))
+        elif self.soft_delete_strategy == SoftDeleteStrategy.ANNOTATE:
+            # PostgreSQL specific
+            try:
+                await conn.execute(text(f"COMMENT ON TABLE {self._quote(table_name)} IS 'deprecated'"))
+            except Exception:
+                warnings.warn(f"ANNOTATE soft-delete not supported on this database; table {table_name} was not removed")
 
-    async def _remove_column(self, conn: Connection, table_name: str, col_name: str):
-        """Soft‑delete a column."""
+    async def _remove_column(self, conn: AsyncConnection, table_name: str, col_name: str):
         if self.soft_delete_strategy == SoftDeleteStrategy.NONE:
             await conn.execute(text(f"ALTER TABLE {self._quote(table_name)} DROP COLUMN IF EXISTS {self._quote(col_name)}"))
         elif self.soft_delete_strategy == SoftDeleteStrategy.PREFIX:
@@ -318,24 +267,20 @@ class SqlDDLWriter(BaseMSDMWriter):
         elif self.soft_delete_strategy == SoftDeleteStrategy.SUFFIX:
             new_name = f"{col_name}_deleted"
             await conn.execute(text(f"ALTER TABLE {self._quote(table_name)} RENAME COLUMN {self._quote(col_name)} TO {self._quote(new_name)}"))
-        # ANNOTATE: we'd need to store a comment; not standard.
 
-    async def _recreate_constraints(self, conn: Connection, table_name: str, entity: Entity):
-        """Drop and recreate all table‑level constraints."""
-        # Drop existing FK constraints on this table
-        inspector = inspect(conn.engine)
-        for fk in inspector.get_foreign_keys(table_name):
+    async def _recreate_constraints(self, conn: AsyncConnection, table_name: str, entity: Entity):
+        def _get_fks(sync_conn):
+            return inspect(sync_conn).get_foreign_keys(table_name)
+
+        fks = await conn.run_sync(_get_fks)
+        for fk in fks:
             await conn.execute(text(f"ALTER TABLE {self._quote(table_name)} DROP CONSTRAINT {self._quote(fk['name'])}"))
-        # Unique and check constraints – we drop by name if we can retrieve them; not always portable.
-        # We'll recreate from model.
         for c in entity.constraints:
             sql = self._constraint_to_sql(c, table_name)
             if sql:
                 await conn.execute(text(f"ALTER TABLE {self._quote(table_name)} ADD {sql}"))
 
-    async def _sync_indexes(self, conn: Connection, inspector, document: MSDMDocument):
-        """Create missing indexes; drop those not in model."""
-        # We'll only create missing; dropping could be destructive, but we honor soft‑delete?
+    async def _sync_indexes(self, conn: AsyncConnection, inspector, document: MSDMDocument):
         for entity in document.entities:
             if entity.kind != EntityKind.TABLE:
                 continue
@@ -345,13 +290,12 @@ class SqlDDLWriter(BaseMSDMWriter):
             for idx_def in entity.indexes:
                 if idx_def.name not in existing_idx_names:
                     unique = "UNIQUE " if idx_def.unique else ""
-                    cols = ", ".join(self._quote(c) for c in idx_def.attributes)
+                    cols = ", ".join(self._quote(c.name) for c in idx_def.attributes)
                     sql = f"CREATE {unique}INDEX {self._quote(idx_def.name)} ON {self._quote(table_name)} ({cols})"
                     await conn.execute(text(sql))
 
     @staticmethod
     def _column_definition_sql(attr: Attribute) -> str:
-        """Return column definition SQL fragment (name type constraints)."""
         name = SqlDDLWriter._quote(attr.name)
         type_str = SqlDDLWriter._datatype_to_sql(attr.data_type)
         parts = [f"{name} {type_str}"]
@@ -367,4 +311,3 @@ class SqlDDLWriter(BaseMSDMWriter):
             elif c.type == ConstraintType.DEFAULT and c.expression:
                 parts.append(f"DEFAULT {c.expression}")
         return " ".join(parts)
-    

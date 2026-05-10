@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Any, Dict
+from dataclasses import dataclass
+from dataclasses import field
+from typing import Any
 
 from engines.rag.rag_models import DocumentChunk
 
@@ -11,4 +12,4 @@ class RetrievalResult:
     chunk: DocumentChunk
     score: float
     source: str = "vector"
-    meta: Dict[str, Any] = field(default_factory=dict)
+    meta: dict[str, Any] = field(default_factory=dict)

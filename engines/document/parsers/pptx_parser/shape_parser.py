@@ -4,18 +4,29 @@ PPTX shape parser.
 Wraps the shared DrawingML shape parser and adds full PPTX‑specific details
 to ensure round‑trip fidelity.
 """
-
 from __future__ import annotations
-from typing import Optional, List, Dict, Any
+
 from xml.etree.ElementTree import Element
 
-from ..drawingml.shape_parser import parse_shape as parse_dml_shape
+from ...models.psdm_models import Placeholder
+from ...models.psdm_models import PlaceholderType
 from ...models.usdm_models import ShapeContent
-from ...models.psdm_models import Placeholder, PlaceholderType
-from .constants import NAMESPACES, PPTX_PLACEHOLDER_MAP
+from ..drawingml.shape_parser import parse_shape as parse_dml_shape
+from .constants import NAMESPACES
+from .constants import PPTX_PLACEHOLDER_MAP
 
 NS = NAMESPACES
 
+def parse_group_shape(group_elem: Element) -> list[ShapeContent]:
+    """Recursively parse <p:grpSp> and return all shapes inside."""
+    shapes = []
+    for child in group_elem:
+        if child.tag.endswith("sp"):
+            shape = parse_pptx_shape(child)
+            shapes.append(shape)
+        elif child.tag.endswith("grpSp"):
+            shapes.extend(parse_group_shape(child))
+    return shapes
 
 def parse_pptx_shape(sp_element: Element) -> ShapeContent:
     """
@@ -93,4 +104,3 @@ def parse_pptx_shape(sp_element: Element) -> ShapeContent:
         # could be a reference to a quick style
 
     return shape
-

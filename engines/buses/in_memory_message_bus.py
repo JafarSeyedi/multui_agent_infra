@@ -1,10 +1,10 @@
 # agents/buses/in_memory_message_bus.py
-
 import asyncio
 import logging
 from collections import defaultdict
-from typing import Dict, List
-from .base_message_bus import MessageBus, HandlerType
+
+from .base_message_bus import HandlerType
+from .base_message_bus import MessageBus
 from engines.interaction.interaction_models import AgentMessage
 
 logger = logging.getLogger(__name__)
@@ -15,7 +15,7 @@ class InMemoryMessageBus(MessageBus):
     """In-memory async bus with broadcast support."""
 
     def __init__(self) -> None:
-        self._subscribers: Dict[str, List[HandlerType]] = defaultdict(list)
+        self._subscribers: dict[str, list[HandlerType]] = defaultdict(list)
         self._lock = asyncio.Lock()
 
     async def subscribe(self, recipient: str, handler: HandlerType) -> None:

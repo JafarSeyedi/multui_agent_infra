@@ -11,37 +11,32 @@ Handles:
 - exception (similar to struct)
 - service (stored as annotations for round‑trip; MSDM does not model service operations)
 - const (stored as annotations)
-- comments (stripped)
 
 Every Thrift construct is mapped to MSDM Entity (kind=OBJECT), Attribute, Constraint,
 and Annotation objects for lossless round‑trip.
 """
-
 from __future__ import annotations
+
 import re
 from pathlib import Path
-from typing import Optional, Dict, Any, List, Tuple
 
-from .base_msdm_parser import BaseMSDMParser
+from ...models.media_types import MEDIA_TYPES
+from ...models.msdm_models import Annotation
+from ...models.msdm_models import Attribute
+from ...models.msdm_models import Constraint
+from ...models.msdm_models import ConstraintType
+from ...models.msdm_models import DataType
+from ...models.msdm_models import Entity
+from ...models.msdm_models import EntityKind
+from ...models.msdm_models import MSDMDocument
+from ...models.msdm_models import ScalarType, Namespace
 from ..base import ParseOptions
-from ...models.msdm_models import (
-    MSDMDocument,
-    Entity,
-    Attribute,
-    DataType,
-    Constraint,
-    ConstraintType,
-    Index,
-    Annotation,
-    EntityKind,
-    ScalarType,
-    Relationship,
-)
+from .base_msdm_parser import BaseMSDMParser
 
 # ── Thrift primitive type mapping ─────────────────────────────────
 THRIFT_TYPE_MAP = {
     "bool":    ScalarType.BOOLEAN,
-    "byte":    ScalarType.INT,          # 8-bit integer
+    "byte":    ScalarType.INT,
     "i8":      ScalarType.INT,
     "i16":     ScalarType.INT,
     "i32":     ScalarType.INT,
@@ -85,8 +80,12 @@ class ThriftIDLParser(BaseMSDMParser):
         encoding = options.encoding or "utf-8"
         text = data.decode(encoding)
 
-        doc = MSDMDocument()
-        doc.namespace = Path(source_name).stem
+        doc = MSDMDocument(
+            document_id=Path(source_name).stem,
+            title=Path(source_name).stem,
+            media_type=MEDIA_TYPES.get("thrift_idl", MEDIA_TYPES["txt"])
+        )
+        doc.namespace = Namespace(uri=Path(source_name).stem)
 
         # Strip comments first
         text = RE_BLOCK_COMMENT.sub('', text)
@@ -116,6 +115,7 @@ class ThriftIDLParser(BaseMSDMParser):
         for m in RE_SERVICE.finditer(text):
             self._parse_service(m, doc)
 
+        self.resolve_references(doc)
         return doc
 
     def _process_file_directives(self, text: str, doc: MSDMDocument) -> None:
@@ -129,8 +129,9 @@ class ThriftIDLParser(BaseMSDMParser):
 
         for m in RE_NAMESPACE.finditer(text):
             lang = m.group(1)
-            ns = m.group(2)
-            doc.annotations.append(Annotation(key=f"namespace_{lang}", value=ns))
+            ns = Namespace(m.group(2))
+            if ns and ns.uri:
+                doc.annotations.append(Annotation(key=f"namespace_{lang}", value=ns.uri))
             if lang == '*' or lang == doc.namespace or not doc.namespace:
                 doc.namespace = ns  # set global namespace
 
@@ -215,7 +216,7 @@ class ThriftIDLParser(BaseMSDMParser):
 
         doc.entities.append(entity)
 
-    def _split_field_lines(self, body: str) -> List[str]:
+    def _split_field_lines(self, body: str) -> list[str]:
         """Split the body of a struct into field definitions, handling nested generics."""
         # Simple approach: split by comma/newline, but ensure we don't break inside <...>
         fields = []
@@ -274,4 +275,4 @@ class ThriftIDLParser(BaseMSDMParser):
         if type_str.lower() in THRIFT_TYPE_MAP:
             return DataType(base=THRIFT_TYPE_MAP[type_str.lower()])
         # Otherwise, it's a reference to another struct/enum/typedef
-        return DataType(base=ScalarType.REF, ref_entity=type_str)
+        return DataType(base=ScalarType.REF, ref_entity_id=type_str)

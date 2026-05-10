@@ -1,13 +1,12 @@
 # rag/research/memory/reasoning/reasoning_recorder.py
-
 from __future__ import annotations
 
 import time
 import uuid
-from typing import Optional, Dict, Any
+from typing import Any
 
-from .reasoning_event import ReasoningEvent
 from .event_types import ReasoningEventType
+from .reasoning_event import ReasoningEvent
 from .reasoning_tree import ReasoningTree
 
 
@@ -34,8 +33,8 @@ class ReasoningRecorder:
         event_type: ReasoningEventType,
         message: str,
         *,
-        meta: Optional[Dict[str, Any]] = None,
-        tokens: Optional[int] = None,
+        meta: dict[str, Any] | None = None,
+        tokens: int | None = None,
     ) -> ReasoningEvent:
 
         group = self.tree.current
@@ -56,5 +55,5 @@ class ReasoningRecorder:
         group.add_event(e)
         return e
 
-    def export(self) -> Dict[str, Any]:
+    def export(self) -> dict[str, Any]:
         return self.tree.to_dict()

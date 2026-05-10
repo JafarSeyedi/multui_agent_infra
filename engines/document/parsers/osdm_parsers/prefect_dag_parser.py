@@ -9,28 +9,20 @@ All meaningful data is stored in typed fields:
 - Task dependencies (calls between tasks) → StateTransition
 - Scheduling (if found) → TimerEventDefinition on StateMachineModel
 """
-
 from __future__ import annotations
-import ast
-from pathlib import Path
-from typing import Optional, Dict, Any, List
 
-from .base_osdm_parser import BaseOSDMParser
-from ..base import ParseOptions
+import ast
+import uuid
+from pathlib import Path
+from typing import Any
+
+from ...models.media_types import MEDIA_TYPES
 from ...models.osdm_models import (
-    BaseOSDMDocument,
-    StateMachineDocument,
-    StateMachineModel,
-    StateMachineRegion,
-    State,
-    StateTransition,
-    Script,
-    ScriptLanguage,
-    TimerEventDefinition,
-    TimerEventType,
-    FormalExpression,
+    BaseOSDMDocument, Script, ScriptLanguage, State, StateMachineDocument,
+    StateMachineModel, StateMachineRegion, StateTransition
 )
-from ...models.base import BaseDocument
+from ..base import ParseOptions
+from .base_osdm_parser import BaseOSDMParser
 
 
 class PrefectDAGParser(BaseOSDMParser):
@@ -48,7 +40,12 @@ class PrefectDAGParser(BaseOSDMParser):
         except SyntaxError as e:
             raise ValueError(f"Invalid Python syntax: {e}")
 
-        doc = StateMachineDocument()
+        doc = StateMachineDocument(
+            document_id=Path(source_name).stem,
+            title=Path(source_name).stem,
+            media_type=MEDIA_TYPES.get("prefect_dag_py", MEDIA_TYPES["txt"])
+        )
+        doc.source_file = source_name
 
         # Find all @flow decorated functions
         flows = self._find_flows(tree)
@@ -64,7 +61,7 @@ class PrefectDAGParser(BaseOSDMParser):
         return doc
 
     # ── Find @flow functions ─────────────────────────────────────
-    def _find_flows(self, tree: ast.AST) -> List[ast.FunctionDef]:
+    def _find_flows(self, tree: ast.AST) -> list[ast.FunctionDef]:
         flows = []
         for node in ast.walk(tree):
             if isinstance(node, ast.FunctionDef):
@@ -89,28 +86,24 @@ class PrefectDAGParser(BaseOSDMParser):
             id=flow_def.name,
             name=flow_def.name,
         )
-        top_region = StateMachineRegion()
+        top_region = StateMachineRegion(id=str(uuid.uuid4().hex))
         sm.top_region = top_region
 
         # Extract tasks defined inside the flow body, and also global tasks that are called by the flow.
-        # Prefect tasks are functions decorated with @task.
         task_defs = self._find_tasks(tree)
         flow_body = flow_def.body
 
         # Resolve which tasks are called in the flow and in what order (dependencies).
         called_tasks = self._find_called_tasks_in_body(flow_body, task_defs)
 
-        task_map: Dict[str, State] = {}
+        task_map: dict[str, State] = {}
         for task_name, task_func in called_tasks.items():
             state = self._task_to_state(task_func)
             top_region.states.append(state)
             task_map[task_name] = state
 
         # Determine dependencies by analyzing call order in the flow body.
-        # For simplicity, we consider that if task A calls task B (via return value passing), they are linked.
-        # A more complete static analysis would track variable assignments and call chains.
-        # We'll create transitions for sequential call expressions found directly in the flow body.
-        last_called: Optional[str] = None
+        last_called: str | None = None
         for stmt in flow_body:
             for node in ast.walk(stmt):
                 if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
@@ -137,11 +130,11 @@ class PrefectDAGParser(BaseOSDMParser):
             id=Path(source_name).stem,
             name=Path(source_name).stem,
         )
-        top_region = StateMachineRegion()
+        top_region = StateMachineRegion(id=str(uuid.uuid4().hex))
         sm.top_region = top_region
 
         task_defs = self._find_tasks(tree)
-        task_map: Dict[str, State] = {}
+        task_map: dict[str, State] = {}
         for task_func in task_defs.values():
             state = self._task_to_state(task_func)
             top_region.states.append(state)
@@ -153,7 +146,7 @@ class PrefectDAGParser(BaseOSDMParser):
         return sm
 
     # ── Find @task functions globally ────────────────────────────
-    def _find_tasks(self, tree: ast.AST) -> Dict[str, ast.FunctionDef]:
+    def _find_tasks(self, tree: ast.AST) -> dict[str, ast.FunctionDef]:
         tasks = {}
         for node in ast.walk(tree):
             if isinstance(node, ast.FunctionDef):
@@ -164,8 +157,8 @@ class PrefectDAGParser(BaseOSDMParser):
         return tasks
 
     # ── Find which tasks are called inside a flow body ──────────
-    def _find_called_tasks_in_body(self, body: List[ast.stmt],
-                                   task_defs: Dict[str, ast.FunctionDef]) -> Dict[str, ast.FunctionDef]:
+    def _find_called_tasks_in_body(self, body: list[ast.stmt],
+                                   task_defs: dict[str, ast.FunctionDef]) -> dict[str, ast.FunctionDef]:
         called = {}
         for stmt in body:
             for node in ast.walk(stmt):
@@ -181,15 +174,9 @@ class PrefectDAGParser(BaseOSDMParser):
         state = State(id=task_id, name=task_id)
         # Store the entire function body as a Script
         script_body = ast.unparse(func_def)
-        state.do_actions.append(Script(script_body=script_body, script_language=ScriptLanguage.PYTHON))
+        state.do_actions.append(Script(
+            id=str(uuid.uuid4().hex),
+            script_body=script_body,
+            script_language=ScriptLanguage.PYTHON
+        ))
         return state
-
-    async def parse_bytes(self, data: bytes, document_id: str, source_name: str,
-                          metadata: Optional[Dict[str, Any]] = None,
-                          options: Optional[ParseOptions] = None) -> BaseDocument:
-        source = data.decode(options.encoding or "utf-8") if options else data.decode("utf-8")
-        try:
-            self._source_tree = ast.parse(source)
-        except SyntaxError:
-            self._source_tree = None
-        return await super().parse_bytes(data, document_id, source_name, metadata, options)

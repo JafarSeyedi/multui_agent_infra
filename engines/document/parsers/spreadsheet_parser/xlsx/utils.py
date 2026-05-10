@@ -1,8 +1,9 @@
 # engines/document/parsers/spreadsheet_parser/xlsx/utils.py
 from __future__ import annotations
+
 import re
-from typing import Tuple, Optional, List
 from xml.etree import ElementTree as ET
+from typing import Optional, Union
 
 # ── Column / coordinate conversion (unchanged) ──
 def col_letter_to_index(letter: str) -> int:
@@ -18,7 +19,7 @@ def col_index_to_letter(index: int) -> str:
         result = chr(65 + remainder) + result
     return result
 
-def parse_cell_coordinate(coord: str) -> Tuple[int, int]:
+def parse_cell_coordinate(coord: str) -> tuple[int, int]:
     match = re.match(r"^([A-Z]+)(\d+)$", coord.upper())
     if not match:
         raise ValueError(f"Invalid cell coordinate: {coord}")
@@ -29,7 +30,7 @@ def parse_cell_coordinate(coord: str) -> Tuple[int, int]:
 def format_cell_coordinate(row: int, col: int) -> str:
     return f"{col_index_to_letter(col)}{row}"
 
-def parse_range(range_str: str) -> Tuple[int, int, int, int]:
+def parse_range(range_str: str) -> tuple[int, int, int, int]:
     if ':' not in range_str:
         r, c = parse_cell_coordinate(range_str)
         return r, c, r, c
@@ -51,7 +52,7 @@ def xml_find(el: ET.Element, tag: str, ns: dict, default=None):
     found = el.find(tag, ns)
     return found if found is not None else default
 
-def xml_findall(el: ET.Element, tag: str, ns: dict) -> List[ET.Element]:
+def xml_findall(el: ET.Element, tag: str, ns: dict) -> list[ET.Element]:
     return el.findall(tag, ns)
 
 def xml_attr(el: ET.Element, attr: str, default=None):
@@ -69,7 +70,10 @@ def xml_bool(el: ET.Element, attr: str, default: bool = False) -> bool:
         return default
     return val.lower() in ("1", "true")
 
-def xml_int(el: ET.Element, attr: str, default: int = 0) -> int:
+def xml_int(el: ET.Element, attr: str, default: int | None = 0) -> int:
+    """Read integer attribute. Returns default (which may be None) if missing or invalid."""
+    if default is None:
+        default = 0
     val = xml_attr(el, attr, None)
     if val is None:
         return default
@@ -78,7 +82,10 @@ def xml_int(el: ET.Element, attr: str, default: int = 0) -> int:
     except ValueError:
         return default
 
-def xml_float(el: ET.Element, attr: str, default: float = 0.0) -> float:
+def xml_float(el: ET.Element, attr: str, default: float | None = 0.0) -> float:
+    """Read float attribute. Returns default (which may be None) if missing or invalid."""
+    if default is None:
+        default = 0.0
     val = xml_attr(el, attr, None)
     if val is None:
         return default
@@ -87,7 +94,7 @@ def xml_float(el: ET.Element, attr: str, default: float = 0.0) -> float:
     except ValueError:
         return default
 
-def color_hex_from_xml(color_el: ET.Element, ns: dict) -> Optional[str]:
+def color_hex_from_xml(color_el: ET.Element, ns: dict) -> str | None:
     """Convert a <color ...> element to hex/css colour string."""
     if color_el is None:
         return None

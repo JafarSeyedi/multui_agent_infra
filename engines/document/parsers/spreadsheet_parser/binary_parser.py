@@ -3,20 +3,22 @@
 Parsers for binary columnar formats: Parquet, Arrow IPC (Feather v2), Feather.
 Produces an ESDM Workbook with a single Worksheet (or one per sheet if partitioned).
 """
-
 from __future__ import annotations
 
 import io
 from pathlib import Path
-from typing import Optional, Dict, Any, List, Union
+from typing import Any
 
 import pyarrow as pa
-import pyarrow.parquet as pq
 import pyarrow.feather as pf
+import pyarrow.parquet as pq
 
-from ..spreadsheet_parser.base_spreadsheet_parser import BaseSpreadsheetParser
+from ...models.esdm_models import Cell
+from ...models.esdm_models import Row
+from ...models.esdm_models import Workbook
+from ...models.esdm_models import Worksheet
 from ..base import ParseOptions
-from ...models.esdm_models import Workbook, Worksheet, Row, Cell
+from ..spreadsheet_parser.base_spreadsheet_parser import BaseSpreadsheetParser
 
 
 class ColumnarBinaryParser(BaseSpreadsheetParser):

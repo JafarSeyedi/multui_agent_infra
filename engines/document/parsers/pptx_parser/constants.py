@@ -2,9 +2,7 @@
 """
 PPTX parser constants – namespaces, relationship types, and mappings.
 """
-
 from __future__ import annotations
-from enum import Enum
 
 # ── XML Namespaces ─────────────────────────────────────────────────
 NAMESPACES = {
@@ -33,7 +31,7 @@ REL_TYPE = {
     "vmlDrawing":    "http://schemas.openxmlformats.org/officeDocument/2006/relationships/vmlDrawing",
 }
 
-# ── Transition Mappings ────────────────────────────────────────────
+# ── PresentationTransition Mappings ────────────────────────────────────────────
 # PPTX transition token → PSDM TransitionType
 PPTX_TRANSITION_MAP = {
     "fade":    "fade",

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ..base import KeyValueStorage
 
@@ -10,7 +10,7 @@ class InMemoryKeyValueStorage(KeyValueStorage):
 
     def __init__(self) -> None:
         super().__init__()
-        self._store: Dict[str, Any] = {}
+        self._store: dict[str, Any] = {}
 
     async def connect(self) -> None:
         self._connected = True
@@ -25,7 +25,7 @@ class InMemoryKeyValueStorage(KeyValueStorage):
     async def set(self, key: str, value: Any) -> None:
         self._store[key] = value
 
-    async def get(self, key: str) -> Optional[Any]:
+    async def get(self, key: str) -> Any | None:
         return self._store.get(key)
 
     async def delete(self, key: str) -> None:
@@ -34,7 +34,7 @@ class InMemoryKeyValueStorage(KeyValueStorage):
     async def exists(self, key: str) -> bool:
         return key in self._store
 
-    async def list_keys(self, prefix: Optional[str] = None) -> List[str]:
+    async def list_keys(self, prefix: str | None = None) -> list[str]:
         keys = list(self._store.keys())
         if prefix is None:
             return keys

@@ -2,10 +2,10 @@
 """
 Write <p:cmLst> from SlideComment list.
 """
-
 from __future__ import annotations
-from typing import List
-from xml.etree.ElementTree import Element, SubElement
+
+from xml.etree.ElementTree import Element
+from xml.etree.ElementTree import SubElement
 
 from ...models.psdm_models import SlideComment
 from .constants import NAMESPACES
@@ -14,7 +14,7 @@ P = f"{{{NAMESPACES['p']}}}"
 A = f"{{{NAMESPACES['a']}}}"
 
 
-def write_comments(comments: List[SlideComment]) -> Element:
+def write_comments(comments: list[SlideComment]) -> Element:
     cmLst = Element(f"{P}cmLst")
     for cm in comments:
         cmElem = SubElement(cmLst, f"{P}cm", {

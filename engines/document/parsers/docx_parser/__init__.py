@@ -1,11 +1,88 @@
-from .docx_chart_extractor import parse_docx_chart
-from .docx_diagram_extractor import parse_diagram
+from .docx_chart_extractor import A, C, NS
+
+from .docx_diagram_extractor import A, DGM, NS_DGM, R
+
 from .docx_extractor import DOCXExtractor
+
 from .docx_image_extractor import DOCXImageExtractor
+
 from .docx_math_parser import OMMLParser
-from .docx_models import DOCXElementType, RunPropertyName, ParagraphAlignment, NumberingLevelSuffix, SectionType, VerticalAlignment, TextDirection, DOCXRunProperties, DOCXTextRun, DOCXDiagram, DOCXDrawing, DOCXField, DOCXSymbol, DOCXBreak, DOCXTab, DOCXRunContent, DOCXParagraphProperties, DOCXParagraph, DOCXTableCellProperties, DOCXTableCell, DOCXTableRow, DOCXTableProperties, DOCXTableGrid, DOCXTable, DOCXStyleRunProperties, DOCXStyleParagraphProperties, DOCXStyleTableProperties, DOCXStyle, DOCXNumberingLevel, DOCXNumberingDefinition, DOCXNumberingInstance, DOCXHeaderFooter, DOCXPageSize, DOCXPageMargins, DOCXColumns, DOCXSection, DOCXComment, DOCXFootnoteEndnote, DOCXMathElement, DOCXMath, DOCXCoreProperties, DOCXExtendedProperties, DOCXCustomProperties, DOCXDocument
+
+from .docx_models import DOCXBreak, DOCXColumns, DOCXComment, DOCXCoreProperties, DOCXCustomProperties, DOCXDiagram, DOCXDocument, DOCXDrawing, DOCXElementType, DOCXExtendedProperties, DOCXField, DOCXFootnoteEndnote, DOCXHeaderFooter, DOCXMath, DOCXMathElement, DOCXNumberingDefinition, DOCXNumberingInstance, DOCXNumberingLevel, DOCXPageMargins, DOCXPageSize, DOCXParagraph, DOCXParagraphProperties, DOCXRunContent, DOCXRunProperties, DOCXSection, DOCXStyle, DOCXStyleParagraphProperties, DOCXStyleRunProperties, DOCXStyleTableProperties, DOCXSymbol, DOCXTab, DOCXTable, DOCXTableCell, DOCXTableCellProperties, DOCXTableGrid, DOCXTableProperties, DOCXTableRow, DOCXTextRun, NumberingLevelSuffix, ParagraphAlignment, RunPropertyName, SectionType, TextDirection, VerticalAlignment
+
 from .docx_parser import DOCXParser
-from .docx_shape_extractor import parse_inline_shape
+
 from .docx_style_parser import DocxStyleParser
+
 from .docx_table_parser import DocxTableParser
-from .docx_utils import DocxStyleInfo, DocxNumberingInfo, DocxUtils, safe_find, safe_findall, get_element_text, xml_to_text, parse_dxa_to_points, parse_emu_to_pixels, parse_border_element, parse_shading_element, get_attribute, extract_text_from_run
+
+from .docx_utils import DocxNumberingInfo, DocxStyleInfo, DocxUtils, NS, OOXML_NAMESPACES, extract_text_from_run, get_attribute, get_element_text, safe_find, safe_findall, xml_to_text
+
+__all__ = [
+    "A",
+    "C",
+    "DGM",
+    "DOCXBreak",
+    "DOCXColumns",
+    "DOCXComment",
+    "DOCXCoreProperties",
+    "DOCXCustomProperties",
+    "DOCXDiagram",
+    "DOCXDocument",
+    "DOCXDrawing",
+    "DOCXElementType",
+    "DOCXExtendedProperties",
+    "DOCXExtractor",
+    "DOCXField",
+    "DOCXFootnoteEndnote",
+    "DOCXHeaderFooter",
+    "DOCXImageExtractor",
+    "DOCXMath",
+    "DOCXMathElement",
+    "DOCXNumberingDefinition",
+    "DOCXNumberingInstance",
+    "DOCXNumberingLevel",
+    "DOCXPageMargins",
+    "DOCXPageSize",
+    "DOCXParagraph",
+    "DOCXParagraphProperties",
+    "DOCXParser",
+    "DOCXRunContent",
+    "DOCXRunProperties",
+    "DOCXSection",
+    "DOCXStyle",
+    "DOCXStyleParagraphProperties",
+    "DOCXStyleRunProperties",
+    "DOCXStyleTableProperties",
+    "DOCXSymbol",
+    "DOCXTab",
+    "DOCXTable",
+    "DOCXTableCell",
+    "DOCXTableCellProperties",
+    "DOCXTableGrid",
+    "DOCXTableProperties",
+    "DOCXTableRow",
+    "DOCXTextRun",
+    "DocxNumberingInfo",
+    "DocxStyleInfo",
+    "DocxStyleParser",
+    "DocxTableParser",
+    "DocxUtils",
+    "NS",
+    "NS_DGM",
+    "NumberingLevelSuffix",
+    "OMMLParser",
+    "OOXML_NAMESPACES",
+    "ParagraphAlignment",
+    "R",
+    "RunPropertyName",
+    "SectionType",
+    "TextDirection",
+    "VerticalAlignment",
+    "extract_text_from_run",
+    "get_attribute",
+    "get_element_text",
+    "safe_find",
+    "safe_findall",
+    "xml_to_text",
+]

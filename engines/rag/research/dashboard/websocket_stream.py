@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-from typing import List
 
 from fastapi import WebSocket
 
@@ -20,7 +19,7 @@ class WebSocketStream:
     def disconnect(self, websocket: WebSocket):
         self.clients.discard(websocket)
 
-    def snapshot(self, limit: int = 20) -> List[TelemetryEventResponse]:
+    def snapshot(self, limit: int = 20) -> list[TelemetryEventResponse]:
         events = self.obs.collector.get_recent(limit)
         return [
             TelemetryEventResponse(

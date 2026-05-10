@@ -3,17 +3,18 @@
 Parsers for CSV and TSV files.
 Produces an ESDM Workbook with a single Worksheet.
 """
-
 from __future__ import annotations
 
 import csv
 import io
 from pathlib import Path
-from typing import Optional, Dict, Any, List, Union, AsyncIterator
 
-from .base_spreadsheet_parser import BaseSpreadsheetParser
+from ...models.esdm_models import Cell
+from ...models.esdm_models import Row
+from ...models.esdm_models import Workbook
+from ...models.esdm_models import Worksheet
 from ..base import ParseOptions
-from ...models.esdm_models import Workbook, Worksheet, Row, Cell, ESDMDocument
+from .base_spreadsheet_parser import BaseSpreadsheetParser
 
 
 class DelimitedParser(BaseSpreadsheetParser):
@@ -45,7 +46,7 @@ class DelimitedParser(BaseSpreadsheetParser):
         header_row_idx = options.header_row
         has_header = header_row_idx is not None and header_row_idx >= 0
 
-        column_names: List[str] = []
+        column_names: list[str] = []
         data_start_idx = 0
 
         if has_header and header_row_idx < len(rows_after_skip):

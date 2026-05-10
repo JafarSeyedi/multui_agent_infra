@@ -1,26 +1,21 @@
 """
 مدیریت فونت‌ها در PDF - پیاده‌سازی حرفه‌ای با پشتیبانی کامل از فونت‌های فارسی و انگلیسی
 """
-
 # mypy: ignore-errors
-
+import hashlib
 import os
 import tempfile
-import hashlib
-import base64
-import zlib
-from typing import Dict, List, Optional, Tuple, Union, BinaryIO
-from dataclasses import dataclass, field
-from enum import Enum
-import struct
-from pathlib import Path
 import warnings
+import zlib
+from dataclasses import dataclass
+from dataclasses import field
+from enum import Enum
+from pathlib import Path
 
-# برای فونت‌های استاندارد PDF
+from reportlab.lib.fonts import addMapping
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.lib.fonts import addMapping
-from reportlab.pdfgen.canvas import Canvas
+# برای فونت‌های استاندارد PDF
 
 # برای پردازش فونت‌های TrueType/OpenType
 try:
@@ -76,7 +71,7 @@ class FontMetrics:
     avg_width: int = 0      # میانگین عرض
     max_width: int = 0      # حداکثر عرض
     missing_width: int = 0  # عرض پیش‌فرض برای کاراکترهای ناموجود
-    font_bbox: Tuple[int, int, int, int] = (0, 0, 0, 0)  # [llx, lly, urx, ury]
+    font_bbox: tuple[int, int, int, int] = (0, 0, 0, 0)  # [llx, lly, urx, ury]
     flags: int = 0          # پرچم‌های فونت
 
 
@@ -88,65 +83,65 @@ class FontInfo:
     family: str                    # خانواده فونت
     style: FontStyle               # استایل فونت
     language: str = "fa"          # زبان فونت (پیش‌فرض فارسی)
-    
+
     # اطلاعات فنی
     embedded: bool = False         # آیا فونت تعبیه شده است؟
     subset: bool = False           # آیا زیرمجموعه شده است؟
     encoding: FontEncoding = FontEncoding.IDENTITY_H
     subset_strategy: FontSubsetStrategy = FontSubsetStrategy.FULL
-    
+
     # داده‌های فونت
-    ttf_data: Optional[bytes] = None          # داده‌های خام TTF/OTF
-    subset_data: Optional[bytes] = None        # داده‌های زیرمجموعه
-    used_glyphs: List[int] = field(default_factory=list)  # گلیف‌های استفاده شده
-    
+    ttf_data: bytes | None = None          # داده‌های خام TTF/OTF
+    subset_data: bytes | None = None        # داده‌های زیرمجموعه
+    used_glyphs: list[int] = field(default_factory=list)  # گلیف‌های استفاده شده
+
     # اطلاعات PDF
-    pdf_name: Optional[str] = None            # نام فونت در PDF (مثل /F1)
-    object_number: Optional[int] = None       # شماره آبجکت در PDF
+    pdf_name: str | None = None            # نام فونت در PDF (مثل /F1)
+    object_number: int | None = None       # شماره آبجکت در PDF
     generation_number: int = 0                # شماره نسل
-    
+
     # متریک‌ها
     metrics: FontMetrics = field(default_factory=FontMetrics)
-    
+
     # اطلاعات فایل
-    file_path: Optional[str] = None           # مسیر فایل فونت
+    file_path: str | None = None           # مسیر فایل فونت
     file_size: int = 0                        # حجم فایل
-    checksum: Optional[str] = None            # چکسام فونت
-    
+    checksum: str | None = None            # چکسام فونت
+
     # اطلاعات فنی پیشرفته
     is_cid: bool = False                      # آیا فونت CID است؟
-    cid_system_info: Optional[Dict] = None    # اطلاعات سیستم CID
-    cmap: Optional[Dict] = None               # نقشه کاراکتر به گلیف
-    glyph_widths: Optional[Dict[int, int]] = None  # عرض گلیف‌ها
-    
+    cid_system_info: dict | None = None    # اطلاعات سیستم CID
+    cmap: dict | None = None               # نقشه کاراکتر به گلیف
+    glyph_widths: dict[int, int] | None = None  # عرض گلیف‌ها
+
     def __post_init__(self):
         """اعتبارسنجی و تنظیم مقادیر پیش‌فرض"""
         if not self.pdf_name:
             self.pdf_name = f"/F{hash(self.name) % 10000:04d}"
-        
+
         if self.ttf_data:
             self.file_size = len(self.ttf_data)
             self.checksum = hashlib.md5(self.ttf_data).hexdigest()
-            
+
             # استخراج متریک‌ها از داده‌های فونت
             if FONTTOOLS_AVAILABLE:
                 self._extract_metrics_from_ttf()
-    
+
     def _extract_metrics_from_ttf(self):
         """استخراج متریک‌ها از فایل TTF"""
         try:
             with tempfile.NamedTemporaryFile(suffix='.ttf', delete=False) as tmp:
                 tmp.write(self.ttf_data)
                 tmp_path = tmp.name
-            
+
             font = FontToolsTTF(tmp_path)
-            
+
             # استخراج اطلاعات از جداول مختلف
             os2_table = font['OS/2']
             head_table = font['head']
             hhea_table = font['hhea'] if 'hhea' in font else None
             post_table = font['post'] if 'post' in font else None
-            
+
             # تنظیم متریک‌ها
             self.metrics.ascent = getattr(hhea_table, 'ascent', 0) if hhea_table else 0
             self.metrics.descent = getattr(hhea_table, 'descent', 0) if hhea_table else 0
@@ -154,7 +149,7 @@ class FontInfo:
             self.metrics.x_height = getattr(os2_table, 'sxHeight', 0)
             self.metrics.italic_angle = getattr(post_table, 'italicAngle', 0) if post_table else 0
             self.metrics.stem_v = 80  # مقدار پیش‌فرض برای فونت‌های لاتین
-            
+
             # Font BBox
             self.metrics.font_bbox = (
                 head_table.xMin,
@@ -162,7 +157,7 @@ class FontInfo:
                 head_table.xMax,
                 head_table.yMax
             )
-            
+
             # پرچم‌های فونت
             flags = 0
             if os2_table.fsSelection & 0x001:  # Italic
@@ -175,9 +170,9 @@ class FontInfo:
                 flags |= 1 << 2
             else:  # Nonsymbolic
                 flags |= 1 << 5
-            
+
             self.metrics.flags = flags
-            
+
             # استخراج عرض گلیف‌ها
             if 'hmtx' in font:
                 hmtx_table = font['hmtx']
@@ -185,7 +180,7 @@ class FontInfo:
                 for glyph_name in font.getGlyphOrder():
                     if glyph_name in hmtx_table.metrics:
                         self.metrics.glyph_widths[glyph_name] = hmtx_table.metrics[glyph_name][0]
-            
+
             # استخراج cmap
             if 'cmap' in font:
                 cmap_table = font['cmap']
@@ -194,36 +189,36 @@ class FontInfo:
                     if table.isUnicode():
                         for code, glyph_name in table.cmap.items():
                             self.cmap[code] = glyph_name
-            
+
             font.close()
             os.unlink(tmp_path)
-            
+
         except Exception as e:
             warnings.warn(f"خطا در استخراج متریک‌های فونت {self.name}: {e}")
-    
+
     def create_subset(self, characters: str) -> bytes:
         """ایجاد زیرمجموعه فونت بر اساس کاراکترهای استفاده شده"""
         if not self.ttf_data or not FONTTOOLS_AVAILABLE:
             return self.ttf_data or b""
-        
+
         try:
             with tempfile.NamedTemporaryFile(suffix='.ttf', delete=False) as tmp:
                 tmp.write(self.ttf_data)
                 tmp_path = tmp.name
-            
+
             # بارگذاری فونت
             font = FontToolsTTF(tmp_path)
-            
+
             # تنظیم زیرمجموعه
             subsetter = Subsetter()
-            
+
             # تبدیل کاراکترها به کدهای Unicode
             unicodes = {ord(c) for c in characters if ord(c) < 0xFFFF}
-            
+
             # افزودن کاراکترهای ضروری
             unicodes.update({0x0020})  # Space
             unicodes.update({0x000D, 0x000A})  # CR, LF
-            
+
             # برای فونت‌های فارسی، کاراکترهای ضروری فارسی را اضافه کن
             if self.language == "fa":
                 # کاراکترهای ضروری فارسی
@@ -241,42 +236,42 @@ class FontInfo:
                     0x0686, 0x0698, 0x06AF, 0x06A9, 0x06CC, 0x06C0, 0x0629    # چ ژ گ ک ی ه
                 }
                 unicodes.update(persian_essential)
-            
+
             subsetter.populate(unicodes=unicodes)
             subsetter.subset(font)
-            
+
             # ذخیره زیرمجموعه
             with tempfile.NamedTemporaryFile(suffix='.subset.ttf', delete=False) as tmp_subset:
                 subset_path = tmp_subset.name
-            
+
             font.save(subset_path)
-            
+
             # خواندن داده‌های زیرمجموعه
             with open(subset_path, 'rb') as f:
                 subset_data = f.read()
-            
+
             # ذخیره گلیف‌های استفاده شده
             self.used_glyphs = list(unicodes)
             self.subset = True
             self.subset_data = subset_data
-            
+
             # پاکسازی فایل‌های موقت
             font.close()
             os.unlink(tmp_path)
             os.unlink(subset_path)
-            
+
             return subset_data
-            
+
         except Exception as e:
             warnings.warn(f"خطا در ایجاد زیرمجموعه فونت {self.name}: {e}")
             return self.ttf_data or b""
-    
+
     def get_font_data(self) -> bytes:
         """دریافت داده‌های فونت (اصلی یا زیرمجموعه)"""
         if self.subset and self.subset_data:
             return self.subset_data
         return self.ttf_data or b""
-    
+
     def get_encoding_name(self) -> str:
         """دریافت نام انکودینگ برای PDF"""
         if self.encoding == FontEncoding.IDENTITY_H:
@@ -295,7 +290,7 @@ class FontInfo:
 
 class FontManager:
     """مدیر فونت‌های PDF با پشتیبانی کامل از فارسی و انگلیسی"""
-    
+
     # فونت‌های استاندارد فارسی (مجاز)
     PERSIAN_STANDARD_FONTS = {
         "B Nazanin": {
@@ -336,7 +331,7 @@ class FontManager:
             "bold": "Iranian Serif Bold"
         }
     }
-    
+
     # فونت‌های استاندارد لاتین
     LATIN_STANDARD_FONTS = {
         "Helvetica": {
@@ -364,7 +359,7 @@ class FontManager:
             "normal": "ZapfDingbats"
         }
     }
-    
+
     def __init__(self, embed_fonts: bool = True, subset_fonts: bool = True):
         """
         مقداردهی اولیه مدیر فونت
@@ -373,25 +368,25 @@ class FontManager:
             embed_fonts: آیا فونت‌ها تعبیه شوند؟
             subset_fonts: آیا از زیرمجموعه‌سازی استفاده شود؟
         """
-        self.fonts: Dict[str, FontInfo] = {}
-        self.font_mapping: Dict[Tuple[str, str, str], str] = {}  # (family, style, language) -> font_key
+        self.fonts: dict[str, FontInfo] = {}
+        self.font_mapping: dict[tuple[str, str, str], str] = {}  # (family, style, language) -> font_key
         self.embed_fonts = embed_fonts
         self.subset_fonts = subset_fonts
         self.next_font_id = 1
-        
+
         # ثبت فونت‌های استاندارد
         self._register_standard_fonts()
-        
+
         # کش برای فونت‌های بارگذاری شده
-        self._font_cache: Dict[str, bytes] = {}
-        
+        self._font_cache: dict[str, bytes] = {}
+
         # دایرکتوری‌های جستجوی فونت
         self.font_directories = self._get_default_font_directories()
-    
-    def _get_default_font_directories(self) -> List[str]:
+
+    def _get_default_font_directories(self) -> list[str]:
         """دریافت دایرکتوری‌های پیش‌فرض فونت"""
         directories = []
-        
+
         # سیستم‌عامل‌های مختلف
         if os.name == 'nt':  # Windows
             directories.extend([
@@ -406,20 +401,20 @@ class FontManager:
                 os.path.expanduser('~/.fonts'),
                 os.path.expanduser('~/Library/Fonts'),  # Mac user
             ])
-        
+
         # دایرکتوری‌های فارسی
         persian_dirs = [
             '/usr/share/fonts/truetype/persian',
             '/usr/share/fonts/truetype/farsi',
             '/usr/share/fonts/iranian',
         ]
-        
+
         for dir_path in persian_dirs:
             if os.path.exists(dir_path):
                 directories.append(dir_path)
-        
+
         return directories
-    
+
     def _register_standard_fonts(self):
         """ثبت فونت‌های استاندارد PDF"""
         # فونت‌های لاتین
@@ -434,11 +429,11 @@ class FontManager:
                     embedded=False,  # فونت‌های استاندارد تعبیه نمی‌شوند
                     encoding=FontEncoding.WIN_ANSI
                 )
-                
+
                 font_key = f"STD-{family}-{style.value}"
                 self.fonts[font_key] = font_info
                 self.font_mapping[(family, style.value, "en")] = font_key
-        
+
         # فونت‌های فارسی (به عنوان فونت‌های تعبیه‌شده)
         for family, styles in self.PERSIAN_STANDARD_FONTS.items():
             for style_name, font_name in styles.items():
@@ -452,12 +447,12 @@ class FontManager:
                     encoding=FontEncoding.IDENTITY_H,
                     subset_strategy=FontSubsetStrategy.SUBSET if self.subset_fonts else FontSubsetStrategy.FULL
                 )
-                
+
                 font_key = f"FA-{family}-{style.value}"
                 self.fonts[font_key] = font_info
                 self.font_mapping[(family, style.value, "fa")] = font_key
-    
-    def register_font_file(self, font_path: str, family: Optional[str] = None,
+
+    def register_font_file(self, font_path: str, family: str | None = None,
                           style: FontStyle = FontStyle.NORMAL,
                           language: str = "fa") -> str:
         """ثبت فونت از فایل"""
@@ -465,22 +460,22 @@ class FontManager:
             # بررسی وجود فایل
             if not os.path.exists(font_path):
                 raise FileNotFoundError(f"فونت یافت نشد: {font_path}")
-            
+
             # خواندن فایل فونت
             with open(font_path, 'rb') as f:
                 font_data = f.read()
-            
+
             # استخراج نام فونت از داده‌ها
             font_name = self._extract_font_name(font_data)
             if not font_name:
                 font_name = Path(font_path).stem
-            
+
             # استفاده از نام خانواده ارائه شده یا استخراج شده
             actual_family = family or self._extract_font_family(font_data) or font_name
-            
+
             # ایجاد کلید یکتا
             font_key = f"CUSTOM-{actual_family}-{style.value}-{language}-{hash(font_data) % 10000:04d}"
-            
+
             # ایجاد اطلاعات فونت
             font_info = FontInfo(
                 name=font_name,
@@ -493,24 +488,24 @@ class FontManager:
                 encoding=FontEncoding.IDENTITY_H if language == "fa" else FontEncoding.WIN_ANSI,
                 subset_strategy=FontSubsetStrategy.SUBSET if self.subset_fonts else FontSubsetStrategy.FULL
             )
-            
+
             # ذخیره در کش
             self._font_cache[font_key] = font_data
-            
+
             # ثبت فونت
             self.fonts[font_key] = font_info
             self.font_mapping[(actual_family, style.value, language)] = font_key
-            
+
             # ثبت در ReportLab (اگر موجود باشد)
             self._register_with_reportlab(font_info)
-            
+
             return font_key
-            
+
         except Exception as e:
             warnings.warn(f"خطا در ثبت فونت از فایل {font_path}: {e}")
             # بازگشت به فونت پیش‌فرض
             return self.get_default_font(language, style)
-    
+
     def register_font_data(self, font_data: bytes, font_name: str, family: str,
                           style: FontStyle = FontStyle.NORMAL,
                           language: str = "fa") -> str:
@@ -518,7 +513,7 @@ class FontManager:
         try:
             # ایجاد کلید یکتا
             font_key = f"CUSTOM-{family}-{style.value}-{language}-{hash(font_data) % 10000:04d}"
-            
+
             # ایجاد اطلاعات فونت
             font_info = FontInfo(
                 name=font_name,
@@ -530,103 +525,103 @@ class FontManager:
                 encoding=FontEncoding.IDENTITY_H if language == "fa" else FontEncoding.WIN_ANSI,
                 subset_strategy=FontSubsetStrategy.SUBSET if self.subset_fonts else FontSubsetStrategy.FULL
             )
-            
+
             # ذخیره در کش
             self._font_cache[font_key] = font_data
-            
+
             # ثبت فونت
             self.fonts[font_key] = font_info
             self.font_mapping[(family, style.value, language)] = font_key
-            
+
             # ثبت در ReportLab
             self._register_with_reportlab(font_info)
-            
+
             return font_key
-            
+
         except Exception as e:
             warnings.warn(f"خطا در ثبت فونت از داده‌ها: {e}")
             return self.get_default_font(language, style)
-    
-    def _extract_font_name(self, font_data: bytes) -> Optional[str]:
+
+    def _extract_font_name(self, font_data: bytes) -> str | None:
         """استخراج نام فونت از داده‌های TTF/OTF"""
         if not FONTTOOLS_AVAILABLE or len(font_data) < 100:
             return None
-        
+
         try:
             with tempfile.NamedTemporaryFile(suffix='.ttf', delete=False) as tmp:
                 tmp.write(font_data)
                 tmp_path = tmp.name
-            
+
             font = FontToolsTTF(tmp_path)
-            
+
             # استخراج نام از جدول 'name'
             name_table = font['name']
             font_name = None
-            
+
             # جستجوی نام به زبان انگلیسی
             for record in name_table.names:
                 if record.nameID == 4 and record.platformID == 3 and record.platEncID == 1:
                     font_name = record.toUnicode()
                     break
-            
+
             # اگر نام انگلیسی یافت نشد، اولین نام را بگیر
             if not font_name and name_table.names:
                 font_name = name_table.names[0].toUnicode()
-            
+
             font.close()
             os.unlink(tmp_path)
-            
+
             return font_name
-            
+
         except Exception:
             return None
-    
-    def _extract_font_family(self, font_data: bytes) -> Optional[str]:
+
+    def _extract_font_family(self, font_data: bytes) -> str | None:
         """استخراج خانواده فونت از داده‌های TTF/OTF"""
         if not FONTTOOLS_AVAILABLE:
             return None
-        
+
         try:
             with tempfile.NamedTemporaryFile(suffix='.ttf', delete=False) as tmp:
                 tmp.write(font_data)
                 tmp_path = tmp.name
-            
+
             font = FontToolsTTF(tmp_path)
-            
+
             # استخراج خانواده از جدول 'name'
             name_table = font['name']
             font_family = None
-            
+
             for record in name_table.names:
                 if record.nameID == 1 and record.platformID == 3 and record.platEncID == 1:
                     font_family = record.toUnicode()
                     break
-            
+
             font.close()
             os.unlink(tmp_path)
-            
+
             return font_family
-            
+
         except Exception:
             return None
-    
+
     def _register_with_reportlab(self, font_info: FontInfo):
         """ثبت فونت در ReportLab"""
         try:
             if not font_info.ttf_data:
                 return
-            
+
             # ایجاد نام ReportLab
             reportlab_name = f"{font_info.family}_{font_info.style.value}"
-            
+
             # ذخیره موقت فایل فونت
             with tempfile.NamedTemporaryFile(suffix='.ttf', delete=False) as tmp:
                 tmp.write(font_info.ttf_data)
                 tmp_path = tmp.name
-            
+
             # ثبت در ReportLab
             pdfmetrics.registerFont(TTFont(reportlab_name, tmp_path))
-            
+
             # ثبت مپینگ
             addMapping(
                 font_info.family,
@@ -634,29 +629,29 @@ class FontManager:
                 font_info.style == FontStyle.ITALIC or font_info.style == FontStyle.BOLD_ITALIC,
                 reportlab_name
             )
-            
+
             # حذف فایل موقت
             os.unlink(tmp_path)
-            
+
         except Exception as e:
             warnings.warn(f"خطا در ثبت فونت {font_info.name} در ReportLab: {e}")
-    
+
     def get_font(self, family: str, style: FontStyle = FontStyle.NORMAL,
-                language: str = "fa") -> Optional[FontInfo]:
+                language: str = "fa") -> FontInfo | None:
         """دریافت اطلاعات فونت"""
         # جستجوی مستقیم
         key = (family, style.value, language)
         if key in self.font_mapping:
             font_key = self.font_mapping[key]
             return self.fonts.get(font_key)
-        
+
         # جستجو با زبان جایگزین
         alt_language = "en" if language == "fa" else "fa"
         key = (family, style.value, alt_language)
         if key in self.font_mapping:
             font_key = self.font_mapping[key]
             return self.fonts.get(font_key)
-        
+
         # جستجوی بدون در نظر گرفتن زبان
         for lang in [language, alt_language, "*"]:
             for style_variant in [style.value, "normal"]:
@@ -664,19 +659,19 @@ class FontManager:
                 if key in self.font_mapping:
                     font_key = self.font_mapping[key]
                     return self.fonts.get(font_key)
-        
+
         return None
-    
+
     def get_pdf_font_name(self, family: str, style: FontStyle = FontStyle.NORMAL,
                          language: str = "fa") -> str:
         """دریافت نام فونت برای استفاده در PDF"""
         font_info = self.get_font(family, style, language)
         if font_info and font_info.pdf_name:
             return font_info.pdf_name
-        
+
         # اگر فونت یافت نشد، از فونت پیش‌فرض استفاده کن
         return self.get_default_font(language, style)
-    
+
     def get_default_font(self, language: str = "fa", style: FontStyle = FontStyle.NORMAL) -> str:
         """دریافت فونت پیش‌فرض برای زبان"""
         if language == "fa":
@@ -693,60 +688,60 @@ class FontManager:
                 font_info = self.get_font(font_family, style, "en")
                 if font_info:
                     return font_info.pdf_name or f"/F{self.next_font_id}"
-        
+
         # اگر هیچ فونتی یافت نشد، یک فونت استاندارد برگردان
         return "/Helvetica" if style == FontStyle.NORMAL else f"/Helvetica-{style.value.upper()}"
-    
-    def create_subset_for_text(self, text: str, language: str = "fa") -> Dict[str, bytes]:
+
+    def create_subset_for_text(self, text: str, language: str = "fa") -> dict[str, bytes]:
         """ایجاد زیرمجموعه فونت‌ها برای متن داده شده"""
         subsets = {}
-        
+
         # استخراج کاراکترهای منحصر به فرد
-        unique_chars = set(text)
-        
+        set(text)
+
         # گروه‌بندی فونت‌ها بر اساس زبان
         target_language = language
-        
+
         for font_key, font_info in self.fonts.items():
             if font_info.language == target_language and font_info.embedded:
                 # ایجاد زیرمجموعه
                 subset_data = font_info.create_subset(text)
                 if subset_data:
                     subsets[font_key] = subset_data
-        
+
         return subsets
-    
-    def embed_fonts_in_pdf(self, pdf_writer, used_fonts: List[str] = None) -> Dict[str, int]:
+
+    def embed_fonts_in_pdf(self, pdf_writer, used_fonts: list[str] = None) -> dict[str, int]:
         """تعبیه فونت‌ها در PDF و برگرداندن مپ نام فونت به شماره آبجکت"""
         font_objects = {}
-        
+
         # اگر لیست فونت‌های استفاده شده مشخص نشده، همه فونت‌های تعبیه‌شده را در نظر بگیر
         if used_fonts is None:
             used_fonts = [k for k, v in self.fonts.items() if v.embedded]
-        
+
         for font_key in used_fonts:
             font_info = self.fonts.get(font_key)
             if not font_info or not font_info.embedded:
                 continue
-            
+
             # ایجاد آبجکت فونت در PDF
             font_obj_num = self._create_font_object(pdf_writer, font_info)
             if font_obj_num:
                 font_objects[font_info.pdf_name] = font_obj_num
-        
+
         return font_objects
-    
-    def _create_font_object(self, pdf_writer, font_info: FontInfo) -> Optional[int]:
+
+    def _create_font_object(self, pdf_writer, font_info: FontInfo) -> int | None:
         """ایجاد آبجکت فونت در PDF"""
         try:
             # دریافت داده‌های فونت
             font_data = font_info.get_font_data()
             if not font_data:
                 return None
-            
+
             # فشرده‌سازی داده‌های فونت
             compressed_data = zlib.compress(font_data)
-            
+
             # ایجاد دیکشنری فونت
             font_dict = {
                 'Type': '/Font',
@@ -754,7 +749,7 @@ class FontManager:
                 'BaseFont': f'/{font_info.name}',
                 'Encoding': font_info.get_encoding_name(),
             }
-            
+
             # برای فونت‌های فارسی (CID)
             if font_info.language == "fa":
                 font_dict.update({
@@ -768,7 +763,7 @@ class FontManager:
                     'DW': 1000,  # عرض پیش‌فرض
                     'W': self._create_width_array(font_info),  # آرایه عرض‌ها
                 })
-            
+
             # برای فونت‌های لاتین (TrueType)
             else:
                 font_dict.update({
@@ -778,7 +773,7 @@ class FontManager:
                     'Widths': self._create_latin_widths_array(font_info),
                     'FontDescriptor': self._create_font_descriptor(pdf_writer, font_info),
                 })
-            
+
             # ایجاد استریم فونت
             font_stream = {
                 'Type': '/FontDescriptor',
@@ -796,7 +791,7 @@ class FontManager:
                 'MaxWidth': font_info.metrics.max_width,
                 'MissingWidth': font_info.metrics.missing_width,
             }
-            
+
             # اگر فونت تعبیه شده است، داده‌های فونت را اضافه کن
             if font_info.embedded:
                 font_stream['FontFile2'] = pdf_writer.create_stream(
@@ -807,20 +802,20 @@ class FontManager:
                         'Length': len(compressed_data)
                     }
                 )
-            
+
             # ایجاد آبجکت فونت
             font_obj_num = pdf_writer.create_object(font_dict)
-            
+
             # ذخیره شماره آبجکت
             font_info.object_number = font_obj_num
-            
+
             return font_obj_num
-            
+
         except Exception as e:
             warnings.warn(f"خطا در ایجاد آبجکت فونت {font_info.name}: {e}")
             return None
-    
-    def _create_font_descriptor(self, pdf_writer, font_info: FontInfo) -> Dict:
+
+    def _create_font_descriptor(self, pdf_writer, font_info: FontInfo) -> dict:
         """ایجاد دیکشنری توصیف‌کننده فونت"""
         return {
             'Type': '/FontDescriptor',
@@ -838,13 +833,13 @@ class FontManager:
             'MaxWidth': font_info.metrics.max_width,
             'MissingWidth': font_info.metrics.missing_width,
         }
-    
-    def _create_width_array(self, font_info: FontInfo) -> List:
+
+    def _create_width_array(self, font_info: FontInfo) -> list:
         """ایجاد آرایه عرض برای فونت‌های فارسی (CID)"""
         # این یک پیاده‌سازی ساده است
         # در پیاده‌سازی واقعی باید عرض واقعی گلیف‌ها محاسبه شود
         widths = []
-        
+
         # برای فونت‌های فارسی، عرض پیش‌فرض 1000 واحد است
         # این می‌تواند بر اساس متریک‌های واقعی فونت تنظیم شود
         if font_info.metrics.glyph_widths:
@@ -855,35 +850,35 @@ class FontManager:
         else:
             # استفاده از عرض پیش‌فرض
             widths.append([0, 65535, 1000])
-        
+
         return widths
-    
-    def _create_latin_widths_array(self, font_info: FontInfo) -> List:
+
+    def _create_latin_widths_array(self, font_info: FontInfo) -> list:
         """ایجاد آرایه عرض برای فونت‌های لاتین"""
         widths = []
-        
+
         # عرض پیش‌فرض برای کاراکترهای ASCII
         for i in range(32, 256):
             if font_info.metrics.glyph_widths and i in font_info.metrics.glyph_widths:
                 widths.append(font_info.metrics.glyph_widths[i])
             else:
                 widths.append(600)  # عرض پیش‌فرض
-        
+
         return widths
-    
-    def get_font_resources_dict(self) -> Dict:
+
+    def get_font_resources_dict(self) -> dict:
         """دریافت دیکشنری منابع فونت برای PDF"""
         resources = {'Font': {}}
-        
+
         for font_key, font_info in self.fonts.items():
             if font_info.pdf_name:
                 # فقط فونت‌هایی که در PDF استفاده می‌شوند
                 font_ref = f"{font_info.object_number} 0 R" if font_info.object_number else font_info.pdf_name
                 resources['Font'][font_info.pdf_name[1:]] = font_ref
-        
+
         return resources
-    
-    def analyze_text_font_requirements(self, text: str) -> Dict:
+
+    def analyze_text_font_requirements(self, text: str) -> dict:
         """تحلیل نیازهای فونت برای متن داده شده"""
         result = {
             'languages': set(),
@@ -892,12 +887,12 @@ class FontManager:
             'font_families_needed': set(),
             'recommended_fonts': []
         }
-        
+
         # تحلیل کاراکترها
         for char in text:
             code_point = ord(char)
             result['characters'].add(char)
-            
+
             # تشخیص زبان
             if 0x0600 <= code_point <= 0x06FF:  # محدوده عربی/فارسی
                 result['languages'].add('fa')
@@ -923,7 +918,7 @@ class FontManager:
             elif 0x0100 <= code_point <= 0x017F:  # Latin Extended-A
                 result['languages'].add('en')
                 result['unicode_ranges'].add('Latin Extended-A')
-        
+
         # پیشنهاد فونت‌ها
         if 'fa' in result['languages']:
             result['font_families_needed'].add('persian')
@@ -932,7 +927,7 @@ class FontManager:
                 {'family': 'B Lotus', 'style': 'normal', 'language': 'fa'},
                 {'family': 'B Mitra', 'style': 'normal', 'language': 'fa'},
             ])
-        
+
         if 'en' in result['languages']:
             result['font_families_needed'].add('latin')
             result['recommended_fonts'].extend([
@@ -940,29 +935,29 @@ class FontManager:
                 {'family': 'Times', 'style': 'normal', 'language': 'en'},
                 {'family': 'Courier', 'style': 'normal', 'language': 'en'},
             ])
-        
+
         # تبدیل set به list برای JSON serialization
         result['languages'] = list(result['languages'])
         result['characters'] = list(result['characters'])
         result['unicode_ranges'] = list(result['unicode_ranges'])
         result['font_families_needed'] = list(result['font_families_needed'])
-        
+
         return result
-    
-    def optimize_fonts(self, min_usage_percentage: float = 0.1) -> Dict[str, List[str]]:
+
+    def optimize_fonts(self, min_usage_percentage: float = 0.1) -> dict[str, list[str]]:
         """بهینه‌سازی فونت‌ها با حذف فونت‌های کم استفاده"""
         optimization_result = {
             'removed': [],
             'kept': [],
             'merged': []
         }
-        
+
         # اینجا می‌توان منطق پیچیده‌تری برای بهینه‌سازی اضافه کرد
         # مثلاً ادغام فونت‌های مشابه یا حذف فونت‌های تکراری
-        
+
         return optimization_result
-    
-    def get_statistics(self) -> Dict:
+
+    def get_statistics(self) -> dict:
         """دریافت آمار فونت‌ها"""
         stats = {
             'total_fonts': len(self.fonts),
@@ -978,7 +973,7 @@ class FontManager:
             'subset_size_bytes': 0,
             'font_details': []
         }
-        
+
         # محاسبه آمار بر اساس خانواده
         for font_info in self.fonts.values():
             # آمار خانواده
@@ -986,31 +981,31 @@ class FontManager:
             if family not in stats['by_family']:
                 stats['by_family'][family] = 0
             stats['by_family'][family] += 1
-            
+
             # آمار استایل
             style = font_info.style.value
             if style not in stats['by_style']:
                 stats['by_style'][style] = 0
             stats['by_style'][style] += 1
-            
+
             # آمار زبان
             lang = font_info.language
             if lang not in stats['by_language']:
                 stats['by_language'][lang] = 0
             stats['by_language'][lang] += 1
-            
+
             # محاسبه حجم
             font_data = font_info.get_font_data()
             if font_data:
                 font_size = len(font_data)
                 stats['total_size_bytes'] += font_size
-                
+
                 if font_info.embedded:
                     stats['embedded_size_bytes'] += font_size
-                
+
                 if font_info.subset:
                     stats['subset_size_bytes'] += font_size
-            
+
             # جزئیات فونت
             font_detail = {
                 'name': font_info.name,
@@ -1034,12 +1029,12 @@ class FontManager:
                 }
             }
             stats['font_details'].append(font_detail)
-        
+
         # تبدیل حجم به فرمت خوانا
         stats['total_size_mb'] = stats['total_size_bytes'] / (1024 * 1024)
         stats['embedded_size_mb'] = stats['embedded_size_bytes'] / (1024 * 1024)
         stats['subset_size_mb'] = stats['subset_size_bytes'] / (1024 * 1024)
-        
+
         # محاسبه درصدها
         if stats['total_fonts'] > 0:
             stats['embedded_percentage'] = (stats['embedded_fonts'] / stats['total_fonts']) * 100
@@ -1051,35 +1046,35 @@ class FontManager:
             stats['subset_percentage'] = 0
             stats['persian_percentage'] = 0
             stats['latin_percentage'] = 0
-        
+
         # مرتب‌سازی
         stats['by_family'] = dict(sorted(stats['by_family'].items(), key=lambda x: x[1], reverse=True))
         stats['by_style'] = dict(sorted(stats['by_style'].items(), key=lambda x: x[1], reverse=True))
         stats['by_language'] = dict(sorted(stats['by_language'].items(), key=lambda x: x[1], reverse=True))
-        
+
         return stats
-    
-    def export_font_info(self, output_format: str = 'json') -> Union[Dict, str]:
+
+    def export_font_info(self, output_format: str = 'json') -> dict | str:
         """صدور اطلاعات فونت‌ها در فرمت‌های مختلف"""
         stats = self.get_statistics()
-        
+
         if output_format.lower() == 'json':
             import json
             return json.dumps(stats, indent=2, ensure_ascii=False)
-        
+
         elif output_format.lower() == 'csv':
             import csv
             import io
-            
+
             output = io.StringIO()
             writer = csv.writer(output)
-            
+
             # هدر
             writer.writerow([
                 'Name', 'Family', 'Style', 'Language', 'Embedded', 'Subset',
                 'Encoding', 'PDF Name', 'Object #', 'File Size (KB)', 'Checksum'
             ])
-            
+
             # داده‌ها
             for font in stats['font_details']:
                 writer.writerow([
@@ -1095,7 +1090,7 @@ class FontManager:
                     f"{font['file_size'] / 1024:.2f}",
                     font['checksum'] or 'N/A'
                 ])
-            
+
             # خلاصه
             writer.writerow([])
             writer.writerow(['SUMMARY'])
@@ -1107,9 +1102,9 @@ class FontManager:
             writer.writerow(['Total Size', f"{stats['total_size_mb']:.2f} MB"])
             writer.writerow(['Embedded Size', f"{stats['embedded_size_mb']:.2f} MB"])
             writer.writerow(['Subset Size', f"{stats['subset_size_mb']:.2f} MB"])
-            
+
             return output.getvalue()
-        
+
         elif output_format.lower() == 'html':
             html = """
             <!DOCTYPE html>
@@ -1190,12 +1185,12 @@ class FontManager:
                             </thead>
                             <tbody>
             """
-            
+
             for font in stats['font_details']:
                 embedded_badge = '<span class="badge badge-success">بله</span>' if font['embedded'] else '<span class="badge badge-warning">خیر</span>'
                 subset_badge = '<span class="badge badge-info">بله</span>' if font['subset'] else ''
                 lang_badge = '<span class="badge badge-success">فارسی</span>' if font['language'] == 'fa' else '<span class="badge badge-info">انگلیسی</span>'
-                
+
                 html += f"""
                                 <tr>
                                     <td>{font['name']}</td>
@@ -1209,7 +1204,7 @@ class FontManager:
                                     <td>{font['file_size'] / 1024:.2f}</td>
                                 </tr>
                 """
-            
+
             html += """
                             </tbody>
                         </table>
@@ -1228,9 +1223,9 @@ class FontManager:
             </body>
             </html>
             """
-            
+
             return html
-        
+
         else:
             # خروجی متنی ساده
             output = []
@@ -1262,7 +1257,7 @@ class FontManager:
             output.append("=" * 80)
             output.append("جزئیات فونت‌ها:")
             output.append("=" * 80)
-            
+
             for font in stats['font_details']:
                 output.append(f"نام: {font['name']}")
                 output.append(f"  خانواده: {font['family']}")
@@ -1276,19 +1271,19 @@ class FontManager:
                 output.append(f"  حجم: {font['file_size'] / 1024:.2f} KB")
                 output.append(f"  چکسام: {font['checksum'] or 'N/A'}")
                 output.append("-" * 40)
-            
+
             return "\n".join(output)
-    
+
     def _get_current_date(self) -> str:
         """دریافت تاریخ جاری به صورت رشته"""
         from datetime import datetime
         now = datetime.now()
         return now.strftime("%Y/%m/%d %H:%M:%S")
-    
+
     def clear_cache(self):
         """پاک کردن کش فونت‌ها"""
         self._font_cache.clear()
-    
+
     def reset(self):
         """بازنشانی مدیر فونت به حالت اولیه"""
         self.fonts.clear()
@@ -1296,28 +1291,28 @@ class FontManager:
         self._font_cache.clear()
         self.next_font_id = 1
         self._register_standard_fonts()
-    
-    def find_font_by_checksum(self, checksum: str) -> Optional[FontInfo]:
+
+    def find_font_by_checksum(self, checksum: str) -> FontInfo | None:
         """یافتن فونت بر اساس چکسام"""
         for font_info in self.fonts.values():
             if font_info.checksum == checksum:
                 return font_info
         return None
-    
-    def find_font_by_name(self, name: str) -> List[FontInfo]:
+
+    def find_font_by_name(self, name: str) -> list[FontInfo]:
         """یافتن فونت‌ها بر اساس نام"""
         results = []
         for font_info in self.fonts.values():
             if name.lower() in font_info.name.lower() or name.lower() in font_info.family.lower():
                 results.append(font_info)
         return results
-    
-    def get_font_list(self, language: Optional[str] = None, 
+
+    def get_font_list(self, language: str | None = None,
                      embedded_only: bool = False,
-                     subset_only: bool = False) -> List[Dict]:
+                     subset_only: bool = False) -> list[dict]:
         """دریافت لیست فونت‌ها با فیلترهای مختلف"""
         font_list = []
-        
+
         for font_key, font_info in self.fonts.items():
             # اعمال فیلترها
             if language and font_info.language != language:
@@ -1326,7 +1321,7 @@ class FontManager:
                 continue
             if subset_only and not font_info.subset:
                 continue
-            
+
             font_list.append({
                 'key': font_key,
                 'name': font_info.name,
@@ -1342,13 +1337,13 @@ class FontManager:
                 'checksum': font_info.checksum,
                 'file_path': font_info.file_path
             })
-        
+
         # مرتب‌سازی بر اساس نام خانواده
         font_list.sort(key=lambda x: (x['family'], x['name']))
-        
+
         return font_list
-    
-    def validate_fonts(self) -> Dict[str, List[str]]:
+
+    def validate_fonts(self) -> dict[str, list[str]]:
         """اعتبارسنجی فونت‌های ثبت شده"""
         validation_results = {
             'valid': [],
@@ -1356,7 +1351,7 @@ class FontManager:
             'warnings': [],
             'errors': []
         }
-        
+
         for font_key, font_info in self.fonts.items():
             try:
                 # بررسی وجود داده‌های فونت
@@ -1364,45 +1359,45 @@ class FontManager:
                     validation_results['errors'].append(f"فونت {font_info.name} تعبیه شده است اما داده‌ای ندارد")
                     validation_results['invalid'].append(font_key)
                     continue
-                
+
                 # بررسی اندازه فونت
                 if font_info.ttf_data and len(font_info.ttf_data) < 1024:
                     validation_results['warnings'].append(f"فونت {font_info.name} اندازه غیرعادی کوچکی دارد")
-                
+
                 # بررسی نام فونت
                 if not font_info.name or len(font_info.name.strip()) == 0:
                     validation_results['errors'].append(f"فونت {font_key} نام معتبری ندارد")
                     validation_results['invalid'].append(font_key)
                     continue
-                
+
                 # بررسی خانواده فونت
                 if not font_info.family or len(font_info.family.strip()) == 0:
                     validation_results['warnings'].append(f"فونت {font_info.name} خانواده معتبری ندارد")
-                
+
                 # بررسی متریک‌ها
                 if font_info.metrics.ascent == 0 and font_info.metrics.descent == 0:
                     validation_results['warnings'].append(f"فونت {font_info.name} متریک‌های معتبری ندارد")
-                
+
                 # بررسی انکودینگ برای فونت‌های فارسی
                 if font_info.language == 'fa' and font_info.encoding != FontEncoding.IDENTITY_H:
                     validation_results['warnings'].append(f"فونت فارسی {font_info.name} از انکودینگ {font_info.encoding.value} استفاده می‌کند. پیشنهاد: Identity-H")
-                
+
                 validation_results['valid'].append(font_key)
-                
+
             except Exception as e:
                 validation_results['errors'].append(f"خطا در اعتبارسنجی فونت {font_key}: {str(e)}")
                 validation_results['invalid'].append(font_key)
-        
+
         return validation_results
-    
-    def optimize_font_usage(self, text_content: str, max_fonts: int = 5) -> List[str]:
+
+    def optimize_font_usage(self, text_content: str, max_fonts: int = 5) -> list[str]:
         """بهینه‌سازی استفاده از فونت‌ها بر اساس محتوای متن"""
         # تحلیل نیازهای فونت
         requirements = self.analyze_text_font_requirements(text_content)
-        
+
         # انتخاب فونت‌های بهینه
         optimal_fonts = []
-        
+
         # اولویت‌بندی فونت‌های فارسی
         if 'fa' in requirements['languages']:
             persian_fonts = self.get_font_list(language='fa', embedded_only=True)
@@ -1416,7 +1411,7 @@ class FontManager:
                             break
                     if len(optimal_fonts) >= max_fonts // 2:
                         break
-        
+
         # فونت‌های انگلیسی
         if 'en' in requirements['languages']:
             latin_fonts = self.get_font_list(language='en')
@@ -1430,14 +1425,14 @@ class FontManager:
                             break
                     if len(optimal_fonts) >= max_fonts:
                         break
-        
+
         # اگر فونتی انتخاب نشد، از فونت پیش‌فرض استفاده کن
         if not optimal_fonts:
             optimal_fonts.append(self.get_default_font('fa' if 'fa' in requirements['languages'] else 'en'))
-        
+
         return optimal_fonts
-    
-    def create_font_subset_report(self, text: str) -> Dict:
+
+    def create_font_subset_report(self, text: str) -> dict:
         """ایجاد گزارش زیرمجموعه فونت برای متن داده شده"""
         report = {
             'text_length': len(text),
@@ -1447,23 +1442,23 @@ class FontManager:
             'size_reduction': {},
             'recommendations': []
         }
-        
+
         # تشخیص زبان‌ها
         requirements = self.analyze_text_font_requirements(text)
         report['languages_detected'] = requirements['languages']
-        
+
         # ایجاد زیرمجموعه برای هر فونت
         for font_key, font_info in self.fonts.items():
             if font_info.embedded and font_info.language in requirements['languages']:
                 original_size = len(font_info.ttf_data) if font_info.ttf_data else 0
-                
+
                 # ایجاد زیرمجموعه
                 subset_data = font_info.create_subset(text)
                 subset_size = len(subset_data) if subset_data else 0
-                
+
                 if original_size > 0 and subset_size > 0:
                     reduction_percentage = ((original_size - subset_size) / original_size) * 100
-                    
+
                     report['font_subsets'][font_key] = {
                         'font_name': font_info.name,
                         'original_size_kb': original_size / 1024,
@@ -1472,7 +1467,7 @@ class FontManager:
                         'reduction_percentage': reduction_percentage,
                         'used_glyphs_count': len(font_info.used_glyphs) if font_info.used_glyphs else 0
                     }
-                    
+
                     # توصیه‌ها
                     if reduction_percentage > 70:
                         report['recommendations'].append(
@@ -1486,11 +1481,11 @@ class FontManager:
                         report['recommendations'].append(
                             f"فونت {font_info.name}: کاهش حجم {reduction_percentage:.1f}% - زیرمجموعه‌سازی تاثیر کمی دارد"
                         )
-        
+
         # محاسبه کاهش حجم کلی
         total_original = sum(info['original_size_kb'] for info in report['font_subsets'].values())
         total_subset = sum(info['subset_size_kb'] for info in report['font_subsets'].values())
-        
+
         if total_original > 0:
             total_reduction = ((total_original - total_subset) / total_original) * 100
             report['size_reduction'] = {
@@ -1499,6 +1494,5 @@ class FontManager:
                 'total_reduction_kb': total_original - total_subset,
                 'total_reduction_percentage': total_reduction
             }
-        
-        return report
 
+        return report

@@ -1,8 +1,7 @@
 # rag/evidence/evidence_clusterer.py
-
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any
 
 import numpy as np
 from sklearn.cluster import KMeans  # type: ignore[import-untyped]
@@ -17,9 +16,9 @@ class EvidenceClusterer:
 
     async def cluster(
         self,
-        results: List[RetrievedDocument],
+        results: list[RetrievedDocument],
         k: int = 4,
-    ) -> List[RetrievedDocument]:
+    ) -> list[RetrievedDocument]:
 
         if not results:
             return []
@@ -31,9 +30,9 @@ class EvidenceClusterer:
         k = min(k, len(results))
 
         model = KMeans(n_clusters=k, n_init="auto")
-        labels: List[int] = model.fit_predict(X).tolist()
+        labels: list[int] = model.fit_predict(X).tolist()
 
-        clusters: Dict[int, List[RetrievedDocument]] = {}
+        clusters: dict[int, list[RetrievedDocument]] = {}
         for i, lab in enumerate(labels):
             clusters.setdefault(lab, []).append(results[i])
 

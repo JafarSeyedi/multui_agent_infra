@@ -7,27 +7,25 @@ Supports all CQL data types, primary key definitions, clustering order,
 secondary indexes, table options (compaction, compression, etc.), and UDTs.
 Preserves every detail for lossless round‑trip.
 """
-
 from __future__ import annotations
+
 import re
 from pathlib import Path
-from typing import Optional, Dict, Any, List, Tuple, Set
 
-from .base_msdm_parser import BaseMSDMParser
+from ...models.media_types import MEDIA_TYPES
+from ...models.msdm_models import Annotation
+from ...models.msdm_models import Attribute
+from ...models.msdm_models import Constraint
+from ...models.msdm_models import ConstraintType
+from ...models.msdm_models import DataType
+from ...models.msdm_models import Entity
+from ...models.msdm_models import EntityKind
+from ...models.msdm_models import Index
+from ...models.msdm_models import MSDMDocument
+from ...models.msdm_models import ScalarType, Namespace, IndexMethod
 from ..base import ParseOptions
-from ...models.msdm_models import (
-    MSDMDocument,
-    Entity,
-    Attribute,
-    DataType,
-    Constraint,
-    ConstraintType,
-    Index,
-    Annotation,
-    EntityKind,
-    ScalarType,
-    Relationship,
-)
+from .base_msdm_parser import BaseMSDMParser
+
 
 # ── CQL Type Mapping ─────────────────────────────────────────────
 CQL_TO_SCALAR = {
@@ -37,12 +35,12 @@ CQL_TO_SCALAR = {
     "bigint":    ScalarType.LONG,
     "blob":      ScalarType.BINARY,
     "boolean":   ScalarType.BOOLEAN,
-    "counter":   ScalarType.LONG,    # counter is a 64-bit integer
+    "counter":   ScalarType.LONG,
     "date":      ScalarType.DATE,
     "decimal":   ScalarType.DECIMAL,
     "double":    ScalarType.DOUBLE,
     "float":     ScalarType.FLOAT,
-    "inet":      ScalarType.STRING,  # IP address stored as string
+    "inet":      ScalarType.STRING,
     "int":       ScalarType.INT,
     "smallint":  ScalarType.INT,
     "time":      ScalarType.TIME,
@@ -50,21 +48,19 @@ CQL_TO_SCALAR = {
     "timeuuid":  ScalarType.UUID,
     "tinyint":   ScalarType.INT,
     "uuid":      ScalarType.UUID,
-    "varint":    ScalarType.LONG,    # arbitrary precision integer → long
+    "varint":    ScalarType.LONG,
     "duration":  ScalarType.DURATION,
-    "tuple":     ScalarType.STRUCT,   # tuple fields are dynamic; will be handled separately
+    "tuple":     ScalarType.STRUCT,
 }
 
-# Composite CQL types that require special parsing
 COMPOSITE_CQL = {
     "list":  ScalarType.ARRAY,
-    "set":   ScalarType.ARRAY,       # set is like array with unique constraint
+    "set":   ScalarType.ARRAY,
     "map":   ScalarType.MAP,
-    "frozen": None,                  # frozen marks a type as immutable; we annotate it
+    "frozen": None,
 }
 
-# ── Helper regex patterns ────────────────────────────────────────
-# Matches CREATE TABLE/KEYSPACE/INDEX/MATERIALIZED VIEW
+# ── Regex patterns ──────────────────────────────────────────────
 RE_CREATE_TABLE = re.compile(
     r'CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(\"?[\w.]+\"?)\s*\((.*?)\)\s*'
     r'(?:WITH\s+(.*?))?;',
@@ -90,32 +86,28 @@ RE_CREATE_MV = re.compile(
     re.IGNORECASE | re.DOTALL
 )
 
-# Column definition: name type (static? <frozen<...>> or complex) (PRIMARY KEY) (options)
 RE_COLUMN = re.compile(
     r'(\"?[\w]+\"?)\s+((?:frozen\s*<[^>]+>|\w+(?:\s*<[^>]+>)?)+)\s*'
     r'(STATIC\s+)?(PRIMARY\s+KEY)?\s*,?',
     re.IGNORECASE
 )
 
-# Primary key clause: PRIMARY KEY ((partition_key), clustering_columns...)
 RE_PK = re.compile(
     r'PRIMARY\s+KEY\s*\(\((.*?)\)\s*(?:,\s*(.*?))?\)',
     re.IGNORECASE | re.DOTALL
 )
 
-# Clustering order
 RE_CLUSTERING_ORDER = re.compile(
     r'CLUSTERING\s+ORDER\s+BY\s*\((.*?)\)',
     re.IGNORECASE
 )
 
-# Simple options like compaction = {...}
 RE_OPTION = re.compile(
     r'(\w+)\s*=\s*(\{.*?\}|\'[^\']*\'|\"[^\"]*\"|-?\d+(?:\.\d+)?|\w+)',
     re.IGNORECASE | re.DOTALL
 )
 
-# ── Main Parser Class ──────────────────────────────────────────
+
 class CQLParser(BaseMSDMParser):
     """Parser for Cassandra Query Language (CQL) schema files."""
     name = "cql"
@@ -127,8 +119,12 @@ class CQLParser(BaseMSDMParser):
         encoding = options.encoding or "utf-8"
         text = data.decode(encoding)
 
-        doc = MSDMDocument()
-        doc.namespace = Path(source_name).stem   # keyspace name often
+        doc = MSDMDocument(
+            document_id=Path(source_name).stem,
+            title=Path(source_name).stem,
+            media_type=MEDIA_TYPES.get("cql", MEDIA_TYPES["txt"])
+        )
+        doc.namespace = Namespace(uri=Path(source_name).stem)
 
         # Remove comments (lines starting with -- or //, and block /* */)
         text = self._strip_comments(text)
@@ -139,6 +135,7 @@ class CQLParser(BaseMSDMParser):
         for stmt in statements:
             self._process_statement(stmt, doc)
 
+        self.resolve_references(doc)
         return doc
 
     # ── Comment stripping ───────────────────────────────────────
@@ -195,7 +192,7 @@ class CQLParser(BaseMSDMParser):
 
     # ── CREATE TABLE ────────────────────────────────────────────
     def _parse_create_table(self, table_name: str, columns_str: str,
-                            with_clause: Optional[str], doc: MSDMDocument) -> Entity:
+                            with_clause: str | None, doc: MSDMDocument) -> Entity:
         entity = Entity(
             name=table_name,
             kind=EntityKind.TABLE,
@@ -240,7 +237,6 @@ class CQLParser(BaseMSDMParser):
                     name=col_name,
                     data_type=data_type,
                     required=col_pk or col_name in pk_partition,  # primary key columns are required
-                    # Primary key is handled later via constraints
                 )
                 if col_static:
                     static_cols.add(col_name)
@@ -262,7 +258,6 @@ class CQLParser(BaseMSDMParser):
             for attr_name in pk_attr_names:
                 for attr in entity.attributes:
                     if attr.name == attr_name:
-                        attr.primary_key = True
                         attr.constraints.append(pk_constraint)
 
         # Clustering order
@@ -303,36 +298,49 @@ class CQLParser(BaseMSDMParser):
                 col_name = self._unquote(col_match.group(1))
                 col_type_str = col_match.group(2).strip()
                 data_type, is_frozen = self._parse_cql_type(col_type_str, doc)
-                attr = Attribute(name=col_name, data_type=data_type)
-                if is_frozen:
-                    attr.annotations.append(Annotation(key="frozen", value="true"))
-                entity.attributes.append(attr)
+                if data_type:
+                    attr = Attribute(name=col_name, data_type=data_type)
+                    if is_frozen:
+                        attr.annotations.append(Annotation(key="frozen", value="true"))
+                    entity.attributes.append(attr)
         doc.entities.append(entity)
-        return entity
+        return entity   # FIXED: added missing return
 
     # ── CREATE INDEX ───────────────────────────────────────────
-    def _parse_create_index(self, index_name: Optional[str], table_name: str,
-                            column_def: str, index_options: Optional[str], doc: MSDMDocument) -> None:
+    def _parse_create_index(self, index_name: str | None, table_name: str,
+                            column_def: str, index_options: str | None, doc: MSDMDocument) -> None:
         # column_def is like "column_name" or "keys(column_name)"
         col_name = column_def.strip().strip('"')
         # Find the corresponding entity
         entity = next((e for e in doc.entities if e.name == table_name), None)
         if entity:
-            idx = Index(
-                name=index_name or f"idx_{table_name}_{col_name}",
-                attributes=[col_name],
-                unique=False,
-            )
-            if index_options:
-                for opt_key, opt_val in self._parse_options(index_options):
-                    if opt_key.upper() == 'USING':
-                        idx.method = opt_val
-            entity.indexes.append(idx)
+            col_attr: Attribute | None = None
+            for attr in entity.attributes:
+                if attr.name == col_name:
+                    col_attr = attr
+                    break
+            if col_attr:
+                idx = Index(
+                    name=index_name or f"idx_{table_name}_{col_name}",
+                    attributes=[col_attr],
+                    unique=False,
+                )
+                if index_options:
+                    for opt_key, opt_val in self._parse_options(index_options):
+                        if opt_key.upper() == 'USING':
+                            try:
+                                idx.method = IndexMethod(opt_val)  # match by value
+                            except ValueError:
+                                try:
+                                    idx.method = IndexMethod[opt_val]  # match by name
+                                except KeyError:
+                                    idx.method = IndexMethod.UNKNOWN  # default
+                entity.indexes.append(idx)
 
     # ── CREATE MATERIALIZED VIEW ───────────────────────────────
     def _parse_create_mv(self, view_name: str, select_cols: str, base_table: str,
-                         where_clause: Optional[str], pk_str: str,
-                         with_clause: Optional[str], doc: MSDMDocument) -> Entity:
+                         where_clause: str | None, pk_str: str,
+                         with_clause: str | None, doc: MSDMDocument) -> Entity:
         # Materialized view is like a table; we treat it as a separate Entity
         entity = Entity(
             name=view_name,
@@ -366,14 +374,13 @@ class CQLParser(BaseMSDMParser):
         for attr_name in pk_partition:
             for attr in entity.attributes:
                 if attr.name == attr_name:
-                    attr.primary_key = True
                     attr.constraints.append(pk_constraint)
 
         doc.entities.append(entity)
-        return entity
+        return entity   # FIXED: added missing return
 
     # ── CQL type parsing ───────────────────────────────────────
-    def _parse_cql_type(self, type_str: str, doc: MSDMDocument) -> Tuple[DataType, bool]:
+    def _parse_cql_type(self, type_str: str, doc: MSDMDocument) -> tuple[DataType, bool]:
         """
         Parse a CQL type string and return (DataType, is_frozen).
         Handles nested types like list<frozen<map<text, int>>>.
@@ -414,28 +421,28 @@ class CQLParser(BaseMSDMParser):
                     key_type, _ = self._parse_cql_type(key, doc)
                     value_type, _ = self._parse_cql_type(value, doc)
                     return DataType(base=ScalarType.MAP, key_type=key_type, value_type=value_type), is_frozen
+                return DataType(base=ScalarType.NONE), is_frozen
             elif outer == 'tuple':
-                # tuple<type1,type2,...>
-                parts = self._split_tuple_parts(inner)
+                self._split_tuple_parts(inner)
                 # Tuple is represented as a STRUCT with nested attributes
-                # We'll build a brief entity for it? Actually MSDM has no entity for inline structs;
-                # we can use STRUCT base with nested_attributes attached to the Attribute later.
                 # For now we store as ANY with annotation.
                 return DataType(base=ScalarType.STRUCT), is_frozen
             elif outer == 'frozen':
                 return self._parse_cql_type(inner, doc)  # recursion
             else:
                 # Could be a user-defined type
-                return DataType(base=ScalarType.REF, ref_entity=type_str), is_frozen
+                return DataType(base=ScalarType.REF, ref_entity_id=type_str), is_frozen
         else:
             # simple type or UDT reference
             if type_str.lower() in CQL_TO_SCALAR:
                 return DataType(base=CQL_TO_SCALAR[type_str.lower()]), is_frozen
             else:
                 # assume UDT or unknown; treat as reference
-                return DataType(base=ScalarType.REF, ref_entity=type_str), is_frozen
+                return DataType(base=ScalarType.REF, ref_entity_id=type_str), is_frozen
+        
+        return "", None
 
-    def _split_map_key_value(self, inner: str) -> Tuple[Optional[str], Optional[str]]:
+    def _split_map_key_value(self, inner: str) -> tuple[str | None, str | None]:
         """Split map<key,value> correctly, accounting for nested angle brackets."""
         depth = 0
         for i, ch in enumerate(inner):
@@ -447,7 +454,7 @@ class CQLParser(BaseMSDMParser):
                 return inner[:i].strip(), inner[i+1:].strip()
         return None, None
 
-    def _split_tuple_parts(self, inner: str) -> List[str]:
+    def _split_tuple_parts(self, inner: str) -> list[str]:
         """Split tuple contents by commas, respecting nested angle brackets."""
         parts = []
         depth = 0
@@ -464,7 +471,7 @@ class CQLParser(BaseMSDMParser):
         return parts
 
     # ── Helper: split column definitions properly ───────────────
-    def _split_column_defs(self, columns_str: str) -> List[str]:
+    def _split_column_defs(self, columns_str: str) -> list[str]:
         """Split by comma that is not inside parentheses or angle brackets."""
         defs = []
         depth_paren = 0
@@ -489,7 +496,7 @@ class CQLParser(BaseMSDMParser):
         return defs
 
     # ── Options parsing ─────────────────────────────────────────
-    def _parse_options(self, options_str: str) -> List[Tuple[str, str]]:
+    def _parse_options(self, options_str: str) -> list[tuple[str, str]]:
         """Parse WITH ... option = value pairs."""
         pairs = []
         # options_str might be the part after WITH
@@ -518,7 +525,7 @@ class CQLParser(BaseMSDMParser):
             end_pos = paren_end + 1
         return pairs
 
-    def _parse_clustering_order(self, content: str) -> Dict[str, str]:
+    def _parse_clustering_order(self, content: str) -> dict[str, str]:
         """Parse 'col1 ASC, col2 DESC' into dict."""
         order_map = {}
         for part in content.split(','):

@@ -3,19 +3,18 @@
 Utility functions for resolving relationships inside a PPTX package.
 Supports package-level, slide-level, and drawing-level rels.
 """
-
 from __future__ import annotations
-from typing import Dict, Optional, List, Tuple
-# from xml.etree.ElementTree import Element
+
 import xml.etree.ElementTree as ET
 from zipfile import ZipFile
+# from xml.etree.ElementTree import Element
 
 # Relationships namespace
 REL_NS = "http://schemas.openxmlformats.org/package/2006/relationships"
 NSMAP = {"rel": REL_NS}
 
 
-def load_rels(zip_file: ZipFile, rels_path: str) -> Dict[str, Tuple[str, str]]:
+def load_rels(zip_file: ZipFile, rels_path: str) -> dict[str, tuple[str, str]]:
     """
     Load a .rels file and return a dict mapping relationship ID → (type, target).
 
@@ -26,7 +25,7 @@ def load_rels(zip_file: ZipFile, rels_path: str) -> Dict[str, Tuple[str, str]]:
     Returns:
         Dictionary: rId → (relationship_type, target).
     """
-    rels: Dict[str, Tuple[str, str]] = {}
+    rels: dict[str, tuple[str, str]] = {}
     try:
         xml_bytes = zip_file.read(rels_path)
         root = ET.fromstring(xml_bytes)
@@ -42,18 +41,18 @@ def load_rels(zip_file: ZipFile, rels_path: str) -> Dict[str, Tuple[str, str]]:
 
 
 def get_target_for_id(
-    rels: Dict[str, Tuple[str, str]],
+    rels: dict[str, tuple[str, str]],
     r_id: str,
-) -> Optional[str]:
+) -> str | None:
     """Return the target path for a given relationship ID."""
     entry = rels.get(r_id)
     return entry[1] if entry else None
 
 
 def get_targets_by_type(
-    rels: Dict[str, Tuple[str, str]],
+    rels: dict[str, tuple[str, str]],
     rel_type: str,
-) -> List[str]:
+) -> list[str]:
     """Return all targets of a specific relationship type."""
     targets = []
     for r_id, (typ, target) in rels.items():
@@ -65,7 +64,7 @@ def get_targets_by_type(
 def resolve_slide_rels(
     zip_file: ZipFile,
     slide_path: str,
-) -> Dict[str, Tuple[str, str]]:
+) -> dict[str, tuple[str, str]]:
     """
     Load relationships for a specific slide part.
 
@@ -107,10 +106,10 @@ def resolve_path(base_dir: str, target: str) -> str:
 
 
 def resolve_image_path(
-    slide_rels: Dict[str, Tuple[str, str]],
+    slide_rels: dict[str, tuple[str, str]],
     r_id: str,
     base_dir: str,
-) -> Optional[str]:
+) -> str | None:
     """
     Resolve an image relationship ID to a full path inside the ZIP.
 

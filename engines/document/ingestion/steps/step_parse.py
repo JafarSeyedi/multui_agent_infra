@@ -1,14 +1,11 @@
 # engines/document/ingestion/steps/step_parse.py
-
 from __future__ import annotations
-from ...models.document_registry import DocumentRegistry
-from ...parsers.base import BaseDocumentParser
+
 from ...models.base import BaseDocument
+from ...models.document_registry import DocumentRegistry
 from ..ingestion_context import IngestionContext
-from ..ingestion_errors import (
-    UnsupportedMediaTypeError,
-    ParseFailed,
-)
+from ..ingestion_errors import ParseFailed
+from ..ingestion_errors import UnsupportedMediaTypeError
 
 async def step_parse(ctx: IngestionContext) -> IngestionContext:
     """

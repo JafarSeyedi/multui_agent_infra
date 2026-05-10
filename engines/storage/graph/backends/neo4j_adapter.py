@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import Any
+from typing import TYPE_CHECKING
 
 from ..base import GraphStorage
 
@@ -11,14 +12,14 @@ if TYPE_CHECKING:
 class Neo4jAdapter(GraphStorage):
     """Neo4j graph backend using the official async driver when available."""
 
-    def __init__(self, uri: str, username: str, password: str, database: Optional[str] = None) -> None:
+    def __init__(self, uri: str, username: str, password: str, database: str | None = None) -> None:
         super().__init__()
         self.uri = uri
         self.username = username
         self.password = password
         self.database = database
 
-        self._driver: Optional["AsyncDriver"] = None
+        self._driver: AsyncDriver | None = None
 
     async def connect(self) -> None:
         try:
@@ -53,8 +54,8 @@ class Neo4jAdapter(GraphStorage):
     async def _run(
         self,
         query: str,
-        parameters: Optional[Dict[str, Any]] = None,
-    ) -> List[Dict[str, Any]]:
+        parameters: dict[str, Any] | None = None,
+    ) -> list[dict[str, Any]]:
         await self.ensure_connected()
 
         assert self._driver is not None
@@ -64,7 +65,7 @@ class Neo4jAdapter(GraphStorage):
 
             return [record.data() async for record in result]
 
-    async def add_node(self, node_id: str, properties: Dict[str, Any]) -> None:
+    async def add_node(self, node_id: str, properties: dict[str, Any]) -> None:
         params = {"node_id": node_id, "properties": properties}
 
         await self._run(
@@ -77,7 +78,7 @@ class Neo4jAdapter(GraphStorage):
         source: str,
         target: str,
         relation: str,
-        properties: Optional[Dict[str, Any]] = None,
+        properties: dict[str, Any] | None = None,
     ) -> None:
         params = {
             "source": source,
@@ -96,5 +97,5 @@ class Neo4jAdapter(GraphStorage):
 
         await self._run(query, params)
 
-    async def query(self, cypher: str) -> List[Dict[str, Any]]:
+    async def query(self, cypher: str) -> list[dict[str, Any]]:
         return await self._run(cypher)

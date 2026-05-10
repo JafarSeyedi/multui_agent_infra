@@ -6,13 +6,17 @@ import inspect
 import time
 import uuid
 from datetime import datetime
-from typing import Any, Optional, Type, TypeVar, Generic
+from typing import Any
+from typing import Generic
+from typing import TypeVar
 
 from pydantic import BaseModel
 
-from ..storage.event_log.base import LogStorage
-from ..storage.vector.base import VectorDBAdapter
-from .models import AgentInput, AgentOutput, AgentExecutionRecord
+from ...storage.event_log.base import LogStorage
+from ...storage.vector.base import VectorDBAdapter
+from ..models import AgentExecutionRecord
+from ..models import AgentInput
+from ..models import AgentOutput
 
 TInput = TypeVar("TInput", bound=AgentInput)
 TOutput = TypeVar("TOutput", bound=AgentOutput)
@@ -25,16 +29,16 @@ class BaseAgent(Generic[TInput, TOutput]):
     # agent_name: str = "BaseAgent"
     agent_version: str = "1.0.0"
 
-    input_model_class: Type[TInput]
-    output_model_class: Type[TOutput]
-    
+    input_model_class: type[TInput]
+    output_model_class: type[TOutput]
+
     def __init__(
         self,
         agent_id: str,
         agent_name: str,
-        vector_db: Optional[VectorDBAdapter] = None,
-        storage: Optional[LogStorage] = None,
-        metadata: Optional[dict[str, Any]] = None,
+        vector_db: VectorDBAdapter | None = None,
+        storage: LogStorage | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         self.agent_id = agent_id
         self.agent_name = agent_name
@@ -92,10 +96,10 @@ class BaseAgent(Generic[TInput, TOutput]):
     async def _log_execution(
         self,
         input_model: TInput,
-        output_model: Optional[TOutput],
+        output_model: TOutput | None,
         start_time: float,
         status: str,
-        error_message: Optional[str] = None,
+        error_message: str | None = None,
     ) -> None:
         record = AgentExecutionRecord(
             execution_id=str(uuid.uuid4()),

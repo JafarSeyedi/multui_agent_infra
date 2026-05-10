@@ -1,26 +1,17 @@
 # engines/document/ingestion/ingestion_runner.py
-
 from __future__ import annotations
-from typing import Optional, List, Dict, Any
+
+from typing import Any
+
+from ..models.media_types import DocumentFormat
+from ..models.media_types import MediaType
 from .ingestion_context import IngestionContext
+from .ingestion_models import ChunkRecord
+from .ingestion_models import DocumentIngestionResult
+from .ingestion_models import EmbeddingRecord
+from .ingestion_models import IngestionStatus
 from .ingestion_pipeline import IngestionPipeline
 from .workflow_registry import WorkflowRegistry
-from ..models.media_types import MediaType, DocumentFormat
-from .steps.step_extract import step_extract
-from .steps.step_parse import step_parse
-from .steps.step_chunk import step_chunk
-from .steps.step_embed import step_embed
-from .steps.step_store import step_store
-
-from .ingestion_models import (
-    DocumentIngestionResult,
-    DocumentRecord,
-    ParsedDocument,
-    ChunkRecord,
-    EmbeddingRecord,
-    IngestionStatus,
-    IngestionEvent,
-)
 
 
 class IngestionRunner:
@@ -29,7 +20,7 @@ class IngestionRunner:
         self.workflow_registry = workflow_registry
         self.pipeline = IngestionPipeline()
 
-    def route(self, media_type: MediaType, filename: Optional[str]=None) -> list[str]:
+    def route(self, media_type: MediaType, filename: str | None=None) -> list[str]:
         """
         Returns step-list of selected workflow.
         """
@@ -95,8 +86,8 @@ class IngestionRunner:
         filename: str,
         data: bytes,
         media_type: MediaType,
-        metadata: Optional[Dict[str, Any]] = None,
-        context: Optional[IngestionContext] = None,
+        metadata: dict[str, Any] | None = None,
+        context: IngestionContext | None = None,
     ) -> DocumentIngestionResult:
         """
         Main ingestion entry point. Builds or reuses context,
@@ -141,8 +132,8 @@ class IngestionRunner:
             raise RuntimeError("Pipeline completed but did not produce ParsedDocument.")
 
         # chunks / embeddings may be empty but must exist as lists
-        chunks: List[ChunkRecord] = context.chunks or []
-        embeddings: List[EmbeddingRecord] = context.embeddings or []
+        chunks: list[ChunkRecord] = context.chunks or []
+        embeddings: list[EmbeddingRecord] = context.embeddings or []
 
         # ------------------------------------------------------------
         # 5) Build final result

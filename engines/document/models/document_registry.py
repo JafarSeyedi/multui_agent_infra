@@ -1,22 +1,19 @@
 # engines/document/models/document_registry.py
-
 from __future__ import annotations
 
-from dataclasses import dataclass
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Dict, Optional, Sequence, Union, Type, Any
+from typing import Any
 
-from ..media_types import (
-    DocumentFormat,
-    MediaType,
-    MEDIA_TYPES,
-    MediaTypeRegistry,
-    MediaRawType,
-    MediaContentKind,
-)
+from .media_detection import detect_media_type
+from .media_types import DocumentFormat
+from .media_types import MEDIA_TYPES
+from .media_types import MediaContentKind
+from .media_types import MediaRawType
+from .media_types import MediaType
+from .media_types import MediaTypeRegistry
 from ..parsers.base import BaseDocumentParser
 from ..writers.base import BaseDocumentWriter
-from ..media_detection import detect_media_type
 
 
 # ==========================================================
@@ -41,8 +38,8 @@ class DocumentRegistry:
         self.media_registry = MediaTypeRegistry
 
         # plugin-based mapping (نسخه جدید)
-        self._parser_plugins: Dict[DocumentFormat, Type[BaseDocumentParser]] = {}
-        self._writer_plugins: Dict[DocumentFormat, Type[BaseDocumentWriter]] = {}
+        self._parser_plugins: dict[DocumentFormat, type[BaseDocumentParser]] = {}
+        self._writer_plugins: dict[DocumentFormat, type[BaseDocumentWriter]] = {}
 
     # ==========================================================
     # PLUGIN-BASED REGISTRATION (نسخه جدید)
@@ -50,21 +47,21 @@ class DocumentRegistry:
     def register_parser_plugin(
         self,
         fmt: DocumentFormat,
-        parser_cls: Type[BaseDocumentParser],
+        parser_cls: type[BaseDocumentParser],
     ) -> None:
         self._parser_plugins[fmt] = parser_cls
 
     def register_writer_plugin(
         self,
         fmt: DocumentFormat,
-        writer_cls: Type[BaseDocumentWriter],
+        writer_cls: type[BaseDocumentWriter],
     ) -> None:
         self._writer_plugins[fmt] = writer_cls
 
     # ==========================================================
     # ADVANCED MEDIA DETECTION
     # در DocumentRegistry._detect_magic_mime
-    def _detect_magic_mime(self, src: Union[str, Path, bytes]) -> Optional[str]:
+    def _detect_magic_mime(self, src: str | Path | bytes) -> str | None:
         try:
             # سعی در import magic
             import magic
@@ -80,7 +77,7 @@ class DocumentRegistry:
             pass
         return None
 
-    def _fallback_mime_detection(self, src: Union[str, Path, bytes]) -> Optional[str]:
+    def _fallback_mime_detection(self, src: str | Path | bytes) -> str | None:
         """Fallback MIME detection بدون magic"""
         if isinstance(src, bytes):
             data = src[:1024]  # فقط ابتدای فایل را بررسی کن
@@ -94,7 +91,7 @@ class DocumentRegistry:
                     return None
             except Exception:
                 return None
-        
+
         # بررسی magic bytes ساده
         if data.startswith(b"%PDF"):
             return "application/pdf"
@@ -111,12 +108,12 @@ class DocumentRegistry:
         elif data.startswith(b"{"):
             return "application/json"
         # ... سایر فرمت‌ها
-        
+
         return None
 
 
     def resolve_media_type(
-        self, src: Union[str, Path, bytes]
+        self, src: str | Path | bytes
     ) -> MediaType:
         """
         لایه تشخیص ۳-مرحله‌ای:
@@ -169,7 +166,7 @@ class DocumentRegistry:
     # ==========================================================
     # FORMAT RESOLUTION
     # ==========================================================
-    def resolve_format(self, src: Union[str, Path, bytes]) -> DocumentFormat:
+    def resolve_format(self, src: str | Path | bytes) -> DocumentFormat:
         mt = self.resolve_media_type(src)
         return mt.format
 
@@ -178,8 +175,8 @@ class DocumentRegistry:
     # ==========================================================
     def get_parser(
         self,
-        src: Union[str, Path, bytes],
-    ) -> Optional[BaseDocumentParser]:
+        src: str | Path | bytes,
+    ) -> BaseDocumentParser | None:
 
         mt = self.resolve_media_type(src)
         fmt = mt.format
@@ -195,8 +192,8 @@ class DocumentRegistry:
     # ==========================================================
     def get_writer(
         self,
-        src_or_format: Union[str, Path, bytes, DocumentFormat],
-    ) -> Optional[BaseDocumentWriter]:
+        src_or_format: str | Path | bytes | DocumentFormat,
+    ) -> BaseDocumentWriter | None:
 
         if isinstance(src_or_format, DocumentFormat):
             fmt = src_or_format
@@ -209,15 +206,15 @@ class DocumentRegistry:
             return self._writer_plugins[fmt]()
 
         return None
-            
+
 
     # ==========================================================
     # INGESTION PIPELINE INTEGRATION
     # ==========================================================
     def prepare_ingestion(
         self,
-        src: Union[str, Path, bytes],
-    ) -> Dict[str, Any]:
+        src: str | Path | bytes,
+    ) -> dict[str, Any]:
 
         mt = self.resolve_media_type(src)
 
@@ -264,4 +261,3 @@ class DocumentRegistry:
     # ==========================================================
     def supported_formats(self) -> Sequence[DocumentFormat]:
         return [mt.format for mt in self.media_registry.all()]
-

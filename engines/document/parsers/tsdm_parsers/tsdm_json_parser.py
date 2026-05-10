@@ -1,17 +1,37 @@
 # engines/document/parsers/tsdm_parsers/tsdm_json_parser.py
 import json
-from typing import Dict, Any, List
-from .base_tsdm_parser import BaseTSDMParser
+import uuid
+
+from ...models.media_types import MEDIA_TYPES
+from ...models.tsdm_models import AiModelTool
+from ...models.tsdm_models import CliTool
+from ...models.tsdm_models import CompositeTool
+from ...models.tsdm_models import DbQueryTool
+from ...models.tsdm_models import DbStatementTool
+from ...models.tsdm_models import FileReadTool
+from ...models.tsdm_models import FileWriteTool
+from ...models.tsdm_models import GraphQLTool
+from ...models.tsdm_models import GrpcServiceTool
+from ...models.tsdm_models import HttpMethod
+from ...models.tsdm_models import HttpServiceTool
+from ...models.tsdm_models import LoadBalanceStrategy
+from ...models.tsdm_models import MCPTool
+from ...models.tsdm_models import MessageBusTool
+from ...models.tsdm_models import MibSnmpTool
+from ...models.tsdm_models import NetconfProtocol
+from ...models.tsdm_models import ParameterSource
+from ...models.tsdm_models import ParameterType
+from ...models.tsdm_models import PythonFunctionTool
+from ...models.tsdm_models import SnmpVersion
+from ...models.tsdm_models import TcpSocketTool
+from ...models.tsdm_models import Tool
+from ...models.tsdm_models import ToolKind
+from ...models.tsdm_models import ToolOutput
+from ...models.tsdm_models import ToolParameter
+from ...models.tsdm_models import TSDMDocument
+from ...models.tsdm_models import YangNetconfTool
 from ..base import ParseOptions
-from ...models.tsdm_models import (
-    TSDMDocument, Tool, ToolKind, ParameterSource, ParameterType,
-    HttpMethod, LoadBalanceStrategy, SnmpVersion, NetconfProtocol,
-    DbQueryTool, DbStatementTool, HttpServiceTool, GrpcServiceTool,
-    GraphQLTool, TcpSocketTool, MessageBusTool, CliTool,
-    PythonFunctionTool, MCPTool, YangNetconfTool, MibSnmpTool,
-    FileReadTool, FileWriteTool, AiModelTool, CompositeTool,
-    ToolParameter, ToolOutput,
-)
+from .base_tsdm_parser import BaseTSDMParser
 
 _KIND_CLASS_MAP = {
     ToolKind.DB_QUERY: DbQueryTool,
@@ -40,7 +60,12 @@ class TsdmJsonParser(BaseTSDMParser):
         encoding = options.encoding or "utf-8"
         text = data.decode(encoding)
         raw = json.loads(text)
-        doc = TSDMDocument()
+        doc = TSDMDocument(
+            title=source_name,
+            document_id=f"tsdm_json_{uuid.uuid4().hex[:16]}",
+            media_type=MEDIA_TYPES["tsdm_json"],
+        )
+        
         tools_data = raw.get("tools", [])
         for td in tools_data:
             tool = self._parse_tool(td)
@@ -184,7 +209,7 @@ class TsdmJsonParser(BaseTSDMParser):
         tool = cls(**tool_data)
         return tool
 
-    def _parse_parameters(self, params: list) -> List[ToolParameter]:
+    def _parse_parameters(self, params: list) -> list[ToolParameter]:
         return [ToolParameter(
             name=p.get("name", ""),
             type=ParameterType(p.get("type", "string")),
@@ -196,7 +221,7 @@ class TsdmJsonParser(BaseTSDMParser):
             mapping_target=p.get("mapping_target"),
         ) for p in params]
 
-    def _parse_outputs(self, outputs: list) -> List[ToolOutput]:
+    def _parse_outputs(self, outputs: list) -> list[ToolOutput]:
         return [ToolOutput(
             name=o.get("name", ""),
             type=ParameterType(o.get("type", "json")),

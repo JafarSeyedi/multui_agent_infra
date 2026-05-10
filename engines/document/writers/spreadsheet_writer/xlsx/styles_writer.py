@@ -3,10 +3,10 @@
 Styles writer for XLSX.
 Generates styles.xml from fonts, fills, borders, number formats, and cell formats.
 """
-
 from __future__ import annotations
+
 import xml.etree.ElementTree as ET
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..base import ESDMBaseWriter
@@ -66,7 +66,7 @@ class StylesWriter:
                 'numFmtId': str(nf.id),
                 'formatCode': nf.format_code
             })
-    
+
     def _write_fonts(self, root: ET.Element):
         """Add <fonts> element."""
         fonts_elem = ET.SubElement(root, 'fonts', {'count': str(len(self._parent._fonts))})
@@ -243,7 +243,7 @@ class StylesWriter:
                         if n_color:
                             ET.SubElement(pattern, 'fgColor', {'rgb': n_color})
             if dxf.border:
-                border_elem = ET.SubElement(dxf_elem, 'border')
+                ET.SubElement(dxf_elem, 'border')
                 # Simplified border writing
             if dxf.alignment:
                 align = dxf.alignment
@@ -267,7 +267,7 @@ class StylesWriter:
             'defaultPivotStyle': 'PivotStyleLight16'
         })
 
-    def _normalize_color(self, color: Optional[str]) -> Optional[str]:
+    def _normalize_color(self, color: str | None) -> str | None:
         """Convert color to RRGGBB (no leading #) or None."""
         if color is None:
             return None

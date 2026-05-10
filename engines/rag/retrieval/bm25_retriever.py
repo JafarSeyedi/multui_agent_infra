@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 import math
-from collections import Counter, defaultdict
-from typing import Dict, List
+from collections import Counter
+from collections import defaultdict
 
-from engines.rag.rag_models import DocumentChunk
-
-from .retriever_result import RetrievalResult
 from .base_retriever import BaseRetriever
+from .retriever_result import RetrievalResult
+from engines.rag.rag_models import DocumentChunk
 
 # ---------------------------------------------------------
 # Keyword Retriever (BM25-style scoring)
@@ -18,10 +17,10 @@ class BM25KeywordRetriever(BaseRetriever):
     def __init__(self, document_store) -> None:
         self.document_store = document_store
         self.index_built = False
-        self.corpus_chunks: List[DocumentChunk] = []
-        self.tokenized_corpus: List[List[str]] = []
-        self.doc_freqs: Dict[str, int] = defaultdict(int)
-        self.term_freqs: List[Counter[str]] = []
+        self.corpus_chunks: list[DocumentChunk] = []
+        self.tokenized_corpus: list[list[str]] = []
+        self.doc_freqs: dict[str, int] = defaultdict(int)
+        self.term_freqs: list[Counter[str]] = []
         self.avg_doc_len: float = 0.0
         self.k1 = 1.5
         self.b = 0.75
@@ -52,7 +51,7 @@ class BM25KeywordRetriever(BaseRetriever):
         self.avg_doc_len = total_terms / max(1, len(self.corpus_chunks))
         self.index_built = True
 
-    async def search(self, query: str, top_k: int = 5) -> List[RetrievalResult]:
+    async def search(self, query: str, top_k: int = 5) -> list[RetrievalResult]:
         self._ensure_index()
         if not self.corpus_chunks:
             return []
@@ -85,5 +84,5 @@ class BM25KeywordRetriever(BaseRetriever):
             for chunk, score in scored[:top_k]
         ]
 
-    def _tokenize(self, text: str) -> List[str]:
+    def _tokenize(self, text: str) -> list[str]:
         return [token.casefold() for token in text.split() if token.strip()]

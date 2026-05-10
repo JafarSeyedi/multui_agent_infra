@@ -3,15 +3,11 @@
 Extracts ChartContent from a DOCX chart XML part.
 The XML namespace is the same as SpreadsheetML charts.
 """
-
 from xml.etree.ElementTree import Element
-from typing import Optional
 
-from ...models.usdm_models import (
-    ChartContent,
-    ChartSeriesContent,
-    ChartAxisContent,
-)
+from ...models.usdm_models import ChartAxisContent
+from ...models.usdm_models import ChartContent
+from ...models.usdm_models import ChartSeriesContent
 
 C = "http://schemas.openxmlformats.org/drawingml/2006/chart"
 A = "http://schemas.openxmlformats.org/drawingml/2006/main"
@@ -58,7 +54,7 @@ def _identify_type(chart_el: Element):
     return "unknown", None
 
 
-def _extract_title(chart_el: Element) -> Optional[str]:
+def _extract_title(chart_el: Element) -> str | None:
     title_el = _find(chart_el, "c:title")
     if title_el is None:
         return None

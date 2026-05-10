@@ -3,9 +3,9 @@
 VBA (Visual Basic for Applications) writer for XLSM files.
 Manages inclusion of vbaProject.bin and its relationships.
 """
-
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional, Tuple
+
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ....models.esdm_models import Workbook
@@ -20,7 +20,7 @@ class VBAWriter:
     def __init__(self, parent_writer: ESDMBaseWriter):
         self._parent = parent_writer
 
-    def write(self, workbook: Workbook) -> Optional[Tuple[str, bytes, str]]:
+    def write(self, workbook: Workbook) -> tuple[str, bytes, str] | None:
         """
         Returns (target_path, binary_data, rel_id) if VBA is present and enabled,
         otherwise returns None.

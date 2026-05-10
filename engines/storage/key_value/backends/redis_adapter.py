@@ -2,9 +2,13 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any, Awaitable, Dict, List, Optional, Union, cast
+from collections.abc import Awaitable
+from typing import Any
+from typing import cast
+from typing import Union
 
-from redis.asyncio import Redis, Sentinel
+from redis.asyncio import Redis
+from redis.asyncio import Sentinel
 from redis.asyncio.cluster import RedisCluster
 from redis.asyncio.retry import Retry
 from redis.backoff import ExponentialBackoff
@@ -18,9 +22,9 @@ RedisClient = Union[Redis, RedisCluster]
 class RedisManager:
     """Advanced Redis connection manager supporting standalone, sentinel, and cluster modes."""
 
-    def __init__(self, config: Dict[str, Any]) -> None:
+    def __init__(self, config: dict[str, Any]) -> None:
         self.config = config
-        self.client: Optional[RedisClient] = None
+        self.client: RedisClient | None = None
         self.logger = logging.getLogger("RedisManager")
 
         self._retry: Retry = Retry(
@@ -132,7 +136,7 @@ class RedisStorageAdapter(KeyValueStorage):
 
         await client.set(self._get_key(key), payload)
 
-    async def get(self, key: str) -> Optional[Any]:
+    async def get(self, key: str) -> Any | None:
         client = await self._client()
 
         data = await client.get(self._get_key(key))
@@ -153,7 +157,7 @@ class RedisStorageAdapter(KeyValueStorage):
         client = await self._client()
         return bool(await client.exists(self._get_key(key)))
 
-    async def list_keys(self, prefix: Optional[str] = None) -> List[str]:
+    async def list_keys(self, prefix: str | None = None) -> list[str]:
         client = await self._client()
 
         pattern = f"{self.namespace}:{prefix if prefix else ''}*"
@@ -168,8 +172,8 @@ class RedisStorageAdapter(KeyValueStorage):
     async def save(
         self,
         key: str,
-        data: Dict[str, Any],
-        ttl: Optional[int] = None,
+        data: dict[str, Any],
+        ttl: int | None = None,
     ) -> None:
 
         client = await self._client()
@@ -180,7 +184,7 @@ class RedisStorageAdapter(KeyValueStorage):
             ex=ttl,
         )
 
-    async def load(self, key: str) -> Optional[Dict[str, Any]]:
+    async def load(self, key: str) -> dict[str, Any] | None:
         value = await self.get(key)
 
         return value if isinstance(value, dict) else None

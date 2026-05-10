@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable
 from statistics import mean
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
+from .base_retriever import BaseRetriever
 from .bm25_retriever import BM25KeywordRetriever
 from .retriever_result import RetrievalResult
 from .vector_retriever import VectorRetriever
-from .base_retriever import BaseRetriever
 from engines.rag.llm.llm_protocols import AsyncLLM
 
 class HybridRetrieverPlus(BaseRetriever):
@@ -17,8 +18,8 @@ class HybridRetrieverPlus(BaseRetriever):
         self,
         vector_retriever: VectorRetriever,
         keyword_retriever: BM25KeywordRetriever,
-        llm: Optional[AsyncLLM] = None,
-        chunk_frequency_getter: Optional[Callable[[str], float]] = None,
+        llm: AsyncLLM | None = None,
+        chunk_frequency_getter: Callable[[str], float] | None = None,
         base_k: int = 60,
     ):
         self.vector_retriever = vector_retriever
@@ -27,7 +28,7 @@ class HybridRetrieverPlus(BaseRetriever):
         self.get_frequency = chunk_frequency_getter
         self.base_k = base_k
 
-    def _analyze_query(self, query: str) -> Dict[str, Any]:
+    def _analyze_query(self, query: str) -> dict[str, Any]:
         tokens = [token for token in query.split() if token]
         return {
             "length": len(tokens),
@@ -37,7 +38,7 @@ class HybridRetrieverPlus(BaseRetriever):
             "short_keyword_like": len(tokens) <= 4,
         }
 
-    async def _semantic_keywords(self, query: str) -> List[str]:
+    async def _semantic_keywords(self, query: str) -> list[str]:
         if not self.llm:
             return []
 
@@ -66,7 +67,7 @@ class HybridRetrieverPlus(BaseRetriever):
         except Exception:
             return self.base_k
 
-    def _normalize_scores(self, results: List[RetrievalResult]) -> List[RetrievalResult]:
+    def _normalize_scores(self, results: list[RetrievalResult]) -> list[RetrievalResult]:
         if not results:
             return results
         scores = [result.score for result in results]
@@ -81,9 +82,9 @@ class HybridRetrieverPlus(BaseRetriever):
 
     def _cross_filter(
         self,
-        vector_results: List[RetrievalResult],
-        keyword_results: List[RetrievalResult],
-    ) -> List[RetrievalResult]:
+        vector_results: list[RetrievalResult],
+        keyword_results: list[RetrievalResult],
+    ) -> list[RetrievalResult]:
         keyword_ids = {result.chunk.chunk_id for result in keyword_results}
         for result in vector_results:
             if result.chunk.chunk_id in keyword_ids:
@@ -99,14 +100,14 @@ class HybridRetrieverPlus(BaseRetriever):
 
     def _merge(
         self,
-        vec_results: List[RetrievalResult],
-        kw_results: List[RetrievalResult],
+        vec_results: list[RetrievalResult],
+        kw_results: list[RetrievalResult],
         top_k: int,
         k_rrf: int,
-        analysis: Dict[str, Any],
-    ) -> List[RetrievalResult]:
-        scores: Dict[str, float] = {}
-        chunks: Dict[str, RetrievalResult] = {}
+        analysis: dict[str, Any],
+    ) -> list[RetrievalResult]:
+        scores: dict[str, float] = {}
+        chunks: dict[str, RetrievalResult] = {}
 
         vec_weight = 1.3 if analysis["complex_long"] else 1.0
         kw_weight = 1.35 if analysis["short_keyword_like"] else 1.0
@@ -121,7 +122,7 @@ class HybridRetrieverPlus(BaseRetriever):
             chunks.setdefault(chunk_id, result)
             scores[chunk_id] = scores.get(chunk_id, 0.0) + kw_weight * (1.0 / (k_rrf + rank))
 
-        merged: List[RetrievalResult] = []
+        merged: list[RetrievalResult] = []
         for chunk_id, score in scores.items():
             result = RetrievalResult(
                 chunk=chunks[chunk_id].chunk,
@@ -139,8 +140,8 @@ class HybridRetrieverPlus(BaseRetriever):
         self,
         query: str,
         top_k: int = 8,
-        filters: Optional[Dict[str, Any]] = None,
-    ) -> List[RetrievalResult]:
+        filters: dict[str, Any] | None = None,
+    ) -> list[RetrievalResult]:
         analysis = self._analyze_query(query)
         keywords = await self._semantic_keywords(query)
         expanded_query = query if not keywords else f"{query} {' '.join(keywords)}"

@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import hashlib
 import math
-from typing import Iterable, List, Optional, Sequence
+from collections.abc import Iterable
+from collections.abc import Sequence
 
 
 class EmbeddingModel:
@@ -13,13 +14,13 @@ class EmbeddingModel:
     so the retrieval pipeline remains functional in local/dev environments.
     """
 
-    def __init__(self, provider: Optional[object] = None, dimension: int = 256):
+    def __init__(self, provider: object | None = None, dimension: int = 256):
         if dimension <= 0:
             raise ValueError("dimension must be positive")
         self.provider = provider
         self.dimension = dimension
 
-    async def embed(self, texts: Sequence[str]) -> List[List[float]]:
+    async def embed(self, texts: Sequence[str]) -> list[list[float]]:
         if self.provider is None:
             return [self._fallback_embed(text) for text in texts]
 
@@ -37,10 +38,10 @@ class EmbeddingModel:
 
         raise TypeError("Unsupported embedding provider interface")
 
-    async def embed_one(self, text: str) -> List[float]:
+    async def embed_one(self, text: str) -> list[float]:
         return (await self.embed([text]))[0]
 
-    def _fallback_embed(self, text: str) -> List[float]:
+    def _fallback_embed(self, text: str) -> list[float]:
         buckets = [0.0] * self.dimension
         if not text:
             return buckets
@@ -57,5 +58,5 @@ class EmbeddingModel:
     def _tokenize(self, text: str) -> Iterable[str]:
         return [token.casefold() for token in text.split() if token.strip()]
 
-    def _coerce_vector(self, vector: Sequence[float]) -> List[float]:
+    def _coerce_vector(self, vector: Sequence[float]) -> list[float]:
         return [float(value) for value in vector]

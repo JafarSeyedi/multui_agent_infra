@@ -1,7 +1,6 @@
 # engines/document/ingestion/steps/step_extract.py
-
 from __future__ import annotations
-from typing import Optional
+
 from ..ingestion_context import IngestionContext
 from ..ingestion_errors import ExtractionFailed
 

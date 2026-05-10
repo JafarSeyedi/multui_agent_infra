@@ -3,13 +3,14 @@
 Write <p:txStyles> from a CharacterStyle (applied to title, body, other).
 Every run property handled, including those stored in _meta for round‑trip.
 """
-
 from __future__ import annotations
-from xml.etree.ElementTree import Element, SubElement
+
+from xml.etree.ElementTree import Element
+from xml.etree.ElementTree import SubElement
 
 from ...models.usdm_models import CharacterStyle
-from .constants import NAMESPACES
 from ..drawingml_helpers import set_solid_color
+from .constants import NAMESPACES
 
 P = f"{{{NAMESPACES['p']}}}"
 A = f"{{{NAMESPACES['a']}}}"
@@ -73,11 +74,13 @@ def _write_defRPr(defRPr: Element, cs: CharacterStyle) -> None:
             latin.set("pitchFamily", str(cs.font_family))
     if cs.font_charset:
         # Apply to latin as well
-        if defRPr.find(f"{A}latin") is not None:
-            defRPr.find(f"{A}latin").set("charset", str(cs.font_charset))
+        el = defRPr.find(f"{A}latin")
+        if el is not None:
+            el.set("charset", str(cs.font_charset))
     if cs.font_pitch:
-        if defRPr.find(f"{A}latin") is not None:
-            defRPr.find(f"{A}latin").set("pitch", str(cs.font_pitch))
+        el1 = defRPr.find(f"{A}latin")
+        if el1 is not None:
+            el1.set("pitch", str(cs.font_pitch))
 
     # Size (hundredths of a point)
     if cs.size is not None:

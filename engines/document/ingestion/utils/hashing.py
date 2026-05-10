@@ -1,9 +1,7 @@
 # engines/document/ingestion/utils/hashing.py
-
 from __future__ import annotations
 
 import hashlib
-from typing import Optional
 
 
 def sha256_bytes(data: bytes) -> str:
@@ -22,7 +20,7 @@ def sha256_text(text: str, encoding: str = "utf-8") -> str:
     return sha256_bytes(text.encode(encoding))
 
 
-def combined_hash(*values: Optional[str]) -> str:
+def combined_hash(*values: str | None) -> str:
     """
     Combines multiple string fragments into one stable hash.
     Useful for (document_id + chunk_id + version) style operations.

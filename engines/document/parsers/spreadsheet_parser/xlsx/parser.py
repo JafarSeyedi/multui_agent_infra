@@ -5,28 +5,29 @@ XLSXParser – complete Excel parser using direct ZIP + XML.
 Refined: sheet‑level relationships are now loaded so that comments,
 threaded comments, and tables are correctly attached to each worksheet.
 """
-
 from __future__ import annotations
 
 import io
 import zipfile
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Any
 from xml.etree import ElementTree as ET
+from zipfile import ZipFile
 
-from ...spreadsheet_parser.base_spreadsheet_parser import BaseSpreadsheetParser
+from ....models.esdm_models import ESDMDocument
+from ....models.esdm_models import RelationshipCollection
+from ....models.esdm_models import Workbook
+from ....models.usdm_models import ChartContent
 from ...base import ParseOptions
-from ....models.esdm_models import (
-    ESDMDocument,
-    Workbook,
-    RelationshipCollection,
-    Relationship,
-)
-from .workbook_builder import build_workbook
-from .relationships_builder import build_relationships_from_rel_xml
-from .utils import xml_find, xml_findall, xml_attr
-from .namespaces import MAIN, REL
+from ...spreadsheet_parser.base_spreadsheet_parser import BaseSpreadsheetParser
 from .charts_builder import parse_chart
+from .namespaces import MAIN
+from .namespaces import REL
+from .relationships_builder import build_relationships_from_rel_xml
+from .utils import xml_attr
+from .utils import xml_find
+from .utils import xml_findall
+from .workbook_builder import build_workbook
 
 # Relationship types (namespace‑qualified)
 NS_OFFICE = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
@@ -50,15 +51,19 @@ class XLSXParser(BaseSpreadsheetParser):
         self, data: bytes, source_name: str, options: ParseOptions
     ) -> Workbook:
         zip_data = io.BytesIO(data)
-        with zipfile.ZipFile(zip_data, "r") as zf:
+        with ZipFile(zip_data, "r") as zf:
             # 1. Workbook relationships
             wb_rels = self._load_relationships(zf, "xl/_rels/workbook.xml.rels")
 
             # 2. Workbook XML
             wb_xml = self._load_xml(zf, "xl/workbook.xml")
+            if wb_xml is None:
+                raise ValueError("workbook.xml is missing")
 
             # 3. Shared strings
             ss_xml = self._load_xml(zf, "xl/sharedStrings.xml", optional=True)
+            if ss_xml is None:
+                ss_xml = ET.fromstring('<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"/>')
 
             # 4. Styles
             styles_xml = self._load_xml(zf, "xl/styles.xml", optional=True)
@@ -69,14 +74,16 @@ class XLSXParser(BaseSpreadsheetParser):
                 )
 
             # 5. Resolve sheets and load their XML + associated parts
+            if wb_xml is None:
+                raise ValueError("workbook.xml not found")
             sheet_info = self._resolve_sheets(wb_xml, wb_rels)
-            sheet_xmls: Dict[str, ET.Element] = {}
-            comments_xmls: Dict[str, ET.Element] = {}
-            threaded_comments_xmls: Dict[str, ET.Element] = {}
-            table_xmls: Dict[str, List[ET.Element]] = {}
-            drawing_xmls: Dict[str, ET.Element] = {}
-            image_map: Dict[str, str] = {}
-            chart_map: Dict[str, ET.Element] = {}
+            sheet_xmls: dict[str, ET.Element] = {}
+            comments_xmls: dict[str, ET.Element] = {}
+            threaded_comments_xmls: dict[str, ET.Element] = {}
+            table_xmls: dict[str, list[ET.Element]] = {}
+            drawing_xmls: dict[str, ET.Element] = {}
+            image_map: dict[str, str] = {}
+            chart_map: dict[str, ChartContent] = {}
 
             for sheet_name, (sheet_path, sheet_id) in sheet_info.items():
                 # Load the sheet itself
@@ -132,8 +139,8 @@ class XLSXParser(BaseSpreadsheetParser):
                                 chart_xml = self._load_xml(zf, chart_path, optional=True)
                                 if chart_xml is not None:
                                     full_chart = parse_chart(chart_xml)   # from charts_builder
-                                    chart_map[rel.id] = full_chart                
-                    drawing_xmls[sheet_name] = drawing_xml
+                                    chart_map[rel.id] = full_chart
+                        drawing_xmls[sheet_name] = drawing_xml
 
             # 6. External links (workbook-level relationships)
             external_link_xmls = {}
@@ -199,7 +206,7 @@ class XLSXParser(BaseSpreadsheetParser):
     # ── XML loading helpers ────────────────────────────────────
 
     @staticmethod
-    def _load_xml(zf: zipfile.ZipFile, path: str, optional: bool = False) -> Optional[ET.Element]:
+    def _load_xml(zf: ZipFile, path: str, optional: bool = False) -> ET.Element | None:
         try:
             with zf.open(path) as f:
                 return ET.parse(f).getroot()
@@ -209,15 +216,17 @@ class XLSXParser(BaseSpreadsheetParser):
             raise FileNotFoundError(f"Required part missing: {path}")
 
     @staticmethod
-    def _load_relationships(zf: zipfile.ZipFile, rels_path: str) -> RelationshipCollection:
+    def _load_relationships(zf: ZipFile, rels_path: str) -> RelationshipCollection:
         try:
             root = XLSXParser._load_xml(zf, rels_path)
+            if root is None:
+                return RelationshipCollection()
             return build_relationships_from_rel_xml(root)
         except FileNotFoundError:
             return RelationshipCollection()
-
+        
     @staticmethod
-    def _load_sheet_relationships(zf: zipfile.ZipFile, sheet_path: str) -> RelationshipCollection:
+    def _load_sheet_relationships(zf: ZipFile, sheet_path: str) -> RelationshipCollection:
         """
         Derive the sheet's .rels path from sheet_path and load it.
         e.g., xl/worksheets/sheet1.xml → xl/worksheets/_rels/sheet1.xml.rels
@@ -229,11 +238,11 @@ class XLSXParser(BaseSpreadsheetParser):
 
     # ── Sheet resolution ───────────────────────────────────────
 
-    def _resolve_sheets(self, wb_xml: ET.Element, wb_rels: RelationshipCollection) -> Dict[str, Tuple[str, int]]:
+    def _resolve_sheets(self, wb_xml: ET.Element, wb_rels: RelationshipCollection) -> dict[str, tuple[str, int]]:
         """
         Returns a dict: sheet_name → (full_zip_path, sheet_id)
         """
-        sheets = {}
+        sheets: dict[str, tuple[str, int]] = {}
         ns = {"": MAIN, "r": REL}
         sheets_elem = xml_find(wb_xml, "sheets", ns)
         if sheets_elem is None:
@@ -257,7 +266,7 @@ class XLSXParser(BaseSpreadsheetParser):
 
     def _find_sheet_relationship(
         self, rels: RelationshipCollection, rel_type: str
-    ) -> Optional[str]:
+    ) -> str | None:
         """Return the first target for the given relationship type in `rels`."""
         for rel in rels.relationships:
             if rel.type == rel_type:
@@ -266,7 +275,7 @@ class XLSXParser(BaseSpreadsheetParser):
 
     def _find_sheet_relationship_multiple(
         self, rels: RelationshipCollection, rel_type: str
-    ) -> List[str]:
+    ) -> list[str]:
         """Return all targets for the given relationship type in `rels`."""
         return [rel.target for rel in rels.relationships if rel.type == rel_type]
 
@@ -291,8 +300,8 @@ class XLSXParser(BaseSpreadsheetParser):
         data: bytes,
         document_id: str,
         source_name: str,
-        metadata: Optional[Dict[str, Any]] = None,
-        options: Optional[ParseOptions] = None,
+        metadata: dict[str, Any] | None = None,
+        options: ParseOptions | None = None,
     ) -> ESDMDocument:
         options = options or ParseOptions()
         workbook = await self._parse_to_workbook(data, source_name, options)

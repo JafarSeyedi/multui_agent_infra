@@ -2,23 +2,27 @@
 """
 Complete XML → ESDM for formulas, shared formulas, calc chain.
 """
-
 from xml.etree.ElementTree import Element
-from typing import List, Optional, Dict, Tuple
+
+from ....models.esdm_models import CalcChainEntry
+from ....models.esdm_models import CalculationChain
+from ....models.esdm_models import CellFormula
+from ....models.esdm_models import FormulaAST
+from ....models.esdm_models import FormulaToken
+from ....models.esdm_models import FormulaTokenType
+from ....models.esdm_models import SharedFormula
 from .namespaces import MAIN
-from .utils import (
-    xml_find, xml_findall, xml_attr, xml_text, xml_int, xml_bool,
-    parse_cell_coordinate,
-)
-from ....models.esdm_models import (
-    CellFormula, FormulaAST, FormulaToken, FormulaTokenType,
-    SharedFormula, CalcChainEntry, CalculationChain,
-)
+from .utils import xml_attr
+from .utils import xml_bool
+from .utils import xml_find
+from .utils import xml_findall
+from .utils import xml_int
+from .utils import xml_text
 
 NS = {"": MAIN}
 
 # ── Formula AST helpers ──
-def _tokenize(formula: str) -> List[FormulaToken]:
+def _tokenize(formula: str) -> list[FormulaToken]:
     """
     Very simplified tokenization; a full engine would use a proper parser.
     This splits by operators and parentheses to produce an approximate AST.
@@ -29,7 +33,7 @@ def _tokenize(formula: str) -> List[FormulaToken]:
 
 def build_cell_formula(
     formula_text: str,
-    shared_index: Optional[int] = None,
+    shared_index: int | None = None,
     array: bool = False,
 ) -> CellFormula:
     ast = FormulaAST(tokens=_tokenize(formula_text))
@@ -45,12 +49,12 @@ def build_cell_formula(
 # The actual formula is stored in a sibling <f> element only for the master cell.
 # We need to collect them from the sheet's XML.
 
-def build_shared_formulas(sheet_xml: Element) -> List[SharedFormula]:
+def build_shared_formulas(sheet_xml: Element) -> list[SharedFormula]:
     """
     Extract shared formula groups from worksheet XML.
     Will return list of SharedFormula instances (master cell and shared index).
     """
-    shared_map: Dict[int, SharedFormula] = {}
+    shared_map: dict[int, SharedFormula] = {}
     # Locate all rows
     for row in xml_findall(sheet_xml, "sheetData/row", NS):
         for c in xml_findall(row, "c", NS):
@@ -64,11 +68,13 @@ def build_shared_formulas(sheet_xml: Element) -> List[SharedFormula]:
                 ref = xml_attr(c, "r", "")
                 if si not in shared_map:
                     formula_text = xml_text(f_elem)
-                    shared_map[si] = SharedFormula(
-                        shared_index=si,
-                        ref=ref,
-                        formula=build_cell_formula(formula_text, shared_index=si).ast,
-                    )
+                    formula = build_cell_formula(formula_text, shared_index=si).ast
+                    if formula:
+                        shared_map[si] = SharedFormula(
+                            shared_index=si,
+                            ref=ref,
+                            formula=formula,
+                        )
     return list(shared_map.values())
 
 # ── Calculation Chain ──
@@ -82,7 +88,7 @@ def build_calculation_chain(chain_xml: Element) -> CalculationChain:
             CalcChainEntry(
                 sheet_id=xml_int(c, "i"),
                 ref=xml_attr(c, "r", ""),
-                array=xml_bool(c, "t", "") == "array",
+                array=xml_bool(c, "t", False) == "array",
             )
         )
     return chain

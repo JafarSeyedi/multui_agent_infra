@@ -3,17 +3,14 @@ from __future__ import annotations
 
 from datetime import datetime
 from functools import cached_property
-from typing import Dict, List, Optional, Type
 
+from ...agents.models import AgentOutput
+from .base_backend import BaseOrchestrationBackend
+from .native_backend import NativeOrchestrationBackend
 from engines.buses.base_message_bus import MessageBus
 from engines.interaction.base_strategy import InteractionStrategy
-from .native_backend import NativeOrchestrationBackend
-from ...agents.models import AgentOutput
-from engines.interaction.interaction_models import (
-    InteractionRequest,
-    InteractionResult,
-)
-from .base_backend import BaseOrchestrationBackend
+from engines.interaction.interaction_models import InteractionRequest
+from engines.interaction.interaction_models import InteractionResult
 
 
 class AutoGenOrchestrationBackend(BaseOrchestrationBackend):
@@ -26,9 +23,9 @@ class AutoGenOrchestrationBackend(BaseOrchestrationBackend):
     def __init__(
         self,
         agent_registry,
-        message_bus: Optional[MessageBus] = None,
+        message_bus: MessageBus | None = None,
         storage=None,
-        strategy_overrides: Optional[Dict[str, Type[InteractionStrategy]]] = None,
+        strategy_overrides: dict[str, type[InteractionStrategy]] | None = None,
     ):
         self.agent_registry = agent_registry
         self.message_bus = message_bus
@@ -45,7 +42,6 @@ class AutoGenOrchestrationBackend(BaseOrchestrationBackend):
     @cached_property
     def _autogen_available(self) -> bool:
         try:
-            import autogen    # type: ignore
             return True
         except Exception:
             return False
@@ -84,19 +80,19 @@ class AutoGenOrchestrationBackend(BaseOrchestrationBackend):
         started_at = datetime.utcnow()
 
         # 1) llm_config
-        llm_config: Dict = request.context.get(
-            "llm_config", 
+        llm_config: dict = request.context.get(
+            "llm_config",
             {"model": "gpt-4"}
         )
 
         # 2) system_message را از metadata/context بگیر
         default_system = request.metadata.get(
-            "default_system_message", 
+            "default_system_message",
             "You are an AI assistant in a multi-agent conversation."
         )
 
         # 3) ساخت AutoGen agents
-        autogen_agents: List[autogen.AssistantAgent] = []
+        autogen_agents: list[autogen.AssistantAgent] = []
 
         for agent_spec in request.agents:
 
@@ -135,7 +131,7 @@ class AutoGenOrchestrationBackend(BaseOrchestrationBackend):
 
         # 6) نتایج
         chat_messages = group_chat.messages
-        results: List[AgentOutput] = []
+        results: list[AgentOutput] = []
 
         # map each agent to message index if exists
         for idx, agent_spec in enumerate(request.agents):

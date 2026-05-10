@@ -10,29 +10,26 @@ Handles both common ERD representations:
 Preserves all attributes, primary/foreign keys, cardinalities, and metadata
 via dedicated MSDM fields and structured annotations for round‑trip fidelity.
 """
-
 from __future__ import annotations
+
 import json
 from pathlib import Path
-from typing import Optional, Dict, Any, List, Union
 from xml.etree import ElementTree as ET
 
-from .base_msdm_parser import BaseMSDMParser
+from ...models.media_types import MEDIA_TYPES
+from ...models.msdm_models import Annotation
+from ...models.msdm_models import Attribute
+from ...models.msdm_models import Cardinality
+from ...models.msdm_models import Constraint
+from ...models.msdm_models import ConstraintType
+from ...models.msdm_models import DataType
+from ...models.msdm_models import Entity
+from ...models.msdm_models import EntityKind
+from ...models.msdm_models import MSDMDocument
+from ...models.msdm_models import EntityRelationship
+from ...models.msdm_models import ScalarType, Namespace
 from ..base import ParseOptions
-from ...models.msdm_models import (
-    MSDMDocument,
-    Entity,
-    Attribute,
-    DataType,
-    Constraint,
-    ConstraintType,
-    Index,
-    Annotation,
-    EntityKind,
-    ScalarType,
-    Relationship,
-    Cardinality,
-)
+from .base_msdm_parser import BaseMSDMParser
 
 
 class ERDParser(BaseMSDMParser):
@@ -45,8 +42,12 @@ class ERDParser(BaseMSDMParser):
     ) -> MSDMDocument:
         encoding = options.encoding or "utf-8"
         text = data.decode(encoding)
-        doc = MSDMDocument()
-        doc.namespace = Path(source_name).stem
+        doc = MSDMDocument(
+            document_id=Path(source_name).stem,
+            title=Path(source_name).stem,
+            media_type=MEDIA_TYPES.get("erd", MEDIA_TYPES["json"])
+        )
+        doc.namespace = Namespace(uri=Path(source_name).stem)
 
         # Determine format by attempting JSON first, then XML
         parsed = False
@@ -67,6 +68,7 @@ class ERDParser(BaseMSDMParser):
             except Exception:
                 raise ValueError("Could not parse ERD file: not valid JSON or XML")
 
+        self.resolve_references(doc)
         return doc
 
     # ── JSON parsing ────────────────────────────────────────────
@@ -101,12 +103,6 @@ class ERDParser(BaseMSDMParser):
             attr = self._parse_json_attribute(attr_data, entity, doc)
             entity.attributes.append(attr)
 
-        # Entity-level constraints from primary keys / foreign keys expressed directly
-        for attr in entity.attributes:
-            if attr.primary_key:
-                # Already marked via attribute; could add a composite PK if multiple
-                pass
-
         # Additional properties stored as annotations
         for key in data:
             if key not in ("name", "description", "attributes", "primaryKey", "foreignKeys"):
@@ -122,7 +118,6 @@ class ERDParser(BaseMSDMParser):
         primary_key = data.get("primaryKey", False)
         default_val = data.get("default")
 
-        # Map type string to DataType
         dt = self._map_type_string(attr_type_str, doc)
 
         attr = Attribute(
@@ -130,19 +125,19 @@ class ERDParser(BaseMSDMParser):
             data_type=dt,
             required=required,
             description=desc,
-            primary_key=primary_key,
             default_value=str(default_val) if default_val is not None else None,
         )
-
+        if primary_key:
+            attr.constraints.append(Constraint(type=ConstraintType.PRIMARY_KEY))
         # Foreign key reference
         fk_data = data.get("foreignKey")
         if fk_data:
-            ref_entity = fk_data if isinstance(fk_data, str) else fk_data.get("entity")
+            ref_entity_id = fk_data if isinstance(fk_data, str) else fk_data.get("entity")
             ref_attr = fk_data.get("attribute") if isinstance(fk_data, dict) else None
             attr.constraints.append(Constraint(
                 type=ConstraintType.FOREIGN_KEY,
-                referenced_entity=ref_entity,
-                referenced_attributes=[ref_attr] if ref_attr else [],
+                ref_entity_id=ref_entity_id,
+                ref_attr_ids=[ref_attr] if ref_attr else [],
             ))
 
         # Extra attributes stored as annotations
@@ -153,19 +148,18 @@ class ERDParser(BaseMSDMParser):
 
         return attr
 
-    def _parse_json_relationship(self, data: dict, doc: MSDMDocument) -> Relationship:
+    def _parse_json_relationship(self, data: dict, doc: MSDMDocument) -> EntityRelationship:
         name = data.get("name")
-        from_entity = data["from"]
-        to_entity = data["to"]
+        from_ref_id = data["from"]
+        to_ref_id = data["to"]
         card_str = data.get("cardinality", "1:1")
 
-        # Parse cardinality
         card_from, card_to = self._parse_cardinality(card_str)
 
-        return Relationship(
+        return EntityRelationship(
             name=name,
-            from_entity=from_entity,
-            to_entity=to_entity,
+            from_ref_id=from_ref_id,
+            to_ref_id=to_ref_id,
             cardinality_from=card_from,
             cardinality_to=card_to,
             foreign_key_attributes=data.get("foreignKeyAttributes", []),
@@ -214,27 +208,28 @@ class ERDParser(BaseMSDMParser):
             data_type=dt,
             required=required,
             description=desc,
-            primary_key=primary_key,
             default_value=default_val,
         )
+        if primary_key:
+            attr.constraints.append(Constraint(type=ConstraintType.PRIMARY_KEY))
 
         # Foreign key via child element
         fk_elem = elem.find('ForeignKey')
         if fk_elem is not None:
-            ref_entity = fk_elem.get('entity', '')
+            ref_entity_id = fk_elem.get('entity', '')
             ref_attr = fk_elem.get('attribute')
             attr.constraints.append(Constraint(
                 type=ConstraintType.FOREIGN_KEY,
-                referenced_entity=ref_entity,
-                referenced_attributes=[ref_attr] if ref_attr else [],
+                ref_entity_id=ref_entity_id,
+                ref_attr_ids=[ref_attr] if ref_attr else [],
             ))
 
         return attr
 
-    def _parse_xml_relationship(self, elem: ET.Element, doc: MSDMDocument) -> Relationship:
+    def _parse_xml_relationship(self, elem: ET.Element, doc: MSDMDocument) -> EntityRelationship:
         name = elem.get('name')
-        from_entity = elem.get('from', '')
-        to_entity = elem.get('to', '')
+        from_ref_id = elem.get('from', '')
+        to_ref_id = elem.get('to', '')
         card_str = elem.get('cardinality', '1:1')
         card_from, card_to = self._parse_cardinality(card_str)
 
@@ -243,10 +238,10 @@ class ERDParser(BaseMSDMParser):
         if fk_elem is not None and fk_elem.text:
             fk_attrs = [a.strip() for a in fk_elem.text.split(',')]
 
-        return Relationship(
+        return EntityRelationship(
             name=name,
-            from_entity=from_entity,
-            to_entity=to_entity,
+            from_ref_id=from_ref_id,
+            to_ref_id=to_ref_id,
             cardinality_from=card_from,
             cardinality_to=card_to,
             foreign_key_attributes=fk_attrs,
@@ -255,7 +250,6 @@ class ERDParser(BaseMSDMParser):
 
     # ── Helpers ─────────────────────────────────────────────────
     def _map_type_string(self, type_str: str, doc: MSDMDocument) -> DataType:
-        """Convert a simple type string like 'int', 'string', 'date' into DataType."""
         mapping = {
             "string": ScalarType.STRING,
             "text": ScalarType.STRING,
@@ -278,17 +272,14 @@ class ERDParser(BaseMSDMParser):
         }
         if type_str in mapping:
             return DataType(base=mapping[type_str])
-        # Could be a reference to another entity
-        return DataType(base=ScalarType.REF, ref_entity=type_str)
+        return DataType(base=ScalarType.REF, ref_entity_id=type_str)
 
     def _parse_cardinality(self, card_str: str) -> tuple[Cardinality, Cardinality]:
-        """Parse cardinality string like '1:N', '0..1:1..*', 'many-to-one'."""
         card_str = card_str.replace(' ', '')
         if ':' in card_str:
             parts = card_str.split(':')
             return self._to_card(parts[0]), self._to_card(parts[1])
         if '-' in card_str:
-            # e.g., "many-to-one"
             parts = card_str.split('-')
             if len(parts) == 2:
                 return self._to_card(parts[0]), self._to_card(parts[1])

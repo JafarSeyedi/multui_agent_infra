@@ -1,10 +1,11 @@
 # rag/research/memory/reasoning/reasoning_event.py
 from __future__ import annotations
 
-from dataclasses import dataclass, field, asdict
-from typing import Any, Dict, Optional
+from dataclasses import asdict
+from dataclasses import dataclass
+from dataclasses import field
+from typing import Any
 
-from .event_types import ReasoningEventType
 
 
 @dataclass
@@ -21,10 +22,10 @@ class ReasoningEvent:
     event_type: str          # مقدار .value از ReasoningEventType ذخیره می‌شه
     level: str
     message: str
-    meta: Dict[str, Any] = field(default_factory=dict)
-    token_count: Optional[int] = None
+    meta: dict[str, Any] = field(default_factory=dict)
+    token_count: int | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
         if not isinstance(d["meta"], dict):
             d["meta"] = {"value": str(d["meta"])}

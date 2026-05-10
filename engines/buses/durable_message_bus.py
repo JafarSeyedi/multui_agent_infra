@@ -1,12 +1,11 @@
-
 #  Persistent / Durable Bus (با asyncio.Queue)
 # پیام‌ها در صف نگه داشته می‌شوند تا consumer آماده شود — مناسب برای decoupling کامل.
-
 # agents/buses/durable_message_bus.py
 import asyncio
 import logging
-from typing import Dict
-from .base_message_bus import MessageBus, HandlerType
+
+from .base_message_bus import HandlerType
+from .base_message_bus import MessageBus
 from engines.interaction.interaction_models import AgentMessage
 
 logger = logging.getLogger(__name__)
@@ -16,9 +15,9 @@ class DurableMessageBus(MessageBus):
     """Queue-based durable bus."""
 
     def __init__(self, maxsize: int = 0) -> None:
-        self._queues: Dict[str, asyncio.Queue[AgentMessage]] = {}
+        self._queues: dict[str, asyncio.Queue[AgentMessage]] = {}
         self._maxsize = maxsize
-        self._consumer_tasks: Dict[str, asyncio.Task] = {}
+        self._consumer_tasks: dict[str, asyncio.Task] = {}
 
     async def subscribe(self, recipient: str, handler: HandlerType) -> None:
         if recipient not in self._queues:

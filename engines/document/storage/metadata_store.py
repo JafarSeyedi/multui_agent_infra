@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from engines.storage.key_value.base import KeyValueStorage
 
@@ -8,19 +8,19 @@ from engines.storage.key_value.base import KeyValueStorage
 class MetadataStore:
     """Small metadata repository for parsed-document and ingestion metadata."""
 
-    def __init__(self, storage: Optional[KeyValueStorage] = None) -> None:
+    def __init__(self, storage: KeyValueStorage | None = None) -> None:
         self.storage = storage
-        self._cache: Dict[str, Dict[str, Any]] = {}
+        self._cache: dict[str, dict[str, Any]] = {}
 
     def _key(self, document_id: str) -> str:
         return f"docmeta:{document_id}"
 
-    async def put_metadata(self, document_id: str, metadata: Dict[str, Any]) -> None:
+    async def put_metadata(self, document_id: str, metadata: dict[str, Any]) -> None:
         self._cache[document_id] = metadata
         if self.storage is not None:
             await self.storage.set(self._key(document_id), metadata)
 
-    async def get_metadata(self, document_id: str) -> Optional[Dict[str, Any]]:
+    async def get_metadata(self, document_id: str) -> dict[str, Any] | None:
         cached = self._cache.get(document_id)
         if cached is not None:
             return cached

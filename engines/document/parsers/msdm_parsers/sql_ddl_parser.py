@@ -17,27 +17,24 @@ unique, check, default) become Constraint objects.  Table‑level options and
 unrecognised statements are stored as document‑level annotations for lossless
 round‑trip.
 """
-
 from __future__ import annotations
+
 import re
 from pathlib import Path
-from typing import Optional, Dict, Any, List, Tuple, Set
 
-from .base_msdm_parser import BaseMSDMParser
+from ...models.msdm_models import Annotation
+from ...models.msdm_models import Attribute
+from ...models.msdm_models import Constraint
+from ...models.msdm_models import ConstraintType
+from ...models.msdm_models import DataType
+from ...models.msdm_models import Entity
+from ...models.msdm_models import EntityKind
+from ...models.msdm_models import Index
+from ...models.msdm_models import MSDMDocument
+from ...models.msdm_models import ScalarType, Namespace
+from ...models.media_types import MEDIA_TYPES
 from ..base import ParseOptions
-from ...models.msdm_models import (
-    MSDMDocument,
-    Entity,
-    Attribute,
-    DataType,
-    Constraint,
-    ConstraintType,
-    Index,
-    Annotation,
-    EntityKind,
-    ScalarType,
-    Relationship,
-)
+from .base_msdm_parser import BaseMSDMParser
 
 # ── SQL type → ScalarType mapping (common types) ─────────────────
 SQL_TYPE_TO_SCALAR = {
@@ -148,8 +145,12 @@ class SqlDDLParser(BaseMSDMParser):
         encoding = options.encoding or "utf-8"
         text = data.decode(encoding)
 
-        doc = MSDMDocument()
-        doc.namespace = Path(source_name).stem
+        doc = MSDMDocument(
+            document_id=Path(source_name).stem,
+            title=Path(source_name).stem,
+            media_type=MEDIA_TYPES.get("sql_ddl", MEDIA_TYPES["txt"])
+        )
+        doc.namespace = Namespace(uri=Path(source_name).stem)
 
         # Remove comments
         text = self._strip_sql_comments(text)
@@ -158,7 +159,7 @@ class SqlDDLParser(BaseMSDMParser):
         statements = self._split_statements(text)
 
         # Map table name → Entity for index attachment
-        table_entities: Dict[str, Entity] = {}
+        table_entities: dict[str, Entity] = {}
 
         for stmt in statements:
             stmt = stmt.strip()
@@ -179,6 +180,7 @@ class SqlDDLParser(BaseMSDMParser):
             else:
                 doc.annotations.append(Annotation(key="raw_ddl", value=stmt))
 
+        self.resolve_references(doc)
         return doc
 
     # ── SQL comment stripping and statement splitting ────────────
@@ -190,7 +192,7 @@ class SqlDDLParser(BaseMSDMParser):
         text = re.sub(r"--[^\n]*", "", text)
         return text
 
-    def _split_statements(self, text: str) -> List[str]:
+    def _split_statements(self, text: str) -> list[str]:
         statements = []
         current = ""
         depth = 0
@@ -215,7 +217,7 @@ class SqlDDLParser(BaseMSDMParser):
         return statements
 
     # ── CREATE TABLE ──────────────────────────────────────────────
-    def _parse_create_table(self, stmt: str, doc: MSDMDocument) -> Optional[Entity]:
+    def _parse_create_table(self, stmt: str, doc: MSDMDocument) -> Entity | None:
         m = RE_CREATE_TABLE.search(stmt)   # search because whole statement might have extra
         if not m:
             return None
@@ -242,7 +244,6 @@ class SqlDDLParser(BaseMSDMParser):
                     # Inline constraints already added to attr.constraints
                     # Also check if it's a primary key (inline PRIMARY KEY)
                     if col_constraints.get("primary_key"):
-                        attr.primary_key = True
                         attr.constraints.append(Constraint(type=ConstraintType.PRIMARY_KEY))
                     if col_constraints.get("unique"):
                         attr.constraints.append(Constraint(type=ConstraintType.UNIQUE))
@@ -258,7 +259,7 @@ class SqlDDLParser(BaseMSDMParser):
         doc.entities.append(entity)
         return entity
 
-    def _parse_column_definition(self, col_def: str, doc: MSDMDocument) -> Tuple[Optional[Attribute], Dict[str, bool]]:
+    def _parse_column_definition(self, col_def: str, doc: MSDMDocument) -> tuple[Attribute | None, dict[str, bool]]:
         """Parse a single column definition. Returns (Attribute, flags dict)."""
         flags = {"primary_key": False, "unique": False, "not_null": False}
         m = RE_COLUMN.match(col_def)
@@ -306,7 +307,7 @@ class SqlDDLParser(BaseMSDMParser):
         return dt
 
     def _parse_inline_constraints(self, rest: str, attr: Attribute,
-                                  flags: Dict[str, bool], doc: MSDMDocument, col_name: str) -> None:
+                                  flags: dict[str, bool], doc: MSDMDocument, col_name: str) -> None:
         """Parse the tail of a column definition for inline constraints."""
         rest = rest.strip()
         while rest:
@@ -340,12 +341,12 @@ class SqlDDLParser(BaseMSDMParser):
                 # REFERENCES table_name(column)
                 m = re.match(r"(\w+)\s*\((\w+)\)", rest, re.IGNORECASE)
                 if m:
-                    ref_entity = m.group(1)
-                    ref_attr = m.group(2)
+                    ref_entity_id = m.group(1)
+                    ref_attr_id = m.group(2)
                     attr.constraints.append(Constraint(
                         type=ConstraintType.FOREIGN_KEY,
-                        referenced_entity=ref_entity,
-                        referenced_attributes=[ref_attr],
+                        ref_entity_id=ref_entity_id,
+                        ref_attr_ids=[ref_attr_id],
                     ))
                     rest = rest[m.end():].strip()
                 else:
@@ -359,7 +360,7 @@ class SqlDDLParser(BaseMSDMParser):
                 attr.annotations.append(Annotation(key="column_suffix", value=rest))
                 rest = ""
 
-    def _extract_default_value(self, text: str) -> Tuple[Optional[str], str]:
+    def _extract_default_value(self, text: str) -> tuple[str | None, str]:
         """Extract a default value literal from the start of text, returning (value, remaining)."""
         text = text.lstrip()
         if text.startswith("'"):
@@ -378,7 +379,7 @@ class SqlDDLParser(BaseMSDMParser):
             return default, text[m.end():]
         return None, text
 
-    def _extract_parenthesized(self, text: str) -> Tuple[Optional[str], str]:
+    def _extract_parenthesized(self, text: str) -> tuple[str | None, str]:
         """If text starts with '(', extract content until matching ')'. """
         if not text.startswith('('):
             return None, text
@@ -413,7 +414,6 @@ class SqlDDLParser(BaseMSDMParser):
             for c in cols:
                 attr = next((a for a in entity.attributes if a.name == c), None)
                 if attr:
-                    attr.primary_key = True
                     attr.constraints.append(constraint)
         elif constr_type in ("UNIQUE", "CHECK"):
             constraint = Constraint(type=ConstraintType(constr_type), expression=columns_str or extra)
@@ -425,20 +425,20 @@ class SqlDDLParser(BaseMSDMParser):
             fk_cols = [c.strip('" ') for c in columns_str.split(',')]
             ref_m = re.search(r"REFERENCES\s+(\w+)\s*\(([^)]+)\)", extra, re.IGNORECASE)
             if ref_m:
-                ref_entity = ref_m.group(1)
+                ref_entity_id = ref_m.group(1)
                 ref_cols = [c.strip('" ') for c in ref_m.group(2).split(',')]
                 constraint = Constraint(
                     type=ConstraintType.FOREIGN_KEY,
                     expression=",".join(fk_cols),
-                    referenced_entity=ref_entity,
-                    referenced_attributes=ref_cols,
+                    ref_entity_id=ref_entity_id,
+                    ref_attr_ids=ref_cols,
                 )
                 if constr_name:
                     constraint.name = constr_name
                 entity.constraints.append(constraint)
 
     # ── Utility: split column definitions correctly ────────────
-    def _split_column_defs(self, body: str) -> List[str]:
+    def _split_column_defs(self, body: str) -> list[str]:
         """Split column definitions by commas, ignoring those inside parentheses."""
         defs = []
         depth = 0
@@ -459,7 +459,7 @@ class SqlDDLParser(BaseMSDMParser):
 
     # ── CREATE INDEX ───────────────────────────────────────────────
     def _parse_create_index(self, stmt: str, doc: MSDMDocument,
-                            table_entities: Dict[str, Entity]) -> None:
+                            table_entities: dict[str, Entity]) -> None:
         m = RE_CREATE_INDEX.search(stmt)
         if not m:
             return
@@ -473,9 +473,14 @@ class SqlDDLParser(BaseMSDMParser):
         if not entity:
             return
 
+        attrs: list[Attribute] = []
+        for k in columns:
+            for a in entity.attributes:
+                if a.name == k:
+                    attrs.append(a)
         idx = Index(
             name=index_name,
-            attributes=columns,
+            attributes=attrs,
             unique=unique,
         )
         entity.indexes.append(idx)
@@ -492,7 +497,7 @@ class SqlDDLParser(BaseMSDMParser):
         doc.entities.append(entity)
 
     # ── Table‑level options parser ─────────────────────────────
-    def _parse_table_options(self, options_str: str) -> List[Annotation]:
+    def _parse_table_options(self, options_str: str) -> list[Annotation]:
         """Parse OPTIONS like ENGINE=InnoDB, TABLESPACE ..., etc."""
         annotations = []
         # Simple key=value or key value pairs

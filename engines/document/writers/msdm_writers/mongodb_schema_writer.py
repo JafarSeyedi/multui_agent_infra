@@ -5,24 +5,23 @@ schema (.json).  Produces a ``validator`` document with ``$jsonSchema``, and
 optionally includes collection‑level options (validationLevel, etc.).
 Indexes are emitted as comments for manual creation.
 """
-
 from __future__ import annotations
-import json
-from typing import Optional, Dict, Any, List
 
-from .base_msdm_writer import BaseMSDMWriter, WriteTarget, SoftDeleteStrategy
+import json
+from typing import Any, Union
+
+from ...models.msdm_models import Attribute
+from ...models.msdm_models import ConstraintType
+from ...models.msdm_models import DataType
+from ...models.msdm_models import Entity
+from ...models.msdm_models import EntityKind
+from ...models.msdm_models import MSDMDocument
+from ...models.msdm_models import ScalarType
 from ..base import WriteOptions
-from ...models.msdm_models import (
-    MSDMDocument,
-    Entity,
-    Attribute,
-    DataType,
-    Constraint,
-    ConstraintType,
-    Annotation,
-    EntityKind,
-    ScalarType,
-)
+from .base_msdm_writer import BaseMSDMWriter, ConnectionConfig
+from .base_msdm_writer import SoftDeleteStrategy
+from .base_msdm_writer import WriteTarget
+
 try:
     from pymongo import MongoClient
     MONGO_AVAILABLE = True
@@ -30,7 +29,7 @@ except ImportError:
     MONGO_AVAILABLE = False
 
 # ── ScalarType → BSON type ────────────────────────────────────────
-_SCALAR_TO_BSON: Dict[ScalarType, str] = {
+_SCALAR_TO_BSON: dict[ScalarType, str] = {
     ScalarType.STRING:    "string",
     ScalarType.INT:       "int",
     ScalarType.LONG:      "long",
@@ -57,7 +56,7 @@ class MongoDBSchemaWriter(BaseMSDMWriter):
 
     def __init__(
         self,
-        options: Optional[WriteOptions] = None,
+        options: WriteOptions | None = None,
         target_mode: WriteTarget = WriteTarget.DESIGN_FILE,
         soft_delete_strategy: SoftDeleteStrategy = SoftDeleteStrategy.NONE,
     ):
@@ -65,7 +64,6 @@ class MongoDBSchemaWriter(BaseMSDMWriter):
 
     # ── Public API ─────────────────────────────────────────────────
     async def _write_design(self, document: MSDMDocument) -> bytes:
-        # Expect one DOCUMENT entity per file; if multiple, write an array
         doc_entities = [e for e in document.entities if e.kind == EntityKind.DOCUMENT]
         if not doc_entities:
             doc_entities = document.entities  # fallback
@@ -75,35 +73,28 @@ class MongoDBSchemaWriter(BaseMSDMWriter):
             schema = self._build_validator_schema(entity)
             results.append(schema)
 
-        if len(results) == 1:
-            output = results[0]
-        else:
-            output = results
-
+        output: Union[dict, list] = results[0] if len(results) == 1 else results
         json_str = json.dumps(output, indent=2, ensure_ascii=False)
-        return json_str.encode(self.options.encoding or "utf-8")
+        return json_str.encode(getattr(self.options, "encoding", "utf-8") or "utf-8")
 
-    async def get_supported_media_types(self) -> list[str]:
+    def get_supported_media_types(self) -> list[str]:
         return ["application/json"]
 
-    async def get_supported_extensions(self) -> list[str]:
-        return self.supported_extensions
+    def get_supported_extensions(self) -> list[str]:
+        return list(self.supported_extensions)
 
     # ── Build validator wrapper ────────────────────────────────────
     def _build_validator_schema(self, entity: Entity) -> dict:
         """Return a MongoDB collection schema with validator, etc."""
-        schema = {}
+        schema: dict[str, Any] = {}
 
-        # Collection name (optional)
         collection = self._get_annotation(entity, "collection")
         if collection:
             schema["collection"] = collection
 
-        # Validator
-        validator = {}
+        validator: dict[str, Any] = {}
         json_schema = self._entity_to_json_schema(entity)
 
-        # If there are top-level validation options stored as annotations
         for ann in entity.annotations:
             if ann.key in ("validationLevel", "validationAction", "validator"):
                 try:
@@ -111,47 +102,41 @@ class MongoDBSchemaWriter(BaseMSDMWriter):
                 except json.JSONDecodeError:
                     val = ann.value
                 if ann.key == "validator":
-                    # already building, skip
                     continue
                 schema[ann.key] = val
 
         validator["$jsonSchema"] = json_schema
         schema["validator"] = validator
 
-        # Indexes as comment? Not part of validator; we can attach as a separate annotation in the output.
-        # We'll include an "indexes" field at the top level of the output for user reference.
         indexes = self._format_indexes(entity)
         if indexes:
-            schema["_indexes"] = indexes   # non‑standard, but helpful; removed by consumers
+            schema["_indexes"] = indexes
 
         return schema
 
     # ── Entity → $jsonSchema ───────────────────────────────────────
     def _entity_to_json_schema(self, entity: Entity) -> dict:
-        json_schema = {
+        json_schema: dict[str, Any] = {
             "bsonType": "object",
             "title": entity.name,
         }
         if entity.description:
             json_schema["description"] = entity.description
 
-        # Additional properties – if annotation exists, use it; else default to true
         add_props = self._get_annotation(entity, "additionalProperties")
         if add_props is not None:
             json_schema["additionalProperties"] = add_props == "true"
         else:
             json_schema["additionalProperties"] = True
 
-        # Required from required attributes
         required = [attr.name for attr in entity.attributes if attr.required]
         if required:
             json_schema["required"] = required
 
-        # Properties
         properties = {}
         for attr in entity.attributes:
             if attr.name == "_id":
-                continue   # skip default _id unless explicitly modelled
+                continue
             prop = self._attribute_to_bson_property(attr)
             properties[attr.name] = prop
         json_schema["properties"] = properties
@@ -160,35 +145,33 @@ class MongoDBSchemaWriter(BaseMSDMWriter):
 
     # ── Attribute → BSON property schema ──────────────────────────
     def _attribute_to_bson_property(self, attr: Attribute) -> dict:
-        prop = {}
+        prop: dict[str, Any] = {}
 
-        # bsonType
         bson_type = self._get_annotation(attr, "bsonType")
         if not bson_type:
             bson_type = self._datatype_to_bson(attr.data_type)
         prop["bsonType"] = bson_type
 
-        # Description
         if attr.description:
             prop["description"] = attr.description
 
-        # Enum constraint → enum or check?
         for c in attr.constraints:
-            if c.type == ConstraintType.CHECK and c.expression.startswith("IN ("):
-                # Extract enum values
+            if c.type == ConstraintType.CHECK and c.expression is not None and c.expression.startswith("IN ("):
                 inner = c.expression[4:].rstrip(")")
                 values = [v.strip().strip("'\"") for v in inner.split(",") if v.strip()]
                 if values:
                     prop["enum"] = values
-            elif c.type == ConstraintType.CHECK:
-                # Other CHECK constraints could be stored as $expr; not directly supported
-                prop["description"] = prop.get("description", "") + f" [CHECK: {c.expression}]"
+            elif c.type == ConstraintType.CHECK and c.expression is not None:
+                existing = prop.get("description", "")
+                prop["description"] = f"{existing} [CHECK: {c.expression}]".strip()
 
-        # Numeric constraints (minimum, maximum)
         for ann in attr.annotations:
             if ann.key in ("minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum"):
                 try:
-                    prop[ann.key] = int(ann.value) if ann.value.isdigit() else float(ann.value)
+                    if ann.value.isdigit():
+                        prop[ann.key] = int(ann.value)
+                    else:
+                        prop[ann.key] = float(ann.value)
                 except (ValueError, TypeError):
                     pass
             elif ann.key == "multipleOf":
@@ -210,9 +193,6 @@ class MongoDBSchemaWriter(BaseMSDMWriter):
                 prop["pattern"] = ann.value
             elif ann.key == "format":
                 prop["format"] = ann.value
-            elif ann.key == "enum":
-                # Already handled via constraint, but annotation might override
-                pass
             elif ann.key in ("default", "uniqueItems", "minItems", "maxItems",
                              "contentMediaType", "contentEncoding"):
                 try:
@@ -220,9 +200,6 @@ class MongoDBSchemaWriter(BaseMSDMWriter):
                 except json.JSONDecodeError:
                     prop[ann.key] = ann.value
             elif ann.key == "bsonType":
-                pass   # already set
-            else:
-                # Other annotations → store in a meta field? We'll skip.
                 pass
 
         # Properties for nested objects
@@ -238,11 +215,9 @@ class MongoDBSchemaWriter(BaseMSDMWriter):
                 if nested_req:
                     prop["required"] = nested_req
             elif bson_type == "array":
-                # If nested attributes, assume array of objects
-                first = attr.nested_attributes[0] if attr.nested_attributes else None
-                if first:
-                    items_schema = self._attribute_to_bson_property(first)
-                    prop["items"] = items_schema
+                if attr.nested_attributes:
+                    first = attr.nested_attributes[0]
+                    prop["items"] = self._attribute_to_bson_property(first)
 
         # Default value
         if attr.default_value is not None:
@@ -260,33 +235,35 @@ class MongoDBSchemaWriter(BaseMSDMWriter):
         if base == ScalarType.STRUCT:
             return "object"
         if base == ScalarType.REF:
-            # ObjectId reference – could be "objectId" or "object"
             return "objectId"
-        if base in _SCALAR_TO_BSON:
-            return _SCALAR_TO_BSON[base]
-        return "object"
+        return _SCALAR_TO_BSON.get(base, "object")
 
     # ── Index formatting (as reference) ────────────────────────────
-    def _format_indexes(self, entity: Entity) -> List[dict]:
+    def _format_indexes(self, entity: Entity) -> list[dict]:
         indexes = []
         for idx in entity.indexes:
+            option: dict[str, str | bool] = {}
             idx_def = {
-                "keys": {attr: 1 for attr in idx.attributes},
-                "options": {},
+                "keys": {attr.name for attr in idx.attributes},
+                "options": option,
             }
             if idx.name:
-                idx_def["options"]["name"] = idx.name
+                option["name"] = idx.name
             if idx.unique:
-                idx_def["options"]["unique"] = True
+                option["unique"] = True
             indexes.append(idx_def)
         return indexes
 
     # ── Helpers ────────────────────────────────────────────────────
-    def _get_annotation(self, obj, key: str) -> Optional[str]:
+    def _get_annotation(self, obj: Any, key: str) -> str | None:
         if isinstance(obj, Entity):
-            return next((a.value for a in obj.annotations if a.key == key), None)
-        if isinstance(obj, Attribute):
-            return next((a.value for a in obj.annotations if a.key == key), None)
+            for a in obj.annotations:
+                if a.key == key:
+                    return a.value
+        elif isinstance(obj, Attribute):
+            for a in obj.annotations:
+                if a.key == key:
+                    return a.value
         return None
 
     @staticmethod
@@ -305,37 +282,38 @@ class MongoDBSchemaWriter(BaseMSDMWriter):
         if bson_type == "bool":
             return raw.lower() == "true"
         if bson_type == "objectId":
-            return raw   # assume valid ObjectId string
+            return raw
         if bson_type == "date":
             return {"$date": raw}
         if (raw.startswith('"') and raw.endswith('"')) or (raw.startswith("'") and raw.endswith("'")):
             return raw[1:-1]
         return raw
-    
-    
-    async def apply_to_database(self, document: MSDMDocument, connection: ConnectionConfig = None):
+
+    async def apply_to_database(
+        self,
+        document: MSDMDocument,
+        connection: ConnectionConfig | None = None,
+    ) -> None:
         if not MONGO_AVAILABLE:
             raise ImportError("pymongo is required. pip install pymongo")
         if connection is None:
             raise ValueError("ConnectionConfig required")
 
         url = connection.url or f"mongodb://{connection.host or 'localhost'}:{connection.port or 27017}/"
-        client = MongoClient(url)
+        client: MongoClient = MongoClient(url)
         try:
-            db = client[connection.database or "default"]
+            db_name = connection.database or "default"
+            db = client[db_name]
             for entity in document.entities:
                 if entity.kind != EntityKind.DOCUMENT:
                     continue
                 collection_name = entity.name
-                # If collection does not exist, create with validator
                 if collection_name not in db.list_collection_names():
                     validator_schema = self._build_validator_schema(entity)
                     db.create_collection(collection_name, validator=validator_schema)
                 else:
-                    # Update validator? MongoDB allows collMod to update validation.
                     validator_schema = self._build_validator_schema(entity)
                     db.command("collMod", collection_name, validator=validator_schema)
-            # Remove collections not in model
             model_collections = {e.name for e in document.entities if e.kind == EntityKind.DOCUMENT}
             existing = set(db.list_collection_names())
             for coll in existing - model_collections:
@@ -343,7 +321,7 @@ class MongoDBSchemaWriter(BaseMSDMWriter):
         finally:
             client.close()
 
-    def _handle_collection_deletion(self, db, coll_name: str):
+    def _handle_collection_deletion(self, db: Any, coll_name: str) -> None:
         if self.soft_delete_strategy == SoftDeleteStrategy.NONE:
             db.drop_collection(coll_name)
         elif self.soft_delete_strategy == SoftDeleteStrategy.PREFIX:
@@ -351,4 +329,4 @@ class MongoDBSchemaWriter(BaseMSDMWriter):
             db.get_collection(coll_name).rename(new_name)
         elif self.soft_delete_strategy == SoftDeleteStrategy.SUFFIX:
             new_name = f"{coll_name}_deleted"
-            db.get_collection(coll_name).rename(new_name)    
+            db.get_collection(coll_name).rename(new_name)

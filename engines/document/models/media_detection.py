@@ -1,13 +1,13 @@
 # engines/document/models/media_detection.py
-import os
-import re
 import io
 import json
-import zipfile
+import os
+import re
 import xml.etree.ElementTree as ET
+import zipfile
 
-from typing import Optional
-from .media_types import MEDIA_TYPES, MediaType
+from .media_types import MEDIA_TYPES
+from .media_types import MediaType
 
 
 # -------------------------------
@@ -20,7 +20,7 @@ def detect_by_extension(ext: str) -> MediaType:
     return MEDIA_TYPES["text_generic"]
 
 
-def detect_by_file_extension(path: str) -> Optional[MediaType]:
+def detect_by_file_extension(path: str) -> MediaType | None:
     ext = os.path.splitext(path)[1].lower()
     for mt in MEDIA_TYPES.values():
         if ext in mt.extensions:
@@ -31,7 +31,7 @@ def detect_by_file_extension(path: str) -> Optional[MediaType]:
 # -------------------------------
 # 2) DETECT BY MIME-TYPE
 # -------------------------------
-def detect_by_mime(mime: str) -> Optional[MediaType]:
+def detect_by_mime(mime: str) -> MediaType | None:
     mime = mime.lower()
     for mt in MEDIA_TYPES.values():
         if mt.mime.lower() == mime:
@@ -231,7 +231,7 @@ def _is_typescript_interface(text: str) -> bool:
     return False
 
 
-def _detect_csv_tsv(text: str) -> Optional[str]:
+def _detect_csv_tsv(text: str) -> str | None:
     lines = text.splitlines()
     if not lines:
         return None
@@ -317,14 +317,6 @@ def _is_graphml(text: str) -> bool:
     except Exception:
         return False
 
-def _is_cncf_serverless_workflow(text: str) -> bool:
-    """Check for CNCF Serverless Workflow JSON/YAML."""
-    if _is_json(text):
-        data = json.loads(text)
-        return isinstance(data, dict) and ("id" in data and "states" in data)
-    if _is_yaml(text):
-        return bool(re.search(r'^\s*(?:id|states)\s*:', text, re.MULTILINE))
-    return False
 def _is_cep_json(text: str) -> bool:
     try:
         data = json.loads(text)
@@ -346,22 +338,8 @@ def _is_scxml(text: str) -> bool:
 def _is_epc(text: str) -> bool:
     return '<epc' in text or 'epml' in text  # needs precise detection
 
-def _is_aws_step_functions(text: str) -> bool:
-    data = json.loads(text)
-    return 'StartAt' in data and 'States' in data
-
-def _is_azure_logic_apps(text: str) -> bool:
-    data = json.loads(text)
-    return 'definition' in data and 'triggers' in data
-
-def _is_airflow_dag(text: str) -> bool:
-    return 'from airflow' in text or 'DAG(' in text
-
 def _is_prefect_dag(text: str) -> bool:
     return 'from prefect' in text or '@task' in text
-
-def _is_yawl(text: str) -> bool:
-    return '<specification' in text and 'xmlns' in text and 'yawl' in text.lower()
 
 def _is_xpd(text: str) -> bool:
     try:
@@ -372,7 +350,7 @@ def _is_xpd(text: str) -> bool:
 # ------------------------------------------------------
 # MAIN CONTENT DETECTOR (strictly ordered)
 # ------------------------------------------------------
-def detect_by_content(data: bytes) -> Optional[MediaType]:
+def detect_by_content(data: bytes) -> MediaType | None:
 
     # 1. Binary signatures first
     if _is_pdf(data):
@@ -420,10 +398,6 @@ def detect_by_content(data: bytes) -> Optional[MediaType]:
             return MEDIA_TYPES["tsdm_json"]
         if _is_cep_json(text):
             return MEDIA_TYPES["cep_json"]
-        if _is_aws_step_functions(text):
-            return MEDIA_TYPES["aws_step_functions_json"]
-        if _is_azure_logic_apps(text):
-            return MEDIA_TYPES["azure_logic_apps_json"]        
         # All other JSON
         return MEDIA_TYPES["json"]
 
@@ -451,15 +425,11 @@ def detect_by_content(data: bytes) -> Optional[MediaType]:
             return MEDIA_TYPES["scxml_xml"]
         if _is_epc(text):
             return MEDIA_TYPES["epc_xml"]
-        if _is_yawl(text):
-            return MEDIA_TYPES["yawl_xml"]
         if _is_xpd(text):
-            return MEDIA_TYPES["xpd_xml"]        
+            return MEDIA_TYPES["xpd_xml"]
         return MEDIA_TYPES["xml"]
 
     if _is_python_model(text):
-        if _is_airflow_dag(text):
-            return MEDIA_TYPES["airflow_dag_py"]
         if _is_prefect_dag(text):
             return MEDIA_TYPES["prefect_dag_py"]
         return MEDIA_TYPES["python_model"]
@@ -493,12 +463,6 @@ def detect_by_content(data: bytes) -> Optional[MediaType]:
     if _is_toml(text):
         return MEDIA_TYPES["toml"]
 
-    if _is_cncf_serverless_workflow(text):
-        if _is_json(text):
-            return MEDIA_TYPES["cncf_serverless_workflow_json"]
-        else:
-            return MEDIA_TYPES["cncf_serverless_workflow_yaml"]
-    
     # 9. Delimiter-based (CSV/TSV) – after structured text that may contain commas
     t = _detect_csv_tsv(text)
     if t and t in MEDIA_TYPES:
@@ -517,9 +481,9 @@ def detect_by_content(data: bytes) -> Optional[MediaType]:
 
 
 def detect_media_type(
-    path: Optional[str] = None,
-    mime: Optional[str] = None,
-    data: Optional[bytes] = None,
+    path: str | None = None,
+    mime: str | None = None,
+    data: bytes | None = None,
 ) -> MediaType:
 
     # 1) Extension
@@ -542,4 +506,3 @@ def detect_media_type(
 
     # Final fallback
     return MEDIA_TYPES["text_generic"]
-

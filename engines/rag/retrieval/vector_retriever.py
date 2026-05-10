@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
+from .base_retriever import BaseRetriever
+from .retriever_result import RetrievalResult
 from engines.rag.rag_models import DocumentChunk
 from engines.rag.services.embedding import EmbeddingModel
 from engines.storage.vector.base import VectorDBAdapter
-
-from .retriever_result import RetrievalResult
-from .base_retriever import BaseRetriever
 
 
 class VectorRetriever(BaseRetriever):
@@ -19,12 +18,12 @@ class VectorRetriever(BaseRetriever):
         self,
         query: str,
         top_k: int = 5,
-        filters: Optional[Dict[str, Any]] = None,
-    ) -> List[RetrievalResult]:
+        filters: dict[str, Any] | None = None,
+    ) -> list[RetrievalResult]:
         embedding = await self.embedding_model.embed_one(query)
         results = await self.vector_db.query(vector=embedding, top_k=top_k, filters=filters)
 
-        output: List[RetrievalResult] = []
+        output: list[RetrievalResult] = []
         for item in results:
             metadata = dict(item)
             metadata.pop("_id", None)
@@ -40,7 +39,7 @@ class VectorRetriever(BaseRetriever):
             )
         return output
 
-    def _result_to_chunk(self, payload: Dict[str, Any]) -> DocumentChunk:
+    def _result_to_chunk(self, payload: dict[str, Any]) -> DocumentChunk:
         if {"chunk_id", "document_id", "text"}.issubset(payload.keys()):
             return DocumentChunk(**payload)
 

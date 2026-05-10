@@ -3,51 +3,52 @@
 Main PPTX parser: opens the ZIP, coordinates all sub-parsers, and assembles
 a complete PSDMDocument ready for round‑trip.
 """
-
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
 import io
+import uuid
 import zipfile
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Any
 from xml.etree import ElementTree as ET
+from zipfile import ZipFile
 
-from ..base import BaseDocumentParser, ParseOptions
+from ...models.media_types import MEDIA_TYPES
+
 from ...models.base import BaseDocument
-from ...models.psdm_models import (
-    PSDMDocument,
-    Slide,
-    SlideLayout,
-    SlideMaster,
-    Theme,
-    PresentationProperties,
-    NotesSlide,
-    Section,
-)
-from ...models.media_types import DocumentStandard  # assuming PSDM added
-from ...models.usdm_models import (
-    LogicalElement, ElementType, ImageContent, ChartContent,
-)
-
-from .constants import NAMESPACES, REL_TYPE
-from .relationship_utils import (
-    load_rels,
-    get_target_for_id,
-    get_targets_by_type,
-    resolve_slide_rels,
-    resolve_path,
-    resolve_image_path,
-)
-from .slide_builder import build_slide
-from .master_parser import parse_master, parse_layout
-from .theme_parser import parse_theme
-from .notes_parser import parse_notes_slide
-from .comments_parser import parse_comments
-from .animation_parser import parse_slide_transition, parse_slide_animations  # not needed here, slide builder does it
+from ...models.psdm_models import ShowType
+from ...models.psdm_models import PresentationProperties
+from ...models.psdm_models import PSDMDocument
+from ...models.psdm_models import PresentationSection
+from ...models.psdm_models import Slide
+from ...models.psdm_models import SlideLayout
+from ...models.psdm_models import SlideMaster
+from ...models.psdm_models import Theme
+from ...models.usdm_models import ChartContent
+from ...models.usdm_models import ElementType
+from ...models.usdm_models import ImageContent, DrawingContent
+from ..base import BaseDocumentParser
+from ..base import ParseOptions
 from ..drawingml.chart_ref_parser import resolve_chart
 from ..drawingml.diagram_parser import resolve_diagram
-# Inside the slide processing loop, right before appending slide to the list:
+from ..drawingml.image_parser import resolve_image
+from .comments_parser import parse_comments
+from .constants import NAMESPACES
+from .constants import REL_TYPE
+from .master_parser import parse_layout
+from .master_parser import parse_master
 from .media_parser import load_media_binaries
+from .notes_parser import parse_notes_slide
+from .ole_parser import load_ole_binaries
+from .relationship_utils import get_target_for_id
+from .relationship_utils import get_targets_by_type
+from .relationship_utils import load_rels
+from .relationship_utils import resolve_path
+from .relationship_utils import resolve_slide_rels
+from .slide_builder import build_slide
+from .theme_parser import parse_theme
+# Inside the slide processing loop, right before appending slide to the list:
 
 NS = NAMESPACES
 
@@ -63,8 +64,8 @@ class PPTXParser(BaseDocumentParser):
         data: bytes,
         document_id: str,
         source_name: str,
-        metadata: Optional[Dict[str, Any]] = None,
-        options: Optional[ParseOptions] = None,
+        metadata: dict[str, Any] | None = None,
+        options: ParseOptions | None = None,
     ) -> BaseDocument:
         options = options or ParseOptions()
         doc = await self._parse_to_psdm(data, source_name, options)
@@ -79,10 +80,10 @@ class PPTXParser(BaseDocumentParser):
 
     async def parse_path(
         self,
-        path: Union[str, Path],
+        path: str | Path,
         document_id: str,
-        metadata: Optional[Dict[str, Any]] = None,
-        options: Optional[ParseOptions] = None,
+        metadata: dict[str, Any] | None = None,
+        options: ParseOptions | None = None,
     ) -> BaseDocument:
         file_path = Path(path)
         data = file_path.read_bytes()
@@ -93,8 +94,8 @@ class PPTXParser(BaseDocumentParser):
         stream: AsyncIterator[bytes],
         document_id: str,
         source_name: str,
-        metadata: Optional[Dict[str, Any]] = None,
-        options: Optional[ParseOptions] = None,
+        metadata: dict[str, Any] | None = None,
+        options: ParseOptions | None = None,
     ) -> BaseDocument:
         chunks = []
         async for chunk in stream:
@@ -106,12 +107,14 @@ class PPTXParser(BaseDocumentParser):
         self, data: bytes, source_name: str, options: ParseOptions
     ) -> PSDMDocument:
         zip_data = io.BytesIO(data)
-        with zipfile.ZipFile(zip_data, "r") as zf:
+        with ZipFile(zip_data, "r") as zf:
             # 1. Load package-level relationships
-            package_rels = load_rels(zf, "_rels/.rels")
+            load_rels(zf, "_rels/.rels")
             # 2. Presentation part is usually "ppt/presentation.xml"
             pres_path = "ppt/presentation.xml"
             pres_xml = self._load_xml(zf, pres_path)
+            if pres_xml is None:
+                raise ValueError("presentation.xml not found")
             # 3. Presentation relationships (ppt/_rels/presentation.xml.rels)
             pres_rels = load_rels(zf, "ppt/_rels/presentation.xml.rels")
 
@@ -127,12 +130,12 @@ class PPTXParser(BaseDocumentParser):
                 # store in properties? we can extend, but for now keep in meta
                 pass
             # Show properties
+            properties.show_type = ShowType(pres_xml.get("show", "default"))
             show_pr = pres_xml.find("p:showPr", NS)
             if show_pr is not None:
                 properties.loop = show_pr.get("loop") == "1"
-                properties.show_type = show_pr.get("show") or "default"
+                properties.show_type = ShowType(show_pr.get("show") or "default")
             # Default text style
-            def_text_style = None
             # (could be extracted from <p:defaultTextStyle>)
 
             # 5. Parse theme (theme1.xml)
@@ -149,7 +152,7 @@ class PPTXParser(BaseDocumentParser):
             # 6. Parse slide masters and layouts
             # Master relationships: type slideMaster
             master_rels_targets = get_targets_by_type(pres_rels, REL_TYPE["slideMaster"])
-            masters: Dict[str, SlideMaster] = {}
+            masters: dict[str, SlideMaster] = {}
             for target in master_rels_targets:
                 master_path = resolve_path("ppt", target)
                 master_xml = self._load_xml(zf, master_path)
@@ -158,7 +161,7 @@ class PPTXParser(BaseDocumentParser):
                 # Get the master's own relationships for layouts
                 master_rels = load_rels(zf, _rels_path_for(master_path))
                 # Parse layouts first (they are separate parts linked from master relationships)
-                layouts: Dict[str, SlideLayout] = {}
+                layouts: dict[str, SlideLayout] = {}
                 layout_targets = get_targets_by_type(master_rels, REL_TYPE["slideLayout"])
                 for lt in layout_targets:
                     layout_path = resolve_path(_dir_of(master_path), lt)
@@ -172,8 +175,8 @@ class PPTXParser(BaseDocumentParser):
                 masters[master.name] = master
 
             # 7. Parse slides
-            slides: List[Slide] = []
-            slide_rels_targets = get_targets_by_type(pres_rels, REL_TYPE["slide"])
+            slides: list[Slide] = []
+            get_targets_by_type(pres_rels, REL_TYPE["slide"])
             # Sort by order? Typically they appear in order in relationships.
             # We'll keep insertion order from get_targets_by_type (which may be arbitrary).
             # Better to order by <p:sldIdLst> in presentation.xml.
@@ -181,15 +184,15 @@ class PPTXParser(BaseDocumentParser):
             ordered_ids = []
             if sld_id_lst is not None:
                 for sld_id_elem in sld_id_lst.findall("p:sldId", NS):
-                    r_id = sld_id_elem.get(f"{{{NS['r']}}}id")
+                    r_id = sld_id_elem.get(f"{{{NS['r']}}}id") or ""
                     if r_id:
                         ordered_ids.append(r_id)
             # Build slide list respecting order
             for r_id in ordered_ids:
-                target = get_target_for_id(pres_rels, r_id)
-                if not target:
+                target1 = get_target_for_id(pres_rels, r_id)
+                if not target1:
                     continue
-                slide_path = resolve_path("ppt", target)
+                slide_path = resolve_path("ppt", target1)
                 slide_xml = self._load_xml(zf, slide_path)
                 if slide_xml is None:
                     continue
@@ -225,19 +228,11 @@ class PPTXParser(BaseDocumentParser):
                 # Resolve images
                 for elem in slide.elements:
                     if elem.element_type == ElementType.IMAGE and isinstance(elem.content, ImageContent):
-                        resolve_image(
-                            elem.content,
-                            slide_rels,
-                            zf,
-                            base_path=_dir_of(slide_path),
-                        )
+                        resolve_image(elem.content, {rid: tgt for rid, (_, tgt) in slide_rels.items()}, zf, base_path=_dir_of(slide_path))
                     elif elem.element_type == ElementType.CHART and isinstance(elem.content, ChartContent):
-                        r_id = getattr(elem.content, '_chart_rId', None)
+                        r_id = getattr(elem.content, '_chart_rId', None) or ""
                         if r_id:
-                            chart = resolve_chart(
-                                r_id,
-                                slide_rels,
-                                zf,
+                            chart = resolve_chart(r_id, {rid: tgt for rid, (_, tgt) in slide_rels.items()}, zf,
                                 relationship_target_resolver=lambda base, tgt: resolve_path(_dir_of(slide_path), tgt)
                             )
                             if chart:
@@ -278,7 +273,7 @@ class PPTXParser(BaseDocumentParser):
                     #         )
                     #         slide.media_references.append(media_ref)
                     #         elem._meta["media_reference"] = media_ref
-            
+
                 load_media_binaries(slide.media_references, slide.elements, zf)
                 load_ole_binaries(slide.elements, slide_rels, zf, _dir_of(slide_path))
 
@@ -291,7 +286,7 @@ class PPTXParser(BaseDocumentParser):
                         break
                 if notes_r_id:
                     notes_target = get_target_for_id(slide_rels, notes_r_id)
-                    notes_path = resolve_path(_dir_of(slide_path), notes_target)
+                    notes_path = resolve_path(_dir_of(slide_path), notes_target or "")
                     notes_xml = self._load_xml(zf, notes_path, optional=True)
                     if notes_xml is not None:
                         slide.notes = parse_notes_slide(notes_xml)
@@ -304,17 +299,18 @@ class PPTXParser(BaseDocumentParser):
                         break
                 if comments_r_id:
                     comments_target = get_target_for_id(slide_rels, comments_r_id)
-                    comments_path = resolve_path(_dir_of(slide_path), comments_target)
-                    comments_xml = self._load_xml(zf, comments_path, optional=True)
-                    if comments_xml is not None:
-                        slide.comments = parse_comments(comments_xml)
+                    if comments_target:
+                        comments_path = resolve_path(_dir_of(slide_path), comments_target)
+                        comments_xml = self._load_xml(zf, comments_path, optional=True)
+                        if comments_xml is not None:
+                            slide.comments = parse_comments(comments_xml)
 
                 slides.append(slide)
 
             # 8. Sections (if any)
-            sections = self._parse_sections(pres_xml)
+            sections = self._parse_sections(pres_xml) if pres_xml is not None else []
             if sections:
-                self._map_sections_to_slides(sections, ordered_ids, slides)            
+                self._map_sections_to_slides(sections, ordered_ids, slides)
 
             # 9. Assemble PSDMDocument
             psdm = PSDMDocument(
@@ -322,13 +318,17 @@ class PPTXParser(BaseDocumentParser):
                 slide_masters=masters,
                 presentation_properties=properties,
                 theme=theme,
+                title=source_name,
+                document_id=f"pptx_{uuid.uuid4().hex[:16]}",
+                media_type=MEDIA_TYPES["pptx"],
             )
+             
             # Add any extra parsed data
             if pres_attrs:
                 psdm._meta["presentation_attrs"] = pres_attrs
             return psdm
 
-    def _parse_sections(self, pres_xml: ET.Element) -> List[Section]:
+    def _parse_sections(self, pres_xml: ET.Element) -> list[PresentationSection]:
         sections = []
         sec_lst = pres_xml.find("p:sectionLst", NS)
         if sec_lst is not None:
@@ -338,14 +338,14 @@ class PPTXParser(BaseDocumentParser):
                 # The attribute is named "firstSlide" without namespace – we'll use that.
                 # Let's just use sec_elem.get("firstSlide")
                 first = sec_elem.get("firstSlide") or sec_elem.get(f"{{{NS['r']}}}id")
-                sections.append(Section(name=name, first_slide_id=first or ""))
+                sections.append(PresentationSection(name=name, first_slide_id=first or ""))
         return sections
 
     @staticmethod
     def _map_sections_to_slides(
-        sections: List[Section],
-        ordered_rids: List[str],
-        slides: List[Slide],
+        sections: list[PresentationSection],
+        ordered_rids: list[str],
+        slides: list[Slide],
     ) -> None:
         if not sections or not ordered_rids or not slides:
             return
@@ -365,9 +365,9 @@ class PPTXParser(BaseDocumentParser):
             for j in range(start_idx, end_idx):
                 if j < len(slides):
                     slides[j]._meta["section"] = name
-                
+
     @staticmethod
-    def _load_xml(zf: zipfile.ZipFile, path: str, optional: bool = False) -> Optional[ET.Element]:
+    def _load_xml(zf: ZipFile, path: str, optional: bool = False) -> ET.Element | None:
         try:
             with zf.open(path) as f:
                 return ET.parse(f).getroot()
@@ -376,17 +376,17 @@ class PPTXParser(BaseDocumentParser):
                 return None
             raise
 
-    def _parse_document_metadata(self, zf: ZipFile):
-        # Try core.xml
-        core_xml = self._load_xml(zf, "docProps/core.xml", optional=True)
-        app_xml = self._load_xml(zf, "docProps/app.xml", optional=True)
-        meta = {}
-        if core_xml is not None:
-            # ... extract title, creator, etc. using Dublin Core elements
-            pass  # detailed implementation omitted for brevity; store in PSDMDocument.metadata
-        if app_xml is not None:
-            pass
-        return meta
+    # def _parse_document_metadata(self, zf: ZipFile):
+    #     # Try core.xml
+    #     core_xml = self._load_xml(zf, "docProps/core.xml", optional=True)
+    #     app_xml = self._load_xml(zf, "docProps/app.xml", optional=True)
+    #     meta = {}
+    #     if core_xml is not None:
+    #         # ... extract title, creator, etc. using Dublin Core elements
+    #         pass  # detailed implementation omitted for brevity; store in PSDMDocument.metadata
+    #     if app_xml is not None:
+    #         pass
+    #     return meta
 
 # ── Helper functions ─────────────────────────────────────────────
 def _rels_path_for(part_path: str) -> str:

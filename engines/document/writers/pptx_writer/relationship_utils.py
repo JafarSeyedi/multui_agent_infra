@@ -2,15 +2,16 @@
 """
 Helpers for building and writing .rels files for the PPTX package.
 """
-
 from __future__ import annotations
-from typing import Dict, List, Tuple, Optional
-from xml.etree.ElementTree import Element, SubElement, tostring
+
+from xml.etree.ElementTree import Element
+from xml.etree.ElementTree import SubElement
+from xml.etree.ElementTree import tostring
 
 REL_NS = "http://schemas.openxmlformats.org/package/2006/relationships"
 
 def build_rels_element(
-    relationships: List[Tuple[str, str, str]],   # (rId, type, target)
+    relationships: list[tuple[str, str, str]],   # (rId, type, target)
 ) -> Element:
     """
     Build a <Relationships> element for a .rels file.
@@ -36,11 +37,11 @@ def rels_to_xml(rels_element: Element) -> bytes:
 
 
 def create_slide_rels(
-    layout_rid: Optional[str] = None,
-    notes_rid: Optional[str] = None,
-    image_map: Optional[Dict[str, str]] = None,
-    chart_map: Optional[Dict[str, str]] = None,
-    media_map: Optional[Dict[str, str]] = None,
+    layout_rid: str | None = None,
+    notes_rid: str | None = None,
+    image_map: dict[str, str] | None = None,
+    chart_map: dict[str, str] | None = None,
+    media_map: dict[str, str] | None = None,
 ) -> Element:
     """
     Build relationships for a single slide.

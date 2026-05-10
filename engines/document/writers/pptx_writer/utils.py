@@ -2,12 +2,13 @@
 """
 Generic helpers for the PPTX writer.
 """
-
 from __future__ import annotations
-from typing import Any, Dict
-from xml.etree.ElementTree import Element, SubElement
 
-def dict_to_element(parent: Element, data: Dict[str, Any], namespaces: Dict[str, str]) -> None:
+from typing import Any
+from xml.etree.ElementTree import Element
+from xml.etree.ElementTree import SubElement
+
+def dict_to_element(parent: Element, data: dict[str, Any], namespaces: dict[str, str]) -> None:
     """
     Reconstruct XML children from a structured dict (as produced by parser's element_to_dict).
     This is used for extLst and other opaque round‑trip data.

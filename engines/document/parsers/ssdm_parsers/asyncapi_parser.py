@@ -1,41 +1,33 @@
+# engines/document/parsers/ssdm_parsers/asyncapi_parser.py
 """
-asyncapi_parser.py – AsyncAPI 2.x / 3.x parser → SSDM_DOCUMENT
-"""
+AsyncAPI 2.x / 3.x parser → SSDMDocument
 
+All AsyncAPI‑specific data is stored in the document's `metadata` dictionary
+under the key "asyncapi". Security schemes are mapped to `AuthConfig`.
+"""
 from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
 
 import yaml
 
-from ..base import ParseOptions
-from ..ssdm_parsers.base_ssdm_parser import BaseSSDMParser
-from ...models.ssdm_models import (
-    SSDM_DOCUMENT,
-    AsyncAPIInfo,
-    ContactInfo,
-    LicenseInfo,
-    Server,
-    SecurityScheme,
-    OAuth2FlowInfo,
-    Operation,
-    RequestBody,
-    Response,
-    Parameter,
-    ParameterLocation,
-    OperationType,
-    SecurityType,
-    OAuth2Flow,
-    ApiKeyLocation,
+from ...models.media_types import MEDIA_TYPES
+from ...models.msdm_models import (
+    Attribute, DataType, Entity, EntityKind, MSDMDocument, ScalarType, VersionStatus, Annotation
 )
-from ...models.msdm_models import MSDMDocument, Entity, Attribute
+from ...models.ssdm_models import (
+    ApiKeyLocation, AuthConfig, AuthMethod, ContactInfo, LicenseInfo,
+    ServiceOperation, OperationType, Parameter, ParameterLocation, RequestBody,
+    Response, SecurityRequirement, Server, SSDMDocument, OAuth2Flow
+)
+from ..base import ParseOptions
+from .base_ssdm_parser import BaseSSDMParser
 
 
 class AsyncAPIParser(BaseSSDMParser):
     """
-    Parses AsyncAPI 2.x (and partially 3.x) specifications into SSDM_DOCUMENT.
+    Parses AsyncAPI 2.x (and partially 3.x) specifications into SSDMDocument.
     """
 
     name = "asyncapi"
@@ -43,7 +35,7 @@ class AsyncAPIParser(BaseSSDMParser):
 
     async def _parse_to_document(
         self, data: bytes, source_name: str, options: ParseOptions
-    ) -> SSDM_DOCUMENT:
+    ) -> SSDMDocument:
         text = data.decode(options.encoding)
         fmt = Path(source_name).suffix.lower()
         if fmt == ".json":
@@ -61,62 +53,65 @@ class AsyncAPIParser(BaseSSDMParser):
         components = spec.get("components", {})
 
         # Build SSDM document
-        doc = SSDM_DOCUMENT(
-            document_id="",  # will be filled by caller
+        doc = SSDMDocument(
+            document_id=source_name,  # temporary, will be overwritten
             title=info.get("title", Path(source_name).stem),
             version=info.get("version", "1.0.0"),
+            media_type=MEDIA_TYPES["asyncapi"],
             description=info.get("description", ""),
             contact=self._parse_contact(info.get("contact")),
             license=self._parse_license(info.get("license")),
             servers=self._parse_servers(servers),
-            security_schemes=self._parse_security_schemes(
-                components.get("securitySchemes", {})
-            ),
+            security_schemes=self._parse_security_schemes(components.get("securitySchemes", {})),
             operations=[],  # filled below
             type_definitions=None,  # will be set from components/schemas if present
-            asyncapi_info=None,    # will be set below
         )
 
-        # Resolve internal $refs (simple in‑document resolver)
+        # Keep the spec for $ref resolution
         self._doc_spec = spec
 
         # Parse schemas as MSDM entities
         schemas = components.get("schemas", {})
-        entities = []
+        entities: list[Entity] = []
         for name, schema in schemas.items():
             entity = self._schema_to_entity(schema, name)
             if entity:
                 entities.append(entity)
         if entities:
-            doc.type_definitions = MSDMDocument(entities=entities)
+            doc.type_definitions = MSDMDocument(
+                title="asyncapi_schemas",
+                document_id=f"{source_name}_schemas",
+                media_type=MEDIA_TYPES["asyncapi"],
+                entities=entities
+            )
 
-        # Save other reusable components (messages, parameters, etc.) as metadata for now
-        doc.metadata["asyncapi:components"] = {
-            key: components[key]
-            for key in ("messages", "securitySchemes", "parameters", "correlationIds",
-                        "operationTraits", "messageTraits", "serverBindings",
-                        "channelBindings", "operationBindings", "messageBindings")
-            if key in components
+        # Store other reusable components in metadata
+        doc.metadata["asyncapi"] = {
+            "id": spec.get("id", ""),
+            "defaultContentType": spec.get("defaultContentType", ""),
+            "tags": spec.get("tags", []),
+            "components": {
+                key: components[key]
+                for key in ("messages", "parameters", "correlationIds",
+                            "operationTraits", "messageTraits", "serverBindings",
+                            "channelBindings", "operationBindings", "messageBindings")
+                if key in components
+            }
         }
 
         # Parse channels -> Operations
-        operations = []
+        operations: list[ServiceOperation] = []
         for channel_name, channel_def in channels.items():
             ops = self._parse_channel(channel_name, channel_def)
             operations.extend(ops)
 
         doc.operations = operations
 
-        # AsyncAPIInfo object
-        doc.asyncapi_info = AsyncAPIInfo(
-            asyncapi_version=spec.get("asyncapi", "2.5.0"),
-            servers={k: v.get("url", "") for k, v in servers.items()},
-            channels=operations,  # we can reuse the same list
-        )
-
-        doc.metadata["asyncapi:id"] = spec.get("id", "")
-        doc.metadata["asyncapi:defaultContentType"] = spec.get("defaultContentType", "")
-        doc.metadata["asyncapi:tags"] = spec.get("tags", [])
+        # Store AsyncAPI version and server list in metadata
+        doc.metadata["asyncapi"]["asyncapi_version"] = spec.get("asyncapi", "2.5.0")
+        doc.metadata["asyncapi"]["servers"] = {
+            k: v.get("url", "") for k, v in servers.items()
+        }
 
         doc.is_valid = True
         return doc
@@ -124,7 +119,7 @@ class AsyncAPIParser(BaseSSDMParser):
     # ------------------------------------------------------------------
     #  Helpers – contact, license, servers
     # ------------------------------------------------------------------
-    def _parse_contact(self, raw: Optional[dict]) -> Optional[ContactInfo]:
+    def _parse_contact(self, raw: dict | None) -> ContactInfo | None:
         if not raw:
             return None
         return ContactInfo(
@@ -133,7 +128,7 @@ class AsyncAPIParser(BaseSSDMParser):
             email=raw.get("email"),
         )
 
-    def _parse_license(self, raw: Optional[dict]) -> Optional[LicenseInfo]:
+    def _parse_license(self, raw: dict | None) -> LicenseInfo | None:
         if not raw:
             return None
         return LicenseInfo(
@@ -141,7 +136,7 @@ class AsyncAPIParser(BaseSSDMParser):
             url=raw.get("url"),
         )
 
-    def _parse_servers(self, servers: dict) -> List[Server]:
+    def _parse_servers(self, servers: dict) -> list[Server]:
         result = []
         for name, srv in servers.items():
             result.append(
@@ -154,75 +149,69 @@ class AsyncAPIParser(BaseSSDMParser):
         return result
 
     # ------------------------------------------------------------------
-    #  Security schemes
+    #  Security schemes → AuthConfig
     # ------------------------------------------------------------------
-    def _parse_security_schemes(self, schemes: dict) -> List[SecurityScheme]:
-        result = []
+    def _parse_security_schemes(self, schemes: dict) -> list[AuthConfig]:
+        result: list[AuthConfig] = []
         for name, scheme in schemes.items():
             stype = scheme.get("type", "").lower()
-            if stype == "oauth2":
-                stype_enum = SecurityType.OAUTH2
-            elif stype == "apikey":
-                stype_enum = SecurityType.API_KEY
-            elif stype in ("http", "httpApiKey"):
+            auth = AuthConfig(method=AuthMethod.NONE)
+
+            if stype == "http":
                 http_scheme = scheme.get("scheme", "").lower()
-                if http_scheme == "bearer":
-                    stype_enum = SecurityType.HTTP_BEARER
-                else:
-                    stype_enum = SecurityType.HTTP_BASIC
-            elif stype == "openidconnect":
-                stype_enum = SecurityType.OPENID_CONNECT
-            elif stype == "mutualtls":
-                stype_enum = SecurityType.MUTUAL_TLS
-            else:
-                stype_enum = SecurityType.API_KEY  # fallback
-
-            api_key_location = None
-            api_key_param = None
-            oauth2_flows = []
-
-            if stype_enum == SecurityType.API_KEY:
+                if http_scheme == "basic":
+                    auth.method = AuthMethod.HTTP_BASIC
+                elif http_scheme == "bearer":
+                    auth.method = AuthMethod.BEARER_TOKEN
+            elif stype == "apiKey":
+                auth.method = AuthMethod.API_KEY
                 loc = scheme.get("in", "header")
-                api_key_location = ApiKeyLocation.HEADER if loc == "header" else ApiKeyLocation.QUERY
-                api_key_param = scheme.get("name", "X-API-Key")
-            elif stype_enum == SecurityType.OAUTH2:
+                if loc == "header":
+                    auth.location = ApiKeyLocation.HEADER
+                elif loc == "query":
+                    auth.location = ApiKeyLocation.QUERY
+                elif loc == "cookie":
+                    auth.location = ApiKeyLocation.COOKIE
+                auth.param_name = scheme.get("name", "X-API-Key")
+            elif stype == "oauth2":
+                auth.method = AuthMethod.OAUTH2
                 flows = scheme.get("flows", {})
+                # Take the first flow (simplified)
                 for flow_name, flow_def in flows.items():
                     flow_map = {
-                        "implicit": OAuth2Flow.IMPLICIT,
-                        "password": OAuth2Flow.PASSWORD,
-                        "clientCredentials": OAuth2Flow.CLIENT_CREDENTIALS,
-                        "authorizationCode": OAuth2Flow.AUTHORIZATION_CODE,
+                        "implicit": "implicit",
+                        "password": "password",
+                        "clientCredentials": "clientCredentials",
+                        "authorizationCode": "authorizationCode",
                     }
-                    flow_enum = flow_map.get(flow_name)
-                    if flow_enum:
-                        oauth2_flows.append(
-                            OAuth2FlowInfo(
-                                flow=flow_enum,
-                                authorization_url=flow_def.get("authorizationUrl"),
-                                token_url=flow_def.get("tokenUrl"),
-                                refresh_url=flow_def.get("refreshUrl"),
-                                scopes=flow_def.get("scopes", {}),
-                            )
-                        )
+                    if flow_name in flow_map:
+                        auth.oauth2_flow = getattr(OAuth2Flow, flow_name.upper(), None)
+                        auth.oauth2_authorization_url = flow_def.get("authorizationUrl")
+                        auth.oauth2_token_url = flow_def.get("tokenUrl")
+                        auth.oauth2_scopes = list(flow_def.get("scopes", {}).keys())
+                        break
+            elif stype == "openIdConnect":
+                auth.method = AuthMethod.OPENID_CONNECT
+                auth.open_id_connect_url = scheme.get("openIdConnectUrl")
+            elif stype == "mutualTLS":
+                auth.method = AuthMethod.MUTUAL_TLS
+            else:
+                continue  # skip unsupported
 
-            result.append(
-                SecurityScheme(
-                    name=name,
-                    type=stype_enum,
-                    description=scheme.get("description"),
-                    api_key_location=api_key_location,
-                    api_key_param_name=api_key_param,
-                    oauth2_flows=oauth2_flows,
-                    open_id_connect_url=scheme.get("openIdConnectUrl"),
-                )
-            )
+            # Store description and any x-* as annotations
+            if "description" in scheme:
+                auth.annotations.append(Annotation(key="description", value=scheme["description"]))
+            for key, val in scheme.items():
+                if key.startswith("x-"):
+                    auth.annotations.append(Annotation(key=key[2:], value=str(val)))
+
+            result.append(auth)
         return result
 
     # ------------------------------------------------------------------
     #  Channel parsing
     # ------------------------------------------------------------------
-    def _parse_channel(self, channel_name: str, channel_def: dict) -> List[Operation]:
+    def _parse_channel(self, channel_name: str, channel_def: dict) -> list[ServiceOperation]:
         operations = []
         # Publish operation: server sends to client (consumer)
         if "publish" in channel_def:
@@ -234,66 +223,64 @@ class AsyncAPIParser(BaseSSDMParser):
             operations.append(op)
         return operations
 
-    def _parse_operation(self, channel_name: str, kind: str, op_def: dict) -> Operation:
-        # Determine OperationType
-        if kind == "publish":
-            op_type = OperationType.PUBLISH
-        else:
-            op_type = OperationType.SUBSCRIBE
-
+    def _parse_operation(self, channel_name: str, kind: str, op_def: dict) -> ServiceOperation:
+        op_type = OperationType.PUBLISH if kind == "publish" else OperationType.SUBSCRIBE
         operation_id = op_def.get("operationId", f"{kind}_{channel_name}")
         description = op_def.get("description") or op_def.get("summary", "")
         tags = op_def.get("tags", [])
 
-        # Parameters – channel parameters are in channel definition itself,
-        # but operation can also have parameters. We'll gather from channel parameters.
-        # We'll extract channel parameters from the channel name? Not yet; we assume
-        # parameters are part of the operation definition.
+        # Parameters
         params = []
         raw_params = op_def.get("parameters", [])
         for p in raw_params:
-            params.append(
-                Parameter(
-                    name=p.get("name", ""),
-                    location=ParameterLocation.PATH,  # channel parameters are path-like
-                    required=p.get("required", False),
-                    description=p.get("description", ""),
-                    type_string=self._schema_type_string(p.get("schema", {})),
-                )
+            p = self._resolve_ref(p, "parameters")
+            if not p:
+                continue
+            param = Parameter(
+                name=p.get("name", ""),
+                location=ParameterLocation.PATH,
+                required=p.get("required", False),
+                description=p.get("description", ""),
+                type_entity=None,
             )
+            if "schema" in p:
+                param.annotations.append(Annotation(key="schema", value=str(p["schema"])))
+            params.append(param)
 
-        # Message – there can be one or multiple messages (oneOf)
+        # Message payload
         message = op_def.get("message", {})
-        if not message:
-            # Could be absent; no body
-            request_body = None
-            response = None
-        else:
-            # Handle oneOf for multiple messages
+        request_body = None
+        response = None
+
+        if message:
             if "oneOf" in message:
-                # For simplicity, take the first message (or create a composition entity)
                 messages = message["oneOf"]
                 message = messages[0] if messages else {}
-            # Resolve $ref if present
             message = self._resolve_ref(message, "messages")
+            if message:
+                payload = message.get("payload", {})
+                if isinstance(payload, dict):
+                    entity = self._schema_to_entity(payload, f"{operation_id}_payload")
+                    if entity:
+                        request_body = RequestBody(
+                            description=message.get("description", ""),
+                            required=True,
+                            content_entity=entity,
+                            is_binary=False,
+                        )
+                response = Response(status_code="200", description="Asynchronous message")
 
-            # Extract payload
-            payload = message.get("payload", {})
-            if isinstance(payload, dict):
-                entity = self._schema_to_entity(payload, f"{operation_id}_payload")
-            else:
-                entity = None  # could be a reference string, skip
+        # Security requirements – convert to SecurityRequirement objects
+        security_reqs: list[SecurityRequirement] = []
+        raw_security = op_def.get("security", [])
+        for sec in raw_security:
+            if isinstance(sec, dict):
+                for name, scopes in sec.items():
+                    security_reqs.append(SecurityRequirement(name=name, scopes=scopes))
 
-            request_body = RequestBody(
-                description=message.get("description", ""),
-                required=True,  # messages are serialised as body
-                content_entity=entity,
-                is_binary=False,
-            )
-            # In AsyncAPI, there is no explicit response; we can leave response empty
-            response = Response(status_code="200", description="Asynchronous message")
+        version_status = VersionStatus.DEPRECATED if op_def.get("deprecated") else None
 
-        return Operation(
+        return ServiceOperation(
             name=operation_id,
             type=op_type,
             description=description,
@@ -302,15 +289,14 @@ class AsyncAPIParser(BaseSSDMParser):
             parameters=params,
             request_body=request_body,
             responses=[response] if response else [],
-            security=[],  # security at operation level? AsyncAPI supports security. We skip.
-            tags=tags,
-            deprecated=op_def.get("deprecated", False),
+            security_requirements=security_reqs,
+            version_status=version_status,
         )
-
+ 
     # ------------------------------------------------------------------
-    #  Schema to MSDM Entity (similar to OpenAPI parser)
+    #  Schema to MSDM Entity
     # ------------------------------------------------------------------
-    def _schema_to_entity(self, schema: dict, name: str) -> Optional[Entity]:
+    def _schema_to_entity(self, schema: dict, name: str) -> Entity | None:
         """Convert an AsyncAPI schema (JSON Schema compatible) to an Entity."""
         schema = self._resolve_ref(schema, "schemas")
         if not schema:
@@ -321,53 +307,62 @@ class AsyncAPIParser(BaseSSDMParser):
             attrs = []
             required_set = set(schema.get("required", []))
             for prop_name, prop_schema in schema.get("properties", {}).items():
-                attr_type = self._schema_type_string(prop_schema)
+                data_type = self._schema_to_datatype(prop_schema)
                 attr = Attribute(
                     name=prop_name,
-                    type=attr_type,
+                    data_type=data_type,
                     required=prop_name in required_set,
                     description=prop_schema.get("description", ""),
                 )
                 attrs.append(attr)
-            return Entity(name=name, attributes=attrs, description=schema.get("description"))
+            return Entity(name=name, kind=EntityKind.OBJECT, attributes=attrs, description=schema.get("description"))
         elif type_ == "array":
             items = schema.get("items", {})
-            inner = self._schema_type_string(items)
+            item_dt = self._schema_to_datatype(items)
             return Entity(
                 name=name,
-                attributes=[Attribute(name="items", type=f"array<{inner}>")]
+                kind=EntityKind.OBJECT,
+                attributes=[Attribute(name="items", data_type=DataType(base=ScalarType.ARRAY, element_type=item_dt))],
+                description=schema.get("description"),
             )
         else:
             # Primitives
+            scalar_dt = self._schema_to_datatype(schema)
             return Entity(
                 name=name,
-                attributes=[Attribute(name="value", type=self._schema_type_string(schema))]
+                kind=EntityKind.OBJECT,
+                attributes=[Attribute(name="value", data_type=scalar_dt)],
+                description=schema.get("description"),
             )
 
-    def _schema_type_string(self, schema: dict) -> str:
-        """Return a string representation of the schema type."""
+    def _schema_to_datatype(self, schema: dict) -> DataType:
+        """Convert an AsyncAPI schema to an MSDM DataType."""
         if not schema:
-            return "string"
+            return DataType(base=ScalarType.STRING)
         if "$ref" in schema:
-            return schema["$ref"].split("/")[-1]
+            ref_name = schema["$ref"].split("/")[-1]
+            return DataType(base=ScalarType.REF, ref_entity_id=ref_name)
         type_ = schema.get("type", "string")
         if type_ == "integer":
-            return "int"
+            return DataType(base=ScalarType.INT)
         if type_ == "number":
-            return "float"
+            return DataType(base=ScalarType.FLOAT)
         if type_ == "boolean":
-            return "boolean"
+            return DataType(base=ScalarType.BOOLEAN)
         if type_ == "array":
             items = schema.get("items", {})
-            if items:
-                return f"array<{self._schema_type_string(items)}>"
-            return "array"
-        return type_
+            item_dt = self._schema_to_datatype(items)
+            return DataType(base=ScalarType.ARRAY, element_type=item_dt)
+        if type_ == "object":
+            # We treat as a reference to an object – but we don't have the entity name yet.
+            # For simplicity, return ANY.
+            return DataType(base=ScalarType.ANY)
+        return DataType(base=ScalarType.STRING)
 
     # ------------------------------------------------------------------
     #  Simple $ref resolver (only #/components/...)
     # ------------------------------------------------------------------
-    def _resolve_ref(self, obj, component_type: str):
+    def _resolve_ref(self, obj, component_type: str) -> dict:
         """Resolve $ref inside the same document."""
         if not isinstance(obj, dict):
             return obj

@@ -5,27 +5,25 @@ Supports draft‑04 through 2020‑12.  Faithfully reproduces schema keywords
 either directly from the model or from round‑trip annotations stored by the
 parser.  Soft‑delete is ignored.
 """
-
 from __future__ import annotations
-import json
-from typing import Optional, Dict, Any, List, Set, Union
 
-from .base_msdm_writer import BaseMSDMWriter, WriteTarget, SoftDeleteStrategy
+import json
+from typing import Any
+
+from ...models.msdm_models import Annotation
+from ...models.msdm_models import Attribute
+from ...models.msdm_models import ConstraintType
+from ...models.msdm_models import DataType
+from ...models.msdm_models import Entity
+from ...models.msdm_models import MSDMDocument
+from ...models.msdm_models import ScalarType
 from ..base import WriteOptions
-from ...models.msdm_models import (
-    MSDMDocument,
-    Entity,
-    Attribute,
-    DataType,
-    Constraint,
-    ConstraintType,
-    Annotation,
-    EntityKind,
-    ScalarType,
-)
+from .base_msdm_writer import BaseMSDMWriter
+from .base_msdm_writer import SoftDeleteStrategy
+from .base_msdm_writer import WriteTarget
 
 # ── JSON Schema keywords that can appear at the schema / object level ──
-_TOP_KEYWORDS: Set[str] = {
+_TOP_KEYWORDS: set[str] = {
     "$schema", "$id", "$ref", "$defs", "definitions",
     "title", "description", "type",
     "properties", "required", "additionalProperties",
@@ -39,7 +37,7 @@ _TOP_KEYWORDS: Set[str] = {
 }
 
 # ── Property‑level JSON Schema keywords ────────────────────────────
-_PROPERTY_KEYWORDS: Set[str] = _TOP_KEYWORDS | {
+_PROPERTY_KEYWORDS: set[str] = _TOP_KEYWORDS | {
     "items", "additionalItems", "contains",
     "minItems", "maxItems", "uniqueItems",
     "minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum",
@@ -55,7 +53,7 @@ _PROPERTY_KEYWORDS: Set[str] = _TOP_KEYWORDS | {
 }
 
 # ── ScalarType → default JSON Schema type ─────────────────────────
-_SCALAR_TO_JSON_TYPE: Dict[ScalarType, str] = {
+_SCALAR_TO_JSON_TYPE: dict[ScalarType, str | None] = {
     ScalarType.STRING:    "string",
     ScalarType.INT:       "integer",
     ScalarType.LONG:      "integer",
@@ -73,7 +71,7 @@ _SCALAR_TO_JSON_TYPE: Dict[ScalarType, str] = {
 }
 
 # ── ScalarType → format hint ─────────────────────────────────────
-_SCALAR_TO_FORMAT: Dict[ScalarType, str] = {
+_SCALAR_TO_FORMAT: dict[ScalarType, str] = {
     ScalarType.DATE:      "date",
     ScalarType.TIME:      "time",
     ScalarType.TIMESTAMP: "date-time",
@@ -90,7 +88,7 @@ class JsonSchemaWriter(BaseMSDMWriter):
 
     def __init__(
         self,
-        options: Optional[WriteOptions] = None,
+        options: WriteOptions | None = None,
         target_mode: WriteTarget = WriteTarget.DESIGN_FILE,
         soft_delete_strategy: SoftDeleteStrategy = SoftDeleteStrategy.NONE,
     ):
@@ -106,17 +104,17 @@ class JsonSchemaWriter(BaseMSDMWriter):
             schema = self._entity_to_schema(entity, document)
 
         json_str = json.dumps(schema, indent=2, ensure_ascii=False)
-        return json_str.encode(self.options.encoding or "utf-8")
+        return json_str.encode(getattr(self.options, "encoding", "utf-8") or "utf-8")
 
-    async def get_supported_media_types(self) -> list[str]:
+    def get_supported_media_types(self) -> list[str]:
         return ["application/schema+json"]
 
-    async def get_supported_extensions(self) -> list[str]:
-        return self.supported_extensions
+    def get_supported_extensions(self) -> list[str]:
+        return list(self.supported_extensions)   # FIXED: converted to list
 
     # ── Entity → JSON Schema object ────────────────────────────────
-    def _entity_to_schema(self, entity: Entity, doc: MSDMDocument) -> Dict[str, Any]:
-        schema: Dict[str, Any] = {}
+    def _entity_to_schema(self, entity: Entity, doc: MSDMDocument) -> dict[str, Any]:
+        schema: dict[str, Any] = {}
 
         # 1. Schema‑level annotations (the parser stored $schema, $id, etc. as annotations)
         for ann in entity.annotations:
@@ -161,8 +159,8 @@ class JsonSchemaWriter(BaseMSDMWriter):
         return schema
 
     # ── Attribute → property schema ────────────────────────────────
-    def _attribute_to_property_schema(self, attr: Attribute) -> Dict[str, Any]:
-        prop: Dict[str, Any] = {}
+    def _attribute_to_property_schema(self, attr: Attribute) -> dict[str, Any]:
+        prop: dict[str, Any] = {}
 
         # Determine type from DataType (overridden by annotation later)
         dt = attr.data_type
@@ -171,7 +169,7 @@ class JsonSchemaWriter(BaseMSDMWriter):
         if base == ScalarType.ARRAY:
             prop["type"] = "array"
             if dt.element_type:
-                items = {}
+                items: dict[str, Any] = {}
                 self._add_type_to_property(items, dt.element_type)
                 if items:
                     prop["items"] = items
@@ -182,8 +180,8 @@ class JsonSchemaWriter(BaseMSDMWriter):
             val_schema = self._datatype_to_basic_property(dt.value_type) if dt.value_type else {}
             if val_schema:
                 prop["additionalProperties"] = val_schema
-        elif base == ScalarType.REF:
-            prop["$ref"] = f"#/$defs/{dt.ref_entity}" if dt.ref_entity else "#"
+        elif base == ScalarType.REF and dt.ref_entity:
+            prop["$ref"] = f"#/$defs/{dt.ref_entity.name}" if dt.ref_entity.name else "#"
         elif base == ScalarType.STRUCT:
             prop["type"] = "object"
             # Nested attributes are not directly available here; they are on the attribute's nested_attributes.
@@ -221,7 +219,7 @@ class JsonSchemaWriter(BaseMSDMWriter):
 
         return prop
 
-    def _overlay_attribute_annotations(self, prop_schema: Dict[str, Any], attr: Attribute) -> None:
+    def _overlay_attribute_annotations(self, prop_schema: dict[str, Any], attr: Attribute) -> None:
         """Merge JSON Schema keywords from annotations into the property schema."""
         for ann in attr.annotations:
             if ann.key in _PROPERTY_KEYWORDS:
@@ -236,7 +234,7 @@ class JsonSchemaWriter(BaseMSDMWriter):
                     pass
                 prop_schema[ann.key] = val
 
-    def _apply_annotation_to_schema(self, schema: Dict[str, Any], ann: Annotation) -> None:
+    def _apply_annotation_to_schema(self, schema: dict[str, Any], ann: Annotation) -> None:
         """Parse an annotation value and insert it into the schema dict."""
         try:
             val = json.loads(ann.value)
@@ -249,22 +247,22 @@ class JsonSchemaWriter(BaseMSDMWriter):
 
     # ── Type mapping helpers ───────────────────────────────────────
     @staticmethod
-    def _add_type_to_property(prop: Dict[str, Any], dt: DataType) -> None:
+    def _add_type_to_property(prop: dict[str, Any], dt: DataType) -> None:
         """Set 'type' and optionally 'format' for a scalar DataType."""
         base = dt.base
         json_type = _SCALAR_TO_JSON_TYPE.get(base)
-        if json_type:
+        if json_type is not None:
             prop["type"] = json_type
         fmt = _SCALAR_TO_FORMAT.get(base)
         if fmt:
             prop["format"] = fmt
 
     @staticmethod
-    def _datatype_to_basic_property(dt: Optional[DataType]) -> Dict[str, Any]:
+    def _datatype_to_basic_property(dt: DataType | None) -> dict[str, Any]:
         """Create a minimal property dict for a value type (used in map/array)."""
         if dt is None:
             return {}
-        prop = {}
+        prop: dict[str, Any] = {}
         JsonSchemaWriter._add_type_to_property(prop, dt)
         return prop
 
@@ -288,7 +286,7 @@ class JsonSchemaWriter(BaseMSDMWriter):
             return raw[1:-1]
         return raw
 
-    def _extract_defs(self, doc: MSDMDocument) -> Optional[Dict[str, Any]]:
+    def _extract_defs(self, doc: MSDMDocument) -> dict[str, Any] | None:
         """Extract $defs/definitions from document annotations (round‑trip)."""
         for ann in doc.annotations:
             if ann.key in ("$defs", "definitions"):

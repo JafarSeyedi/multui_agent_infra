@@ -2,13 +2,12 @@
 """
 Writes OLE object relationships and binary files for round‑trip.
 """
-
 from __future__ import annotations
-from typing import List, Dict
-from xml.etree.ElementTree import Element, SubElement
 
-from ...models.usdm_models import OLEObjectContent
+from xml.etree.ElementTree import Element
+
 from ...models.psdm_models import Slide
+from ...models.usdm_models import OLEObjectContent
 from .constants import NAMESPACES
 
 P = f"{{{NAMESPACES['p']}}}"
@@ -27,7 +26,7 @@ def write_ole_element(ole: OLEObjectContent, r_id: str) -> Element:
     return oleElem
 
 
-def collect_ole_binaries(slides: List[Slide]) -> Dict[str, bytes]:
+def collect_ole_binaries(slides: list[Slide]) -> dict[str, bytes]:
     """
     Walk all slides and collect OLE binary data.
     Returns a dict mapping internal path (e.g., "ppt/embeddings/oleObject1.bin") → bytes.

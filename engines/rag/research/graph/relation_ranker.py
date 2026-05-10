@@ -1,4 +1,3 @@
-from typing import List
 from .relation_builder import CandidateRelation
 
 
@@ -7,7 +6,7 @@ class RelationRankingEngine:
     def __init__(self, min_confidence: float = 0.4):
         self.min_confidence = min_confidence
 
-    def rank(self, relations: List[CandidateRelation]) -> List[CandidateRelation]:
+    def rank(self, relations: list[CandidateRelation]) -> list[CandidateRelation]:
 
         scored = []
 

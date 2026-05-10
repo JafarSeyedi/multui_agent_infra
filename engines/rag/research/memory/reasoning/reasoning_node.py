@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import time
-from typing import List, Optional
 
 from .reasoning_event import ReasoningEvent
 
@@ -12,23 +11,23 @@ class ReasoningNode:
     Node in hierarchical reasoning tree.
     """
 
-    def __init__(self, name: str, parent: Optional["ReasoningNode"] = None):
+    def __init__(self, name: str, parent: ReasoningNode | None = None):
 
         self.name = name
         self.parent = parent
 
-        self.children: List["ReasoningNode"] = []
-        self.events: List[ReasoningEvent] = []
+        self.children: list[ReasoningNode] = []
+        self.events: list[ReasoningEvent] = []
 
         self.start_time = time.time()
-        self.end_time: Optional[float] = None
+        self.end_time: float | None = None
 
         self.failed = False
 
     def add_event(self, event: ReasoningEvent):
         self.events.append(event)
 
-    def add_child(self, child: "ReasoningNode"):
+    def add_child(self, child: ReasoningNode):
         self.children.append(child)
 
     def finish(self):
@@ -48,4 +47,3 @@ class ReasoningNode:
             "events": [e.to_dict() for e in self.events],
             "children": [c.to_dict() for c in self.children]
         }
-

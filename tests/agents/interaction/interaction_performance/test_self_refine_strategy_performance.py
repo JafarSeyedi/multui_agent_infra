@@ -1,11 +1,10 @@
 # tests/agents/orchestration/interaction/performance/test_self_refine_strategy_performance.py
-
 import time
 
 import pytest
-from engines.interaction.self_refine_strategy import SelfRefineStrategy
-from engines.interaction.interaction_models import InteractionRequest
 
+from engines.interaction.interaction_models import InteractionRequest
+from engines.interaction.self_refine_strategy import SelfRefineStrategy
 from tests.agents.interaction.interaction_unit.conftest import TestAgent
 
 

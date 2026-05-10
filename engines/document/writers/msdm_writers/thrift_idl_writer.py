@@ -5,23 +5,18 @@ Handles namespaces, includes, typedefs, enums, structs, unions, exceptions,
 constants, and services.  Field options (required/optional, field id, default)
 and file‑level directives are faithfully reproduced using annotations.
 """
-
 from __future__ import annotations
-from typing import Optional, Dict, Any, List, Set, Tuple
 
-from .base_msdm_writer import BaseMSDMWriter, WriteTarget, SoftDeleteStrategy
+from ...models.msdm_models import Attribute
+from ...models.msdm_models import DataType
+from ...models.msdm_models import Entity
+from ...models.msdm_models import EntityKind
+from ...models.msdm_models import MSDMDocument
+from ...models.msdm_models import ScalarType
 from ..base import WriteOptions
-from ...models.msdm_models import (
-    MSDMDocument,
-    Entity,
-    Attribute,
-    DataType,
-    ScalarType,
-    Constraint,
-    ConstraintType,
-    Annotation,
-    EntityKind,
-)
+from .base_msdm_writer import BaseMSDMWriter
+from .base_msdm_writer import SoftDeleteStrategy
+from .base_msdm_writer import WriteTarget
 
 # ── ScalarType → Thrift type ───────────────────────────────────────
 _SCALAR_TO_THRIFT = {
@@ -49,7 +44,7 @@ class ThriftIDLWriter(BaseMSDMWriter):
 
     def __init__(
         self,
-        options: Optional[WriteOptions] = None,
+        options: WriteOptions | None = None,
         target_mode: WriteTarget = WriteTarget.DESIGN_FILE,
         soft_delete_strategy: SoftDeleteStrategy = SoftDeleteStrategy.NONE,
     ):
@@ -57,7 +52,7 @@ class ThriftIDLWriter(BaseMSDMWriter):
 
     # ── Public API ─────────────────────────────────────────────────
     async def _write_design(self, document: MSDMDocument) -> bytes:
-        lines: List[str] = []
+        lines: list[str] = []
 
         # 1. File‑level directives
         for ann in document.annotations:
@@ -102,13 +97,13 @@ class ThriftIDLWriter(BaseMSDMWriter):
                 lines.append("")
 
         thrift = "\n".join(lines).strip() + "\n"
-        return thrift.encode(self.options.encoding or "utf-8")
+        return thrift.encode(getattr(self.options, "encoding", "utf-8") or "utf-8")
 
-    async def get_supported_media_types(self) -> list[str]:
+    def get_supported_media_types(self) -> list[str]:
         return ["text/plain"]
 
-    async def get_supported_extensions(self) -> list[str]:
-        return self.supported_extensions
+    def get_supported_extensions(self) -> list[str]:
+        return list(self.supported_extensions)
 
     # ── Entity classification ──────────────────────────────────────
     def _is_typedef(self, entity: Entity) -> bool:
@@ -121,7 +116,7 @@ class ThriftIDLWriter(BaseMSDMWriter):
             return True
         if len(entity.attributes) == 1:
             attr = entity.attributes[0]
-            if attr.name == "value" and any(c.expression.startswith("IN (") for c in attr.constraints):
+            if attr.name == "value" and any(c.expression and c.expression.startswith("IN (") for c in attr.constraints):
                 return True
         return False
 
@@ -153,10 +148,9 @@ class ThriftIDLWriter(BaseMSDMWriter):
         name = entity.name
         lines = [f"enum {name} {{"]
         # Collect values
-        members: List[Tuple[str, Optional[str]]] = []  # (name, optional numeric string)
+        members: list[tuple[str, str | None]] = []  # (name, optional numeric string)
         for ann in entity.annotations:
-            if ann.key == "enum_member":
-                # may be "VALUE=0"
+            if ann.key == "enum_member" and ann.value is not None:
                 parts = ann.value.split("=", 1)
                 mem_name = parts[0].strip()
                 mem_val = parts[1].strip() if len(parts) > 1 else None
@@ -164,14 +158,14 @@ class ThriftIDLWriter(BaseMSDMWriter):
         if not members and entity.attributes:
             attr = entity.attributes[0]
             for c in attr.constraints:
-                if c.expression.startswith("IN ("):
+                if c.expression and c.expression.startswith("IN ("):
                     inner = c.expression[4:].rstrip(")")
                     vals = [v.strip().strip("'\"") for v in inner.split(",")]
                     for i, v in enumerate(vals):
                         members.append((v, str(i)))
                     break
         for mem_name, mem_val in members:
-            if mem_val:
+            if mem_val is not None:
                 lines.append(f"  {mem_name} = {mem_val}")
             else:
                 lines.append(f"  {mem_name}")
@@ -228,11 +222,10 @@ class ThriftIDLWriter(BaseMSDMWriter):
             key = self._datatype_to_thrift(dt.key_type) if dt.key_type else "string"
             val = self._datatype_to_thrift(dt.value_type) if dt.value_type else "string"
             return f"map<{key}, {val}>"
-        if base == ScalarType.REF:
-            return dt.ref_entity or "string"
-        if base == ScalarType.STRUCT:
-            # If there's a ref_entity, use it; otherwise fallback
-            return dt.ref_entity or "string"
+        if base == ScalarType.REF and dt.ref_entity:
+            return dt.ref_entity.name or "string"
+        if base == ScalarType.STRUCT and dt.ref_entity:
+            return dt.ref_entity.name or "string"
         if base in _SCALAR_TO_THRIFT:
             return _SCALAR_TO_THRIFT[base]
         return "string"
@@ -240,6 +233,8 @@ class ThriftIDLWriter(BaseMSDMWriter):
     # ── Default formatting ──────────────────────────────────────────
     def _format_default(self, default_str: str, dt: DataType) -> str:
         """Format a default value for Thrift IDL."""
+        if default_str is None:
+            return ""
         default_str = default_str.strip()
         base = dt.base
         if base == ScalarType.STRING:
@@ -256,9 +251,13 @@ class ThriftIDLWriter(BaseMSDMWriter):
         return default_str
 
     # ── Annotation helper ─────────────────────────────────────────
-    def _get_annotation(self, obj, key: str) -> Optional[str]:
+    def _get_annotation(self, obj, key: str) -> str | None:
         if isinstance(obj, Entity):
-            return next((a.value for a in obj.annotations if a.key == key), None)
+            for a in obj.annotations:
+                if a.key == key:
+                    return a.value
         if isinstance(obj, Attribute):
-            return next((a.value for a in obj.annotations if a.key == key), None)
+            for a in obj.annotations:
+                if a.key == key:
+                    return a.value
         return None

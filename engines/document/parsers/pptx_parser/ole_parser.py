@@ -2,9 +2,8 @@
 """
 Extracts OLE objects from a slide XML.
 """
-
 from __future__ import annotations
-from typing import List, Optional, Dict, Tuple
+
 from xml.etree.ElementTree import Element
 
 from ...models.usdm_models import OLEObjectContent
@@ -12,7 +11,7 @@ from .constants import NAMESPACES
 
 NS = NAMESPACES
 
-def parse_ole_objects(slide_xml: Element) -> List[OLEObjectContent]:
+def parse_ole_objects(slide_xml: Element) -> list[OLEObjectContent]:
     ole_list = []
     for ole_elem in slide_xml.findall(".//p:oleObj", NS):
         prog_id = ole_elem.get("progId")

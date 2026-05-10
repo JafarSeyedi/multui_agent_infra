@@ -1,9 +1,7 @@
 # engines/document/ingestion/ingestion_utils.py
-
 from __future__ import annotations
 
 import hashlib
-from typing import Optional
 
 
 class IngestionUtils:
@@ -18,7 +16,7 @@ class IngestionUtils:
         return h.hexdigest()
 
     @staticmethod
-    def guess_extension(filename: str) -> Optional[str]:
+    def guess_extension(filename: str) -> str | None:
         if "." not in filename:
             return None
         return filename.lower().rsplit(".", 1)[-1]

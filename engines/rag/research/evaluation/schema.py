@@ -1,4 +1,3 @@
-from typing import List
 from pydantic import BaseModel
 
 
@@ -13,9 +12,9 @@ class ResearchAnswer(BaseModel):
 
     query: str
     answer: str
-    citations: List[str]
-    reasoning_steps: List[str]
-    evidences: List[Evidence]
+    citations: list[str]
+    reasoning_steps: list[str]
+    evidences: list[Evidence]
 
 
 class EvaluationResult(BaseModel):

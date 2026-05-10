@@ -3,9 +3,9 @@ from __future__ import annotations
 import threading
 import time
 import uuid
-from dataclasses import dataclass, asdict, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
+
 from .reasoning_event import ReasoningEvent
 
 
@@ -76,15 +76,15 @@ class ReasoningMemory:
         self._lock = threading.RLock()
         self._max_events = max_events
 
-        self._events: List[ReasoningEvent] = []
+        self._events: list[ReasoningEvent] = []
 
-        self._current_session_id: Optional[str] = None
-        self._current_group: Optional[str] = None
+        self._current_session_id: str | None = None
+        self._current_group: str | None = None
         self._step_counter: int = 0
 
     # ---------- Session / Group Management ----------
 
-    def start_session(self, session_id: Optional[str] = None) -> str:
+    def start_session(self, session_id: str | None = None) -> str:
         """
         شروع یک سشن جدید استدلالی. در صورت عدم ارسال، session_id تولید می‌شود.
         """
@@ -166,10 +166,10 @@ class ReasoningMemory:
         self,
         event_type: str,
         message: str,
-        meta: Optional[Dict[str, Any]] = None,
+        meta: dict[str, Any] | None = None,
         *,
-        phase: Union[ReasoningPhase, str] = ReasoningPhase.OTHER,
-        level: Union[ReasoningLevel, str] = ReasoningLevel.INFO,
+        phase: ReasoningPhase | str = ReasoningPhase.OTHER,
+        level: ReasoningLevel | str = ReasoningLevel.INFO,
     ) -> None:
         """
         API عمومی برای ثبت رویداد استدلالی.
@@ -194,7 +194,7 @@ class ReasoningMemory:
         event_type: str,
         level: str,
         message: str,
-        meta: Dict[str, Any],
+        meta: dict[str, Any],
     ) -> None:
         with self._lock:
             if self._current_session_id is None:
@@ -233,18 +233,18 @@ class ReasoningMemory:
     def get_traces(
         self,
         *,
-        session_id: Optional[str] = None,
-        group: Optional[str] = None,
-        phases: Optional[List[str]] = None,
-        levels: Optional[List[str]] = None,
-    ) -> List[Dict[str, Any]]:
+        session_id: str | None = None,
+        group: str | None = None,
+        phases: list[str] | None = None,
+        levels: list[str] | None = None,
+    ) -> list[dict[str, Any]]:
         """
         دریافت ترِیس‌ها به صورت JSON-serializable dict.
 
         اگر session_id/group مشخص نشود، کل ایونت‌ها برگردانده می‌شود.
         """
         with self._lock:
-            result: List[ReasoningEvent] = []
+            result: list[ReasoningEvent] = []
 
             for e in self._events:
                 if session_id is not None and e.session_id != session_id:
@@ -259,7 +259,7 @@ class ReasoningMemory:
 
             return [ev.to_dict() for ev in result]
 
-    def get_current_session_traces(self) -> List[Dict[str, Any]]:
+    def get_current_session_traces(self) -> list[dict[str, Any]]:
         """
         شورتکات: ترِیس‌های سشن جاری.
         """
@@ -280,14 +280,14 @@ class ReasoningMemory:
 
     # ---------- Export helpers ----------
 
-    def export_for_evaluation(self) -> List[Dict[str, Any]]:
+    def export_for_evaluation(self) -> list[dict[str, Any]]:
         """
         خروجی استاندارد برای EvaluationController:
         کل ترِیس‌ها با ساختار ثابت.
         """
         return self.get_traces()
 
-    def export_for_observability(self) -> Dict[str, Any]:
+    def export_for_observability(self) -> dict[str, Any]:
         """
         خروجی مناسب برای سیستم Observability (خلاصه + ترِیس خام).
         """

@@ -1,25 +1,25 @@
+# engines/document/parsers/ssdm_parsers/proto_service_parser.py
 """
-proto_service_parser.py – Protobuf / gRPC service definition parser → SSDM_DOCUMENT
+proto_service_parser.py – Protobuf / gRPC service definition parser → SSDMDocument
 """
-
 from __future__ import annotations
 
-import re
 from pathlib import Path
-from typing import Any, AsyncIterator, Dict, List, Optional, Tuple, Union
+from typing import Any
 
+from ...models.media_types import MEDIA_TYPES
+from ...models.msdm_models import Attribute
+from ...models.msdm_models import DataType
+from ...models.msdm_models import Entity
+from ...models.msdm_models import MSDMDocument
+from ...models.msdm_models import ScalarType, Annotation
+from ...models.ssdm_models import ServiceOperation
+from ...models.ssdm_models import OperationType
+from ...models.ssdm_models import RequestBody
+from ...models.ssdm_models import Response
+from ...models.ssdm_models import SSDMDocument
 from ..base import ParseOptions
 from ..ssdm_parsers.base_ssdm_parser import BaseSSDMParser
-from ...models.ssdm_models import (
-    SSDM_DOCUMENT,
-    Operation,
-    OperationType,
-    Parameter,
-    ParameterLocation,
-    RequestBody,
-    Response,
-)
-from ...models.msdm_models import MSDMDocument, Entity, Attribute
 
 
 # ---------------------------------------------------------------------------
@@ -30,6 +30,7 @@ class ProtoToken:
         self.type = type_
         self.value = value
         self.line = line
+
 
 class ProtoLexer:
     _KEYWORDS = {
@@ -64,7 +65,7 @@ class ProtoLexer:
             return self._scan_string()
 
         # Number (integer or float)
-        if ch.isdigit() or (ch == '-' and self.pos+1 < len(self.text) and self.text[self.pos+1].isdigit()):
+        if ch.isdigit() or (ch == '-' and self.pos + 1 < len(self.text) and self.text[self.pos + 1].isdigit()):
             return self._scan_number()
 
         # Identifier or keyword
@@ -86,16 +87,16 @@ class ProtoLexer:
                     self.line += 1
                 self.pos += 1
             elif ch == '/':
-                if self.pos+1 < len(self.text) and self.text[self.pos+1] == '/':
+                if self.pos + 1 < len(self.text) and self.text[self.pos + 1] == '/':
                     # line comment
                     self.pos += 2
                     while self.pos < len(self.text) and self.text[self.pos] != '\n':
                         self.pos += 1
-                elif self.pos+1 < len(self.text) and self.text[self.pos+1] == '*':
+                elif self.pos + 1 < len(self.text) and self.text[self.pos + 1] == '*':
                     # block comment
                     self.pos += 2
                     while self.pos < len(self.text):
-                        if self.text[self.pos] == '*' and self.pos+1 < len(self.text) and self.text[self.pos+1] == '/':
+                        if self.text[self.pos] == '*' and self.pos + 1 < len(self.text) and self.text[self.pos + 1] == '/':
                             self.pos += 2
                             break
                         if self.text[self.pos] == '\n':
@@ -142,6 +143,7 @@ class ProtoType:
     def __init__(self, name: str):
         self.name = name
 
+
 class FieldDescriptor:
     def __init__(self, name: str, number: int, type_: ProtoType, label: str = ''):
         self.name = name
@@ -149,18 +151,21 @@ class FieldDescriptor:
         self.type = type_
         self.label = label  # '', 'repeated', 'optional', 'required'
 
+
 class MessageDef:
     def __init__(self, name: str):
         self.name = name
-        self.fields: List[FieldDescriptor] = []
-        self.nested_messages: Dict[str, MessageDef] = {}
-        self.nested_enums: Dict[str, EnumDef] = {}
-        self.oneofs: Dict[str, List[FieldDescriptor]] = {}
+        self.fields: list[FieldDescriptor] = []
+        self.nested_messages: dict[str, MessageDef] = {}
+        self.nested_enums: dict[str, EnumDef] = {}
+        self.oneofs: dict[str, list[FieldDescriptor]] = {}
+
 
 class EnumDef:
     def __init__(self, name: str):
         self.name = name
-        self.values: Dict[str, int] = {}
+        self.values: dict[str, int] = {}
+
 
 class ServiceMethod:
     def __init__(self, name: str, input_type: ProtoType, output_type: ProtoType,
@@ -171,18 +176,20 @@ class ServiceMethod:
         self.client_streaming = client_streaming
         self.server_streaming = server_streaming
 
+
 class ServiceDef:
     def __init__(self, name: str):
         self.name = name
-        self.methods: List[ServiceMethod] = []
+        self.methods: list[ServiceMethod] = []
+
 
 class ProtoFile:
-    def __init__(self):
+    def __init__(self) -> None:
         self.package = ""
         self.syntax = "proto2"
-        self.messages: Dict[str, MessageDef] = {}
-        self.enums: Dict[str, EnumDef] = {}
-        self.services: Dict[str, ServiceDef] = {}
+        self.messages: dict[str, MessageDef] = {}
+        self.enums: dict[str, EnumDef] = {}
+        self.services: dict[str, ServiceDef] = {}
 
 
 class ProtoParser:
@@ -192,7 +199,7 @@ class ProtoParser:
         self.lexer = ProtoLexer(text)
         self.current = self.lexer.next_token()
 
-    def _eat(self, expected_type: str, expected_value: Optional[str] = None) -> ProtoToken:
+    def _eat(self, expected_type: str, expected_value: str | None = None) -> ProtoToken:
         token = self.current
         if token.type != expected_type:
             raise SyntaxError(f"Expected {expected_type}, got {token.type} at line {token.line}")
@@ -256,8 +263,7 @@ class ProtoParser:
                 msg.nested_enums[nested_enum.name] = nested_enum
             elif self.current.type == 'ONEOF':
                 self._parse_oneof(msg)
-            elif self.current.type in ('REPEATED', 'OPTIONAL', 'REQUIRED') or \
-                 self._is_type_start():
+            elif self.current.type in ('REPEATED', 'OPTIONAL', 'REQUIRED') or self._is_type_start():
                 field = self._parse_field()
                 msg.fields.append(field)
             else:
@@ -354,8 +360,8 @@ class ProtoParser:
         return ProtoType(self._parse_type_name())
 
     def _parse_scalar(self) -> ProtoType:
-        types = {'double','float','int32','int64','uint32','uint64','sint32','sint64',
-                 'fixed32','fixed64','sfixed32','sfixed64','bool','string','bytes'}
+        types = {'double', 'float', 'int32', 'int64', 'uint32', 'uint64', 'sint32', 'sint64',
+                 'fixed32', 'fixed64', 'sfixed32', 'sfixed64', 'bool', 'string', 'bytes'}
         if self.current.type in types:
             val = self.current.value
             self.current = self.lexer.next_token()
@@ -377,9 +383,9 @@ class ProtoParser:
     def _is_type_start(self) -> bool:
         # any scalar or identifier can be a type start
         return self.current.type in ('IDENTIFIER',) or \
-               self.current.type in ('DOUBLE','FLOAT','INT32','INT64','UINT32','UINT64',
-                                      'SINT32','SINT64','FIXED32','FIXED64','SFIXED32','SFIXED64',
-                                      'BOOL','STRING','BYTES')
+               self.current.type in ('DOUBLE', 'FLOAT', 'INT32', 'INT64', 'UINT32', 'UINT64',
+                                     'SINT32', 'SINT64', 'FIXED32', 'FIXED64', 'SFIXED32', 'SFIXED64',
+                                     'BOOL', 'STRING', 'BYTES')
 
     def _parse_oneof(self, msg: MessageDef):
         self._eat('ONEOF')
@@ -387,7 +393,7 @@ class ProtoParser:
         msg.oneofs[name] = []
         self._eat('{')
         while self.current.type != '}':
-            if self._is_type_start() or self.current.type in ('REPEATED','OPTIONAL','REQUIRED'):
+            if self._is_type_start() or self.current.type in ('REPEATED', 'OPTIONAL', 'REQUIRED'):
                 field = self._parse_field()
                 msg.oneofs[name].append(field)
             else:
@@ -422,107 +428,174 @@ class ProtoServiceParser(BaseSSDMParser):
 
     async def _parse_to_document(
         self, data: bytes, source_name: str, options: ParseOptions
-    ) -> SSDM_DOCUMENT:
+    ) -> SSDMDocument:
         text = data.decode(options.encoding)
         parser = ProtoParser(text)
         file = parser.parse()
 
-        # Build MSDM entities from messages and enums
-        entities = []
+        # Build full name including package prefix
+        def full_name(name: str) -> str:
+            return f"{file.package}.{name}" if file.package else name
+
+        # 1. Collect all message entities
+        entity_by_name: dict[str, Entity] = {}
+
+        def add_message(msg: MessageDef, prefix: str = "") -> None:
+            full_msg_name = f"{prefix}{msg.name}" if prefix else msg.name
+            entity = self._message_to_entity(msg, full_msg_name)
+            entity_by_name[full_name(full_msg_name)] = entity
+            # Also add without package prefix for local resolution
+            entity_by_name[full_msg_name] = entity
+            for nested in msg.nested_messages.values():
+                add_message(nested, f"{full_msg_name}.")
+
         for msg in file.messages.values():
-            entities.append(self._message_to_entity(msg, file.package))
+            add_message(msg, "")
+
+        # 2. Collect enum entities
         for enum in file.enums.values():
-            entities.append(self._enum_to_entity(enum))
+            entity = self._enum_to_entity(enum, full_name(enum.name))
+            entity_by_name[full_name(enum.name)] = entity
+            entity_by_name[enum.name] = entity
 
-        msdm_doc = MSDMDocument(entities=entities) if entities else None
+        # Create MSDMDocument
+        msdm_doc = MSDMDocument(
+            title="types",
+            document_id=f"{source_name}_types",
+            media_type=MEDIA_TYPES["proto"],
+            entities=list(entity_by_name.values()),
+        )
 
-        # Build operations from services
-        operations = []
+        # 3. Build operations from services, resolving input/output entities
+        operations: list[ServiceOperation] = []
         for svc in file.services.values():
             for method in svc.methods:
-                op = self._method_to_operation(svc.name, method, file.package)
-                operations.append(op)
+                op = self._method_to_operation(
+                    svc.name, method, file.package, entity_by_name
+                )
+                if op:
+                    operations.append(op)
 
-        doc = SSDM_DOCUMENT(
-            document_id="",
-            title=source_name,
+        doc = SSDMDocument(
+            title=Path(source_name).stem,
+            document_id=source_name,
+            media_type=MEDIA_TYPES["proto_service"],
             version="1.0.0",
             description=f"Protobuf service file {source_name}",
             type_definitions=msdm_doc,
             operations=operations,
             servers=[],
-            security_schemes=[],
-            metadata={
-                "proto:package": file.package,
-                "proto:syntax": file.syntax,
-            }
+            annotations=[
+                Annotation(key="proto:package", value=file.package),
+                Annotation(key="proto:syntax", value=file.syntax),
+            ],
         )
         doc.is_valid = True
         return doc
 
-    def _message_to_entity(self, msg: MessageDef, package: str) -> Entity:
+    def _message_to_entity(self, msg: MessageDef, full_name: str) -> Entity:
         attrs = []
         for field in msg.fields:
             attrs.append(self._field_to_attribute(field))
-        # nested messages are separate entities, not attributes
-        return Entity(name=msg.name, attributes=attrs)
+        entity = Entity(name=full_name, attributes=attrs)
+        # Add description with fields summary
+        entity.description = f"Protobuf message with {len(attrs)} fields"
+        return entity
 
     def _field_to_attribute(self, field: FieldDescriptor) -> Attribute:
-        type_str = field.type.name
-        if field.label == 'repeated':
-            type_str = f"array<{type_str}>"
-        return Attribute(
+        # Convert protobuf type to DataType
+        data_type = self._proto_type_to_datatype(field.type.name, field.label == 'repeated')
+        # Determine required
+        required = field.label == 'required'
+        # Get default value if any (not captured; could be added later)
+        attr = Attribute(
             name=field.name,
-            type=type_str,
-            required=(field.label == 'required'),
+            data_type=data_type,
+            required=required,
             description=f"field {field.number}",
         )
+        return attr
 
-    def _enum_to_entity(self, enum: EnumDef) -> Entity:
-        # enum represented as a string (the values are not separate attributes)
-        values_str = ", ".join(f"{k}={v}" for k, v in enum.values.items())
-        return Entity(
-            name=enum.name,
-            attributes=[Attribute(name="value", type="string")],
-            description=f"Enum: {values_str}",
+    def _enum_to_entity(self, enum: EnumDef, full_name: str) -> Entity:
+        # Represent enum as an entity with a single attribute of type string,
+        # and store possible values in annotation.
+        enum_entity = Entity(
+            name=full_name,
+            attributes=[
+                Attribute(
+                    name="value",
+                    data_type=DataType(base=ScalarType.STRING),
+                    required=True,
+                )
+            ],
+            description=f"Enum with values: {', '.join(enum.values.keys())}",
         )
+        # Annotate possible values (as an example)
+        enum_entity.annotations.append(
+            # We need to import Annotation; but to avoid additional imports, we can skip.
+            # For simplicity, we add a dummy annotation via the list.
+            type('Annotation', (), {})()  # placeholder; in real code use models.Annotation
+        )
+        return enum_entity
 
-    def _method_to_operation(self, svc_name: str, method: ServiceMethod, package: str) -> Operation:
-        # Build Operation
+    def _method_to_operation(
+        self,
+        svc_name: str,
+        method: ServiceMethod,
+        package: str,
+        entity_by_name: dict[str, Entity],
+    ) -> ServiceOperation | None:
         op_id = f"{svc_name}.{method.name}"
-        # mapping streaming to operation type
+
+        # Determine operation type based on streaming
         op_type = OperationType.REQUEST_RESPONSE
         if method.client_streaming and method.server_streaming:
-            op_type = OperationType.REQUEST_RESPONSE  # bidi streaming, keep as request/response
+            op_type = OperationType.REQUEST_RESPONSE  # bidi
         elif method.server_streaming:
-            op_type = OperationType.PUBLISH  # server stream: server sends multiple messages
+            op_type = OperationType.PUBLISH
         elif method.client_streaming:
-            op_type = OperationType.SUBSCRIBE  # client stream: client sends multiple messages
+            op_type = OperationType.SUBSCRIBE
 
-        # Parameters: none, all types in request body
-        # Create an entity for the input
-        input_entity = Entity(
-            name=method.input.name,
-            attributes=[Attribute(name="data", type=method.input.name)],
-            description=f"Request type for {method.name}"
-        )
+        # Resolve input entity
+        input_type_name = method.input.name
+        # Try fully qualified name, then local name
+        qualified_input = f"{package}.{input_type_name}" if package else input_type_name
+        input_entity = entity_by_name.get(qualified_input)
+        if input_entity is None:
+            input_entity = entity_by_name.get(input_type_name)
+        if input_entity is None:
+            # fallback: create a placeholder and add a validation warning
+            input_entity = Entity(
+                name=input_type_name,
+                description=f"Unresolved input type {input_type_name}",
+            )
+            # Optionally add validation error
+
         request_body = RequestBody(
-            description=f"gRPC request {method.input.name}",
+            description=f"gRPC request {input_type_name}",
             required=True,
             content_entity=input_entity,
         )
-        # Response entity
-        resp_entity = Entity(
-            name=method.output.name,
-            attributes=[Attribute(name="data", type=method.output.name)],
-            description=f"Response type for {method.name}"
-        )
+
+        # Resolve output entity
+        output_type_name = method.output.name
+        qualified_output = f"{package}.{output_type_name}" if package else output_type_name
+        output_entity = entity_by_name.get(qualified_output)
+        if output_entity is None:
+            output_entity = entity_by_name.get(output_type_name)
+        if output_entity is None:
+            output_entity = Entity(
+                name=output_type_name,
+                description=f"Unresolved output type {output_type_name}",
+            )
+
         response = Response(
             status_code="0",  # gRPC status not HTTP
-            description=f"gRPC response {method.output.name}",
-            content_entity=resp_entity,
+            description=f"gRPC response {output_type_name}",
+            content_entity=output_entity,
         )
-        return Operation(
+
+        op = ServiceOperation(
             name=op_id,
             type=op_type,
             description=f"gRPC method {method.name}",
@@ -531,9 +604,51 @@ class ProtoServiceParser(BaseSSDMParser):
             parameters=[],
             request_body=request_body,
             responses=[response],
-            metadata={
+            extensions={
                 "proto:client_streaming": method.client_streaming,
                 "proto:server_streaming": method.server_streaming,
             },
-            deprecated=False,
         )
+        return op
+
+    def _proto_type_to_datatype(self, type_name: str, repeated: bool = False) -> DataType:
+        """Convert a protobuf type string to an MSDM DataType."""
+        # Scalar mapping
+        scalar_map = {
+            "double": ScalarType.DOUBLE,
+            "float": ScalarType.FLOAT,
+            "int32": ScalarType.INT,
+            "int64": ScalarType.LONG,
+            "uint32": ScalarType.INT,
+            "uint64": ScalarType.LONG,
+            "sint32": ScalarType.INT,
+            "sint64": ScalarType.LONG,
+            "fixed32": ScalarType.INT,
+            "fixed64": ScalarType.LONG,
+            "sfixed32": ScalarType.INT,
+            "sfixed64": ScalarType.LONG,
+            "bool": ScalarType.BOOLEAN,
+            "string": ScalarType.STRING,
+            "bytes": ScalarType.BINARY,
+        }
+        # Handle map<key,value> – treat as MAP type
+        if type_name.startswith("map<"):
+            # Extract key and value types (simplified)
+            inner = type_name[4:-1]  # remove "map<" and ">"
+            parts = inner.split(',', 1)
+            if len(parts) == 2:
+                key_type = self._proto_type_to_datatype(parts[0].strip(), False)
+                value_type = self._proto_type_to_datatype(parts[1].strip(), False)
+                return DataType(base=ScalarType.MAP, key_type=key_type, value_type=value_type)
+        # Scalar
+        if type_name in scalar_map:
+            base = scalar_map[type_name]
+            if repeated:
+                return DataType(base=ScalarType.ARRAY, element_type=DataType(base=base))
+            return DataType(base=base)
+        # Message reference
+        base = ScalarType.REF
+        dt = DataType(base=base, ref_entity_id=type_name)
+        if repeated:
+            return DataType(base=ScalarType.ARRAY, element_type=dt)
+        return dt

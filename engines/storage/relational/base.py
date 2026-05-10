@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import json
-from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from abc import ABC
+from abc import abstractmethod
+from typing import Any
 
 import aiosqlite
 
@@ -15,7 +16,7 @@ class SQLStorage(BaseStorage):
     def __init__(self, db_path: str = "database.db") -> None:
         super().__init__()
         self.db_path = db_path
-        self._connection: Optional[aiosqlite.Connection] = None
+        self._connection: aiosqlite.Connection | None = None
 
     async def connect(self) -> None:
         if self._connection is None:
@@ -46,7 +47,7 @@ class SQLStorage(BaseStorage):
         except Exception:
             return False
 
-    async def save(self, key: str, data: Dict[str, Any]) -> None:
+    async def save(self, key: str, data: dict[str, Any]) -> None:
         await self.ensure_connected()
         if self._connection is None:
             raise RuntimeError("SQL storage connection is not initialized.")
@@ -56,7 +57,7 @@ class SQLStorage(BaseStorage):
         )
         await self._connection.commit()
 
-    async def load(self, key: str) -> Optional[Dict[str, Any]]:
+    async def load(self, key: str) -> dict[str, Any] | None:
         await self.ensure_connected()
         if self._connection is None:
             raise RuntimeError("SQL storage connection is not initialized.")
@@ -71,7 +72,7 @@ class SQLStorage(BaseStorage):
         await self._connection.execute("DELETE FROM kv_store WHERE key=?", (key,))
         await self._connection.commit()
 
-    async def list_keys(self, prefix: Optional[str] = None) -> List[str]:
+    async def list_keys(self, prefix: str | None = None) -> list[str]:
         await self.ensure_connected()
         if self._connection is None:
             raise RuntimeError("SQL storage connection is not initialized.")
@@ -90,13 +91,13 @@ class RelationalStorage(BaseStorage, ABC):
     """SQL-like relational storage abstraction."""
 
     @abstractmethod
-    async def execute(self, query: str, params: Optional[Dict[str, Any]] = None) -> None:
+    async def execute(self, query: str, params: dict[str, Any] | None = None) -> None:
         ...
 
     @abstractmethod
-    async def fetch_one(self, query: str, params: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+    async def fetch_one(self, query: str, params: dict[str, Any] | None = None) -> dict[str, Any] | None:
         ...
 
     @abstractmethod
-    async def fetch_all(self, query: str, params: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+    async def fetch_all(self, query: str, params: dict[str, Any] | None = None) -> list[dict[str, Any]]:
         ...

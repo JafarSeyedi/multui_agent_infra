@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 import socket
 from datetime import datetime
-from typing import Dict, List, Optional
 
 from ..base import LogStorage
 
@@ -15,8 +14,8 @@ class RSyslogStorage(LogStorage):
         super().__init__()
         self.host = host
         self.port = port
-        self._agent_logs: Dict[str, Dict] = {}
-        self._events: Dict[str, Dict] = {}
+        self._agent_logs: dict[str, dict] = {}
+        self._events: dict[str, dict] = {}
 
     async def connect(self) -> None:
         self._connected = True
@@ -37,27 +36,27 @@ class RSyslogStorage(LogStorage):
 
         await asyncio.to_thread(_sync_send)
 
-    async def log_agent_execution(self, agent_name: str, record: Dict) -> None:
+    async def log_agent_execution(self, agent_name: str, record: dict) -> None:
         timestamp = record.get("timestamp", datetime.utcnow().isoformat())
         key = f"exec:{agent_name}:{timestamp}"
         self._agent_logs[key] = dict(record)
         await self._send(f"agent_execution {key} {record}")
 
-    async def list_agent_logs(self, agent_name: str) -> List[str]:
+    async def list_agent_logs(self, agent_name: str) -> list[str]:
         prefix = f"exec:{agent_name}:"
         return [key for key in self._agent_logs if key.startswith(prefix)]
 
-    async def get_agent_log(self, key: str) -> Optional[Dict]:
+    async def get_agent_log(self, key: str) -> dict | None:
         return self._agent_logs.get(key)
 
-    async def log_event(self, event_type: str, payload: Dict) -> None:
+    async def log_event(self, event_type: str, payload: dict) -> None:
         key = f"event:{event_type}:{datetime.utcnow().isoformat()}"
         self._events[key] = dict(payload)
         await self._send(f"event {key} {payload}")
 
-    async def list_events(self, event_type: Optional[str] = None) -> List[str]:
+    async def list_events(self, event_type: str | None = None) -> list[str]:
         prefix = f"event:{event_type}:" if event_type else "event:"
         return [key for key in self._events if key.startswith(prefix)]
 
-    async def get_event(self, key: str) -> Optional[Dict]:
+    async def get_event(self, key: str) -> dict | None:
         return self._events.get(key)

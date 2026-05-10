@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from typing import List
-
-from engines.rag.rag_models import Document, DocumentChunk
+from engines.rag.rag_models import Document
+from engines.rag.rag_models import DocumentChunk
 
 
 class Chunker:
@@ -18,13 +17,13 @@ class Chunker:
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
 
-    async def create_chunks(self, document: Document) -> List[DocumentChunk]:
+    async def create_chunks(self, document: Document) -> list[DocumentChunk]:
         text = (document.metadata or {}).get("text") or ""
         if not text:
             return []
 
         windows = self._split_text(text)
-        chunks: List[DocumentChunk] = []
+        chunks: list[DocumentChunk] = []
         for index, chunk_text in enumerate(windows):
             chunks.append(
                 DocumentChunk(
@@ -42,12 +41,12 @@ class Chunker:
             )
         return chunks
 
-    def _split_text(self, text: str) -> List[str]:
+    def _split_text(self, text: str) -> list[str]:
         clean_text = " ".join(text.split())
         if len(clean_text) <= self.chunk_size:
             return [clean_text]
 
-        chunks: List[str] = []
+        chunks: list[str] = []
         start = 0
         text_length = len(clean_text)
         while start < text_length:

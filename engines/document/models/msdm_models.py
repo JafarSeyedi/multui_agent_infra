@@ -1,13 +1,10 @@
 # engines/document/models/msdm_models.py
-
 # Metadata of data Structure Definition Model (SDM)
-# MSDM is about metadata describing structure. Whether you're defining a relational table, 
-# a JSON schema, or a time‑series measurement, you're essentially listing fields with types 
-# and constraints. The kind field simply gives a hint to the parser/writer about what format 
+# MSDM is about metadata describing structure. Whether you're defining a relational table,
+# a JSON schema, or a time‑series measurement, you're essentially listing fields with types
+# and constraints. The kind field simply gives a hint to the parser/writer about what format
 # to expect (e.g., .cql for Cassandra, .sql for TimescaleDB, or direct InfluxQL)
-
 # Purpose: Describe data schemas, database tables, class hierarchies, and type systems in a format‑independent way.
-
 # Formats to support
 # Format	                File extensions	        Notes
 # JSON Schema	            .schema.json, .json	    Declarative validation rules for JSON
@@ -16,49 +13,38 @@
 # ERD / Entity‑Relationship	.erd, .xml, .json	    Database modelling
 # UML Class Diagram	        .uml, .xmi, .plantuml   Object‑oriented design
 # Protobuf / gRPC IDL	    .proto	                Language‑neutral interface definitions
-# Avro Schema	            .avsc	                Apache Avro schema format
 # Thrift IDL	            .thrift	                Apache Thrift interface definitions
 # GraphQL Schema	        .graphql, .gql	        Type system and query definitions
 # OWL / RDF Schema	        .owl, .rdf	            Semantic web ontologies
-# CUE	                    .cue	                Data constraint language
 # Pydantic / dataclass	    .py                     (Python code) Direct extraction from Python classes
 # TypeScript interfaces	    .ts	Static              type definitions
-
 # Typical NoSQL schemas:
-
 # Type	            Example formats	            Schema description
 # Document	        MongoDB, Couchbase	        JSON Schema / Mongoose schemas
 # Wide‑column	    Cassandra, HBase	        CQL table definitions
 # Key‑value	        Redis, DynamoDB	            Often schema‑less, but key/value type info possible
 # Graph	            Neo4j, ArangoDB	            Node/Edge type definitions
 # Search	        Elasticsearch	            Index mappings (JSON)
-
 # How MSDM handles them:
 # - Entity represents a collection, table, or node label.
 # - Attribute fields map to document properties, columns, or key fields. The type can be a complex string like "array<string>" or "map<string, int>" for nested structures.
 # - Constraint can capture uniqueness, required, indexing, or text‑search options.
 # - Annotation stores engine‑specific hints (e.g., shard keys, TTL).
 # - Add an optional Entity.kind field ("document", "column_family", "graph_node", "timeseries") to inform downstream tools.
-
 # Time‑based data - Typical time‑series / event schemas:
-
 # Type	            Example formats	                    Schema description
 # Time‑series DB	InfluxDB, TimescaleDB, Prometheus	Measurement/table with timestamp, fields, tags
 # Event sourcing	Kafka, EventStore	                Event schema (Avro/JSON) with timestamp
 # Temporal tables	SQL:2011	                        System‑versioned tables
-
 # How MSDM handles them:
 # - A time‑series measurement is an Entity with a kind="timeseries".
 # - The timestamp column is simply an Attribute with type="timestamp" and primary_key=True.
 # - Tags (dimensions) and fields (metrics) are regular attributes; we can use annotations to mark which are tags/fields.
 # - Retention policies, down‑sampling, and continuous queries become Constraint or Annotation objects.
-
 # CQL (Cassandra) – engines/document/parsers/msdm/cql_parser.py
 # MongoDB validator schema – engines/document/parsers/msdm/mongo_schema_parser.py
 # InfluxDB – engines/document/parsers/msdm/influx_schema_parser.py
 # Kafka Avro schemas (already covered by proto/avsc parsers)
-
-
 # engines/document/models/msdm_models.py
 """
 MSDM – Metadata Standard Definition Model
@@ -68,11 +54,14 @@ class hierarchies, type systems, and time‑series / NoSQL definitions.
 Every structural detail is captured in strictly‑typed fields.
 Annotations are reserved for human‑oriented text without semantic weight.
 """
-
 from __future__ import annotations
-from dataclasses import dataclass, field
+
+from dataclasses import dataclass
+from dataclasses import field
 from enum import Enum
-from typing import List, Optional, Dict, Any, Literal, Union
+from typing import Any
+from typing import Literal
+
 from .base import BaseDocument
 from .media_types import DocumentStandard
 
@@ -120,8 +109,17 @@ class ConstraintType(str, Enum):
     FRACTION_DIGITS  = "fractionDigits"
     ENUMERATION      = "enumeration"   # distinct from CHECK
     WHITESPACE       = "whiteSpace"
+    RANGE            = "range"
+    
 
+    MUST             = "must"
+    WHEN             = "when"
+    OWL_SOME_VALUES_FROM    = "owl_some_values_from"
+    OWL_ALL_VALUES_FROM     = "owl_all_values_from"
+    OWL_MIN_CARDINALITY     = "owl_min_cardinality"
+    
 class ScalarType(str, Enum):
+    NULL            = "null"
     STRING          = "string"
     INT             = "int"
     LONG            = "long"
@@ -129,6 +127,7 @@ class ScalarType(str, Enum):
     DOUBLE          = "double"
     DECIMAL         = "decimal"
     BOOLEAN         = "boolean"
+    DATETIME        = "datetime"
     DATE            = "date"
     TIME            = "time"
     TIMESTAMP       = "timestamp"
@@ -142,69 +141,53 @@ class ScalarType(str, Enum):
     MAP             = "map"
     STRUCT          = "struct"
     REF             = "ref"             # reference to another Entity
+    NONE            = "none"
+    YANG_ANYDATA    = "yang_any_data"            # YANG anydata / anyxml
+    OBJECT_ID       = "object_id"  # MongoDB ObjectId
+    REGEX           = "regex"  # Regular expression
+    URI             = "uri"
+    EMAIL           = "email"
+    CUSTOM          = "custom"
 
+class IndexMethod(str, Enum):
+    BTREE           = "skip"
+    HASH            = "include"
+    GIN             = "deprecated"
+    NOT_DEFINED     = "not_defined"
+    UNKNOWN         = "unknown"
 
-class XSDFacet(str, Enum):
-    """Facets used in XSD simple type restrictions."""
-    LENGTH          = "length"
-    MIN_LENGTH      = "minLength"
-    MAX_LENGTH      = "maxLength"
-    PATTERN         = "pattern"
-    MIN_INCLUSIVE   = "minInclusive"
-    MAX_INCLUSIVE   = "maxInclusive"
-    MIN_EXCLUSIVE   = "minExclusive"
-    MAX_EXCLUSIVE   = "maxExclusive"
-    TOTAL_DIGITS    = "totalDigits"
-    FRACTION_DIGITS = "fractionDigits"
-    ENUMERATION     = "enumeration"
-
-
-class ProtobufOption(str, Enum):
-    """Common Protobuf options."""
-    PACKED          = "packed"
+class CompositionType(str, Enum):
+    ALL_OF           = "allOf"
+    ONE_OF           = "oneOf"
+    ANY_OF           = "anyOf"
+    
+class VersionStatus(str, Enum):
+    CURRENT         = "current"
     DEPRECATED      = "deprecated"
-    JSON_NAME       = "json_name"
-    OPTIONAL        = "optional"
-    REQUIRED        = "required"
-    REPEATED        = "repeated"
-
-
-class AvroLogicalType(str, Enum):
-    """Logical types defined by Avro."""
-    DECIMAL         = "decimal"
-    DATE            = "date"
-    TIME_MILLIS     = "time-millis"
-    TIME_MICROS     = "time-micros"
-    TIMESTAMP_MILLIS= "timestamp-millis"
-    TIMESTAMP_MICROS= "timestamp-micros"
-    DURATION        = "duration"
-    UUID            = "uuid"
-
-
-class GraphQLDirective(str, Enum):
-    """Built‑in GraphQL directives."""
-    SKIP            = "skip"
-    INCLUDE         = "include"
-    DEPRECATED      = "deprecated"
-    SPECIFIED_BY    = "specifiedBy"
-
-
+    OBSOLETE        = "obsolete"
+    
+class VisibilityKind(str, Enum):
+    PUBLIC = "+"
+    PRIVATE = "-"
+    PROTECTED = "#"
+    PACKAGE = "~"    
 # ============================================================
-# Explicit type representation (no Any)
+# Explicit type representation
 # ============================================================
 
 @dataclass
 class DataType:
     base: ScalarType
     # Complex type parameters
-    element_type: Optional[DataType] = None       # for ARRAY
-    key_type: Optional[DataType] = None           # for MAP
-    value_type: Optional[DataType] = None         # for MAP
-    ref_entity: Optional[str] = None              # for REF
-    precision: Optional[int] = None               # for DECIMAL
-    scale: Optional[int] = None
-    max_length: Optional[int] = None              # for STRING/BINARY
-
+    element_type: DataType | None = None       # for ARRAY
+    key_type: DataType | None = None           # for MAP
+    value_type: DataType | None = None         # for MAP
+    ref_entity: Entity | None = None           # for REF
+    ref_entity_id: str | None = None           # for REF temporary id
+    precision: int | None = None               # for DECIMAL
+    scale: int | None = None
+    max_length: int | None = None              # for STRING/BINARY
+    # annotations: list[Annotation] = field(default_factory=list)
 
 # ============================================================
 # Annotation – human‑readable text only (no semantic meaning)
@@ -224,25 +207,23 @@ class Annotation:
 @dataclass
 class Constraint:
     type: ConstraintType
-    name: Optional[str] = None                     # optional constraint name
-    expression: Optional[str] = None               # CHECK expression, or unique column list
-    referenced_entity: Optional[str] = None         # for FOREIGN KEY
-    referenced_attributes: List[str] = field(default_factory=list)
-    on_delete: Optional[str] = None
-    on_update: Optional[str] = None
-
-    # XSD facets (only relevant for XSD simple types)
-    facets: List[XSDFacet] = field(default_factory=list)
-    facet_values: Dict[str, str] = field(default_factory=dict)   # e.g., {"minLength": "5"}
+    name: str | None = None                     # optional constraint name
+    expression: str | None = None               # CHECK expression, or unique column list
+    value: Any | None = None               
+    ref_entity: Entity | None = None         # for FOREIGN KEY
+    ref_entity_id: str | None = None           # for REF temporary id
+    ref_attr_ids: list[str] = field(default_factory=list)
+    on_delete: str | None = None
+    on_update: str | None = None
 
 
 @dataclass
 class Index:
-    name: Optional[str] = None
-    attributes: List[str] = field(default_factory=list)
+    name: str | None = None
+    attributes: list[Attribute] = field(default_factory=list)
     unique: bool = False
-    method: Optional[str] = None                  # e.g., "btree", "hash", "gin"
-    annotations: List[Annotation] = field(default_factory=list)
+    method: IndexMethod | None = None                  # e.g., "btree", "hash", "gin"
+    annotations: list[Annotation] = field(default_factory=list)
 
 
 # ============================================================
@@ -253,90 +234,112 @@ class Index:
 class Attribute:
     name: str
     data_type: DataType
+    description: str | None = None
+    default_value: str | None = None             # literal value as string
     required: bool = False
-    description: Optional[str] = None
-    default_value: Optional[str] = None             # literal value as string
 
     # Key and time‑series markers
-    primary_key: bool = False
     is_tag: bool = False                            # time‑series dimension
     is_field: bool = False                          # time‑series metric
 
     # Nested attributes for STRUCT data_type
-    nested_attributes: List[Attribute] = field(default_factory=list)
+    nested_attributes: list[Attribute] = field(default_factory=list)
 
     # Constraints applicable to this attribute
-    constraints: List[Constraint] = field(default_factory=list)
+    constraints: list[Constraint] = field(default_factory=list)
 
     # Annotations – only human‑oriented text
-    annotations: List[Annotation] = field(default_factory=list)
+    annotations: list[Annotation] = field(default_factory=list)
 
     # Optional: Protobuf‑specific options (strongly typed)
-    protobuf_options: List[ProtobufOption] = field(default_factory=list)
+    is_packed: bool = False                          
 
-    # Avro logical type (if different from base ScalarType)
-    avro_logical_type: Optional[AvroLogicalType] = None
-
-    # GraphQL directives (list of applied directives)
-    graphql_directives: List[GraphQLDirective] = field(default_factory=list)
-
-    # OWL restrictions (e.g., someValuesFrom, allValuesFrom) – stored as a small typed map
-    owl_restrictions: Dict[str, str] = field(default_factory=dict)
-    extensions: Dict[str, Any] = field(default_factory=dict)
-    deprecated: bool = False
-    xml: Optional[Dict[str, Any]] = None    # OpenAPI's xml object
+    extensions: dict[str, Any] = field(default_factory=dict)
+    # xml: dict[str, Any] | None = None    # OpenAPI's xml object
+    template: Entity | None = None   # name of the template entity to expand    
+    template_id: str | None = None   
+    is_config: bool | None = None       # config (true/false), default true
+    version_status: VersionStatus | None = None
+    
+    # UML specific (optional)
+    is_static: bool = False
+    is_derived: bool = False
+    is_abstract: bool = False
+    # operation_name: str | None = None          # for methods (without parameters)
+    visibility: VisibilityKind | None = None
+        
 # ============================================================
 # Entity – table, collection, node, measurement, etc.
-# ============================================================
+# ===========================================================
+@dataclass
+class Namespace:
+    uri: str                     # e.g., "http://example.com/schema"
+    prefix: str | None = None    # e.g., "ex"
+    is_default: bool = False     # whether this is the default namespace
+    version: str | None = None
 
 @dataclass
-class Entity:
-    name: str
-    kind: EntityKind = EntityKind.TABLE
-    description: Optional[str] = None
-    attributes: List[Attribute] = field(default_factory=list)
-    constraints: List[Constraint] = field(default_factory=list)
-    indexes: List[Index] = field(default_factory=list)
-    annotations: List[Annotation] = field(default_factory=list)
-
-    # Inheritance for object models
-    extends: Optional[str] = None                    # name of base entity
-    implements: List[str] = field(default_factory=list)  # interfaces / traits
-
-    # GraphQL specific: list of interface names this type implements
-    graphql_interfaces: List[str] = field(default_factory=list)
-
-    # Avro namespace (optional)
-    namespace: Optional[str] = None
-    composition: Optional[CompositionEntity] = None
-    discriminator: Optional[Attribute] = None
-    discriminator_mapping: Dict[str, Entity] = field(default_factory=dict)
-    extensions: Dict[str, Any] = field(default_factory=dict)
-    
-@dataclass
-class CompositionEntity:
+class EntityComposition:
     """
     Represents a schema composition keyword (allOf, oneOf, anyOf).
     The actual type definitions are referenced via entity names or inline entities.
     """
-    composition_type: Literal["allOf", "oneOf", "anyOf"]
-    members: List[Entity] = field(default_factory=list)
-    description: Optional[str] = None
+    composition_type: CompositionType
+    members: list[Entity] = field(default_factory=list)
+    member_ids: list[str] = field(default_factory=list)
+    description: str | None = None
+    
+@dataclass
+class Entity:
+    name: str
+    kind: EntityKind = EntityKind.TABLE
+    description: str | None = None
+    attributes: list[Attribute] = field(default_factory=list)
+    constraints: list[Constraint] = field(default_factory=list)
+    indexes: list[Index] = field(default_factory=list)
+    # Annotations – only human‑oriented text
+    annotations: list[Annotation] = field(default_factory=list)
 
+    # Inheritance for object models
+    extends: Entity | None = None                    # name of base entity
+    extends_ref_id: str | None = None   
+    augments: Entity | None = None                    # name of base entity
+    augments_ref_id: str | None = None   
+    implements: list[Entity] = field(default_factory=list)  # interfaces / traits
+    implements_ref_ids: list[str] = field(default_factory=list)
+
+    namespace: Namespace | None = None
+    composition: EntityComposition | None = None
+    discriminator: Attribute | None = None
+    discriminator_mapping: dict[str, Entity] = field(default_factory=dict)
+    # extensions: dict[str, Any] = field(default_factory=dict)
+    is_template: bool = False
+    list_key: str | None = None        # Attribute name key for YANG list entries
+    is_config: bool | None = None       # config (true/false), default true
+    version_status: VersionStatus | None = None        # "current", "deprecated", "obsolete"    
+    yang_deviate_targets: list[str] = field(default_factory=list)   # deviation targets
+    
+    # UML specific (optional)
+    is_interface: bool = False
+    # is_enum: bool = False
+    is_abstract: bool = False
+            
 # ============================================================
-# Relationship – explicit ERD/UML association
+# EntityRelationship – explicit ERD/UML association
 # ============================================================
 
 @dataclass
-class Relationship:
-    from_entity: str
-    to_entity: str
-    name: Optional[str] = None
+class EntityRelationship:
+    from_entity: Entity | None = None
+    to_entity: Entity | None = None
+    from_ref_id: str | None = None
+    to_ref_id: str | None = None   
+    name: str | None = None
     cardinality_from: Cardinality = Cardinality.ONE
     cardinality_to: Cardinality = Cardinality.MANY
-    foreign_key_attributes: List[str] = field(default_factory=list)   # attributes in from_entity
-    description: Optional[str] = None
-    annotations: List[Annotation] = field(default_factory=list)
+    foreign_key_attributes: list[str] = field(default_factory=list)   # attributes in from_entity
+    description: str | None = None
+    annotations: list[Annotation] = field(default_factory=list)
 
 
 # ============================================================
@@ -350,7 +353,8 @@ class MSDMDocument(BaseDocument):
     This is the root object of the MSDM standard.
     """
     kind: DocumentStandard = DocumentStandard.MSDM
-    entities: List[Entity] = field(default_factory=list)
-    relationships: List[Relationship] = field(default_factory=list)
-    schema_name: Optional[str] = None
-    namespace: Optional[str] = None
+    entities: list[Entity] = field(default_factory=list)
+    relationships: list[EntityRelationship] = field(default_factory=list)
+    schema_name: str | None = None
+    namespace: Namespace | None = None
+    annotations: list[Annotation] = field(default_factory=list)

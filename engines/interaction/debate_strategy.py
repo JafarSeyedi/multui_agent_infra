@@ -1,18 +1,16 @@
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from .base_strategy import InteractionStrategy
 from ..agents.models import AgentOutput
-from .interaction_models import (
-    InteractionRequest,
-    InteractionResult,
-)
+from .base_strategy import InteractionStrategy
+from .interaction_models import InteractionRequest
+from .interaction_models import InteractionResult
 
 
 class DebateStrategy(InteractionStrategy):
     scenario_name = "debate"
 
     async def execute(self, request: InteractionRequest) -> InteractionResult:
-        context: Dict[str, Any] = dict(request.context or {})
+        context: dict[str, Any] = dict(request.context or {})
         agents = request.agents or []
 
         if len(agents) < 2:
@@ -21,15 +19,15 @@ class DebateStrategy(InteractionStrategy):
         # استخراج نام عامل‌ها
         proposer_agent_meta = agents[0]
         critic_agent_meta = agents[1]
-        
+
         proposer_name = proposer_agent_meta.agent_name
         critic_name = critic_agent_meta.agent_name
 
         max_rounds = int(request.metadata.get("max_rounds", 5))
-        history: List[Dict[str, Any]] = []
-        results: List[AgentOutput] = []
-        current_answer: Optional[Any] = None
-        approved_round: Optional[int] = None
+        history: list[dict[str, Any]] = []
+        results: list[AgentOutput] = []
+        current_answer: Any | None = None
+        approved_round: int | None = None
 
         for round_id in range(1, max_rounds + 1):
             # ✅ حل خطای Missing recipient
@@ -47,7 +45,7 @@ class DebateStrategy(InteractionStrategy):
                 agent_id=f"proposer_round_{round_id}",
                 context=context,
                 payload={
-                    "history": history, 
+                    "history": history,
                     "round": round_id,
                     "mode": "propose"
                 }
@@ -80,8 +78,8 @@ class DebateStrategy(InteractionStrategy):
             # ثبت در تاریخچه برای دور بعد
             critic_data = critic_output.payload or critic_output.message
             history.append({
-                "round": round_id, 
-                "answer": current_answer, 
+                "round": round_id,
+                "answer": current_answer,
                 "critique": critic_data
             })
 
@@ -109,7 +107,7 @@ class DebateStrategy(InteractionStrategy):
         # آپدیت کانتکست نهایی
         context["debate_history"] = history
         context["final_answer"] = current_answer
-        
+
         # محاسبه موفقیت کلی: اگر هیچ عاملی خطا نداده باشد
         is_overall_success = all(res.error is None for res in results)
 
@@ -118,7 +116,7 @@ class DebateStrategy(InteractionStrategy):
             results=results,
             final_context=context,
             metadata={
-                "rounds_executed": len(history), 
+                "rounds_executed": len(history),
                 "approved_round": approved_round,
                 "max_rounds_reached": len(history) >= max_rounds and not approved_round
             },

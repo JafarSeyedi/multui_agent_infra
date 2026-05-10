@@ -1,44 +1,41 @@
 # engines/document/writers/ssdm_writers/graphql_service_writer.py
 """
-GraphQL Service Writer – converts an SSDM_DOCUMENT into a GraphQL SDL string.
+GraphQL Service Writer – converts an SSDMDocument into a GraphQL SDL string.
 
 Uses the MSDM type definitions inside the SSDM document to reconstruct
-the complete GraphQL schema.  Root operation types are taken from the
-graphql_service.schema_entity (or from MSDM document annotations).
+the complete GraphQL schema. Root operation types are taken from the
+document metadata (keys "graphql:query_type", "graphql:mutation_type",
+"graphql:subscription_type") set by the GraphQL parser.
 """
-
 from __future__ import annotations
-from pathlib import Path
-from typing import Optional, List, Dict, cast
 
-from .base_ssdm_writer import BaseSSDMWriter, SSDMWriteOptions
-from ...models.ssdm_models import SSDM_DOCUMENT
-from ...models.msdm_models import (
-    MSDMDocument,
-    Entity,
-    Attribute,
-    ScalarType,
-    ConstraintType,
-)
-from ...models.base import BaseDocument
+import json
+
+from ...models.msdm_models import Attribute
+from ...models.msdm_models import Entity
+from ...models.msdm_models import MSDMDocument
+from ...models.msdm_models import ScalarType
+from ...models.ssdm_models import SSDMDocument
+from .base_ssdm_writer import BaseSSDMWriter
+from .base_ssdm_writer import SSDMWriteOptions
 
 
 class GraphQLServiceWriter(BaseSSDMWriter):
-    """Serialises an SSDM_DOCUMENT to GraphQL SDL."""
+    """Serialises an SSDMDocument to GraphQL SDL."""
 
     name = "graphql_service"
     supported_extensions = (".graphql", ".gql")
 
-    def __init__(self, options: Optional[SSDMWriteOptions] = None):
+    def __init__(self, options: SSDMWriteOptions | None = None):
         super().__init__(options)
 
-    async def _write_design(self, document: SSDM_DOCUMENT) -> bytes:
-        lines: List[str] = []
+    async def _write_design(self, document: SSDMDocument) -> bytes:
+        lines: list[str] = []
         msdm = document.type_definitions
         if msdm is None:
             # Nothing to write
             sdl = ""
-            return sdl.encode(self.options.encoding or "utf-8")
+            return sdl.encode(getattr(self.options, "encoding", "utf-8") or "utf-8")
 
         # 1. Schema definition
         schema_block = self._build_schema_definition(document, msdm)
@@ -58,32 +55,26 @@ class GraphQLServiceWriter(BaseSSDMWriter):
                 lines.append(self._build_enum(entity))
                 lines.append("")
 
-        # 4. Interfaces
-        for entity in msdm.entities:
-            if self._is_interface_type(entity):
-                lines.append(self._build_interface(entity))
-                lines.append("")
-
-        # 5. Objects
+        # 4. Objects
         for entity in msdm.entities:
             if self._is_object_type(entity):
                 lines.append(self._build_object(entity))
                 lines.append("")
 
-        # 6. Unions
+        # 5. Unions
         for entity in msdm.entities:
             if self._is_union_type(entity):
                 lines.append(self._build_union(entity))
                 lines.append("")
 
-        # 7. Inputs
+        # 6. Inputs
         for entity in msdm.entities:
             if self._is_input_type(entity):
                 lines.append(self._build_input(entity))
                 lines.append("")
 
         sdl = "\n".join(lines).strip()
-        return sdl.encode(self.options.encoding or "utf-8")
+        return sdl.encode(getattr(self.options, "encoding", "utf-8") or "utf-8")
 
     def get_supported_media_types(self) -> list[str]:
         return ["application/graphql"]
@@ -91,68 +82,56 @@ class GraphQLServiceWriter(BaseSSDMWriter):
     def get_supported_extensions(self) -> list[str]:
         return list(self.supported_extensions)
 
-    # ── Type detection helpers (reuse annotations from MSDM parser) ──
+    # ── Type detection helpers (using annotations) ──
+    def _get_annotation(self, obj, key: str) -> str | None:
+        for ann in getattr(obj, 'annotations', []):
+            if ann.key == key:
+                return ann.value
+        return None
+
+    def _has_annotation(self, obj, key: str) -> bool:
+        return self._get_annotation(obj, key) is not None
+
     def _is_scalar_type(self, entity: Entity) -> bool:
-        # Scalars have no fields and are not enums/unions/inputs
-        return (not entity.attributes
-                and not self._has_annotation(entity, "enum_member")
+        return self._has_annotation(entity, "graphql:scalar") or (not entity.attributes
+                and not self._has_annotation(entity, "enum_values")
                 and not self._has_annotation(entity, "union_members")
                 and not self._has_annotation(entity, "input"))
 
     def _is_enum_type(self, entity: Entity) -> bool:
-        return self._has_annotation(entity, "enum_member")
-
-    def _is_interface_type(self, entity: Entity) -> bool:
-        return self._has_annotation(entity, "interface") == "true"
+        return self._has_annotation(entity, "enum_values")
 
     def _is_object_type(self, entity: Entity) -> bool:
-        return (not self._is_interface_type(entity)
+        return (not self._is_scalar_type(entity)
                 and not self._is_enum_type(entity)
                 and not self._is_union_type(entity)
-                and not self._is_input_type(entity)
-                and not self._is_scalar_type(entity))
+                and not self._is_input_type(entity))
 
     def _is_union_type(self, entity: Entity) -> bool:
         return self._has_annotation(entity, "union_members")
 
     def _is_input_type(self, entity: Entity) -> bool:
-        return self._has_annotation(entity, "input") == "true"
+        return self._has_annotation(entity, "input") or entity.name.endswith("Input")
 
     # ── Build schema block ──────────────────────────────────────────
-    def _build_schema_definition(self, ssdm_doc: SSDM_DOCUMENT, msdm: MSDMDocument) -> Optional[str]:
-        query = None
-        mutation = None
-        subscription = None
-        # Try to get from graphql_service first
-        if ssdm_doc.graphql_service and ssdm_doc.graphql_service.schema_entity:
-            root_entity = ssdm_doc.graphql_service.schema_entity
-            # The root entity likely has fields named "query", "mutation", "subscription"
-            for attr in root_entity.attributes:
-                if attr.name == "query":
-                    query = attr.data_type.ref_entity or "Query"
-                elif attr.name == "mutation":
-                    mutation = attr.data_type.ref_entity or "Mutation"
-                elif attr.name == "subscription":
-                    subscription = attr.data_type.ref_entity or "Subscription"
-        # Fallback: look for annotations on the MSDM document (from MSDM parser round‑trip)
-        if query is None:
-            query = self._get_doc_annotation(msdm, "root_query")
-        if mutation is None:
-            mutation = self._get_doc_annotation(msdm, "root_mutation")
-        if subscription is None:
-            subscription = self._get_doc_annotation(msdm, "root_subscription")
+    def _build_schema_definition(self, ssdm_doc: SSDMDocument, msdm: MSDMDocument) -> str | None:
+        # Try to get from document metadata (set by GraphQL parser)
+        query = ssdm_doc.metadata.get("graphql:query_type")
+        mutation = ssdm_doc.metadata.get("graphql:mutation_type")
+        subscription = ssdm_doc.metadata.get("graphql:subscription_type")
 
-        if query or mutation or subscription:
-            lines = ["schema {"]
-            if query:
-                lines.append(f"  query: {query}")
-            if mutation:
-                lines.append(f"  mutation: {mutation}")
-            if subscription:
-                lines.append(f"  subscription: {subscription}")
-            lines.append("}")
-            return "\n".join(lines)
-        return None
+        if not query and not mutation and not subscription:
+            return None
+
+        lines = ["schema {"]
+        if query:
+            lines.append(f"  query: {query}")
+        if mutation:
+            lines.append(f"  mutation: {mutation}")
+        if subscription:
+            lines.append(f"  subscription: {subscription}")
+        lines.append("}")
+        return "\n".join(lines)
 
     # ── Build scalar ─────────────────────────────────────────────────
     def _build_scalar(self, entity: Entity) -> str:
@@ -170,23 +149,10 @@ class GraphQLServiceWriter(BaseSSDMWriter):
         if desc:
             lines.append(f'"""{desc}"""')
         lines.append(f"enum {entity.name} {{")
-        for ann in entity.annotations:
-            if ann.key == "enum_member":
-                value = ann.value.split("=")[0].strip()
-                lines.append(f"  {value}")
-        lines.append("}")
-        return "\n".join(lines)
-
-    # ── Build interface ──────────────────────────────────────────────
-    def _build_interface(self, entity: Entity) -> str:
-        desc = entity.description
-        lines = []
-        if desc:
-            lines.append(f'"""{desc}"""')
-        header = f"interface {entity.name} {{"
-        lines.append(header)
-        for attr in entity.attributes:
-            lines.append(f"  {self._field_to_graphql(attr)}")
+        enum_vals = self._get_annotation(entity, "enum_values")
+        if enum_vals:
+            for val in enum_vals.split(","):
+                lines.append(f"  {val.strip()}")
         lines.append("}")
         return "\n".join(lines)
 
@@ -197,8 +163,9 @@ class GraphQLServiceWriter(BaseSSDMWriter):
         if desc:
             lines.append(f'"""{desc}"""')
         implements = []
-        for iface in entity.implements:
-            implements.append(iface)
+        impl_ann = self._get_annotation(entity, "implements")
+        if impl_ann:
+            implements = impl_ann.split(",")
         header = f"type {entity.name}"
         if implements:
             header += " implements " + " & ".join(implements)
@@ -215,16 +182,18 @@ class GraphQLServiceWriter(BaseSSDMWriter):
         lines = []
         if desc:
             lines.append(f'"""{desc}"""')
-        members_raw = self._get_annotation(entity, "union_members")
-        if members_raw:
-            import json
-            try:
-                members = json.loads(members_raw)
-            except json.JSONDecodeError:
-                members = [members_raw]
+        members = []
+        # Try to get from composition first
+        if entity.composition and entity.composition.composition_type == "oneOf":
+            members = entity.composition.member_ids
         else:
-            members = []
-        member_str = " | ".join(members) if members else " /* no members */"
+            members_raw = self._get_annotation(entity, "union_members")
+            if members_raw:
+                try:
+                    members = json.loads(members_raw)
+                except json.JSONDecodeError:
+                    members = [members_raw]
+        member_str = " | ".join(members) if members else "/* no members */"
         lines.append(f"union {entity.name} = {member_str}")
         return "\n".join(lines)
 
@@ -244,11 +213,10 @@ class GraphQLServiceWriter(BaseSSDMWriter):
     # ── Field formatting ────────────────────────────────────────────
     def _field_to_graphql(self, attr: Attribute) -> str:
         name = attr.name
-        # Arguments (stored as annotation "arguments" by MSDM parser)
+        # Arguments (stored as annotation "arguments")
         args_str = ""
         args_raw = self._get_annotation(attr, "arguments")
         if args_raw:
-            import json
             try:
                 args_list = json.loads(args_raw)
             except json.JSONDecodeError:
@@ -256,40 +224,65 @@ class GraphQLServiceWriter(BaseSSDMWriter):
             if args_list:
                 arg_parts = []
                 for arg in args_list:
-                    arg_def = f"{arg['name']}: {arg['type']}"
-                    if arg.get("defaultValue"):
-                        arg_def += f" = {arg['defaultValue']}"
+                    # arg may be a tuple or dict; assume tuple (name, type, default)
+                    if isinstance(arg, (list, tuple)) and len(arg) >= 2:
+                        arg_name = arg[0]
+                        arg_type = arg[1]
+                        arg_default = arg[2] if len(arg) > 2 else None
+                        arg_def = f"{arg_name}: {arg_type}"
+                        if arg_default:
+                            arg_def += f" = {arg_default}"
+                    else:
+                        continue
                     arg_parts.append(arg_def)
                 args_str = f"({', '.join(arg_parts)})"
 
         type_str = self._type_to_graphql(attr)
-        # Directives (stored as annotation)
+        # Directives (stored as annotation "directives")
         dirs = ""
-        for ann in attr.annotations:
-            if ann.key == "directive":
-                dirs += f" {ann.value}"
+        dir_val = self._get_annotation(attr, "directives")
+        if dir_val:
+            try:
+                dir_dict = json.loads(dir_val)
+                parts = []
+                for dname, dargs in dir_dict.items():
+                    if dargs:
+                        args_str_dir = ",".join(f"{k}:{v}" for k, v in dargs.items())
+                        parts.append(f"@{dname}({args_str_dir})")
+                    else:
+                        parts.append(f"@{dname}")
+                dirs = " " + " ".join(parts)
+            except (json.JSONDecodeError, TypeError):
+                dirs = f" {dir_val}"
         return f"{name}{args_str}: {type_str}{dirs}"
 
     # ── Type string conversion ─────────────────────────────────────
     def _type_to_graphql(self, attr: Attribute) -> str:
-        # If the parser stored the original type string, use it for round‑trip
+        # If the parser stored the original type string, use it
         orig = self._get_annotation(attr, "graphql_type")
         if orig:
-            return orig
-        dt = attr.data_type
-        base = dt.base
-        if base == ScalarType.ARRAY:
-            inner = self._datatype_to_gql(dt.element_type) if dt.element_type else "String"
-            return f"[{inner}]"
-        if base == ScalarType.REF:
-            return dt.ref_entity or "Unknown"
-        if base == ScalarType.STRUCT:
-            # Should be a reference; fallback
-            return dt.ref_entity or "Object"
-        graphql_name = self._scalar_to_gql(base)
-        if attr.required and not graphql_name.endswith("!"):
-            graphql_name += "!"
-        return graphql_name
+            typ = orig
+        else:
+            dt = attr.data_type
+            base = dt.base
+            if base == ScalarType.ARRAY:
+                inner = self._datatype_to_gql(dt.element_type) if dt.element_type else "String"
+                typ = f"[{inner}]"
+            elif base == ScalarType.REF:
+                ref_name = dt.ref_entity_id or (dt.ref_entity.name if dt.ref_entity else None)
+                if ref_name is None:
+                    ref_name = "Unknown"
+                typ = ref_name
+            elif base == ScalarType.STRUCT:
+                ref_name = dt.ref_entity_id or (dt.ref_entity.name if dt.ref_entity else None)
+                if ref_name is None:
+                    ref_name = "Object"
+                typ = ref_name
+            else:
+                typ = self._scalar_to_gql(base)
+        if attr.required and not typ.endswith("!"):
+            typ += "!"
+        return typ
 
     @staticmethod
     def _scalar_to_gql(base: ScalarType) -> str:
@@ -313,26 +306,8 @@ class GraphQLServiceWriter(BaseSSDMWriter):
 
     @staticmethod
     def _datatype_to_gql(dt) -> str:
-        from ...models.msdm_models import DataType
         if dt is None:
             return "String"
+        if dt.base == ScalarType.REF:
+            return dt.ref_entity_id or "Unknown"
         return GraphQLServiceWriter._scalar_to_gql(dt.base)
-
-    # ── Annotation helpers (fallback for MSDM round‑trip data) ────
-    @staticmethod
-    def _get_annotation(obj, key: str) -> Optional[str]:
-        for ann in getattr(obj, 'annotations', []):
-            if ann.key == key:
-                return ann.value
-        return None
-
-    @staticmethod
-    def _has_annotation(obj, key: str) -> bool:
-        return GraphQLServiceWriter._get_annotation(obj, key) is not None
-
-    @staticmethod
-    def _get_doc_annotation(msdm: MSDMDocument, key: str) -> Optional[str]:
-        for ann in msdm.annotations:
-            if ann.key == key:
-                return ann.value
-        return None

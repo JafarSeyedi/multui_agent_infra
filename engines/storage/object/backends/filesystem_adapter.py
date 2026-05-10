@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 from pathlib import Path
-from typing import Optional
 
 from ..base import ObjectStorage
 
@@ -27,7 +26,7 @@ class LocalFileAdapter(ObjectStorage):
     def _get_path(self, key: str) -> Path:
         return self.base_path / key
 
-    async def put(self, key: str, data: bytes, content_type: Optional[str] = None) -> None:
+    async def put(self, key: str, data: bytes, content_type: str | None = None) -> None:
         await self.ensure_connected()
         file_path = self._get_path(key)
         await asyncio.to_thread(file_path.parent.mkdir, parents=True, exist_ok=True)
@@ -47,7 +46,7 @@ class LocalFileAdapter(ObjectStorage):
     async def exists(self, key: str) -> bool:
         return self._get_path(key).exists()
 
-    async def generate_url(self, key: str) -> Optional[str]:
+    async def generate_url(self, key: str) -> str | None:
         if not await self.exists(key):
             return None
         return str(self._get_path(key).resolve())

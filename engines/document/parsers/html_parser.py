@@ -1,74 +1,70 @@
 """
 پارسر HTML برای تبدیل فایل‌های HTML به مدل USDM
 """
-
 from __future__ import annotations
-from pathlib import Path
-from typing import Optional, Dict, Any, AsyncIterator, List, Union, Tuple
-from html.parser import HTMLParser
-from html import entities
-from datetime import datetime
+
 import re
-import io
 import uuid
-from .base import BaseDocumentParser, ParseOptions
-from ..models.media_detection import detect_by_extension
-from ..models.base import BaseDocument, ElementType, BinaryEncoding
-from ..models.usdm_models import (
-    USDMDocument,
-    DocumentElement,
-    LogicalElement,
-    Section,
-    RichTextSpan,
-    RichTextContent,
-    ParagraphContent,
-    HeadingContent,
-    CodeContent,
-    ListContent,
-    ListItemContent,
-    TableContent,
-    TableRow,
-    TableCell,
-    QuoteContent,
-    ImageContent,
-    LinkContent,
-    MathContent,
-)
-from ..models.media_types import MEDIA_TYPES
+from collections.abc import AsyncIterator
+from html import entities
+from html.parser import HTMLParser
+from typing import Any
+
+from ..models.base import BaseDocument
+from ..models.base import ElementType
 from ..models.exceptions import DocumentParseError
+from ..models.media_detection import detect_by_extension
+from ..models.usdm_models import CodeContent
+from ..models.usdm_models import DocumentElement
+from ..models.usdm_models import HeadingContent
+from ..models.usdm_models import ImageContent
+from ..models.usdm_models import ListContent
+from ..models.usdm_models import ListItemContent
+from ..models.usdm_models import LogicalElement
+from ..models.usdm_models import ParagraphContent
+from ..models.usdm_models import QuoteContent
+from ..models.usdm_models import RichTextContent
+from ..models.usdm_models import RichTextSpan
+from ..models.usdm_models import Section
+from ..models.usdm_models import TableCell
+from ..models.usdm_models import TableContent
+from ..models.usdm_models import TableRow
+from ..models.usdm_models import USDMDocument
+from .base import BaseDocumentParser
+from .base import ParseOptions
 
 
 class HTMLDocumentParser(HTMLParser):
     """پارسر HTML داخلی برای پردازش ساختار"""
-    
+
     def __init__(self) -> None:
         super().__init__()
-        self.current_element: Optional[Dict[str, Any]] = None
-        self.element_stack: List[Dict[str, Any]] = []
-        self.sections: List[Section] = []
-        self.elements: List[DocumentElement] = []
-        self.logical_elements: List[LogicalElement] = []
-        self.current_text: List[str] = []
-        self.current_spans: List[RichTextSpan] = []
-        self.current_style: Dict[str, Any] = {}
-        self.current_list: Optional[Dict[str, Any]] = None
-        self.list_stack: List[Dict[str, Any]] = []
-        self.current_table: Optional[Dict[str, Any]] = None
-        self.table_stack: List[Dict[str, Any]] = []
-        self.current_row: Optional[Dict[str, Any]] = None
-        self.current_cell: Optional[Dict[str, Any]] = None
+        self.current_element: dict[str, Any] | None = None
+        self.element_stack: list[dict[str, Any]] = []
+        self.sections: list[Section] = []
+        self.elements: list[DocumentElement] = []
+        self.logical_elements: list[LogicalElement] = []
+        self.current_text: list[str] = []
+        self.current_spans: list[RichTextSpan] = []
+        self.current_style: dict[str, Any] = {}
+        self.current_list: dict[str, Any] | None = None
+        self.list_stack: list[dict[str, Any]] = []
+        self.current_table: dict[str, Any] | None = None
+        self.table_stack: list[dict[str, Any]] = []
+        self.current_row: dict[str, Any] | None = None
+        self.current_cell: dict[str, Any] | None = None
         self.in_code_block = False
         self.in_math = False
-        self.math_buffer: List[str] = []
-        self.current_section: Optional[Section] = None
-        self.document_title: Optional[str] = None
+        self.math_buffer: list[str] = []
+        self.current_section: Section | None = None
+        self.document_title: str | None = None
         self.element_counter = 0
-        
+
     def _generate_id(self) -> str:
         """تولید شناسه یکتا برای المنت"""
         self.element_counter += 1
         return f"elem_{self.element_counter}"
-    
+
     def _create_rich_text_span(self, text: str) -> RichTextSpan:
         """ایجاد یک RichTextSpan با استایل فعلی"""
         return RichTextSpan(
@@ -79,7 +75,7 @@ class HTMLDocumentParser(HTMLParser):
             math=self.current_style.get("math"),
             display_math=self.current_style.get("display_math", False)
         )
-    
+
     def _flush_current_text(self) -> None:
         """ذخیره متن جاری به عنوان span"""
         if self.current_text:
@@ -88,14 +84,14 @@ class HTMLDocumentParser(HTMLParser):
                 span = self._create_rich_text_span(text)
                 self.current_spans.append(span)
             self.current_text = []
-    
-    def handle_starttag(self, tag: str, attrs: List[Tuple[str, Optional[str]]]) -> None:
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         """پردازش تگ شروع"""
         attrs_dict = dict(attrs)
-        
+
         # ذخیره متن جاری قبل از تگ جدید
         self._flush_current_text()
-        
+
         # پردازش بر اساس تگ
         if tag in ["h1", "h2", "h3", "h4", "h5", "h6"]:
             self._handle_heading_start(tag, attrs_dict)
@@ -145,19 +141,19 @@ class HTMLDocumentParser(HTMLParser):
         elif tag == "math":
             self.in_math = True
             self.math_buffer = []
-        
+
         # ذخیره وضعیت فعلی در استک
         self.element_stack.append({
             "tag": tag,
             "attrs": attrs_dict,
             "style": self.current_style.copy()
         })
-    
+
     def handle_endtag(self, tag: str) -> None:
         """پردازش تگ پایان"""
         # ذخیره متن جاری
         self._flush_current_text()
-        
+
         # پردازش ریاضی
         if self.in_math and tag in ["div", "span", "script", "math"]:
             self.in_math = False
@@ -171,7 +167,7 @@ class HTMLDocumentParser(HTMLParser):
                     )
                     self.current_spans.append(span)
                 self.math_buffer = []
-        
+
         # پردازش بر اساس تگ
         if tag in ["h1", "h2", "h3", "h4", "h5", "h6"]:
             self._handle_heading_end()
@@ -195,7 +191,7 @@ class HTMLDocumentParser(HTMLParser):
             self.current_style.pop("character_style", None)
         elif tag == "title":
             self.current_style.pop("in_title", None)
-        
+
         # بازیابی وضعیت از استک
         if self.element_stack:
             self.element_stack.pop()
@@ -203,7 +199,7 @@ class HTMLDocumentParser(HTMLParser):
                 self.current_style = self.element_stack[-1].get("style", {}).copy()
             else:
                 self.current_style = {}
-    
+
     def handle_data(self, data: str) -> None:
         """پردازش داده‌های متنی"""
         if self.in_math:
@@ -220,7 +216,7 @@ class HTMLDocumentParser(HTMLParser):
             if self.current_text and not self.current_text[-1].endswith(' '):
                 self.current_text.append(' ')
             self.current_text.append(data.strip())
-    
+
     def handle_entityref(self, name: str) -> None:
         """پردازش entityهای HTML"""
         try:
@@ -232,7 +228,7 @@ class HTMLDocumentParser(HTMLParser):
                 self.current_text.append(char)
         except:
             self.current_text.append(f"&{name};")
-    
+
     def handle_charref(self, name: str) -> None:
         """پردازش character referenceهای HTML"""
         try:
@@ -243,11 +239,11 @@ class HTMLDocumentParser(HTMLParser):
             self.current_text.append(char)
         except:
             self.current_text.append(f"&#{name};")
-    
-    def _handle_heading_start(self, tag: str, attrs: Dict[str, Any]) -> None:
+
+    def _handle_heading_start(self, tag: str, attrs: dict[str, Any]) -> None:
         """پردازش شروع هدینگ"""
         level = int(tag[1])  # h1 -> 1, h2 -> 2, etc.
-        
+
         # ایجاد بخش جدید اگر هدینگ سطح 1-3 باشد
         if level <= 3:
             self.current_section = Section(
@@ -257,14 +253,14 @@ class HTMLDocumentParser(HTMLParser):
                 metadata={"html_tag": tag, **attrs}
             )
             self.sections.append(self.current_section)
-        
+
         # ذخیره وضعیت هدینگ
         self.current_element = {
             "type": ElementType.HEADING,
             "level": level,
             "attrs": attrs
         }
-    def _add_element(self, logical_elem: LogicalElement, caption: Optional[HeadingContent] = None) -> None:
+    def _add_element(self, logical_elem: LogicalElement, caption: HeadingContent | None = None) -> None:
         self.logical_elements.append(logical_elem)
         doc_elem = DocumentElement(
             element_id=logical_elem.element_id,
@@ -283,14 +279,14 @@ class HTMLDocumentParser(HTMLParser):
                 )
                 self.sections.append(default_section)
                 self.current_section = default_section
-            
+
         if self.current_section:
             self.current_section.elements.append(doc_elem)
             # اگر عنوان بخش هنوز تنظیم نشده، از هدینگ استفاده کن
             if caption and self.current_section.title is None: #and self.current_element and self.current_element["level"] <= 3
                 self.current_section.title = caption
-        
-        
+
+
     def _handle_heading_end(self) -> None:
         """پردازش پایان هدینگ"""
         if self.current_element and self.current_element.get("type") == ElementType.HEADING:
@@ -299,26 +295,26 @@ class HTMLDocumentParser(HTMLParser):
                     text=RichTextContent(spans=self.current_spans.copy()),
                     level=self.current_element["level"]
                 )
-                
+
                 element = LogicalElement(
                     element_id=self._generate_id(),
                     element_type=ElementType.HEADING,
                     content=content,
                     metadata=self.current_element.get("attrs", {})
                 )
-                
+
                 self._add_element(element, content)
-            
+
             self.current_spans = []
             self.current_element = None
-    
-    def _handle_paragraph_start(self, attrs: Dict[str, Any]) -> None:
+
+    def _handle_paragraph_start(self, attrs: dict[str, Any]) -> None:
         """پردازش شروع پاراگراف"""
         self.current_element = {
             "type": ElementType.PARAGRAPH,
             "attrs": attrs
         }
-    
+
     def _handle_paragraph_end(self) -> None:
         """پردازش پایان پاراگراف"""
         if self.current_element and self.current_element.get("type") == ElementType.PARAGRAPH:
@@ -326,20 +322,20 @@ class HTMLDocumentParser(HTMLParser):
                 content = ParagraphContent(
                     text=RichTextContent(spans=self.current_spans.copy())
                 )
-                
+
                 element = LogicalElement(
                     element_id=self._generate_id(),
                     element_type=ElementType.PARAGRAPH,
                     content=content,
                     metadata=self.current_element.get("attrs", {})
                 )
-                
+
                 self._add_element(element)
-            
+
             self.current_spans = []
             self.current_element = None
-    
-    def _handle_code_start(self, tag: str, attrs: Dict[str, Any]) -> None:
+
+    def _handle_code_start(self, tag: str, attrs: dict[str, Any]) -> None:
         """پردازش شروع بلوک کد"""
         self.in_code_block = True
         self.current_element = {
@@ -349,7 +345,7 @@ class HTMLDocumentParser(HTMLParser):
             "language": attrs.get("class", "").replace("language-", "").split()[0] if attrs.get("class") else None
         }
         self.current_text = []  # ریست متن برای کد
-    
+
     def _handle_code_end(self) -> None:
         """پردازش پایان بلوک کد"""
         if self.current_element and self.current_element.get("type") == ElementType.CODE:
@@ -359,21 +355,21 @@ class HTMLDocumentParser(HTMLParser):
                     code=code_text,
                     language=self.current_element.get("language")
                 )
-                
+
                 element = LogicalElement(
                     element_id=self._generate_id(),
                     element_type=ElementType.CODE,
                     content=content,
                     metadata=self.current_element.get("attrs", {})
                 )
-                
+
                 self._add_element(element)
-                            
+
             self.current_text = []
             self.current_element = None
             self.in_code_block = False
-    
-    def _handle_list_start(self, tag: str, attrs: Dict[str, Any]) -> None:
+
+    def _handle_list_start(self, tag: str, attrs: dict[str, Any]) -> None:
         """پردازش شروع لیست"""
         list_info = {
             "type": ElementType.LIST,
@@ -383,68 +379,68 @@ class HTMLDocumentParser(HTMLParser):
             "items": [],
             "current_item": None
         }
-        
+
         self.list_stack.append(list_info)
         self.current_list = list_info
-    
+
     def _handle_list_end(self) -> None:
         """پردازش پایان لیست"""
         if self.list_stack:
             list_info = self.list_stack.pop()
-            
+
             if list_info["items"]:
                 content = ListContent(
                     items=list_info["items"],
                     ordered=list_info["ordered"]
                 )
-                
+
                 element = LogicalElement(
                     element_id=self._generate_id(),
                     element_type=ElementType.LIST,
                     content=content,
                     metadata=list_info.get("attrs", {})
                 )
-                
+
                 self._add_element(element)
-            
+
             # بازیابی لیست قبلی از استک
             if self.list_stack:
                 self.current_list = self.list_stack[-1]
             else:
                 self.current_list = None
-    
-    def _handle_list_item_start(self, attrs: Dict[str, Any]) -> None:
+
+    def _handle_list_item_start(self, attrs: dict[str, Any]) -> None:
         """پردازش شروع آیتم لیست"""
         if self.current_list:
             self.current_list["current_item"] = {
                 "elements": [],
                 "attrs": attrs
             }
-    
+
     def _handle_list_item_end(self) -> None:
         """پردازش پایان آیتم لیست"""
         if self.current_list and self.current_list["current_item"]:
             item_info = self.current_list["current_item"]
-            
+
             if item_info["elements"]:
                 # ایجاد یک المنت منطقی برای آیتم لیست
                 item_content = ListItemContent(
                     elements=item_info["elements"]
                 )
-                
+
                 item_element = LogicalElement(
                     element_id=self._generate_id(),
                     element_type=ElementType.LIST_ITEM,
                     content=item_content,
                     metadata=item_info.get("attrs", {})
                 )
-                
+
                 # اضافه کردن آیتم به لیست
                 self.current_list["items"].append(item_element)
-            
+
             self.current_list["current_item"] = None
-    
-    def _handle_quote_start(self, tag: str, attrs: Dict[str, Any]) -> None:
+
+    def _handle_quote_start(self, tag: str, attrs: dict[str, Any]) -> None:
         """پردازش شروع نقل قول"""
         self.current_element = {
             "type": ElementType.QUOTE,
@@ -452,7 +448,7 @@ class HTMLDocumentParser(HTMLParser):
             "attrs": attrs,
             "elements": []
         }
-    
+
     def _handle_quote_end(self) -> None:
         """پردازش پایان نقل قول"""
         if self.current_element and self.current_element.get("type") == ElementType.QUOTE:
@@ -460,23 +456,23 @@ class HTMLDocumentParser(HTMLParser):
                 content = QuoteContent(
                     elements=self.current_element["elements"]
                 )
-                
+
                 element = LogicalElement(
                     element_id=self._generate_id(),
                     element_type=ElementType.QUOTE,
                     content=content,
                     metadata=self.current_element.get("attrs", {})
                 )
-                
+
                 self._add_element(element)
-            
+
             self.current_element = None
-    
-    def _handle_image_start(self, attrs: Dict[str, Any]) -> None:
+
+    def _handle_image_start(self, attrs: dict[str, Any]) -> None:
         """پردازش شروع تصویر"""
         src = attrs.get("src", "")
         alt = attrs.get("alt", "")
-        
+
         if src:
             content = ImageContent(
                 src=src,
@@ -488,25 +484,25 @@ class HTMLDocumentParser(HTMLParser):
                     "title": attrs.get("title")
                 }
             )
-            
+
             element = LogicalElement(
                 element_id=self._generate_id(),
                 element_type=ElementType.IMAGE,
                 content=content,
                 metadata=attrs
             )
-            
+
             self._add_element(element)
-    
-    def _handle_link_start(self, attrs: Dict[str, Any]) -> None:
+
+    def _handle_link_start(self, attrs: dict[str, Any]) -> None:
         """پردازش شروع لینک"""
         href = attrs.get("href", "")
         if href:
             self.current_style["href"] = href
-    
-    def _handle_table_start(self, attrs: Dict[str, Any]) -> None:
+
+    def _handle_table_start(self, attrs: dict[str, Any]) -> None:
         """پردازش شروع جدول"""
-        table_info: Dict[str, Any] = {
+        table_info: dict[str, Any] = {
             "type": ElementType.TABLE,
             "attrs": attrs,
             "rows": [],
@@ -515,11 +511,11 @@ class HTMLDocumentParser(HTMLParser):
             "has_header": False,
             "caption": None
         }
-        
+
         self.table_stack.append(table_info)
         self.current_table = table_info
-    
-    def _handle_table_row_start(self, tag: str, attrs: Dict[str, Any]) -> None:
+
+    def _handle_table_row_start(self, tag: str, attrs: dict[str, Any]) -> None:
         """پردازش شروع سطر جدول"""
         if self.current_table:
             self.current_table["current_row"] = {
@@ -527,15 +523,15 @@ class HTMLDocumentParser(HTMLParser):
                 "is_header": tag in ["thead", "th"],
                 "attrs": attrs
             }
-            
+
             if tag in ["thead", "th"]:
                 self.current_table["has_header"] = True
-    
+
     def _handle_table_row_end(self) -> None:
         """پردازش پایان سطر جدول"""
         if self.current_table and self.current_table["current_row"]:
             row_info = self.current_table["current_row"]
-            
+
             if row_info["cells"]:
                 table_row = TableRow(
                     cells=row_info["cells"],
@@ -543,10 +539,10 @@ class HTMLDocumentParser(HTMLParser):
                     metadata=row_info.get("attrs", {})
                 )
                 self.current_table["rows"].append(table_row)
-            
+
             self.current_table["current_row"] = None
-    
-    def _handle_table_cell_start(self, tag: str, attrs: Dict[str, Any]) -> None:
+
+    def _handle_table_cell_start(self, tag: str, attrs: dict[str, Any]) -> None:
         """پردازش شروع سلول جدول"""
         if self.current_table and self.current_table["current_row"]:
             self.current_table["current_cell"] = {
@@ -556,14 +552,14 @@ class HTMLDocumentParser(HTMLParser):
                 "col_span": int(attrs.get("colspan", 1)),
                 "row_span": int(attrs.get("rowspan", 1))
             }
-    
+
     def _handle_table_cell_end(self) -> None:
         """پردازش پایان سلول جدول"""
-        if (self.current_table and self.current_table["current_row"] and 
+        if (self.current_table and self.current_table["current_row"] and
             self.current_table["current_cell"]):
-            
+
             cell_info = self.current_table["current_cell"]
-            
+
             # ایجاد سلول جدول
             table_cell = TableCell(
                 content=cell_info["elements"],
@@ -572,15 +568,15 @@ class HTMLDocumentParser(HTMLParser):
                 row_span=cell_info["row_span"],
                 metadata=cell_info.get("attrs", {})
             )
-            
+
             self.current_table["current_row"]["cells"].append(table_cell)
             self.current_table["current_cell"] = None
-    
+
     def _handle_table_end(self) -> None:
         """پردازش پایان جدول"""
         if self.table_stack:
             table_info = self.table_stack.pop()
-            
+
             if table_info["rows"]:
                 content = TableContent(
                     rows=table_info["rows"],
@@ -590,22 +586,22 @@ class HTMLDocumentParser(HTMLParser):
                         **table_info.get("attrs", {})
                     }
                 )
-                
+
                 element = LogicalElement(
                     element_id=self._generate_id(),
                     element_type=ElementType.TABLE,
                     content=content,
                     metadata=table_info.get("attrs", {})
                 )
-                
+
                 self._add_element(element)
-            
+
             # بازیابی جدول قبلی از استک
             if self.table_stack:
                 self.current_table = self.table_stack[-1]
             else:
                 self.current_table = None
-    
+
     def _handle_horizontal_rule(self) -> None:
         """پردازش خط افقی (HR)"""
         # در HTML، HR معمولاً به عنوان یک المنت جداکننده در نظر گرفته می‌شود
@@ -613,23 +609,23 @@ class HTMLDocumentParser(HTMLParser):
         content = ParagraphContent(
             text=RichTextContent(spans=[RichTextSpan(text="---")])
         )
-        
+
         element = LogicalElement(
             element_id=self._generate_id(),
             element_type=ElementType.PARAGRAPH,
             content=content,
             metadata={"html_tag": "hr", "is_horizontal_rule": True}
         )
-        
+
         self._add_element(element)
 
 
 class HtmlParser(BaseDocumentParser):
     """پارسر HTML برای تبدیل HTML به USDM"""
-    
-    async def parse_bytes(self, data: bytes, document_id: str, source_name: str, 
-                         metadata: Optional[Dict[str, Any]] = None, 
-                         options: Optional[ParseOptions] = None) -> BaseDocument:
+
+    async def parse_bytes(self, data: bytes, document_id: str, source_name: str,
+                         metadata: dict[str, Any] | None = None,
+                         options: ParseOptions | None = None) -> BaseDocument:
         try:
             encoding = "utf-8"
             if options and options.encoding:
@@ -639,13 +635,13 @@ class HtmlParser(BaseDocumentParser):
         except Exception as e:
             raise DocumentParseError(f"خطا در تجزیه HTML: {e}")
 
-    async def parse_text(self, html_content: str, document_id: str, source_name: str, 
-                         metadata: Optional[Dict[str, Any]] = None, 
-                         options: Optional[ParseOptions] = None) -> BaseDocument:
+    async def parse_text(self, html_content: str, document_id: str, source_name: str,
+                         metadata: dict[str, Any] | None = None,
+                         options: ParseOptions | None = None) -> BaseDocument:
         try:
             parser = HTMLDocumentParser()
             parser.feed(html_content)
-            
+
             # ایجاد سند USDM
             merged_metadata={
                 "source_format": "html",
@@ -672,12 +668,12 @@ class HtmlParser(BaseDocumentParser):
                 logical_elements=parser.logical_elements,  # در این پیاده‌سازی منطقی و المنت‌ها یکی هستند
                 metadata=merged_metadata
             )
-            
+
             return document
         except Exception as e:
             raise DocumentParseError(f"خطا در تجزیه HTML: {e}")
 
-    async def parse_stream(self, stream: AsyncIterator[bytes], document_id: str = "", source_name: str = "", metadata: Optional[Dict[str, Any]] = None, options: Optional[ParseOptions] = None) -> BaseDocument:
+    async def parse_stream(self, stream: AsyncIterator[bytes], document_id: str = "", source_name: str = "", metadata: dict[str, Any] | None = None, options: ParseOptions | None = None) -> BaseDocument:
         """
         تجزیه HTML از استریم
         """
@@ -691,22 +687,22 @@ class HtmlParser(BaseDocumentParser):
                 encoding=options.encoding
             html_content = b"".join(chunks).decode(encoding)
             return await self.parse_text(html_content, document_id, source_name, metadata, options)
-            
+
         except Exception as e:
             raise DocumentParseError(f"خطا در تجزیه استریم HTML: {e}")
-    
-    def get_supported_media_types(self) -> List[str]:
+
+    def get_supported_media_types(self) -> list[str]:
         """دریافت انواع رسانه پشتیبانی شده"""
         return ["text/html", "application/xhtml+xml"]
-    
-    def get_supported_extensions(self) -> List[str]:
+
+    def get_supported_extensions(self) -> list[str]:
         """دریافت پسوندهای پشتیبانی شده"""
         return [".html", ".htm", ".xhtml"]
-    
-    def _extract_math_from_html(self, html_content: str) -> List[Dict[str, Any]]:
+
+    def _extract_math_from_html(self, html_content: str) -> list[dict[str, Any]]:
         """استخراج محتوای ریاضی از HTML"""
         math_elements = []
-        
+
         # جستجوی MathML
         mathml_pattern = r'<math[^>]*>(.*?)</math>'
         for match in re.finditer(mathml_pattern, html_content, re.DOTALL | re.IGNORECASE):
@@ -717,7 +713,7 @@ class HtmlParser(BaseDocumentParser):
                     "format": "mathml",
                     "display_mode": True
                 })
-        
+
         # جستجوی MathJax/KaTeX
         mathjax_patterns = [
             r'<script[^>]*type="math/tex"[^>]*>(.*?)</script>',
@@ -727,7 +723,7 @@ class HtmlParser(BaseDocumentParser):
             r'\$\$(.*?)\$\$',
             r'\$(.*?)\$'
         ]
-        
+
         for pattern in mathjax_patterns:
             for match in re.finditer(pattern, html_content, re.DOTALL):
                 math_content = match.group(1).strip()
@@ -738,5 +734,5 @@ class HtmlParser(BaseDocumentParser):
                         "format": "latex",
                         "display_mode": display_mode
                     })
-        
+
         return math_elements

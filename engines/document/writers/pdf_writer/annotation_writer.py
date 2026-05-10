@@ -1,13 +1,12 @@
 """
 ماژول نوشتن حاشیه‌نویسی‌ها (Annotations) در PDF
 """
-
-from typing import List, Dict, Any, Optional, Tuple, Union
-from dataclasses import dataclass, field
-from enum import Enum
 import uuid
-import json
+from dataclasses import dataclass
+from dataclasses import field
 from datetime import datetime
+from enum import Enum
+from typing import Any
 
 
 class AnnotationType(Enum):
@@ -67,23 +66,23 @@ class Annotation:
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
     type: AnnotationType = AnnotationType.TEXT
     page_number: int = 1
-    rect: Tuple[float, float, float, float] = (0, 0, 100, 100)  # x1, y1, x2, y2
+    rect: tuple[float, float, float, float] = (0, 0, 100, 100)  # x1, y1, x2, y2
     contents: str = ""  # متن حاشیه‌نویسی
     author: str = ""    # نویسنده
     subject: str = ""   # موضوع
     creation_date: str = field(default_factory=lambda: AnnotationWriter._get_pdf_date())
     modification_date: str = field(default_factory=lambda: AnnotationWriter._get_pdf_date())
-    color: Tuple[float, float, float] = (1, 1, 0)  # رنگ (زرد پیش‌فرض)
+    color: tuple[float, float, float] = (1, 1, 0)  # رنگ (زرد پیش‌فرض)
     opacity: float = 1.0  # شفافیت (0-1)
     border_width: float = 1.0  # ضخامت حاشیه
     border_style: AnnotationBorderStyle = AnnotationBorderStyle.SOLID
-    border_color: Optional[Tuple[float, float, float]] = None  # رنگ حاشیه
-    border_dash: Optional[List[float]] = None  # الگوی خط‌چین
+    border_color: tuple[float, float, float] | None = None  # رنگ حاشیه
+    border_dash: list[float] | None = None  # الگوی خط‌چین
     rotation: float = 0  # چرخش (درجه)
     flags: int = 4  # پرچم‌های PDF (4 = PRINT)
-    custom_data: Dict[str, Any] = field(default_factory=dict)  # داده‌های سفارشی
-    
-    def to_dict(self) -> Dict[str, Any]:
+    custom_data: dict[str, Any] = field(default_factory=dict)  # داده‌های سفارشی
+
+    def to_dict(self) -> dict[str, Any]:
         """تبدیل به دیکشنری"""
         return {
             'id': self.id,
@@ -109,24 +108,24 @@ class Annotation:
 
 class AnnotationWriter:
     """نویسنده حاشیه‌نویسی‌های PDF"""
-    
+
     def __init__(self) -> None:
-        self.annotations: List[Annotation] = []
+        self.annotations: list[Annotation] = []
         self.next_object_num = 1
-        self.annotation_map: Dict[str, int] = {}  # نگاشت annotation_id به شماره آبجکت
-    
+        self.annotation_map: dict[str, int] = {}  # نگاشت annotation_id به شماره آبجکت
+
     @staticmethod
     def _get_pdf_date() -> str:
         """دریافت تاریخ فعلی به فرمت PDF"""
         now = datetime.now()
         return f"D:{now.strftime('%Y%m%d%H%M%S')}"
-    
+
     def add_annotation(self, annotation: Annotation) -> str:
         """افزودن حاشیه‌نویسی"""
         self.annotations.append(annotation)
         return annotation.id
-    
-    def create_text_annotation(self, page_number: int, rect: Tuple[float, float, float, float],
+
+    def create_text_annotation(self, page_number: int, rect: tuple[float, float, float, float],
                               contents: str, **kwargs) -> Annotation:
         """ایجاد حاشیه‌نویسی متنی"""
         annotation = Annotation(
@@ -138,8 +137,8 @@ class AnnotationWriter:
         )
         self.add_annotation(annotation)
         return annotation
-    
-    def create_highlight_annotation(self, page_number: int, rect: Tuple[float, float, float, float],
+
+    def create_highlight_annotation(self, page_number: int, rect: tuple[float, float, float, float],
                                    contents: str = "", **kwargs) -> Annotation:
         """ایجاد حاشیه‌نویسی هایلایت"""
         annotation = Annotation(
@@ -152,17 +151,17 @@ class AnnotationWriter:
         )
         self.add_annotation(annotation)
         return annotation
-    
-    def create_line_annotation(self, page_number: int, 
-                             start_point: Tuple[float, float],
-                             end_point: Tuple[float, float],
+
+    def create_line_annotation(self, page_number: int,
+                             start_point: tuple[float, float],
+                             end_point: tuple[float, float],
                              contents: str = "", **kwargs) -> Annotation:
         """ایجاد حاشیه‌نویسی خط"""
         # محاسبه rect از نقاط
         x1, y1 = start_point
         x2, y2 = end_point
         rect = (min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2))
-        
+
         annotation = Annotation(
             type=AnnotationType.LINE,
             page_number=page_number,
@@ -177,16 +176,16 @@ class AnnotationWriter:
         )
         self.add_annotation(annotation)
         return annotation
-    
-    def create_polygon_annotation(self, page_number: int, 
-                                 vertices: List[Tuple[float, float]],
+
+    def create_polygon_annotation(self, page_number: int,
+                                 vertices: list[tuple[float, float]],
                                  contents: str = "", **kwargs) -> Annotation:
         """ایجاد حاشیه‌نویسی چندضلعی"""
         # محاسبه rect از رئوس
         x_coords = [v[0] for v in vertices]
         y_coords = [v[1] for v in vertices]
         rect = (min(x_coords), min(y_coords), max(x_coords), max(y_coords))
-        
+
         annotation = Annotation(
             type=AnnotationType.POLYGON,
             page_number=page_number,
@@ -197,16 +196,16 @@ class AnnotationWriter:
         )
         self.add_annotation(annotation)
         return annotation
-    
+
     def create_polyline_annotation(self, page_number: int,
-                                  points: List[Tuple[float, float]],
+                                  points: list[tuple[float, float]],
                                   contents: str = "", **kwargs) -> Annotation:
         """ایجاد حاشیه‌نویسی خط چندگانه"""
         # محاسبه rect از نقاط
         x_coords = [p[0] for p in points]
         y_coords = [p[1] for p in points]
         rect = (min(x_coords), min(y_coords), max(x_coords), max(y_coords))
-        
+
         annotation = Annotation(
             type=AnnotationType.POLYLINE,
             page_number=page_number,
@@ -217,8 +216,8 @@ class AnnotationWriter:
         )
         self.add_annotation(annotation)
         return annotation
-    
-    def create_square_annotation(self, page_number: int, rect: Tuple[float, float, float, float],
+
+    def create_square_annotation(self, page_number: int, rect: tuple[float, float, float, float],
                                contents: str = "", **kwargs) -> Annotation:
         """ایجاد حاشیه‌نویسی مستطیل"""
         annotation = Annotation(
@@ -230,13 +229,13 @@ class AnnotationWriter:
         )
         self.add_annotation(annotation)
         return annotation
-    
-    def create_circle_annotation(self, page_number: int, center: Tuple[float, float],
+
+    def create_circle_annotation(self, page_number: int, center: tuple[float, float],
                                radius: float, contents: str = "", **kwargs) -> Annotation:
         """ایجاد حاشیه‌نویسی دایره"""
         x, y = center
         rect = (x - radius, y - radius, x + radius, y + radius)
-        
+
         annotation = Annotation(
             type=AnnotationType.CIRCLE,
             page_number=page_number,
@@ -247,8 +246,8 @@ class AnnotationWriter:
         )
         self.add_annotation(annotation)
         return annotation
-    
-    def create_freetext_annotation(self, page_number: int, rect: Tuple[float, float, float, float],
+
+    def create_freetext_annotation(self, page_number: int, rect: tuple[float, float, float, float],
                                  text: str, font_size: float = 12, **kwargs) -> Annotation:
         """ایجاد حاشیه‌نویسی متن آزاد"""
         annotation = Annotation(
@@ -265,8 +264,8 @@ class AnnotationWriter:
         )
         self.add_annotation(annotation)
         return annotation
-    
-    def create_stamp_annotation(self, page_number: int, rect: Tuple[float, float, float, float],
+
+    def create_stamp_annotation(self, page_number: int, rect: tuple[float, float, float, float],
                                stamp_name: str, contents: str = "", **kwargs) -> Annotation:
         """ایجاد حاشیه‌نویسی مهر"""
         annotation = Annotation(
@@ -279,9 +278,9 @@ class AnnotationWriter:
         )
         self.add_annotation(annotation)
         return annotation
-    
-    def create_fileattachment_annotation(self, page_number: int, 
-                                       rect: Tuple[float, float, float, float],
+
+    def create_fileattachment_annotation(self, page_number: int,
+                                       rect: tuple[float, float, float, float],
                                        file_name: str, file_data: bytes,
                                        contents: str = "", **kwargs) -> Annotation:
         """ایجاد حاشیه‌نویسی ضمیمه فایل"""
@@ -299,9 +298,9 @@ class AnnotationWriter:
         )
         self.add_annotation(annotation)
         return annotation
-    
-    def create_ink_annotation(self, page_number: int, 
-                            strokes: List[List[Tuple[float, float]]],
+
+    def create_ink_annotation(self, page_number: int,
+                            strokes: list[list[tuple[float, float]]],
                             contents: str = "", **kwargs) -> Annotation:
         """ایجاد حاشیه‌نویسی دستخط"""
         # محاسبه rect از تمام نقاط
@@ -309,7 +308,7 @@ class AnnotationWriter:
         x_coords = [p[0] for p in all_points]
         y_coords = [p[1] for p in all_points]
         rect = (min(x_coords), min(y_coords), max(x_coords), max(y_coords))
-        
+
         annotation = Annotation(
             type=AnnotationType.INK,
             page_number=page_number,
@@ -320,24 +319,24 @@ class AnnotationWriter:
         )
         self.add_annotation(annotation)
         return annotation
-    
-    def generate_annotation_objects(self, page_refs: Dict[int, str]) -> List[Dict[str, Any]]:
+
+    def generate_annotation_objects(self, page_refs: dict[int, str]) -> list[dict[str, Any]]:
         """تولید آبجکت‌های حاشیه‌نویسی PDF"""
         objects = []
-        
+
         for annotation in self.annotations:
             page_ref = page_refs.get(annotation.page_number)
             if not page_ref:
                 continue
-            
+
             annotation_object = self._create_annotation_object(annotation, page_ref)
             if annotation_object:
                 objects.append(annotation_object)
                 self.annotation_map[annotation.id] = annotation_object['object_num']
-        
+
         return objects
-    
-    def _create_annotation_object(self, annotation: Annotation, page_ref: str) -> Optional[Dict[str, Any]]:
+
+    def _create_annotation_object(self, annotation: Annotation, page_ref: str) -> dict[str, Any] | None:
         """ایجاد آبجکت حاشیه‌نویسی"""
         base_dict = {
             'Type': '/Annot',
@@ -346,108 +345,108 @@ class AnnotationWriter:
             'P': page_ref,
             'F': annotation.flags
         }
-        
+
         # اضافه کردن فیلدهای اختیاری
         if annotation.contents:
             base_dict['Contents'] = f'({self._escape_pdf_string(annotation.contents)})'
-        
+
         if annotation.author:
             base_dict['T'] = f'({self._escape_pdf_string(annotation.author)})'
-        
+
         if annotation.subject:
             base_dict['Subj'] = f'({self._escape_pdf_string(annotation.subject)})'
-        
+
         if annotation.creation_date:
             base_dict['CreationDate'] = f'({annotation.creation_date})'
-        
+
         if annotation.modification_date:
             base_dict['M'] = f'({annotation.modification_date})'
-        
+
         # اضافه کردن رنگ
         if annotation.color:
             r, g, b = annotation.color
             base_dict['C'] = f'[{r:.3f} {g:.3f} {b:.3f}]'
-        
+
         # اضافه کردن border
         border_dict = self._create_border_dict(annotation)
         if border_dict:
             base_dict['Border'] = border_dict
-        
+
         # اضافه کردن داده‌های خاص بر اساس نوع
         type_specific = self._create_type_specific_dict(annotation)
         base_dict.update(type_specific)
-        
+
         # اضافه کردن داده‌های سفارشی
         if annotation.custom_data:
             for key, value in annotation.custom_data.items():
                 if key not in base_dict:
                     base_dict[key] = self._format_custom_value(value)
-        
+
         return {
             'type': 'annotation',
             'object_num': self.next_object_num,
             'data': base_dict
         }
-    
+
     def _create_border_dict(self, annotation: Annotation) -> str:
         """ایجاد دیکشنری border"""
         border_parts = []
-        
+
         # border width
         border_parts.append(f'{annotation.border_width:.1f}')
-        
+
         # border style
         if annotation.border_style == AnnotationBorderStyle.DASHED:
-            border_parts.append(f'[{annotation.border_dash[0]:.1f} {annotation.border_dash[1]:.1f}]' 
+            border_parts.append(f'[{annotation.border_dash[0]:.1f} {annotation.border_dash[1]:.1f}]'
                               if annotation.border_dash else '[3 3]')
         else:
             border_parts.append(f'/{annotation.border_style.value}')
-        
+
         # border color (اگر مشخص شده)
         if annotation.border_color:
             r, g, b = annotation.border_color
             border_parts.append(f'[{r:.3f} {g:.3f} {b:.3f}]')
-        
+
         return f'[{" ".join(border_parts)}]'
-    
-    def _create_type_specific_dict(self, annotation: Annotation) -> Dict[str, Any]:
+
+    def _create_type_specific_dict(self, annotation: Annotation) -> dict[str, Any]:
         """ایجاد دیکشنری مخصوص نوع حاشیه‌نویسی"""
         type_specific = {}
-        
+
         if annotation.type == AnnotationType.LINE:
             if 'start_point' in annotation.custom_data and 'end_point' in annotation.custom_data:
                 x1, y1 = annotation.custom_data['start_point']
                 x2, y2 = annotation.custom_data['end_point']
                 type_specific['L'] = f'[{x1:.2f} {y1:.2f} {x2:.2f} {y2:.2f}]'
-                
+
                 # اضافه کردن arrow heads اگر لازم باشد
                 if annotation.custom_data.get('line_type') == 'arrow':
                     type_specific['LE'] = '[/None /OpenArrow]'
-        
+
         elif annotation.type == AnnotationType.POLYGON:
             if 'vertices' in annotation.custom_data:
                 vertices = annotation.custom_data['vertices']
                 vertices_str = ' '.join([f'{x:.2f} {y:.2f}' for x, y in vertices])
                 type_specific['Vertices'] = f'[{vertices_str}]'
-        
+
         elif annotation.type == AnnotationType.POLYLINE:
             if 'points' in annotation.custom_data:
                 points = annotation.custom_data['points']
                 points_str = ' '.join([f'{x:.2f} {y:.2f}' for x, y in points])
                 type_specific['Vertices'] = f'[{points_str}]'
-        
+
         elif annotation.type == AnnotationType.CIRCLE:
             if 'center' in annotation.custom_data and 'radius' in annotation.custom_data:
                 x, y = annotation.custom_data['center']
-                r = annotation.custom_data['radius']
+                annotation.custom_data['radius']
                 # برای دایره، از Cloudy border استفاده می‌کنیم
                 type_specific['BS'] = '<< /Type /Border /S /C /W 1 >>'
-        
+
         elif annotation.type == AnnotationType.FREETEXT:
             if 'font_size' in annotation.custom_data:
                 type_specific['DS'] = f'(font: {annotation.custom_data.get("font_name", "Helvetica")} {annotation.custom_data["font_size"]}pt)'
                 type_specific['DA'] = f'({annotation.custom_data["font_size"]} Tf 0 g)'
-                
+
                 # تنظیم alignment
                 alignment = annotation.custom_data.get('alignment', 'left')
                 if alignment == 'center':
@@ -456,15 +455,15 @@ class AnnotationWriter:
                     type_specific['Q'] = '2'
                 else:
                     type_specific['Q'] = '0'
-        
+
         elif annotation.type == AnnotationType.STAMP:
             if 'stamp_name' in annotation.custom_data:
                 type_specific['Name'] = f'/{annotation.custom_data["stamp_name"]}'
-        
+
         elif annotation.type == AnnotationType.FILEATTACHMENT:
             if 'file_name' in annotation.custom_data:
                 type_specific['FS'] = f'<< /Type /Filespec /F ({annotation.custom_data["file_name"]}) >>'
-        
+
         elif annotation.type == AnnotationType.INK:
             if 'strokes' in annotation.custom_data:
                 strokes = annotation.custom_data['strokes']
@@ -473,9 +472,9 @@ class AnnotationWriter:
                     stroke_points = ' '.join([f'{x:.2f} {y:.2f}' for x, y in stroke])
                     ink_list.append(f'[{stroke_points}]')
                 type_specific['InkList'] = f'[{" ".join(ink_list)}]'
-        
+
         return type_specific
-    
+
     def _format_custom_value(self, value: Any) -> str:
         """فرمت‌دهی مقدار سفارشی برای PDF"""
         if isinstance(value, bool):
@@ -494,7 +493,7 @@ class AnnotationWriter:
             return f'<< {" ".join(items)} >>'
         else:
             return f'({str(value)})'
-    
+
     def _escape_pdf_string(self, text: str) -> str:
         """فرار کردن رشته برای PDF"""
         # جایگزینی کاراکترهای خاص
@@ -508,24 +507,24 @@ class AnnotationWriter:
             '\b': '\\b',
             '\f': '\\f'
         }
-        
+
         result = text
         for old, new in replacements.items():
             result = result.replace(old, new)
-        
+
         return result
-    
-    def get_annotations_by_page(self, page_number: int) -> List[Annotation]:
+
+    def get_annotations_by_page(self, page_number: int) -> list[Annotation]:
         """دریافت حاشیه‌نویسی‌های یک صفحه"""
         return [ann for ann in self.annotations if ann.page_number == page_number]
-    
-    def get_annotation_by_id(self, annotation_id: str) -> Optional[Annotation]:
+
+    def get_annotation_by_id(self, annotation_id: str) -> Annotation | None:
         """دریافت حاشیه‌نویسی بر اساس شناسه"""
         for ann in self.annotations:
             if ann.id == annotation_id:
                 return ann
         return None
-    
+
     def remove_annotation(self, annotation_id: str) -> bool:
         """حذف حاشیه‌نویسی"""
         for i, ann in enumerate(self.annotations):
@@ -535,38 +534,38 @@ class AnnotationWriter:
                     del self.annotation_map[annotation_id]
                 return True
         return False
-    
+
     def clear_page_annotations(self, page_number: int) -> int:
         """حذف تمام حاشیه‌نویسی‌های یک صفحه"""
         count = 0
         annotations_to_remove = []
-        
+
         for ann in self.annotations:
             if ann.page_number == page_number:
                 annotations_to_remove.append(ann.id)
                 count += 1
-        
+
         for ann_id in annotations_to_remove:
             self.remove_annotation(ann_id)
-        
+
         return count
-    
+
     def clear_all_annotations(self):
         """حذف تمام حاشیه‌نویسی‌ها"""
         self.annotations.clear()
         self.annotation_map.clear()
-    
+
     def get_annotation_count(self) -> int:
         """دریافت تعداد حاشیه‌نویسی‌ها"""
         return len(self.annotations)
 
-    def get_annotation_statistics(self) -> Dict[str, Any]:
+    def get_annotation_statistics(self) -> dict[str, Any]:
         """دریافت آمار حاشیه‌نویسی‌ها"""
         # Use explicitly typed inner dictionaries to avoid type narrowing issues
-        by_type: Dict[str, int] = {}
-        by_page: Dict[int, int] = {}
+        by_type: dict[str, int] = {}
+        by_page: dict[int, int] = {}
 
-        stats: Dict[str, Any] = {
+        stats: dict[str, Any] = {
             'total': len(self.annotations),
             'by_type': by_type,
             'by_page': by_page
@@ -579,4 +578,4 @@ class AnnotationWriter:
             page_num = ann.page_number
             by_page[page_num] = by_page.get(page_num, 0) + 1
 
-        return stats    
+        return stats

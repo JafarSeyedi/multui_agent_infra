@@ -3,16 +3,15 @@
 Conditional formatting writer for XLSX.
 Generates <conditionalFormatting> elements for a worksheet.
 """
-
 from __future__ import annotations
+
 import xml.etree.ElementTree as ET
-from typing import TYPE_CHECKING, Optional, List, Dict, Any
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ....models.esdm_models import Worksheet, ConditionalFormatting, CFRule
+    from ....models.esdm_models import Worksheet, CFRule
     from ..base import ESDMBaseWriter
 
-from .const import XML_NAMESPACES
 
 
 class ConditionalFormattingWriter:
@@ -24,7 +23,7 @@ class ConditionalFormattingWriter:
     def __init__(self, parent_writer: ESDMBaseWriter):
         self._parent = parent_writer
 
-    def write(self, worksheet: Worksheet) -> List[ET.Element]:
+    def write(self, worksheet: Worksheet) -> list[ET.Element]:
         """
         Generate a list of <conditionalFormatting> elements.
         Returns empty list if there are no conditional formattings.
@@ -172,7 +171,7 @@ class ConditionalFormattingWriter:
             if crit.operator:
                 cfvo.set('gte', '1' if crit.operator == '>=' else '0')
 
-    def _normalize_color(self, color: Optional[str]) -> Optional[str]:
+    def _normalize_color(self, color: str | None) -> str | None:
         """Convert color to RRGGBB (no leading #) or None."""
         if color is None:
             return None

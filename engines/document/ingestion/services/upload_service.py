@@ -1,13 +1,14 @@
 # engines/document/ingestion/services/upload_service.py
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, cast
+from typing import Any
+from typing import cast
 
-from ..ingestion_context import IngestionContext
-from ..ingestion_service import IngestionService
-from ..ingestion_errors import IngestionError
 from ...models.media_types import MediaType
+from ..ingestion_context import IngestionContext
+from ..ingestion_errors import IngestionError
 from ..ingestion_models import DocumentIngestionResult
+from ..ingestion_service import IngestionService
 
 
 class UploadService:
@@ -29,8 +30,8 @@ class UploadService:
         filename: str,
         media_type: MediaType,
         data: bytes,
-        metadata: Optional[Dict[str, Any]] = None,
-        context: Optional[IngestionContext] = None,
+        metadata: dict[str, Any] | None = None,
+        context: IngestionContext | None = None,
     ) -> DocumentIngestionResult:
 
         # If context is provided, use it. Otherwise pipeline will create new one.

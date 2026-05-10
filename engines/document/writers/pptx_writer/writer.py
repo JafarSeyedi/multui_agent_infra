@@ -2,40 +2,47 @@
 """
 PPTX writer – converts a PSDMDocument into a valid .pptx ZIP archive.
 """
-
 from __future__ import annotations
 
 import io
 import zipfile
+from collections.abc import AsyncIterator
 from pathlib import Path
-from typing import Optional, Dict, Any, List, Tuple, AsyncIterator
+from typing import Any, cast
+from xml.etree.ElementTree import Element
 
-from ..base import BaseDocumentWriter, WriteOptions
-from ...models.psdm_models import (
-    PSDMDocument, Slide, SlideMaster, SlideLayout, Theme,
-    NotesSlide, SlideComment, MediaReference,
-)
-from ...models.usdm_models import (
-    ImageContent, ChartContent, DrawingContent, OLEObjectContent,
-    LogicalElement, ElementType,
-)
-from .constants import NAMESPACES
-from .slide_writer import write_slide
-from .master_writer import write_master, write_layout
-from .theme_writer import write_theme
-from .notes_writer import write_notes_slide
+from ...models.psdm_models import PSDMDocument
+from ...models.psdm_models import Slide
+from ...models.usdm_models import ChartContent
+from ...models.usdm_models import DrawingContent
+from ...models.usdm_models import ElementType
+from ...models.usdm_models import ImageContent
+from ...models.usdm_models import LogicalElement
+from ...models.usdm_models import OLEObjectContent
+from ...models.base import BaseDocument
+
+from ..base import BaseDocumentWriter
+from ..base import WriteOptions
+from .charts_writer import write_chart_xml
 from .comments_writer import write_comments
+from .constants import NAMESPACES
 from .diagram_writer import write_diagram
-from .media_writer import build_slide_media_rels, collect_media_files
+from .master_writer import write_layout
+from .master_writer import write_master
+from .media_writer import build_slide_media_rels
+from .media_writer import collect_media_files
+from .notes_writer import write_notes_slide
 from .ole_writer import collect_ole_binaries
-from .relationship_utils import build_rels_element, rels_to_xml
-from . import drawingml_helpers  # noqa (used by sub‑writers)
+from .relationship_utils import build_rels_element
+from .relationship_utils import rels_to_xml
+from .slide_writer import write_slide
+from .theme_writer import write_theme
 
 
 class PPTXWriter(BaseDocumentWriter):
     """Writes a PSDMDocument to a PowerPoint .pptx file."""
 
-    def __init__(self, options: Optional[WriteOptions] = None):
+    def __init__(self, options: WriteOptions | None = None):
         super().__init__(options or WriteOptions())
         self._next_rid = 1          # global relationship id counter
         self._media_counter = 0     # for unique media file names
@@ -44,21 +51,21 @@ class PPTXWriter(BaseDocumentWriter):
         self._ole_counter = 0
 
     # ── public API ──────────────────────────────────────────────
-    async def write_stream(self, document: PSDMDocument) -> AsyncIterator[bytes]:
-        data = await self.write(document)
-        yield data
+    async def write_stream(self, document: BaseDocument) -> AsyncIterator[bytes]:
+        psdm = cast(PSDMDocument, document)
+        data = await self.write(psdm)
+        yield data        
 
-    async def write(self, document: PSDMDocument) -> bytes:
+    async def write(self, document: BaseDocument) -> bytes:
+        psdm = cast(PSDMDocument, document)
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
-            self._build_package(zf, document)
+            self._build_package(zf, psdm)
         return buf.getvalue()
 
-    async def write_to_file(
-        self, document: PSDMDocument, target: Path,
-        options: Optional[Dict[str, Any]] = None,
-    ) -> None:
-        data = await self.write(document)
+    async def write_to_file(self, document: BaseDocument, target: Path, options: dict[str, Any] | None = None) -> None:
+        psdm = cast(PSDMDocument, document)
+        data = await self.write(psdm)
         target.write_bytes(data)
 
     def get_supported_media_types(self) -> list[str]:
@@ -110,7 +117,7 @@ class PPTXWriter(BaseDocumentWriter):
             zf.writestr(master_path, self._to_xml(master_xml))
 
             # Layouts
-            layout_rels: List[Tuple[str, str, str]] = []
+            layout_rels: list[tuple[str, str, str]] = []
             for layout_name, layout in master.layouts.items():
                 layout_xml = write_layout(layout, master_name)
                 layout_path = f"ppt/slideLayouts/{layout_name}.xml"
@@ -129,7 +136,7 @@ class PPTXWriter(BaseDocumentWriter):
             zf.writestr(master_rel_path, rels_to_xml(master_rels_elem))
 
         # 6. Slides & their dependencies
-        slide_rids: List[Tuple[str, str, str]] = []
+        slide_rids: list[tuple[str, str, str]] = []
         for idx, slide in enumerate(doc.slides):
             slide_file = f"slide{idx+1}.xml"
             slide_path = f"ppt/slides/{slide_file}"
@@ -154,12 +161,10 @@ class PPTXWriter(BaseDocumentWriter):
             if slide.notes:
                 notes_rid = f"rId{self._next_id()}"
                 notes_file = f"notesSlide{idx+1}.xml"
-                notes_xml = write_notes_slide(slide.notes, slide_rid=notes_rid)
+                notes_xml = write_notes_slide(slide.notes, slide_rid=None)
                 zf.writestr(f"ppt/notesSlides/{notes_file}", self._to_xml(notes_xml))
-                # add notes relationship to slide rels later (we already wrote slide rels, need to append)
-                # For simplicity, we'll include it when building the slide rels above, so we adjust later.
-                # We'll handle that inside _build_slide_relationships.
-
+                # Add this relationship to slide_rels for this slide (should be included in _build_slide_relationships)
+                # We'll let _build_slide_relationships add it; the notes_rid is the same as the one used there.
             # Write comments if present
             if slide.comments:
                 comments_file = f"comment{idx+1}.xml"
@@ -170,18 +175,18 @@ class PPTXWriter(BaseDocumentWriter):
         # 7. Write images, media, charts, diagrams, OLE objects
         self._write_binary_parts(zf, doc)
 
-        # 8. Section info (store in presentation.xml via <p:sectionLst>)
+        # 8. PresentationSection info (store in presentation.xml via <p:sectionLst>)
         # We'll include it when building presentation.
 
         # Update presentation.xml with slide references and sections
         self._finalize_presentation(pres_xml, slide_rids, doc.sections)
 
-    def _build_presentation(self, doc: PSDMDocument) -> Tuple[Element, List[Tuple[str, str, str]]]:
+    def _build_presentation(self, doc: PSDMDocument) -> tuple[Element, list[tuple[str, str, str]]]:
         """Create <p:presentation> and collect its relationships."""
         from xml.etree.ElementTree import Element, SubElement
         P = f"{{{NAMESPACES['p']}}}"
-        A = f"{{{NAMESPACES['a']}}}"
-        R = f"{{{NAMESPACES['r']}}}"
+        f"{{{NAMESPACES['a']}}}"
+        f"{{{NAMESPACES['r']}}}"
 
         pres = Element(f"{P}presentation")
         # Presentation attributes from parsed meta
@@ -206,7 +211,7 @@ class PPTXWriter(BaseDocumentWriter):
         # We don't write inline defaultTextStyle; it's in the theme.
 
         # Relationships collected: theme, masters, slides (to be filled later)
-        rels: List[Tuple[str, str, str]] = []
+        rels: list[tuple[str, str, str]] = []
         # Theme
         if doc.theme:
             rid = f"rId{self._next_id()}"
@@ -251,9 +256,9 @@ class PPTXWriter(BaseDocumentWriter):
                         f"{R}id": first_rid
                     })
 
-    def _build_slide_relationships(self, slide: Slide, slide_index: int) -> List[Tuple[str, str, str]]:
+    def _build_slide_relationships(self, slide: Slide, slide_index: int) -> list[tuple[str, str, str]]:
         """Return (rId, type, target) for all parts referenced by this slide."""
-        rels: List[Tuple[str, str, str]] = []
+        rels: list[tuple[str, str, str]] = []
 
         # Layout (from slide.layout)
         if slide.layout:
@@ -285,7 +290,7 @@ class PPTXWriter(BaseDocumentWriter):
             ))
 
         # Images – iterate over elements and collect unique rIds
-        img_rids: Dict[str, str] = {}  # rId -> target path in package
+        img_rids: dict[str, str] = {}  # rId -> target path in package
         self._collect_image_rels(slide.elements, img_rids)
         for rid, target in img_rids.items():
             rels.append((
@@ -317,7 +322,7 @@ class PPTXWriter(BaseDocumentWriter):
 
         return rels
 
-    def _collect_image_rels(self, elements: List[LogicalElement], out: Dict[str, str]) -> None:
+    def _collect_image_rels(self, elements: list[LogicalElement], out: dict[str, str]) -> None:
         for elem in elements:
             if elem.element_type == ElementType.IMAGE and isinstance(elem.content, ImageContent):
                 img = elem.content
@@ -327,10 +332,10 @@ class PPTXWriter(BaseDocumentWriter):
                     img.src = rid       # replace with rId for slide XML
                 # if already a rId, keep it
             elif elem.element_type == ElementType.SHAPE:
-                shape = elem.content
+                elem.content
                 # shape may have fill image? not handled yet
 
-    def _collect_chart_rels(self, elements: List[LogicalElement]) -> List[Tuple[str, str, str]]:
+    def _collect_chart_rels(self, elements: list[LogicalElement]) -> list[tuple[str, str, str]]:
         rels = []
         for elem in elements:
             if elem.element_type == ElementType.CHART and isinstance(elem.content, ChartContent):
@@ -347,7 +352,7 @@ class PPTXWriter(BaseDocumentWriter):
                 self._chart_counter += 1
         return rels
 
-    def _collect_diagram_rels(self, elements: List[LogicalElement]) -> List[Tuple[str, str, str]]:
+    def _collect_diagram_rels(self, elements: list[LogicalElement]) -> list[tuple[str, str, str]]:
         rels = []
         for elem in elements:
             if elem.element_type == ElementType.DRAWING and isinstance(elem.content, DrawingContent):
@@ -363,7 +368,7 @@ class PPTXWriter(BaseDocumentWriter):
                 self._diagram_counter += 1
         return rels
 
-    def _collect_ole_rels(self, elements: List[LogicalElement]) -> List[Tuple[str, str, str]]:
+    def _collect_ole_rels(self, elements: list[LogicalElement]) -> list[tuple[str, str, str]]:
         rels = []
         for elem in elements:
             if elem.element_type == ElementType.OLE_OBJECT and isinstance(elem.content, OLEObjectContent):
@@ -419,7 +424,6 @@ class PPTXWriter(BaseDocumentWriter):
         """Produce the chart XML part. Reuses the spreadsheet chart writer logic."""
         # Import the chart builder (from spreadsheet writer) to generate XML.
         # For brevity, we assume a function write_chart exists.
-        from ..spreadsheet_writer.xlsx.charts_writer import write_chart_xml
         return write_chart_xml(chart)
 
     def _build_content_types(self, doc: PSDMDocument) -> Element:

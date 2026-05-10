@@ -15,34 +15,54 @@ Handles:
 - Page setup and margins
 - Sheet properties and protection
 """
-
 from __future__ import annotations
-from typing import List, Optional, Dict, Any, Tuple
+
 from xml.etree.ElementTree import Element
 
-from ....models.esdm_models import (
-    Worksheet, Row, Cell, Column, MergedCellRange,
-    SharedStrings, SpreadsheetStyleSheet,
-    AutoFilter, ConditionalFormatting,
-    Hyperlink, DataValidation, DataValidationRule,
-    DataValidationType, DataValidationOperator,
-    Comment, CommentText, CommentTextRun, Author, CommentCollection,
-    ThreadedComment,
-    SheetProperties, SheetProtection, PageSetup, PageMargins, SheetDimensions, Orientation,
-    ShapeContent,
-    Table,   # already built by tables_builder
-)
-from .utils import (
-    xml_find, xml_findall, xml_attr, xml_text, xml_int, xml_float, xml_bool,
-    parse_cell_coordinate, parse_range, color_hex_from_xml,
-)
-from .namespaces import MAIN, REL
-from .tables_builder import build_auto_filter, build_conditional_formatting, build_table
-from .formulas_builder import build_cell_formula, build_shared_formulas
-from .constants import (
-    DATA_VALIDATION_TYPE_MAP, DATA_VALIDATION_OPERATOR_MAP,
-    PAGE_ORIENTATION_MAP,
-)
+from ....models.esdm_models import Author
+from ....models.esdm_models import Cell
+from ....models.esdm_models import Column
+from ....models.esdm_models import Comment
+from ....models.esdm_models import CommentCollection
+from ....models.esdm_models import CommentText
+from ....models.esdm_models import CommentTextRun
+from ....models.esdm_models import DataValidation
+from ....models.esdm_models import DataValidationRule
+from ....models.esdm_models import DataValidationType
+from ....models.esdm_models import Hyperlink
+from ....models.esdm_models import MergedCellRange
+from ....models.esdm_models import Orientation
+from ....models.esdm_models import PageMargins
+from ....models.esdm_models import PageSetup
+from ....models.esdm_models import Row
+from ....models.esdm_models import SharedStrings
+from ....models.esdm_models import SheetDimensions
+from ....models.esdm_models import SheetProperties
+from ....models.esdm_models import SheetProtection
+from ....models.esdm_models import SpreadsheetStyleSheet
+from ....models.esdm_models import ThreadedComment
+from ....models.esdm_models import Worksheet
+from .constants import DATA_VALIDATION_OPERATOR_MAP
+from .constants import DATA_VALIDATION_TYPE_MAP
+from .constants import PAGE_ORIENTATION_MAP
+from .formulas_builder import build_cell_formula
+from .namespaces import MAIN
+from .namespaces import REL
+from .tables_builder import build_auto_filter
+from .tables_builder import build_conditional_formatting
+from .tables_builder import build_table
+from .utils import color_hex_from_xml
+from .utils import parse_cell_coordinate
+from .utils import parse_range
+from .utils import xml_attr
+from .utils import xml_bool
+from .utils import xml_find
+from .utils import xml_findall
+from .utils import xml_float
+from .utils import xml_int
+from .utils import xml_text
+from .drawings_builder import parse_drawing
+from ....models.usdm_models import ChartContent, RichTextContent   # ADDED for type correctness
 
 NS = {"": MAIN, "r": REL}
 
@@ -51,12 +71,12 @@ def build_worksheet(
     sheet_xml: Element,
     shared_strings: SharedStrings,
     stylesheet: SpreadsheetStyleSheet,
-    comments_xml: Optional[Element] = None,
-    threaded_comments_xml: Optional[Element] = None,
-    table_xmls: Optional[List[Element]] = None,
-    drawing_xml: Optional[Element] = None,
-    image_map: Optional[Dict[str, str]] = None,
-    chart_map: Dict[str, Element] = None
+    comments_xml: Element | None = None,
+    threaded_comments_xml: Element | None = None,
+    table_xmls: list[Element] | None = None,
+    drawing_xml: Element | None = None,
+    image_map: dict[str, str] | None = None,
+    chart_map: dict[str, ChartContent] | None = None   # CHANGED: type from Element to ChartContent, default None
 ) -> Worksheet:
     ws = Worksheet(name=sheet_name)  # name set later by caller
 
@@ -123,7 +143,7 @@ def build_worksheet(
         ws.floating_charts = charts
         for chart in ws.floating_charts:
             r_id = getattr(chart, '_chart_rId', None)
-            if r_id and r_id in chart_map:
+            if chart_map and r_id and r_id in chart_map:   # CHANGED: check chart_map is not None
                 real_chart = chart_map[r_id]
                 # Copy all fields from real_chart into the placeholder
                 chart.chart_type = real_chart.chart_type
@@ -239,8 +259,8 @@ def _build_merges(sheet_xml: Element, ws: Worksheet) -> None:
                                                    min_col=min_c, max_col=max_c))
 
 
-def _build_hyperlinks(sheet_xml: Element) -> List[Hyperlink]:
-    links = []
+def _build_hyperlinks(sheet_xml: Element) -> list[Hyperlink]:
+    links: list[Hyperlink] = []
     hls = xml_find(sheet_xml, "hyperlinks", NS)
     if hls is None:
         return links
@@ -254,8 +274,8 @@ def _build_hyperlinks(sheet_xml: Element) -> List[Hyperlink]:
     return links
 
 
-def _build_data_validations(sheet_xml: Element) -> List[DataValidation]:
-    dvs = []
+def _build_data_validations(sheet_xml: Element) -> list[DataValidation]:
+    dvs: list[DataValidation] = []
     dv_elem = xml_find(sheet_xml, "dataValidations", NS)
     if dv_elem is None:
         return dvs
@@ -326,9 +346,10 @@ def _build_rows(sheet_xml: Element, ws: Worksheet, ss: SharedStrings,
                     idx = int(xml_text(v_el))
                     if 0 <= idx < len(ss.strings):
                         cell.value = ss.strings[idx]
-                if ss.get("rich_text_map"):
+                # FIXED: access rich_text_map directly, not via .get()
+                if hasattr(ss, 'rich_text_map') and ss.rich_text_map:
                     cell.rich_text = ss.rich_text_map.get(idx)
-                        
+
             elif t == "b":  # boolean
                 if v_el is not None:
                     cell.value = xml_text(v_el) == "1"
@@ -407,7 +428,7 @@ def _parse_comment_text(text_elem: Element) -> CommentText:
     return ct
 
 
-def _build_threaded_comments(tc_xml: Element) -> List[ThreadedComment]:
+def _build_threaded_comments(tc_xml: Element) -> list[ThreadedComment]:
     tcs = []
     for tc in xml_findall(tc_xml, "threadedComment", NS):
         ref = xml_attr(tc, "ref", "")

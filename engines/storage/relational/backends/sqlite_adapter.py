@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
+from typing import Any
+
 import aiosqlite
-from typing import Any, Dict, List, Optional, Sequence
 
 from ..base import RelationalStorage
 
@@ -12,7 +14,7 @@ class SQLiteStorageAdapter(RelationalStorage):
     def __init__(self, db_path: str = "database.db") -> None:
         super().__init__()
         self.db_path = db_path
-        self._connection: Optional[aiosqlite.Connection] = None
+        self._connection: aiosqlite.Connection | None = None
 
     async def connect(self) -> None:
         self._connection = await aiosqlite.connect(self.db_path)
@@ -34,17 +36,17 @@ class SQLiteStorageAdapter(RelationalStorage):
         except Exception:
             return False
 
-    def _normalize_params(self, params: Optional[Dict[str, Any]]) -> Sequence[Any] | Dict[str, Any]:
+    def _normalize_params(self, params: dict[str, Any] | None) -> Sequence[Any] | dict[str, Any]:
         return params or {}
 
-    async def execute(self, query: str, params: Optional[Dict[str, Any]] = None) -> None:
+    async def execute(self, query: str, params: dict[str, Any] | None = None) -> None:
         await self.ensure_connected()
         if self._connection is None:
             raise RuntimeError("SQLite connection is not initialized.")
         await self._connection.execute(query, self._normalize_params(params))
         await self._connection.commit()
 
-    async def fetch_one(self, query: str, params: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+    async def fetch_one(self, query: str, params: dict[str, Any] | None = None) -> dict[str, Any] | None:
         await self.ensure_connected()
         if self._connection is None:
             raise RuntimeError("SQLite connection is not initialized.")
@@ -52,7 +54,7 @@ class SQLiteStorageAdapter(RelationalStorage):
         row = await cursor.fetchone()
         return dict(row) if row is not None else None
 
-    async def fetch_all(self, query: str, params: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+    async def fetch_all(self, query: str, params: dict[str, Any] | None = None) -> list[dict[str, Any]]:
         await self.ensure_connected()
         if self._connection is None:
             raise RuntimeError("SQLite connection is not initialized.")

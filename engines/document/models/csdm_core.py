@@ -8,7 +8,6 @@
 # csdm_core.py
 # CSDM v2.0 Ultra Core
 # Supports: 98% DWG + 100% DCF Round‑Trip
-
 # CSDMDocument
 #     ├── header: CSDMHeader
 #     ├── metadata: dict
@@ -20,17 +19,17 @@
 #     ├── dimension_styles: List[CSDMDimStyle]
 #     ├── text_styles: List[CSDMTextStyle]
 #     ├── xrefs: List[CSDMXRef]
-
 # engines/document/models/csdm_core.py
-
 from __future__ import annotations
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Tuple, Type
-from enum import Enum
+
 import uuid
-from .media_types import DocumentStandard
+from dataclasses import dataclass
+from dataclasses import field
+from enum import Enum
+from typing import Any
 
 from .base import BaseDocument
+from .media_types import DocumentStandard
 
 
 # ============================================================
@@ -139,7 +138,7 @@ class XDataEntry:
 
 @dataclass
 class XDataContainer:
-    entries: List[XDataEntry] = field(default_factory=list)
+    entries: list[XDataEntry] = field(default_factory=list)
 
     def add(self, appid: str, data: Any):
         self.entries.append(XDataEntry(appid, data))
@@ -157,8 +156,8 @@ class AddReactorsMixin:
     similar to ACAD_REACTORS subclass.
     """
 
-    reactors: List[CSDMHandle]
-    xreactors: List[CSDMHandle]   # optional extended reactors (rare)
+    reactors: list[CSDMHandle]
+    xreactors: list[CSDMHandle]   # optional extended reactors (rare)
 
     def __init__(self, *args, **kwargs):
         # Ensure parent __init__ runs
@@ -197,7 +196,7 @@ class ReactorLink:
 
 @dataclass
 class ReactorGraph:
-    links: List[ReactorLink] = field(default_factory=list)
+    links: list[ReactorLink] = field(default_factory=list)
 
     def add(self, source: CSDMHandle, target: CSDMHandle, link_type: str):
         self.links.append(ReactorLink(source, target, link_type))
@@ -210,8 +209,8 @@ class ReactorGraph:
 @dataclass
 class CSDMObject:
     handle: CSDMHandle = field(default_factory=CSDMHandle.new)
-    owner: Optional[CSDMHandle] = None
-    extension_dict: Optional[CSDMHandle] = None
+    owner: CSDMHandle | None = None
+    extension_dict: CSDMHandle | None = None
     xdata: XDataContainer = field(default_factory=XDataContainer)
 
 
@@ -228,14 +227,14 @@ class Vector3:
 
 @dataclass
 class Matrix4:
-    values: List[float] = field(default_factory=lambda: [
+    values: list[float] = field(default_factory=lambda: [
         1,0,0,0,
         0,1,0,0,
         0,0,1,0,
         0,0,0,1
     ])
 
-    def __matmul__(self, other: "Matrix4") -> "Matrix4":
+    def __matmul__(self, other: Matrix4) -> Matrix4:
         """Matrix multiplication for 4x4 matrices."""
         a = self.values
         b = other.values
@@ -254,9 +253,9 @@ class Matrix4:
 
 @dataclass
 class GeometryData:
-    vertices: List[Vector3] = field(default_factory=list)
+    vertices: list[Vector3] = field(default_factory=list)
     transform: Matrix4 = field(default_factory=Matrix4)
-    acis: Optional[bytes] = None
+    acis: bytes | None = None
 
 
 # ============================================================
@@ -281,10 +280,10 @@ class CSDMEntity(CSDMObject):
 
 class EntityRegistry:
 
-    _registry: Dict[str, Type[CSDMEntity]] = {}
+    _registry: dict[str, type[CSDMEntity]] = {}
 
     @classmethod
-    def register(cls, name: str, entity: Type[CSDMEntity]):
+    def register(cls, name: str, entity: type[CSDMEntity]):
         cls._registry[name] = entity
 
     @classmethod
@@ -295,7 +294,7 @@ class EntityRegistry:
         return entity_cls(**kwargs)
 
     @classmethod
-    def get(cls, name: str) -> Optional[Type[CSDMEntity]]:
+    def get(cls, name: str) -> type[CSDMEntity] | None:
         return cls._registry.get(name)
 
 
@@ -317,16 +316,16 @@ class CSDMCustomObject(CSDMObject):
 class CSDMHeader:
     version: str = "CSDM 2.0"
     units: str = "meters"
-    author: Optional[str] = None
-    created: Optional[str] = None
-    modified: Optional[str] = None
+    author: str | None = None
+    created: str | None = None
+    modified: str | None = None
 
 
 @dataclass
 class CSDMMetadata:
-    description: Optional[str] = None
-    application: Optional[str] = None
-    custom: Dict[str, Any] = field(default_factory=dict)
+    description: str | None = None
+    application: str | None = None
+    custom: dict[str, Any] = field(default_factory=dict)
 
 # ============================================
 # DICTIONARY SYSTEM (DWG Object Map)
@@ -340,12 +339,12 @@ class CSDMDictionaryEntry:
 
 @dataclass
 class CSDMDictionary(CSDMObject):
-    entries: Dict[str, CSDMDictionaryEntry] = field(default_factory=dict)
+    entries: dict[str, CSDMDictionaryEntry] = field(default_factory=dict)
 
     def add(self, name: str, obj_handle: CSDMHandle):
         self.entries[name] = CSDMDictionaryEntry(name, obj_handle)
 
-    def get(self, name: str) -> Optional[CSDMDictionaryEntry]:
+    def get(self, name: str) -> CSDMDictionaryEntry | None:
         return self.entries.get(name)
 
 
@@ -357,7 +356,7 @@ class CSDMDictionary(CSDMObject):
 class CSDMGroup(CSDMObject):
     name: str = ""
     flags: int = 0
-    members: List[CSDMHandle] = field(default_factory=list)
+    members: list[CSDMHandle] = field(default_factory=list)
 
 
 # ============================================
@@ -366,10 +365,10 @@ class CSDMGroup(CSDMObject):
 
 @dataclass
 class PlotSettings(CSDMObject):
-    page_size: Tuple[float, float] = (210.0, 297.0)     # A4 default
-    plot_origin: Tuple[float, float] = (0.0, 0.0)
+    page_size: tuple[float, float] = (210.0, 297.0)     # A4 default
+    plot_origin: tuple[float, float] = (0.0, 0.0)
     scale: float = 1.0
-    style_sheet: Optional[str] = None
+    style_sheet: str | None = None
     paper_units: str = "mm"
     plot_type: str = "layout"
     center_plot: bool = True
@@ -384,12 +383,12 @@ class PlotSettings(CSDMObject):
 class CSDMLayout(CSDMObject):
     name: str = "Layout1"
     tab_order: int = 1
-    paper_limits: Tuple[Tuple[float, float], Tuple[float, float]] = (
+    paper_limits: tuple[tuple[float, float], tuple[float, float]] = (
         (0.0, 0.0), (297.0, 210.0)
     )
-    paper_size: Tuple[float, float] = (297.0, 210.0)
-    plot_settings: Optional[CSDMHandle] = None
-    viewport_handles: List[CSDMHandle] = field(default_factory=list)
+    paper_size: tuple[float, float] = (297.0, 210.0)
+    plot_settings: CSDMHandle | None = None
+    viewport_handles: list[CSDMHandle] = field(default_factory=list)
 
 
 # ============================================
@@ -399,10 +398,10 @@ class CSDMLayout(CSDMObject):
 @dataclass
 class CSDMMaterial(CSDMObject):
     name: str = ""
-    diffuse_color: Tuple[float, float, float] = (1, 1, 1)
-    specular_color: Tuple[float, float, float] = (1, 1, 1)
+    diffuse_color: tuple[float, float, float] = (1, 1, 1)
+    specular_color: tuple[float, float, float] = (1, 1, 1)
     opacity: float = 1.0
-    texture: Optional[str] = None       # path
+    texture: str | None = None       # path
 
 
 # ============================================
@@ -427,7 +426,7 @@ class CSDMTableStyle(CSDMObject):
     name: str = ""
     cell_width: float = 30.0
     cell_height: float = 10.0
-    text_style: Optional[str] = None
+    text_style: str | None = None
     margin: float = 1.5
 
 
@@ -438,7 +437,7 @@ class CSDMTableStyle(CSDMObject):
 @dataclass
 class CSDMImageDef(CSDMObject):
     filepath: str = ""
-    resolution: Tuple[int, int] = (0, 0)
+    resolution: tuple[int, int] = (0, 0)
 
 
 @dataclass
@@ -476,17 +475,17 @@ class GeometryUnits:
 
 @dataclass
 class CSDMObjectTables:
-    dictionaries: Dict[str, CSDMDictionary] = field(default_factory=dict)
-    groups: Dict[str, CSDMGroup] = field(default_factory=dict)
-    layouts: Dict[str, CSDMLayout] = field(default_factory=dict)
-    plot_settings: Dict[str, PlotSettings] = field(default_factory=dict)
-    materials: Dict[str, CSDMMaterial] = field(default_factory=dict)
-    mleader_styles: Dict[str, CSDMMLeaderStyle] = field(default_factory=dict)
-    table_styles: Dict[str, CSDMTableStyle] = field(default_factory=dict)
-    image_defs: Dict[str, CSDMImageDef] = field(default_factory=dict)
-    underlay_defs: Dict[str, CSDMUnderlayDef] = field(default_factory=dict)
-    xrecords: Dict[str, CSDMObject] = field(default_factory=dict)
-    reactors: List[ReactorLink] = field(default_factory=list)
+    dictionaries: dict[str, CSDMDictionary] = field(default_factory=dict)
+    groups: dict[str, CSDMGroup] = field(default_factory=dict)
+    layouts: dict[str, CSDMLayout] = field(default_factory=dict)
+    plot_settings: dict[str, PlotSettings] = field(default_factory=dict)
+    materials: dict[str, CSDMMaterial] = field(default_factory=dict)
+    mleader_styles: dict[str, CSDMMLeaderStyle] = field(default_factory=dict)
+    table_styles: dict[str, CSDMTableStyle] = field(default_factory=dict)
+    image_defs: dict[str, CSDMImageDef] = field(default_factory=dict)
+    underlay_defs: dict[str, CSDMUnderlayDef] = field(default_factory=dict)
+    xrecords: dict[str, CSDMObject] = field(default_factory=dict)
+    reactors: list[ReactorLink] = field(default_factory=list)
 
 
 # ============================================
@@ -503,27 +502,27 @@ class CSDMDocument(BaseDocument):
     tables: Any = None   # filled by csdm_tables.py classes
 
     # BLOCK DEFINITIONS
-    blocks: Dict[str, Any] = field(default_factory=dict)
+    blocks: dict[str, Any] = field(default_factory=dict)
 
     # ENTITIES (model space / paper space)
-    entities: List[CSDMEntity] = field(default_factory=list)
+    entities: list[CSDMEntity] = field(default_factory=list)
 
     # OBJECT TABLES (layouts, materials، mleader styles...)
     objects: CSDMObjectTables = field(default_factory=CSDMObjectTables)
 
     # XREFs
-    xrefs: Dict[str, CSDMXref] = field(default_factory=dict)
+    xrefs: dict[str, CSDMXref] = field(default_factory=dict)
 
     # UNITS
     geometry_units: GeometryUnits = field(default_factory=GeometryUnits)
 
     # MASTER HANDLE INDEX
-    handle_index: Dict[str, CSDMObject] = field(default_factory=dict)
+    handle_index: dict[str, CSDMObject] = field(default_factory=dict)
 
     def register_object(self, obj: CSDMObject):
         self.handle_index[obj.handle.value] = obj
 
-    def find_by_handle(self, handle: CSDMHandle) -> Optional[CSDMObject]:
+    def find_by_handle(self, handle: CSDMHandle) -> CSDMObject | None:
         return self.handle_index.get(handle.value)
 
     def add_entity(self, entity: CSDMEntity):
@@ -554,8 +553,8 @@ class AnnotationScale:
 
 @dataclass
 class AnnotationContext:
-    scales: Dict[str, AnnotationScale] = field(default_factory=dict)
-    current_scale: Optional[str] = None
+    scales: dict[str, AnnotationScale] = field(default_factory=dict)
+    current_scale: str | None = None
 
     def add_scale(self, name: str, ratio: float):
         self.scales[name] = AnnotationScale(name, ratio)
@@ -579,7 +578,7 @@ class AnnotationContext:
 class DimContext:
     default_text_height: float = 2.5
     default_arrow_size: float = 2.5
-    scale_override: Optional[float] = None
+    scale_override: float | None = None
 
     def get_dimscale(self, annot_scale: float) -> float:
         if self.scale_override is not None:
@@ -595,7 +594,7 @@ class DimContext:
 class ConstraintNode:
     handle: CSDMHandle
     node_type: str
-    data: Dict[str, Any] = field(default_factory=dict)
+    data: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -603,21 +602,21 @@ class ConstraintRelation:
     node_a: CSDMHandle
     node_b: CSDMHandle
     relation_type: str
-    parameters: Dict[str, Any] = field(default_factory=dict)
+    parameters: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class ConstraintGraph:
-    nodes: List[ConstraintNode] = field(default_factory=list)
-    relations: List[ConstraintRelation] = field(default_factory=list)
+    nodes: list[ConstraintNode] = field(default_factory=list)
+    relations: list[ConstraintRelation] = field(default_factory=list)
 
-    def add_node(self, obj: CSDMObject, node_type: str, data: Dict[str, Any]):
+    def add_node(self, obj: CSDMObject, node_type: str, data: dict[str, Any]):
         node = ConstraintNode(obj.handle, node_type, data)
         self.nodes.append(node)
         return node
 
     def add_relation(self, a: CSDMObject, b: CSDMObject,
-                     r_type: str, params: Dict[str, Any]):
+                     r_type: str, params: dict[str, Any]):
         rel = ConstraintRelation(a.handle, b.handle, r_type, params)
         self.relations.append(rel)
         return rel
@@ -629,9 +628,9 @@ class ConstraintGraph:
 
 @dataclass
 class BRepData:
-    acis_binary: Optional[bytes] = None
-    topology_checksum: Optional[str] = None
-    bounding_box: Optional[Tuple[Vector3, Vector3]] = None
+    acis_binary: bytes | None = None
+    topology_checksum: str | None = None
+    bounding_box: tuple[Vector3, Vector3] | None = None
 
 
 class ACISInterface:
@@ -697,4 +696,3 @@ def _bootstrap_registry():
 
 
 _bootstrap_registry()
-

@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from typing import List
-
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
+from pydantic import Field
 
 
 class TokenUsage(BaseModel):
@@ -12,7 +11,7 @@ class TokenUsage(BaseModel):
 
 class TokenBreakdownResponse(BaseModel):
     total_tokens: int = Field(ge=0)
-    modules: List[TokenUsage]
+    modules: list[TokenUsage]
 
 
 class RetrievalChunkStat(BaseModel):
@@ -21,15 +20,15 @@ class RetrievalChunkStat(BaseModel):
 
 
 class RetrievalHeatmapResponse(BaseModel):
-    chunks: List[RetrievalChunkStat]
+    chunks: list[RetrievalChunkStat]
 
 
 class GraphPath(BaseModel):
-    nodes: List[str]
+    nodes: list[str]
 
 
 class GraphPathsResponse(BaseModel):
-    paths: List[GraphPath]
+    paths: list[GraphPath]
 
 
 class FailureEvent(BaseModel):
@@ -38,7 +37,7 @@ class FailureEvent(BaseModel):
 
 
 class FailureResponse(BaseModel):
-    failures: List[FailureEvent]
+    failures: list[FailureEvent]
 
 
 class MemoryUsageResponse(BaseModel):

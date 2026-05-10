@@ -13,27 +13,24 @@ Supports:
 - Nested models and references
 - Custom decorators and annotations captured by the parser
 """
-
 from __future__ import annotations
-from typing import Optional, Dict, Any, List, Set, Union
+
+import keyword
 from enum import Enum
 
-from .base_msdm_writer import BaseMSDMWriter, WriteTarget, SoftDeleteStrategy
+from ...models.msdm_models import Attribute
+from ...models.msdm_models import ConstraintType
+from ...models.msdm_models import DataType
+from ...models.msdm_models import Entity
+from ...models.msdm_models import MSDMDocument
+from ...models.msdm_models import ScalarType
 from ..base import WriteOptions
-from ...models.msdm_models import (
-    MSDMDocument,
-    Entity,
-    Attribute,
-    DataType,
-    ScalarType,
-    Constraint,
-    ConstraintType,
-    Annotation,
-    EntityKind,
-)
+from .base_msdm_writer import BaseMSDMWriter
+from .base_msdm_writer import SoftDeleteStrategy
+from .base_msdm_writer import WriteTarget
 
 # ── Python type mappings ─────────────────────────────────────────
-_SCALAR_TO_PYTHON: Dict[ScalarType, str] = {
+_SCALAR_TO_PYTHON: dict[ScalarType, str] = {
     ScalarType.STRING:    "str",
     ScalarType.INT:       "int",
     ScalarType.LONG:      "int",
@@ -50,7 +47,6 @@ _SCALAR_TO_PYTHON: Dict[ScalarType, str] = {
     ScalarType.ANY:       "typing.Any",
 }
 
-# Additional imports required for certain types
 _IMPORT_MAP = {
     "datetime.date":     "import datetime",
     "datetime.time":     "import datetime",
@@ -67,53 +63,49 @@ _IMPORT_MAP = {
 
 
 class TargetStyle(str, Enum):
-    """Python class style."""
     PYDANTIC    = "pydantic"
     DATACLASS   = "dataclass"
-    PLAIN       = "plain"          # annotations only, no decorator
+    PLAIN       = "plain"
 
 
 class PythonModelWriter(BaseMSDMWriter):
-    """Writer for Python data model files (.py)."""
     name = "python_model"
     supported_extensions = (".py",)
 
     def __init__(
         self,
-        options: Optional[WriteOptions] = None,
+        options: WriteOptions | None = None,
         target_mode: WriteTarget = WriteTarget.DESIGN_FILE,
         soft_delete_strategy: SoftDeleteStrategy = SoftDeleteStrategy.NONE,
         target_style: TargetStyle = TargetStyle.PYDANTIC,
     ):
         super().__init__(options, target_mode, soft_delete_strategy)
         self.target_style = target_style
+        self._imports: set[str] = set()
 
     # ── Public API ─────────────────────────────────────────────────
     async def _write_design(self, document: MSDMDocument) -> bytes:
-        self._imports: Set[str] = set()
-        lines: List[str] = []
+        self._imports.clear()
+        lines: list[str] = []
 
-        # File header
         if document.namespace:
             lines.append(f"# {document.namespace}")
         lines.append("")
 
-        # Collect all needed imports
         for entity in document.entities:
             self._collect_imports(entity)
-        # Add base import based on style
+
         if self.target_style == TargetStyle.PYDANTIC:
             lines.append("from pydantic import BaseModel, Field")
         elif self.target_style == TargetStyle.DATACLASS:
             lines.append("from dataclasses import dataclass, field")
-        # Add third-party imports sorted
+
         third_party = sorted(imp for imp in self._imports if not imp.startswith("from"))
         from_imports = sorted(imp for imp in self._imports if imp.startswith("from"))
         lines.extend(third_party)
         lines.extend(from_imports)
         lines.append("")
 
-        # Write entities
         for entity in document.entities:
             if self._is_enum_entity(entity):
                 lines.append(self._build_enum(entity))
@@ -122,22 +114,21 @@ class PythonModelWriter(BaseMSDMWriter):
             lines.append("")
 
         source = "\n".join(lines)
-        return source.encode(self.options.encoding or "utf-8")
+        return source.encode(getattr(self.options, "encoding", "utf-8") or "utf-8")
 
-    async def get_supported_media_types(self) -> list[str]:
+    def get_supported_media_types(self) -> list[str]:
         return ["text/x-python"]
 
-    async def get_supported_extensions(self) -> list[str]:
-        return self.supported_extensions
+    def get_supported_extensions(self) -> list[str]:
+        return list(self.supported_extensions)
 
     # ── Entity classification ────────────────────────────────────
     def _is_enum_entity(self, entity: Entity) -> bool:
-        """Check if the entity represents an enum."""
         if any(a.key == "enum_member" for a in entity.annotations):
             return True
         if len(entity.attributes) == 1:
             attr = entity.attributes[0]
-            if attr.name == "value" and any(c.expression.startswith("IN (") for c in attr.constraints):
+            if attr.name == "value" and  any(c.expression is not None and c.expression.startswith("IN (") for c in attr.constraints):
                 return True
         return False
 
@@ -151,11 +142,9 @@ class PythonModelWriter(BaseMSDMWriter):
         lines.append(f"class {name}(enum.Enum):")
         self._imports.add("import enum")
 
-        # Collect enum members from annotations or constraint
         members = []
         for ann in entity.annotations:
-            if ann.key == "enum_member":
-                # Value may be "VALUE=number"
+            if ann.key == "enum_member" and ann.value is not None:
                 parts = ann.value.split("=", 1)
                 member_name = parts[0].strip()
                 member_value = parts[1].strip() if len(parts) > 1 else member_name
@@ -163,7 +152,7 @@ class PythonModelWriter(BaseMSDMWriter):
         if not members and entity.attributes:
             attr = entity.attributes[0]
             for c in attr.constraints:
-                if c.expression.startswith("IN ("):
+                if c.expression is not None and c.expression.startswith("IN ("):
                     inner = c.expression[4:].rstrip(")")
                     vals = [v.strip().strip("'\"") for v in inner.split(",")]
                     for i, v in enumerate(vals):
@@ -173,12 +162,10 @@ class PythonModelWriter(BaseMSDMWriter):
         return "\n".join(lines) + "\n"
 
     def _format_enum_value(self, val: str) -> str:
-        """Return an appropriate Python literal for enum value."""
         if val.isdigit():
             return val
         if val.replace('.', '', 1).isdigit() and val.count('.') < 2:
             return val
-        # Assume string if not numeric
         return f'"{val}"'
 
     # ── Build model (Pydantic / dataclass) ───────────────────────
@@ -189,31 +176,25 @@ class PythonModelWriter(BaseMSDMWriter):
         if desc:
             lines.append(f'"""{desc}"""')
 
-        # Decorator
         if self.target_style == TargetStyle.PYDANTIC:
-            # Pydantic: class definition
             base_classes = ["BaseModel"]
-            # Check for additional bases from implements
             for impl in entity.implements:
-                base_classes.append(impl)
+                base_classes.append(impl.name)
             bases = ", ".join(base_classes)
             lines.append(f"class {name}({bases}):")
         elif self.target_style == TargetStyle.DATACLASS:
-            # Dataclass decorator plus class
             attrs = ""
-            # Extract dataclass arguments from annotations
             for ann in entity.annotations:
-                if ann.key.startswith("dataclass_"):
-                    key = ann.key[10:]  # e.g., "frozen"
+                if ann.key.startswith("dataclass_") and ann.value is not None:
+                    key = ann.key[10:]
                     attrs += f", {key}={ann.value}"
             lines.append(f"@dataclass{attrs}")
-            extends = entity.extends if entity.extends else ""
+            extends = entity.extends.name if entity.extends else ""
             lines.append(f"class {name}({extends}):" if extends else f"class {name}:")
-        else:  # plain
-            extends = entity.extends if entity.extends else ""
+        else:
+            extends = entity.extends.name if entity.extends else ""
             lines.append(f"class {name}({extends}):" if extends else f"class {name}:")
 
-        # Fields
         for attr in entity.attributes:
             if self._is_soft_deleted(attr):
                 lines.append(f"    # {attr.name}: deleted")
@@ -226,24 +207,21 @@ class PythonModelWriter(BaseMSDMWriter):
 
     # ── Field conversion ─────────────────────────────────────────
     def _field_to_python(self, attr: Attribute) -> str:
-        # Type annotation
         py_type = self._datatype_to_python(attr.data_type, attr.required)
         if not attr.required:
             py_type = f"Optional[{py_type}]" if py_type != "Any" else py_type
             self._imports.add("from typing import Optional")
-        # Default value
+
         default = ""
         if attr.default_value is not None:
             default_val = self._format_default(attr.default_value, attr.data_type)
             if self.target_style == TargetStyle.PYDANTIC:
-                # Use Field(default=...)
-                default = f" = Field(default={default_val}"
                 extra = self._field_constraints_and_options(attr)
                 if extra:
-                    default += f", {extra}"
-                default += ")"
+                    default = f" = Field(default={default_val}, {extra})"
+                else:
+                    default = f" = Field(default={default_val})"
             elif self.target_style == TargetStyle.DATACLASS:
-                # use field(default=...)
                 self._imports.add("from dataclasses import field")
                 extra = self._field_constraints_and_options(attr)
                 if extra:
@@ -253,19 +231,15 @@ class PythonModelWriter(BaseMSDMWriter):
             else:
                 default = f" = {default_val}"
         else:
-            if attr.required:
-                default = ""
-            else:
-                default = " = None"
+            default = "" if attr.required else " = None"
 
         name = attr.name
-        if self._is_python_keyword(name):
+        if keyword.iskeyword(name):
             name = f"{name}_"
 
         return f"{name}: {py_type}{default}"
 
     def _datatype_to_python(self, dt: DataType, required: bool = True) -> str:
-        """Convert a DataType to a Python type string."""
         base = dt.base
         if base == ScalarType.ARRAY:
             inner = self._datatype_to_python(dt.element_type, required=False) if dt.element_type else "Any"
@@ -276,13 +250,11 @@ class PythonModelWriter(BaseMSDMWriter):
             val = self._datatype_to_python(dt.value_type, required=False) if dt.value_type else "Any"
             self._imports.add("from typing import Dict")
             return f"Dict[{key}, {val}]"
-        if base == ScalarType.REF:
-            ref_name = dt.ref_entity or "object"
+        if base == ScalarType.REF and dt.ref_entity:
+            ref_name = dt.ref_entity.name or "object"
             return ref_name
-        if base == ScalarType.STRUCT:
-            # If there are nested attributes, we should have a nested class reference.
-            # The parser may have stored the entity name; we use ref_entity or "object"
-            return dt.ref_entity or "Any"
+        if base == ScalarType.STRUCT and dt.ref_entity:
+            return dt.ref_entity.name or "Any"
         if base in _SCALAR_TO_PYTHON:
             py = _SCALAR_TO_PYTHON[base]
             if py in _IMPORT_MAP:
@@ -292,51 +264,32 @@ class PythonModelWriter(BaseMSDMWriter):
 
     # ── Pydantic Field options from constraints ────────────────────
     def _field_constraints_and_options(self, attr: Attribute) -> str:
-        """Generate additional keyword arguments for Field() or field()."""
         opts = []
-        # Constraints from model
         for c in attr.constraints:
-            if c.type == ConstraintType.CHECK:
-                if c.expression.startswith("IN ("):
-                    # enum values – usually not passed as Field options; skip
-                    pass
-                elif c.expression.startswith("= "):
-                    # exact value? default handled differently
-                    pass
-                else:
-                    # Could be a generic expression, we ignore
-                    pass
+            if c.type == ConstraintType.CHECK and c.expression is not None and c.expression.startswith("IN ("):
+                pass
             elif c.type == ConstraintType.DEFAULT:
-                pass  # already handled
-        # Annotations from parser (e.g., min_length, max_length, pattern, ge, le, etc.)
+                pass
         for ann in attr.annotations:
+            if ann.value is None:
+                continue
             key = ann.key
             val = ann.value
             if key in ("min_length", "max_length", "ge", "le", "gt", "lt", "multipleOf",
                        "regex", "pattern", "minItems", "maxItems", "uniqueItems",
                        "minProperties", "maxProperties"):
-                if key in ("min_length",):
-                    opts.append(f"min_length={val}")
-                elif key == "max_length":
-                    opts.append(f"max_length={val}")
-                elif key in ("ge", "le", "gt", "lt"):
-                    opts.append(f"{key}={val}")
-                elif key in ("regex", "pattern"):
+                if key in ("regex", "pattern"):
                     opts.append(f"pattern={val}")
-                elif key == "minItems":
-                    opts.append(f"min_items={val}")
-                elif key == "maxItems":
-                    opts.append(f"max_items={val}")
-                elif key == "uniqueItems":
-                    opts.append(f"unique_items={val}")
+                else:
+                    opts.append(f"{key}={val}")
             elif key == "alias":
-                opts.append(f"alias=\"{val}\"")
+                opts.append(f'alias="{val}"')
             elif key == "title":
-                opts.append(f"title=\"{val}\"")
+                opts.append(f'title="{val}"')
             elif key == "description":
-                opts.append(f"description=\"{val}\"")
+                opts.append(f'description="{val}"')
             elif key == "format":
-                opts.append(f"format=\"{val}\"")
+                opts.append(f'format="{val}"')
             elif key == "example":
                 opts.append(f"example={val}")
             elif key == "default_factory":
@@ -344,48 +297,46 @@ class PythonModelWriter(BaseMSDMWriter):
         return ", ".join(opts)
 
     # ── Default value formatting ──────────────────────────────────
-    def _format_default(self, default_str: str, dt: DataType) -> str:
-        """Convert a default value string to a Python literal."""
-        default_str = default_str.strip()
+    def _format_default(self, default_str: str | None, dt: DataType) -> str:
+        if default_str is None:
+            return "None"
+        raw = default_str.strip()
         base = dt.base
-        # Try to infer Python literal from string
         if base in (ScalarType.STRING, ScalarType.ANY, ScalarType.JSON, ScalarType.XML):
-            if not (default_str.startswith('"') or default_str.startswith("'")):
-                return f'"{default_str}"'
-            return default_str
+            if not (raw.startswith('"') or raw.startswith("'")):
+                return f'"{raw}"'
+            return raw
         if base in (ScalarType.INT, ScalarType.LONG):
-            return default_str if default_str.isdigit() else f"int({default_str})"
+            return raw if raw.isdigit() else f"int({raw})"
         if base in (ScalarType.FLOAT, ScalarType.DOUBLE, ScalarType.DECIMAL):
             try:
-                float(default_str)
-                return default_str
+                float(raw)
+                return raw
             except ValueError:
-                return f"float({repr(default_str)})"
+                return f"float({repr(raw)})"
         if base == ScalarType.BOOLEAN:
-            return default_str.lower() if default_str.lower() in ("true", "false") else f"bool({default_str})"
+            return raw.lower() if raw.lower() in ("true", "false") else f"bool({raw})"
         if base == ScalarType.UUID:
-            return f'uuid.UUID("{default_str}")'
+            return f'uuid.UUID("{raw}")'
         if base == ScalarType.REF:
-            return default_str  # assume it's a class name or variable
-        return default_str
-
+            return raw
+        return raw
+    
     # ── Soft‑delete detection ─────────────────────────────────────
     def _is_soft_deleted(self, attr: Attribute) -> bool:
         return any(a.key == "deleted" for a in attr.annotations)
 
     # ── Import collection ──────────────────────────────────────────
     def _collect_imports(self, entity: Entity) -> None:
-        # For each attribute, resolve types and add imports if needed
         for attr in entity.attributes:
             self._datatype_to_python(attr.data_type, attr.required)
-        # If Pydantic, ensure BaseModel is available? Already done at top.
-        # If any field uses Field/field, handled implicitly.
-        # Decorators are handled elsewhere.
-        # Inherited classes from extends/implements may need imports; we can't track automatically.
-        pass
+        for attr in entity.attributes:
+            self._collect_ref_imports(attr.data_type)
 
-    # ── Python keyword check ──────────────────────────────────────
-    @staticmethod
-    def _is_python_keyword(name: str) -> bool:
-        import keyword
-        return keyword.iskeyword(name)
+    def _collect_ref_imports(self, dt: DataType) -> None:
+        if dt.element_type:
+            self._collect_ref_imports(dt.element_type)
+        if dt.key_type:
+            self._collect_ref_imports(dt.key_type)
+        if dt.value_type:
+            self._collect_ref_imports(dt.value_type)

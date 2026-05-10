@@ -2,16 +2,15 @@ from __future__ import annotations
 
 import asyncio
 import math
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from engines.rag.graph.graph_retriever import GraphRetriever
-from engines.rag.research.memory.reasoning.event_types import ReasoningEventType
-from engines.rag.research.memory.reasoning_memory import ReasoningMemory
-
+from .base_retriever import BaseRetriever
 from .bm25_retriever import BM25KeywordRetriever
 from .retriever_result import RetrievalResult
 from .vector_retriever import VectorRetriever
-from .base_retriever import BaseRetriever
+from engines.rag.graph.graph_retriever import GraphRetriever
+from engines.rag.research.memory.reasoning.event_types import ReasoningEventType
+from engines.rag.research.memory.reasoning_memory import ReasoningMemory
 
 class FusionMLP:
     """Small dependency-free fusion model with trainable linear weights."""
@@ -20,7 +19,7 @@ class FusionMLP:
         self.weights = [1.0 / input_dim] * input_dim
         self.bias = 0.0
 
-    def predict(self, features: List[float]) -> float:
+    def predict(self, features: list[float]) -> float:
         total = sum(weight * value for weight, value in zip(self.weights, features)) + self.bias
         return 1.0 / (1.0 + math.exp(-total))
 
@@ -34,10 +33,10 @@ class HybridRetrieverSuper(BaseRetriever):
         self,
         vector_retriever: VectorRetriever,
         keyword_retriever: BM25KeywordRetriever,
-        graph_retriever: Optional[GraphRetriever] = None,
-        reranker: Optional[Any] = None,
-        llm: Optional[Any] = None,
-        reasoning: Optional[ReasoningMemory] = None,
+        graph_retriever: GraphRetriever | None = None,
+        reranker: Any | None = None,
+        llm: Any | None = None,
+        reasoning: ReasoningMemory | None = None,
     ):
         self.vector_retriever = vector_retriever
         self.keyword_retriever = keyword_retriever
@@ -76,7 +75,7 @@ class HybridRetrieverSuper(BaseRetriever):
             return None
         return self.trainer.train(samples, epochs=2)
 
-    def _normalize(self, results: List[RetrievalResult]) -> List[RetrievalResult]:
+    def _normalize(self, results: list[RetrievalResult]) -> list[RetrievalResult]:
         if not results:
             return results
         scores = [result.score for result in results]
@@ -88,12 +87,12 @@ class HybridRetrieverSuper(BaseRetriever):
             result.score = min(1.0, max(0.0, normalized))
         return results
 
-    def _softmax_weights(self, weights: Dict[str, float]) -> Dict[str, float]:
+    def _softmax_weights(self, weights: dict[str, float]) -> dict[str, float]:
         exps = {key: math.exp(value) for key, value in weights.items()}
         total = sum(exps.values()) or 1.0
         return {key: value / total for key, value in exps.items()}
 
-    def _graph_boost(self, results: List[RetrievalResult], graph_hits: Dict[str, float]) -> List[RetrievalResult]:
+    def _graph_boost(self, results: list[RetrievalResult], graph_hits: dict[str, float]) -> list[RetrievalResult]:
         for result in results:
             graph_strength = graph_hits.get(result.chunk.chunk_id)
             if graph_strength is not None:
@@ -101,7 +100,7 @@ class HybridRetrieverSuper(BaseRetriever):
                 result.meta["graph_raw_score"] = graph_strength
         return results
 
-    async def _fusion_weights_from_llm(self, query: str) -> Dict[str, float]:
+    async def _fusion_weights_from_llm(self, query: str) -> dict[str, float]:
         if not self.llm:
             return {"vector": 0.45, "keyword": 0.35, "graph": 0.20}
         prompt = (
@@ -122,8 +121,8 @@ class HybridRetrieverSuper(BaseRetriever):
         self,
         query: str,
         top_k: int = 8,
-        filters: Optional[Dict[str, Any]] = None,
-    ) -> List[RetrievalResult]:
+        filters: dict[str, Any] | None = None,
+    ) -> list[RetrievalResult]:
         graph_task = self.graph_retriever.search(query=query, top_k=top_k) if self.graph_retriever else None
         vector_results, keyword_results, graph_results = await asyncio.gather(
             self.vector_retriever.search(query=query, top_k=top_k, filters=filters),
@@ -136,7 +135,7 @@ class HybridRetrieverSuper(BaseRetriever):
         graph_results = self._normalize(graph_results)
         fusion_weights = self._softmax_weights(await self._fusion_weights_from_llm(query))
 
-        all_chunks: Dict[str, Dict[str, Any]] = {}
+        all_chunks: dict[str, dict[str, Any]] = {}
         streams = {
             "vector": (vector_results, fusion_weights.get("vector", 0.33)),
             "keyword": (keyword_results, fusion_weights.get("keyword", 0.33)),
@@ -156,7 +155,7 @@ class HybridRetrieverSuper(BaseRetriever):
         if graph_results:
             self.reasoning.log(ReasoningEventType.RETRIEVAL_GRAPH, "Graph search executed", meta={"results": len(graph_results)})
 
-        merged: List[RetrievalResult] = []
+        merged: list[RetrievalResult] = []
         for bundle in all_chunks.values():
             features = [
                 bundle["scores"].get("vector", 0.0),

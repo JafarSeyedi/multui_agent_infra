@@ -3,19 +3,23 @@
 CSV and TSV writer for ESDM (Excel Spreadsheet Data Model).
 Converts a Workbook to CSV or TSV format (only first worksheet is written).
 """
-
 from __future__ import annotations
 
 import csv
 import io
-from pathlib import Path
-from typing import Optional, Dict, Any, AsyncIterator, cast
+from collections.abc import AsyncIterator
 from datetime import datetime
+from pathlib import Path
+from typing import Any
+from typing import cast
 
 from ...models.base import BaseDocument
-from ...models.exceptions import DocumentWriteError, UnsupportedFormatError
-from ...models.esdm_models import ESDMDocument, Workbook, Worksheet, Cell
-from .base import ESDMBaseWriter, ESDMWriteOptions
+from ...models.esdm_models import Cell
+from ...models.esdm_models import ESDMDocument
+from ...models.esdm_models import Workbook
+from ...models.esdm_models import Worksheet
+from .base import ESDMBaseWriter
+from .base import ESDMWriteOptions
 
 
 class CSVWriter(ESDMBaseWriter):
@@ -24,7 +28,7 @@ class CSVWriter(ESDMBaseWriter):
     Exports the first worksheet of the workbook.
     """
 
-    def __init__(self, options: Optional[ESDMWriteOptions] = None):
+    def __init__(self, options: ESDMWriteOptions | None = None):
         super().__init__(options)
         self.delimiter = ','
 
@@ -32,6 +36,8 @@ class CSVWriter(ESDMBaseWriter):
         """Yield CSV content in chunks."""
         doc = cast(ESDMDocument, document)
         workbook = doc.workbook
+        if workbook is None:
+            raise ValueError("Document has no workbook data")
         content = await self._write_csv(workbook)
         chunk_size = 64 * 1024
         for i in range(0, len(content), chunk_size):
@@ -41,17 +47,21 @@ class CSVWriter(ESDMBaseWriter):
         """Return full CSV content as bytes."""
         doc = cast(ESDMDocument, document)
         workbook = doc.workbook
+        if workbook is None:
+            raise ValueError("Document has no workbook data")
         return await self._write_csv(workbook)
 
     async def write_to_file(
         self,
         document: BaseDocument,
         target: Path,
-        options: Optional[Dict[str, Any]] = None
+        options: dict[str, Any] | None = None
     ) -> None:
         """Write CSV directly to a file."""
         doc = cast(ESDMDocument, document)
         workbook = doc.workbook
+        if workbook is None:
+            raise ValueError("Document has no workbook data")
         content = await self._write_csv(workbook)
         target.write_bytes(content)
 
@@ -92,7 +102,7 @@ class CSVWriter(ESDMBaseWriter):
                 max_col = max(max_col, max(row.cells.keys()))
         return max_col
 
-    def _cell_to_csv_value(self, cell: Optional[Cell]) -> str:
+    def _cell_to_csv_value(self, cell: Cell | None) -> str:
         """Convert a cell value to CSV string."""
         if cell is None or cell.value is None:
             return ''
@@ -131,7 +141,7 @@ class CSVWriter(ESDMBaseWriter):
 class TSVWriter(CSVWriter):
     """Writer for TSV (Tab-Separated Values) files. Inherits CSVWriter with tab delimiter."""
 
-    def __init__(self, options: Optional[ESDMWriteOptions] = None):
+    def __init__(self, options: ESDMWriteOptions | None = None):
         super().__init__(options)
         self.delimiter = '\t'
 

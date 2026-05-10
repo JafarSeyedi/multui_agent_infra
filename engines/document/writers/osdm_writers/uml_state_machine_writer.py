@@ -6,40 +6,28 @@ All UML‑specific semantics (entry/exit/do actions, triggers, guards, effects,
 composite/orthogonal regions, pseudo‑states) are taken directly from the
 unified OSDM model. No annotations are required.
 """
-
 from __future__ import annotations
-from pathlib import Path
-from typing import Optional, Dict, Any, List, Union, cast
+
+from typing import cast
 from xml.etree.ElementTree import Element, SubElement, tostring
 
-from .base_osdm_writer import BaseOSDMWriter, OSDMWriteOptions
 from ...models.osdm_models import (
-    BaseOSDMDocument, StateMachineDocument,
-    StateMachineModel,
-    StateMachineRegion,
-    State,
-    StateTransition,
-    PseudoState,
-    PseudoStateKind,
-    Script,
-    BaseElement,
+    BaseElement, BaseOSDMDocument, PseudoState, Script, State,
+    StateMachineDocument, StateMachineModel, StateMachineRegion, StateTransition, Transition
 )
-from ...models.base import BaseDocument
+from .base_osdm_writer import BaseOSDMWriter, OSDMWriteOptions
 
-
-# ── Namespaces ────────────────────────────────────────────────────
+# Namespaces
 UML_NS = "http://www.omg.org/spec/UML/20131001"
 XMI_NS = "http://www.omg.org/spec/XMI/20131001"
 XSI_NS = "http://www.w3.org/2001/XMLSchema-instance"
 
 
 class UMLStateMachineWriter(BaseOSDMWriter):
-    """Serialises OSDM StateMachineModel to UML 2.x XMI."""
-
     name = "uml_state_machine"
     supported_extensions = (".uml", ".xmi")
 
-    def __init__(self, options: Optional[OSDMWriteOptions] = None):
+    def __init__(self, options: OSDMWriteOptions | None = None):
         super().__init__(options)
         self._id_counter = 0
 
@@ -53,12 +41,11 @@ class UMLStateMachineWriter(BaseOSDMWriter):
             f"{{{XMI_NS}}}version": "2.4.1",
         })
 
-        if document:
-            for sm in document.state_machines:
-                self._write_state_machine(root, sm)
+        for sm in document.state_machines:
+            self._write_state_machine(root, sm)
 
         xml_bytes = tostring(root, encoding="unicode", method="xml")
-        return xml_bytes.encode(self.options.encoding or "utf-8")
+        return xml_bytes.encode(getattr(self.options, "encoding", "utf-8") or "utf-8")
 
     def get_supported_media_types(self) -> list[str]:
         return ["application/xmi+xml", "application/xml"]
@@ -71,20 +58,21 @@ class UMLStateMachineWriter(BaseOSDMWriter):
         self._id_counter += 1
         return f"{prefix}_{self._id_counter}"
 
-    def _add_uml_element(self, parent: Element, tag: str, obj: Optional[BaseElement] = None, **attrs):
+    def _add_uml_element(self, parent: Element, tag: str, obj: BaseElement | None = None, **attrs):
+        """Create a UML element. If obj is given, its id is used as xmi:id."""
         if obj is not None:
             attrs.setdefault(f"{{{XMI_NS}}}id", obj.id)
         return SubElement(parent, f"{{{UML_NS}}}{tag}", attrs)
 
     # ── State Machine ───────────────────────────────────────────
     def _write_state_machine(self, root: Element, sm: StateMachineModel) -> None:
-        sm_elem = self._add_uml_element(root, "StateMachine", sm)
-        if sm.name:
-            sm_elem.set("name", sm.name)
-
-        # Write the top region
+        # StateMachineModel is not a BaseElement; set attributes manually
+        sm_elem = SubElement(root, f"{{{UML_NS}}}StateMachine", {
+            f"{{{XMI_NS}}}id": sm.id,
+            "name": sm.name or "",
+        })
+        # Write top region
         self._write_region(sm_elem, sm.top_region)
-
         # Write pseudo‑states
         for pseudo in sm.pseudo_states:
             self._write_pseudo_state(sm_elem, pseudo)
@@ -92,24 +80,17 @@ class UMLStateMachineWriter(BaseOSDMWriter):
     def _write_region(self, parent: Element, region: StateMachineRegion) -> None:
         reg_elem = self._add_uml_element(parent, "region", None, id=self._new_id("region"))
         if region.initial_state:
-            # In UML, the initial pseudo‑state is a separate element inside the region,
-            # connected by a transition to the first state. We'll create a pseudo‑state
-            # if not already present in the model.
-            # We'll check if any pseudo‑state with kind INITIAL exists; if not, create one.
-            initial_pseudo = self._find_initial_pseudo(region)
-            if not initial_pseudo:
-                initial_pseudo = self._add_uml_element(reg_elem, "pseudostate", None,
-                    id=self._new_id("initial"),
-                    name="",
-                    kind="initial")
-                # Create a transition from this pseudo‑state to the initial_state
-                trans = self._add_uml_element(reg_elem, "transition", None,
-                    id=self._new_id("trans_initial"))
-                trans.set("source", initial_pseudo.get(f"{{{XMI_NS}}}id"))
-                trans.set("target", region.initial_state.id)
-            else:
-                # Ensure the pseudo‑state is inside the region
-                reg_elem.append(initial_pseudo)
+            # Create an initial pseudo‑state and a transition to the initial state
+            init_pseudo = self._add_uml_element(reg_elem, "pseudostate", None,
+                id=self._new_id("initial"),
+                name="",
+                kind="initial")
+            # Transition
+            trans_elem = self._add_uml_element(reg_elem, "transition", None,
+                id=self._new_id("trans_initial"))
+            trans_elem.set("source", init_pseudo.get(f"{{{XMI_NS}}}id"))
+            trans_elem.set("target", region.initial_state.id)
+
         # Write states
         for state in region.states:
             self._write_state(reg_elem, state)
@@ -117,21 +98,13 @@ class UMLStateMachineWriter(BaseOSDMWriter):
         for trans in region.transitions:
             self._write_transition(reg_elem, trans)
 
-    def _find_initial_pseudo(self, region: StateMachineRegion) -> Optional[Element]:
-        # We don't have the containing StateMachineModel here; we'll check if any pseudo‑state
-        # in the region is initial. But pseudo states are stored at the StateMachineModel level,
-        # not in the region. We'll resolve later. For now return None.
-        return None
-
     def _write_state(self, parent: Element, state: State) -> None:
-        # Determine if it's a final state (using annotation or a dedicated field? We'll treat state with no outgoing transitions as final)
         is_final = len(state.outgoing_transitions) == 0 and not state.regions
         tag = "FinalState" if is_final else "State"
         elem = self._add_uml_element(parent, tag, state)
         if state.name:
             elem.set("name", state.name)
 
-        # Composite / orthogonal
         if state.is_composite:
             elem.set("isComposite", "true")
         if state.is_orthogonal:
@@ -145,9 +118,10 @@ class UMLStateMachineWriter(BaseOSDMWriter):
         for action in state.do_actions:
             self._write_activity(elem, "doActivity", action)
 
-        # Transitions owned by the state itself
+        # Transitions owned by the state (filter only StateTransition)
         for trans in state.outgoing_transitions:
-            self._write_transition(elem, trans)
+            if isinstance(trans, StateTransition):
+                self._write_transition(elem, trans)
 
         # Sub‑regions (for composite/orthogonal)
         for sub_region in state.regions:
@@ -171,7 +145,6 @@ class UMLStateMachineWriter(BaseOSDMWriter):
             trigger = SubElement(elem, f"{{{UML_NS}}}trigger")
             if trans.trigger.body:
                 trigger.set("name", trans.trigger.body)
-            # Could write a more detailed Event, but for now name suffices
 
         # Guard
         if trans.guard:
@@ -194,9 +167,7 @@ class UMLStateMachineWriter(BaseOSDMWriter):
                 })
 
     def _write_activity(self, parent: Element, tag: str, script: Script) -> None:
-        """Write an entry/exit/do activity as an opaque behavior."""
         elem = SubElement(parent, f"{{{UML_NS}}}{tag}")
-        # We'll embed the script as an opaque expression
         if script.script_body:
             SubElement(elem, f"{{{UML_NS}}}specification", {
                 f"{{{XSI_NS}}}type": "uml:LiteralString",

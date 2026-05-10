@@ -1,1 +1,6 @@
-from .base import SQLStorage, RelationalStorage
+from .base import RelationalStorage, SQLStorage
+
+__all__ = [
+    "RelationalStorage",
+    "SQLStorage",
+]

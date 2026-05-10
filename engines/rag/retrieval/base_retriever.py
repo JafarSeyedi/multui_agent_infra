@@ -1,5 +1,7 @@
 # rag/retrieval/base_retriever.py
-from abc import ABC, abstractmethod
+from abc import ABC
+from abc import abstractmethod
+
 from engines.rag.retrieval.retriever_result import RetrievalResult
 
 class BaseRetriever(ABC):

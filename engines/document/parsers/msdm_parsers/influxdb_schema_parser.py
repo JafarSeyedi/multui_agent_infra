@@ -18,26 +18,23 @@ All time‑series semantics (timestamp, tag, field) are mapped to MSDM Entity (k
 and Attribute fields (is_tag, is_field, annotations for retention policy, etc.) for
 lossless round‑trip.
 """
-
 from __future__ import annotations
+
 import re
 from pathlib import Path
-from typing import Optional, Dict, Any, List, Tuple
 
-from .base_msdm_parser import BaseMSDMParser
+from ...models.media_types import MEDIA_TYPES
+from ...models.msdm_models import Annotation
+from ...models.msdm_models import Attribute
+from ...models.msdm_models import Constraint
+from ...models.msdm_models import ConstraintType
+from ...models.msdm_models import DataType
+from ...models.msdm_models import Entity
+from ...models.msdm_models import EntityKind
+from ...models.msdm_models import MSDMDocument
+from ...models.msdm_models import ScalarType, Namespace
 from ..base import ParseOptions
-from ...models.msdm_models import (
-    MSDMDocument,
-    Entity,
-    Attribute,
-    DataType,
-    Constraint,
-    ConstraintType,
-    Index,
-    Annotation,
-    EntityKind,
-    ScalarType,
-)
+from .base_msdm_parser import BaseMSDMParser
 
 # ── Regular Expressions ────────────────────────────────────────────
 # Match CREATE DATABASE/BUCKET (InfluxDB 1.x / 2.x)
@@ -88,8 +85,12 @@ class InfluxDBSchemaParser(BaseMSDMParser):
         encoding = options.encoding or "utf-8"
         text = data.decode(encoding)
 
-        doc = MSDMDocument()
-        doc.namespace = Path(source_name).stem
+        doc = MSDMDocument(
+            document_id=Path(source_name).stem,
+            title=Path(source_name).stem,
+            media_type=MEDIA_TYPES.get("influxdb_schema", MEDIA_TYPES["txt"])
+        )
+        doc.namespace = Namespace(uri=Path(source_name).stem)
 
         # Remove comments (# and //)
         text = self._strip_comments(text)
@@ -103,13 +104,14 @@ class InfluxDBSchemaParser(BaseMSDMParser):
                 continue
             self._process_statement(stmt, doc)
 
-        # If no entities were created, create a default one from annotations?
+        # If no entities were created, create a default one from annotations
         if not doc.entities:
             # Create a placeholder entity to hold at least the database name
             db_name = next((a.value for a in doc.annotations if a.key == "database"), "unknown")
             entity = Entity(name=db_name, kind=EntityKind.TIMESERIES)
             doc.entities.append(entity)
 
+        self.resolve_references(doc)
         return doc
 
     # ── Comment stripping and statement splitting ──────────────────
@@ -119,7 +121,7 @@ class InfluxDBSchemaParser(BaseMSDMParser):
         text = re.sub(r"//.*", "", text)
         return text
 
-    def _split_statements(self, text: str) -> List[str]:
+    def _split_statements(self, text: str) -> list[str]:
         """Split by semicolons that are not inside parentheses."""
         statements = []
         current = ""
@@ -160,7 +162,6 @@ class InfluxDBSchemaParser(BaseMSDMParser):
                 duration = m.group(3)
                 replication = m.group(4)
                 shard_duration = m.group(5) or None
-                # Store as annotations on document
                 doc.annotations.append(Annotation(key=f"retention_policy_{policy_name}_database", value=database))
                 doc.annotations.append(Annotation(key=f"retention_policy_{policy_name}_duration", value=duration))
                 doc.annotations.append(Annotation(key=f"retention_policy_{policy_name}_replication", value=replication))
@@ -204,7 +205,6 @@ class InfluxDBSchemaParser(BaseMSDMParser):
             name="time",
             data_type=DataType(base=ScalarType.TIMESTAMP),
             required=True,
-            primary_key=True,
             is_field=False,
             is_tag=False,
         )
@@ -212,7 +212,6 @@ class InfluxDBSchemaParser(BaseMSDMParser):
         entity.attributes.append(timestamp_attr)
 
         # Parse field and tag definitions
-        # body is something like: FIELD value float DEFAULT 0.0, TAG host, TAG region, FIELD temp int
         self._parse_measurement_fields(body, entity)
 
         # WITH options (retention policy, etc.)
@@ -241,7 +240,7 @@ class InfluxDBSchemaParser(BaseMSDMParser):
                     name=name,
                     data_type=dt,
                     is_field=True,
-                    required=False,  # fields are not required unless specified
+                    required=False,
                 )
                 if default_val:
                     attr.default_value = default_val.strip()
@@ -289,7 +288,7 @@ class InfluxDBSchemaParser(BaseMSDMParser):
         return s
 
     @staticmethod
-    def _split_by_comma(text: str) -> List[str]:
+    def _split_by_comma(text: str) -> list[str]:
         """Split by commas, ignoring those inside parentheses."""
         parts = []
         depth = 0
@@ -309,7 +308,7 @@ class InfluxDBSchemaParser(BaseMSDMParser):
         return parts
 
     @staticmethod
-    def _parse_options(options_str: str) -> List[Tuple[str, str]]:
+    def _parse_options(options_str: str) -> list[tuple[str, str]]:
         """Parse key=value pairs from a WITH clause."""
         pairs = []
         for m in RE_OPTION.finditer(options_str):

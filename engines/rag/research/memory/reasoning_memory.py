@@ -1,9 +1,7 @@
 # rag/research/memory/reasoning_memory.py
-
 from __future__ import annotations
 
 import time
-from typing import List, Dict, Optional
 from dataclasses import dataclass
 
 @dataclass
@@ -13,7 +11,7 @@ class ReasoningStep:
     """
     __slots__ = ("step", "details", "timestamp", "meta")
 
-    def __init__(self, step: str, details: str, meta: Optional[dict] = None) -> None:
+    def __init__(self, step: str, details: str, meta: dict | None = None) -> None:
         self.step = step
         self.details = details
         self.meta = meta or {}
@@ -40,9 +38,9 @@ class ReasoningMemory:
     """
 
     def __init__(self) -> None:
-        self._steps: List[ReasoningStep] = []
-        self._groups: List[dict] = []     # for nested sections
-        self._current_group: Optional[str] = None
+        self._steps: list[ReasoningStep] = []
+        self._groups: list[dict] = []     # for nested sections
+        self._current_group: str | None = None
 
     # -------------------------------------------------------------------------
     # LOGGING
@@ -53,7 +51,7 @@ class ReasoningMemory:
         step: str,
         details: str,
         *,
-        meta: Optional[dict] = None
+        meta: dict | None = None
     ):
         """
         Log a single reasoning event.
@@ -90,7 +88,7 @@ class ReasoningMemory:
         self.log("StartGroup", f"Entering reasoning group '{name}'")
         return group
 
-    def end_group(self, name: Optional[str] = None):
+    def end_group(self, name: str | None = None):
         """
         Ends current reasoning block.
         """
@@ -111,7 +109,7 @@ class ReasoningMemory:
     # RETRIEVE TRACE
     # -------------------------------------------------------------------------
 
-    def dump(self) -> Dict[str, object]:
+    def dump(self) -> dict[str, object]:
         """
         Returns full trace including:
         - flat list of steps
@@ -122,7 +120,7 @@ class ReasoningMemory:
             "groups": self._groups
         }
 
-    def summary(self) -> List[str]:
+    def summary(self) -> list[str]:
         """
         Human-readable condensed version (for UI/debug).
         """
@@ -150,4 +148,3 @@ class ReasoningMemory:
         else:
             self._steps = []
         return True
-

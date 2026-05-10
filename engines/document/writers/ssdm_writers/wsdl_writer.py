@@ -1,6 +1,6 @@
 # engines/document/writers/ssdm_writers/wsdl_writer.py
 """
-WSDL 1.1 Writer – serialises an SSDM_DOCUMENT into a WSDL 1.1 XML file.
+WSDL 1.1 Writer – serialises an SSDMDocument  into a WSDL 1.1 XML file.
 
 Mapping rules (SSDM → WSDL):
 - document.title                                           → wsdl:definitions name
@@ -15,29 +15,22 @@ Mapping rules (SSDM → WSDL):
 
 Every element is derived from typed SSDM/MSDM fields; no annotations are used.
 """
-
 from __future__ import annotations
-from pathlib import Path
-from typing import Optional, Dict, Any, List, cast
-from xml.etree.ElementTree import Element, SubElement, tostring
 
-from .base_ssdm_writer import BaseSSDMWriter, SSDMWriteOptions
-from ...models.ssdm_models import (
-    SSDM_DOCUMENT,
-    Operation,
-    Parameter,
-    RequestBody,
-    Response,
-    Server,
-)
-from ...models.msdm_models import (
-    MSDMDocument,
-    Entity,
-    Attribute,
-    DataType,
-    ScalarType,
-)
-from ...models.base import BaseDocument
+from xml.etree.ElementTree import Element
+from xml.etree.ElementTree import SubElement
+from xml.etree.ElementTree import tostring
+
+from ...models.msdm_models import DataType
+from ...models.msdm_models import Entity
+from ...models.msdm_models import MSDMDocument
+from ...models.msdm_models import ScalarType
+from ...models.ssdm_models import ServiceOperation
+from ...models.ssdm_models import Parameter
+from ...models.ssdm_models import Server
+from ...models.ssdm_models import SSDMDocument 
+from .base_ssdm_writer import BaseSSDMWriter
+from .base_ssdm_writer import SSDMWriteOptions
 
 # ── Namespaces ────────────────────────────────────────────────────
 WSDL_NS = "http://schemas.xmlsoap.org/wsdl/"
@@ -46,16 +39,16 @@ XSD_NS  = "http://www.w3.org/2001/XMLSchema"
 
 
 class WSDLWriter(BaseSSDMWriter):
-    """Serialises an SSDM_DOCUMENT to WSDL 1.1 XML."""
+    """Serialises an SSDMDocument  to WSDL 1.1 XML."""
 
     name = "wsdl"
     supported_extensions = (".wsdl",)
 
-    def __init__(self, options: Optional[SSDMWriteOptions] = None):
+    def __init__(self, options: SSDMWriteOptions | None = None):
         super().__init__(options)
         self._tns = "http://tempuri.org/"  # will be set from document if available
 
-    async def _write_design(self, document: SSDM_DOCUMENT) -> bytes:
+    async def _write_design(self, document: SSDMDocument ) -> bytes:
         self._tns = f"http://{self._safe_name(document.title or 'service')}.local/"
         root = Element(f"{{{WSDL_NS}}}definitions", {
             "xmlns": WSDL_NS,
@@ -91,7 +84,10 @@ class WSDLWriter(BaseSSDMWriter):
         self._write_service(root, document.title or "Service", binding_name, document.servers)
 
         xml_bytes = tostring(root, encoding="unicode", method="xml")
-        return xml_bytes.encode(self.options.encoding or "utf-8")
+        encoding = "utf-8"
+        if self.options and self.options.encoding:
+            encoding = self.options.encoding
+        return xml_bytes.encode(encoding)
 
     def get_supported_media_types(self) -> list[str]:
         return ["application/xml"]
@@ -153,17 +149,17 @@ class WSDLWriter(BaseSSDMWriter):
             inner = self._msdm_to_xsd_type(dt.element_type)
             return f"{inner}"  # arrays not directly expressed; we'll just use inner type
         if base == ScalarType.REF and dt.ref_entity:
-            return f"tns:{dt.ref_entity}"
+            return f"tns:{dt.ref_entity.name}"
         if base == ScalarType.STRUCT:
             return "xsd:anyType"
         return "xsd:string"
 
     # ── Messages ──────────────────────────────────────────────────
-    def _build_messages(self, operations: List[Operation]) -> Dict[str, List[tuple[str, str]]]:
-        messages: Dict[str, List[tuple]] = {}
+    def _build_messages(self, operations: list[ServiceOperation]) -> dict[str, list[tuple[str, str]]]:
+        messages: dict[str, list[tuple]] = {}
         for op in operations:
             # Input message parts
-            input_parts: List[tuple] = []
+            input_parts: list[tuple] = []
             for param in op.parameters:
                 ptype = self._parameter_to_xsd_type(param)
                 input_parts.append((param.name, ptype))
@@ -177,7 +173,7 @@ class WSDLWriter(BaseSSDMWriter):
             messages[f"{op.name}Request"] = input_parts
 
             # Output message parts (first 200 response)
-            output_parts: List[tuple] = []
+            output_parts: list[tuple] = []
             for resp in op.responses:
                 if resp.status_code in ("200", "201") and resp.content_entity:
                     output_parts.append(("body", f"tns:{resp.content_entity.name}"))
@@ -190,11 +186,11 @@ class WSDLWriter(BaseSSDMWriter):
     def _parameter_to_xsd_type(self, param: Parameter) -> str:
         if param.type_entity:
             return f"tns:{param.type_entity.name}"
-        if param.type_string:
-            return f"xsd:{param.type_string}"
+        if param.type_entity:
+            return f"xsd:{param.type_entity.name}"
         return "xsd:string"
 
-    def _write_message(self, root: Element, name: str, parts: List[tuple]) -> None:
+    def _write_message(self, root: Element, name: str, parts: list[tuple]) -> None:
         msg = SubElement(root, f"{{{WSDL_NS}}}message", {"name": name})
         for part_name, part_type in parts:
             SubElement(msg, f"{{{WSDL_NS}}}part", {
@@ -203,7 +199,7 @@ class WSDLWriter(BaseSSDMWriter):
             })
 
     # ── Port type ─────────────────────────────────────────────────
-    def _write_port_type(self, root: Element, service_name: str, operations: List[Operation]) -> None:
+    def _write_port_type(self, root: Element, service_name: str, operations: list[ServiceOperation]) -> None:
         pt = SubElement(root, f"{{{WSDL_NS}}}portType", {"name": f"{service_name}PortType"})
         for op in operations:
             operation = SubElement(pt, f"{{{WSDL_NS}}}operation", {"name": op.name})
@@ -218,7 +214,7 @@ class WSDLWriter(BaseSSDMWriter):
             })
 
     # ── Binding ───────────────────────────────────────────────────
-    def _write_binding(self, root: Element, binding_name: str, service_name: str, operations: List[Operation]) -> None:
+    def _write_binding(self, root: Element, binding_name: str, service_name: str, operations: list[ServiceOperation]) -> None:
         bind = SubElement(root, f"{{{WSDL_NS}}}binding", {
             "name": binding_name,
             "type": f"tns:{service_name}PortType",
@@ -236,7 +232,7 @@ class WSDLWriter(BaseSSDMWriter):
             SubElement(oper, f"{{{WSDL_NS}}}output")
 
     # ── Service ───────────────────────────────────────────────────
-    def _write_service(self, root: Element, service_name: str, binding_name: str, servers: List[Server]) -> None:
+    def _write_service(self, root: Element, service_name: str, binding_name: str, servers: list[Server]) -> None:
         svc = SubElement(root, f"{{{WSDL_NS}}}service", {"name": service_name})
         for idx, server in enumerate(servers):
             port = SubElement(svc, f"{{{WSDL_NS}}}port", {

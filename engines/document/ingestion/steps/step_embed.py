@@ -1,11 +1,11 @@
 # engines/document/ingestion/steps/step_embed.py
-
 from __future__ import annotations
+
 from datetime import datetime
-from typing import List
-from ..ingestion_models import EmbeddingRecord
+
 from ..ingestion_context import IngestionContext
 from ..ingestion_errors import EmbeddingFailed
+from ..ingestion_models import EmbeddingRecord
 
 
 async def step_embed(ctx: IngestionContext) -> IngestionContext:
@@ -24,7 +24,7 @@ async def step_embed(ctx: IngestionContext) -> IngestionContext:
         # embed_chunks returns: Dict[chunk_id -> embedding]
         embed_map = await ctx.embedding_service.embed_chunks(ctx.chunks)
 
-        all_embeddings: List[EmbeddingRecord] = []
+        all_embeddings: list[EmbeddingRecord] = []
 
         for chunk in ctx.chunks:
             emb_vector = embed_map.get(chunk.chunk_id)

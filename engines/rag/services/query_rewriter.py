@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, List
+from typing import Any
 
 
 class QueryRewriter:
@@ -8,7 +8,7 @@ class QueryRewriter:
         self.llm = llm
         self.num_queries = num_queries
 
-    async def rewrite(self, query: str, num_queries: int | None = None) -> List[str]:
+    async def rewrite(self, query: str, num_queries: int | None = None) -> list[str]:
         target = num_queries or self.num_queries
         prompt = (
             f"Generate {target} diverse retrieval queries for the user question below. "

@@ -2,11 +2,14 @@
 """
 MSDM Format Capability Profiles – describes what each MSDM format can express.
 """
-
 from __future__ import annotations
-from dataclasses import dataclass, field
-from enum import Enum, Flag, auto
-from typing import List, Dict, Set
+
+from dataclasses import dataclass
+from dataclasses import field
+from enum import auto
+from enum import Enum
+from enum import Flag
+
 from .media_types import DocumentFormat
 
 # ============================================================
@@ -105,16 +108,16 @@ class MSDM_FormatCapability:
     description: str
 
     # Scalar types supported
-    scalar_types: List[ScalarSupport] = field(default_factory=list)
+    scalar_types: list[ScalarSupport] = field(default_factory=list)
     # Composite types supported
-    composite_types: List[CompositeSupport] = field(default_factory=list)
+    composite_types: list[CompositeSupport] = field(default_factory=list)
     # Nesting depth allowed
     nesting_depth: NestingDepth = NestingDepth.NONE
 
     # Constraints
-    constraints: List[ConstraintCapability] = field(default_factory=list)
+    constraints: list[ConstraintCapability] = field(default_factory=list)
     # Indexes
-    indexes: List[IndexCapability] = field(default_factory=list)
+    indexes: list[IndexCapability] = field(default_factory=list)
 
     # Inheritance
     inheritance: InheritanceSupport = InheritanceSupport.NONE

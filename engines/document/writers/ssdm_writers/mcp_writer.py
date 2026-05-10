@@ -1,12 +1,12 @@
 # engines/document/writers/ssdm_writers/mcp_writer.py
 """
-MCP (Model Context Protocol) Writer – serialises an SSDM_DOCUMENT into an
+MCP (Model Context Protocol) Writer – serialises an SSDMDocument  into an
 MCP server manifest JSON.
 
 Mapping rules (SSDM → MCP):
-- SSDM_DOCUMENT.title          → name
-- SSDM_DOCUMENT.description    → description
-- Each Operation               → a tool entry
+- SSDMDocument .title          → name
+- SSDMDocument .description    → description
+- Each ServiceOperation               → a tool entry
   - operation.name             → tool name
   - operation.description      → tool description
   - operation.parameters       → inputSchema (JSON Schema from MSDM or type_string)
@@ -14,41 +14,33 @@ Mapping rules (SSDM → MCP):
   - operation.responses        → outputSchema (optional, from response body)
 - MSDM type definitions are inlined into the JSON Schema for tools.
 """
-
 from __future__ import annotations
-import json
-from pathlib import Path
-from typing import Optional, Dict, Any, List, cast
 
-from .base_ssdm_writer import BaseSSDMWriter, SSDMWriteOptions
-from ...models.ssdm_models import (
-    SSDM_DOCUMENT,
-    Operation,
-    Parameter,
-    ParameterLocation,
-    RequestBody,
-    Response,
-)
-from ...models.msdm_models import (
-    Entity,
-    Attribute,
-    DataType,
-    ScalarType,
-)
-from ...models.base import BaseDocument
+import json
+from typing import Any
+
+from ...models.msdm_models import Attribute
+from ...models.msdm_models import DataType
+from ...models.msdm_models import Entity
+from ...models.msdm_models import ScalarType
+from ...models.ssdm_models import ServiceOperation
+from ...models.ssdm_models import Parameter
+from ...models.ssdm_models import SSDMDocument 
+from .base_ssdm_writer import BaseSSDMWriter
+from .base_ssdm_writer import SSDMWriteOptions
 
 
 class MCPWriter(BaseSSDMWriter):
-    """Serialises an SSDM_DOCUMENT to an MCP server manifest JSON."""
+    """Serialises an SSDMDocument  to an MCP server manifest JSON."""
 
     name = "mcp"
     supported_extensions = (".mcp.json",)
 
-    def __init__(self, options: Optional[SSDMWriteOptions] = None):
+    def __init__(self, options: SSDMWriteOptions | None = None):
         super().__init__(options)
 
-    async def _write_design(self, document: SSDM_DOCUMENT) -> bytes:
-        manifest: Dict[str, Any] = {
+    async def _write_design(self, document: SSDMDocument ) -> bytes:
+        manifest: dict[str, Any] = {
             "name": document.title or "untitled",
             "version": document.version or "1.0.0",
             "tools": [],
@@ -70,7 +62,7 @@ class MCPWriter(BaseSSDMWriter):
             manifest["tools"].append(tool)
 
         json_str = json.dumps(manifest, indent=2, ensure_ascii=False)
-        return json_str.encode(self.options.encoding or "utf-8")
+        return json_str.encode(getattr(self.options, "encoding", "utf-8") or "utf-8")
 
     def get_supported_media_types(self) -> list[str]:
         return ["application/json"]
@@ -79,11 +71,11 @@ class MCPWriter(BaseSSDMWriter):
         return list(self.supported_extensions)
 
     # ── Build input schema for a tool ──────────────────────────────
-    def _build_input_schema(self, op: Operation) -> dict:
+    def _build_input_schema(self, op: ServiceOperation) -> dict:
         """
         Construct a JSON Schema from parameters and request body.
         """
-        schema: Dict[str, Any] = {
+        schema: dict[str, Any] = {
             "type": "object",
             "properties": {},
         }
@@ -109,7 +101,7 @@ class MCPWriter(BaseSSDMWriter):
             schema["required"] = required
         return schema
 
-    def _build_output_schema(self, op: Operation) -> Optional[dict]:
+    def _build_output_schema(self, op: ServiceOperation) -> dict | None:
         """
         If any response defines a content entity, use the first one as output schema.
         """
@@ -122,13 +114,13 @@ class MCPWriter(BaseSSDMWriter):
     def _parameter_to_json_schema(self, param: Parameter) -> dict:
         if param.type_entity:
             return self._entity_to_json_schema(param.type_entity)
-        if param.type_string:
-            return {"type": param.type_string}
+        if param.type_entity:
+            return {"type": param.type_entity.name}
         return {"type": "string"}
 
     # ── MSDM Entity → JSON Schema object ───────────────────────────
     def _entity_to_json_schema(self, entity: Entity) -> dict:
-        schema: Dict[str, Any] = {
+        schema: dict[str, Any] = {
             "type": "object",
             "properties": {},
         }
@@ -156,7 +148,7 @@ class MCPWriter(BaseSSDMWriter):
             ) if dt.value_type else {"type": "string"}
             return {"type": "object", "additionalProperties": val}
         if base == ScalarType.REF and dt.ref_entity:
-            return {"$ref": f"#/definitions/{dt.ref_entity}"}
+            return {"$ref": f"#/definitions/{dt.ref_entity.name}"}
         if base == ScalarType.STRUCT:
             return {"type": "object"}
         return {"type": self._scalar_to_json_type(base)}
@@ -182,6 +174,6 @@ class MCPWriter(BaseSSDMWriter):
         return mapping.get(base, "string")
 
     @staticmethod
-    def _make_temp_attribute(dt: Optional[DataType]) -> Attribute:
+    def _make_temp_attribute(dt: DataType | None) -> Attribute:
         """Create a temporary attribute with the given DataType for recursive calls."""
         return Attribute(name="temp", data_type=dt or DataType(base=ScalarType.STRING))

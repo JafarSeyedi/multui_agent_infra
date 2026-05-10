@@ -1,38 +1,28 @@
 # engines/document/writers/ssdm_writers/python_service_writer.py
 """
-Python Service Writer – serialises an SSDM_DOCUMENT into a Python web service
+Python Service Writer – serialises an SSDMDocument  into a Python web service
 file using the FastAPI framework.
 
 All type information is derived from the typed SSDM and MSDM models without
 annotations.  Each operation becomes a FastAPI route; MSDM entities become
 Pydantic models.
 """
-
 from __future__ import annotations
-from pathlib import Path
-from typing import Optional, Dict, Any, List, Set, cast
 
-from .base_ssdm_writer import BaseSSDMWriter, SSDMWriteOptions
-from ...models.ssdm_models import (
-    SSDM_DOCUMENT,
-    Operation,
-    Parameter,
-    ParameterLocation,
-    RequestBody,
-    Response,
-)
-from ...models.msdm_models import (
-    MSDMDocument,
-    Entity,
-    Attribute,
-    DataType,
-    ScalarType,
-)
-from ...models.base import BaseDocument
+from ...models.msdm_models import DataType
+from ...models.msdm_models import Entity
+from ...models.msdm_models import ScalarType
+from ...models.ssdm_models import ServiceOperation
+from ...models.ssdm_models import Parameter
+from ...models.ssdm_models import ParameterLocation
+from ...models.ssdm_models import RequestBody
+from ...models.ssdm_models import SSDMDocument 
+from .base_ssdm_writer import BaseSSDMWriter
+from .base_ssdm_writer import SSDMWriteOptions
 
 
 # Mapping from MSDM scalar to Python type
-SCALAR_TO_PYTHON: Dict[ScalarType, str] = {
+SCALAR_TO_PYTHON: dict[ScalarType, str] = {
     ScalarType.STRING:    "str",
     ScalarType.INT:       "int",
     ScalarType.LONG:      "int",
@@ -51,18 +41,18 @@ SCALAR_TO_PYTHON: Dict[ScalarType, str] = {
 
 
 class PythonServiceWriter(BaseSSDMWriter):
-    """Serialises an SSDM_DOCUMENT to a Python FastAPI service file."""
+    """Serialises an SSDMDocument  to a Python FastAPI service file."""
 
     name = "python_service"
     supported_extensions = (".py",)
 
-    def __init__(self, options: Optional[SSDMWriteOptions] = None):
+    def __init__(self, options: SSDMWriteOptions | None = None):
         super().__init__(options)
-        self._imports: Set[str] = set()
-        self._generated_models: Set[str] = set()
+        self._imports: set[str] = set()
+        self._generated_models: set[str] = set()
 
-    async def _write_design(self, document: SSDM_DOCUMENT) -> bytes:
-        lines: List[str] = []
+    async def _write_design(self, document: SSDMDocument ) -> bytes:
+        lines: list[str] = []
         self._imports = {"from fastapi import FastAPI, Query, Path, Header, Cookie, Body, HTTPException"}
         self._generated_models.clear()
 
@@ -83,7 +73,7 @@ class PythonServiceWriter(BaseSSDMWriter):
         # Prepend imports
         import_block = "\n".join(sorted(self._imports))
         source = import_block + "\n\n" + "\n".join(lines)
-        return source.encode(self.options.encoding or "utf-8")
+        return source.encode(getattr(self.options, "encoding", "utf-8") or "utf-8")
 
     def get_supported_media_types(self) -> list[str]:
         return ["text/x-python"]
@@ -92,7 +82,7 @@ class PythonServiceWriter(BaseSSDMWriter):
         return list(self.supported_extensions)
 
     # ── Pydantic model generator ────────────────────────────────────
-    def _write_pydantic_model(self, lines: List[str], entity: Entity) -> None:
+    def _write_pydantic_model(self, lines: list[str], entity: Entity) -> None:
         model_name = self._safe_python_name(entity.name)
         if model_name in self._generated_models:
             return
@@ -113,13 +103,13 @@ class PythonServiceWriter(BaseSSDMWriter):
         self._imports.add("from pydantic import BaseModel")
 
     # ── Route writer ────────────────────────────────────────────────
-    def _write_route(self, lines: List[str], op: Operation) -> None:
+    def _write_route(self, lines: list[str], op: ServiceOperation) -> None:
         method = op.http_method.value.lower() if op.http_method else "get"
         path = op.path or "/"
         func_name = self._safe_python_name(op.name)
 
         # Build parameter list
-        params: List[str] = []
+        params: list[str] = []
         # Path/Query/Header/Cookie parameters
         for param in op.parameters:
             param_str = self._build_param_declaration(param)
@@ -154,11 +144,11 @@ class PythonServiceWriter(BaseSSDMWriter):
                         break
         # We could add response_model param, but we'll just show a placeholder
         lines.append(f"    # TODO: implement logic, return {response_type}")
-        lines.append(f"    raise HTTPException(status_code=501, detail=\"Not implemented\")")
+        lines.append("    raise HTTPException(status_code=501, detail=\"Not implemented\")")
         lines.append("")
 
     # ── Parameter declaration ──────────────────────────────────────
-    def _build_param_declaration(self, param: Parameter) -> Optional[str]:
+    def _build_param_declaration(self, param: Parameter) -> str | None:
         py_type = self._param_type_to_python(param)
         if not py_type:
             return None
@@ -179,15 +169,15 @@ class PythonServiceWriter(BaseSSDMWriter):
             return None  # body handled separately
         return None
 
-    def _param_type_to_python(self, param: Parameter) -> Optional[str]:
+    def _param_type_to_python(self, param: Parameter) -> str | None:
         if param.type_entity:
             return self._safe_python_name(param.type_entity.name)
-        if param.type_string:
-            return param.type_string
+        if param.type_entity:
+            return param.type_entity.name
         return "str"
 
     # ── Request body declaration ───────────────────────────────────
-    def _build_body_declaration(self, body: RequestBody) -> Optional[str]:
+    def _build_body_declaration(self, body: RequestBody) -> str | None:
         model_name = "Any"
         if body.content_entity:
             model_name = self._safe_python_name(body.content_entity.name)
@@ -206,10 +196,10 @@ class PythonServiceWriter(BaseSSDMWriter):
             val = self._datatype_to_python(dt.value_type, True) if dt.value_type else "Any"
             self._imports.add("from typing import Dict")
             type_str = f"Dict[{key}, {val}]"
-        elif base == ScalarType.REF:
-            type_str = self._safe_python_name(dt.ref_entity or "object")
+        elif base == ScalarType.REF and dt.ref_entity:
+            type_str = self._safe_python_name(dt.ref_entity.name or "object")
         elif base == ScalarType.STRUCT:
-            type_str = self._safe_python_name(dt.ref_entity or "object") if dt.ref_entity else "Dict[str, Any]"
+            type_str = self._safe_python_name(dt.ref_entity.name or "object") if dt.ref_entity else "Dict[str, Any]"
         elif base in SCALAR_TO_PYTHON:
             py = SCALAR_TO_PYTHON[base]
             type_str = py

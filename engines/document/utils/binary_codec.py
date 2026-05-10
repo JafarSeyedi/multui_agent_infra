@@ -1,23 +1,23 @@
 # engnes/document/utils/binary_codec.py
-
 import base64
 import hashlib
+
+from ..models.base import BinaryEncoding
+from ..models.base import BinaryPayload
+from ..models.media_types import MediaType
 # import zlib
 # import gzip
 # import brotli  # type: ignore[import-untyped]
-from typing import Optional
-from ..models.media_types import MediaType
-from ..models.base import BinaryPayload, BinaryEncoding
 
 class BinaryCodec:
 
     DEFAULT_TEXT_ENCODING = "utf-8"
 
     @staticmethod
-    def from_bytes(data: bytes, media_type: MediaType, text_encoding: Optional[str] = None) -> BinaryPayload:
+    def from_bytes(data: bytes, media_type: MediaType, text_encoding: str | None = None) -> BinaryPayload:
 
         encoding = text_encoding or BinaryCodec.DEFAULT_TEXT_ENCODING
-        
+
         data_b64 = base64.b64encode(data).decode(encoding)
 
         return BinaryPayload(
@@ -29,7 +29,7 @@ class BinaryCodec:
         )
 
     @staticmethod
-    def to_bytes(payload: BinaryPayload, text_encoding: Optional[str] = None) -> bytes:
+    def to_bytes(payload: BinaryPayload, text_encoding: str | None = None) -> bytes:
 
         encoding = text_encoding or BinaryCodec.DEFAULT_TEXT_ENCODING
         return base64.b64decode((payload.data or '').encode(encoding))
@@ -39,7 +39,7 @@ class BinaryCodecAdvanced:
     DEFAULT_TEXT_ENCODING = "utf-8"
 
     @staticmethod
-    def encode(data: bytes, encoding: BinaryEncoding, text_encoding: Optional[str] = None) -> str:
+    def encode(data: bytes, encoding: BinaryEncoding, text_encoding: str | None = None) -> str:
         enc = text_encoding or BinaryCodecAdvanced.DEFAULT_TEXT_ENCODING
 
         if encoding == BinaryEncoding.BASE64:
@@ -69,7 +69,7 @@ class BinaryCodecAdvanced:
         raise ValueError(f"Unsupported encoding: {encoding}")
 
     @staticmethod
-    def decode(payload: BinaryPayload, text_encoding: Optional[str] = None) -> bytes:
+    def decode(payload: BinaryPayload, text_encoding: str | None = None) -> bytes:
         enc = text_encoding or BinaryCodecAdvanced.DEFAULT_TEXT_ENCODING
         data = payload.data or ''
 

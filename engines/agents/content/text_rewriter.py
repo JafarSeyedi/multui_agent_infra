@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Dict, Optional
-from engines.storage.event_log.base import LogStorage
-from engines.storage.vector.base import VectorDBAdapter
+from typing import Any
 
 from ..base_agents.base_agent import BaseAgent
-from .models.content_agents_1_8 import RewriteChange, TextRewriteInput, TextRewriteOutput
+from .models.content_agents_1_8 import RewriteChange
+from .models.content_agents_1_8 import TextRewriteInput
+from .models.content_agents_1_8 import TextRewriteOutput
+from engines.storage.event_log.base import LogStorage
+from engines.storage.vector.base import VectorDBAdapter
 
 
 class TextRewriterAgent(BaseAgent):
@@ -19,9 +21,9 @@ class TextRewriterAgent(BaseAgent):
         agent_id: str,
         agent_name: str,
         llm,
-        vector_db: Optional[VectorDBAdapter] = None,
-        storage: Optional[LogStorage] = None,
-        metadata: Optional[dict[str, Any]] = None,
+        vector_db: VectorDBAdapter | None = None,
+        storage: LogStorage | None = None,
+        metadata: dict[str, Any] | None = None,
     ):
         super().__init__(agent_id, agent_name, vector_db, storage, metadata)
         self.llm = llm

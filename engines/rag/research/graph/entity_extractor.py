@@ -3,8 +3,9 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Any, Iterable, List, Dict
+from typing import Any
 
 
 @dataclass
@@ -19,8 +20,8 @@ class EntityExtractor:
     def __init__(self, llm: Any = None):
         self.llm = llm
 
-    async def extract(self, chunks: Iterable[Any]) -> List[Entity]:
-        entities: List[Entity] = []
+    async def extract(self, chunks: Iterable[Any]) -> list[Entity]:
+        entities: list[Entity] = []
         for chunk in chunks:
             text = getattr(chunk, "text", "")
             chunk_id = getattr(chunk, "chunk_id", "unknown")
@@ -28,7 +29,7 @@ class EntityExtractor:
             entities.extend(self._heuristic_extract(text, chunk_id))
         return self._deduplicate(entities)
 
-    async def _llm_extract(self, text: str, chunk_id: str) -> List[Entity]:
+    async def _llm_extract(self, text: str, chunk_id: str) -> list[Entity]:
         if self.llm is None or not text.strip():
             return []
         prompt = (
@@ -41,7 +42,7 @@ class EntityExtractor:
         except Exception:
             return []
 
-        output: List[Entity] = []
+        output: list[Entity] = []
         for item in parsed if isinstance(parsed, list) else []:
             if not isinstance(item, dict) or not item.get("name"):
                 continue
@@ -55,15 +56,15 @@ class EntityExtractor:
             )
         return output
 
-    def _heuristic_extract(self, text: str, chunk_id: str) -> List[Entity]:
+    def _heuristic_extract(self, text: str, chunk_id: str) -> list[Entity]:
         pattern = r"\b[A-Z][a-zA-Z0-9\-]{2,}\b"
         return [
             Entity(name=match, type="keyword", confidence=0.5, source_chunk=chunk_id)
             for match in re.findall(pattern, text)
         ]
 
-    def _deduplicate(self, entities: List[Entity]) -> List[Entity]:
-        best: Dict[tuple[str, str], Entity] = {}
+    def _deduplicate(self, entities: list[Entity]) -> list[Entity]:
+        best: dict[tuple[str, str], Entity] = {}
         for entity in entities:
             key = (entity.name.casefold(), entity.type.casefold())
             current = best.get(key)

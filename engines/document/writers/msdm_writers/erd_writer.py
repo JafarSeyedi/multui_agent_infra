@@ -1,26 +1,26 @@
 # engines/document/writers/msdm_writers/erd_writer.py
 """
-ERD (Entity‑Relationship Diagram) Writer – converts an MSDMDocument into
+ERD (Entity‑EntityRelationship Diagram) Writer – converts an MSDMDocument into
 a JSON (default) or XML representation of entities and relationships.
 Soft‑delete is ignored – the writer produces a clean schema snapshot.
 """
-
 from __future__ import annotations
-import json
-from typing import Optional, Dict, Any, List
 
-from .base_msdm_writer import BaseMSDMWriter, WriteTarget, SoftDeleteStrategy
+import json
+from typing import Any, Dict, List, Union
+from xml.etree.ElementTree import Element, SubElement, tostring
+
+from ...models.msdm_models import Attribute
+from ...models.msdm_models import Cardinality
+from ...models.msdm_models import ConstraintType
+from ...models.msdm_models import DataType
+from ...models.msdm_models import Entity
+from ...models.msdm_models import MSDMDocument
+from ...models.msdm_models import EntityRelationship, ScalarType
 from ..base import WriteOptions
-from ...models.msdm_models import (
-    MSDMDocument,
-    Entity,
-    Attribute,
-    DataType,
-    Constraint,
-    ConstraintType,
-    Relationship,
-    Cardinality,
-)
+from .base_msdm_writer import BaseMSDMWriter
+from .base_msdm_writer import SoftDeleteStrategy
+from .base_msdm_writer import WriteTarget
 
 
 class ERDWriter(BaseMSDMWriter):
@@ -30,7 +30,7 @@ class ERDWriter(BaseMSDMWriter):
 
     def __init__(
         self,
-        options: Optional[WriteOptions] = None,
+        options: WriteOptions | None = None,
         target_mode: WriteTarget = WriteTarget.DESIGN_FILE,
         soft_delete_strategy: SoftDeleteStrategy = SoftDeleteStrategy.NONE,
         output_format: str = "json",   # "json" or "xml"
@@ -41,48 +41,56 @@ class ERDWriter(BaseMSDMWriter):
     # ── Public API ─────────────────────────────────────────────────
     async def _write_design(self, document: MSDMDocument) -> bytes:
         if self.output_format == "xml":
-            data = self._build_xml(document)
-            return data.encode(self.options.encoding or "utf-8")
+            x_data = self._build_xml(document)
+            return x_data.encode(getattr(self.options, "encoding", "utf-8") or "utf-8")
         else:
-            data = self._build_json(document)
-            return json.dumps(data, indent=2, ensure_ascii=False).encode(self.options.encoding or "utf-8")
+            j_data = self._build_json(document)
+            return json.dumps(j_data, indent=2, ensure_ascii=False).encode(
+                getattr(self.options, "encoding", "utf-8") or "utf-8"
+            )
 
-    async def get_supported_media_types(self) -> list[str]:
+    def get_supported_media_types(self) -> list[str]:
         return ["application/json", "application/xml"]
 
-    async def get_supported_extensions(self) -> list[str]:
-        return self.supported_extensions
+    def get_supported_extensions(self) -> list[str]:
+        return list(self.supported_extensions)
 
     # ── JSON representation ────────────────────────────────────────
-    def _build_json(self, doc: MSDMDocument) -> dict:
-        result = {}
+    def _build_json(self, doc: MSDMDocument) -> dict[str, Any]:
+        result: dict[str, Any] = {}
         if doc.namespace:
             result["namespace"] = doc.namespace
-        result["entities"] = [self._entity_to_json(e) for e in doc.entities]
-        result["relationships"] = [self._relationship_to_json(r) for r in doc.relationships]
+        entities: list[dict] = []
+        for e in doc.entities:
+            entities.append(self._entity_to_json(e))
+        result["entities"] = entities
+        relationships: list[dict] = []
+        for r in doc.relationships:
+            relationships.append(self._relationship_to_json(r))
+        result["relationships"] = relationships
         return result
 
-    def _entity_to_json(self, entity: Entity) -> dict:
-        obj = {"name": entity.name}
+    def _entity_to_json(self, entity: Entity) -> dict[str, Any]:
+        obj: dict[str, Any] = {"name": entity.name}
         if entity.description:
             obj["description"] = entity.description
-        obj["attributes"] = []
+        attributes: list[dict] = []
         for attr in entity.attributes:
-            attr_obj = self._attribute_to_json(attr)
-            obj["attributes"].append(attr_obj)
+            attributes.append(self._attribute_to_json(attr))
+        obj["attributes"] = attributes
         # Primary key constraint
         pk_constraint = next((c for c in entity.constraints if c.type == ConstraintType.PRIMARY_KEY), None)
         if pk_constraint and pk_constraint.expression:
             obj["primaryKey"] = [k.strip() for k in pk_constraint.expression.split(",")]
-        # Foreign keys are already on attributes
         return obj
 
-    def _attribute_to_json(self, attr: Attribute) -> dict:
-        obj = {
+    def _attribute_to_json(self, attr: Attribute) -> dict[str, Any]:
+        primary_key = any(c.type == ConstraintType.PRIMARY_KEY for c in attr.constraints)
+        obj: dict[str, Any] = {
             "name": attr.name,
             "type": self._datatype_to_string(attr.data_type),
             "required": attr.required,
-            "primaryKey": attr.primary_key,
+            "primaryKey": primary_key,
         }
         if attr.description:
             obj["description"] = attr.description
@@ -90,19 +98,21 @@ class ERDWriter(BaseMSDMWriter):
             obj["default"] = attr.default_value
         # Foreign key
         fk = next((c for c in attr.constraints if c.type == ConstraintType.FOREIGN_KEY), None)
-        if fk:
-            fk_obj = {"entity": fk.referenced_entity}
-            if fk.referenced_attributes:
-                fk_obj["attribute"] = fk.referenced_attributes[0]
+        if fk and fk.ref_entity:
+            fk_obj: dict[str, Any] = {"entity": fk.ref_entity.name}
+            if fk.ref_attr_ids and len(fk.ref_attr_ids)>0:
+                fk_obj["attribute"] = fk.ref_attr_ids[0]
             obj["foreignKey"] = fk_obj
         return obj
 
-    def _relationship_to_json(self, rel: Relationship) -> dict:
-        obj = {
-            "from": rel.from_entity,
-            "to": rel.to_entity,
+    def _relationship_to_json(self, rel: EntityRelationship) -> dict[str, Any]:
+        obj: dict[str, Any] = {
             "cardinality": f"{self._cardinality_to_str(rel.cardinality_from)}:{self._cardinality_to_str(rel.cardinality_to)}",
         }
+        if rel.from_entity:
+            obj["from"] = rel.from_entity.name
+        if rel.to_entity:
+            obj["to"] = rel.to_entity.name
         if rel.name:
             obj["name"] = rel.name
         if rel.description:
@@ -111,9 +121,8 @@ class ERDWriter(BaseMSDMWriter):
             obj["foreignKeyAttributes"] = rel.foreign_key_attributes
         return obj
 
-    # ── XML representation (simple) ────────────────────────────────
+    # ── XML representation ────────────────────────────────────────
     def _build_xml(self, doc: MSDMDocument) -> str:
-        from xml.etree.ElementTree import Element, SubElement, tostring
         root = Element("EntityRelationship")
         entities_elem = SubElement(root, "Entities")
         for entity in doc.entities:
@@ -128,32 +137,36 @@ class ERDWriter(BaseMSDMWriter):
         if entity.description:
             ent_elem.set("description", entity.description)
         for attr in entity.attributes:
+            primary_key = any(c.type == ConstraintType.PRIMARY_KEY for c in attr.constraints)
             attr_elem = Element("Attribute", {
                 "name": attr.name,
                 "type": self._datatype_to_string(attr.data_type),
                 "required": str(attr.required).lower(),
-                "primaryKey": str(attr.primary_key).lower(),
+                "primaryKey": str(primary_key).lower(),
             })
             if attr.description:
                 attr_elem.set("description", attr.description)
             if attr.default_value:
                 attr_elem.set("default", attr.default_value)
             fk = next((c for c in attr.constraints if c.type == ConstraintType.FOREIGN_KEY), None)
-            if fk:
+            if fk and fk.ref_entity:
                 fk_elem = SubElement(attr_elem, "ForeignKey", {
-                    "entity": fk.referenced_entity or "",
+                    "entity": fk.ref_entity.name or "",
                 })
-                if fk.referenced_attributes:
-                    fk_elem.set("attribute", fk.referenced_attributes[0])
+                if fk.ref_attr_ids and len(fk.ref_attr_ids)>0:
+                    fk_elem.set("attribute", fk.ref_attr_ids[0])
             ent_elem.append(attr_elem)
         parent.append(ent_elem)
 
-    def _relationship_to_xml(self, rel: Relationship, parent: Element) -> None:
-        rel_elem = Element("Relationship", {
-            "from": rel.from_entity,
-            "to": rel.to_entity,
+    def _relationship_to_xml(self, rel: EntityRelationship, parent: Element) -> None:
+        relation = {
             "cardinality": f"{self._cardinality_to_str(rel.cardinality_from)}:{self._cardinality_to_str(rel.cardinality_to)}",
-        })
+        }
+        rel_elem = Element("Relationship", relation)
+        if rel.from_entity:    
+            relation["from"] = rel.from_entity.name
+        if rel.to_entity:    
+            relation["to"] = rel.to_entity.name
         if rel.name:
             rel_elem.set("name", rel.name)
         if rel.description:
@@ -175,11 +188,10 @@ class ERDWriter(BaseMSDMWriter):
             key = ERDWriter._datatype_to_string(dt.key_type) if dt.key_type else "string"
             val = ERDWriter._datatype_to_string(dt.value_type) if dt.value_type else "any"
             return f"map<{key},{val}>"
-        if base == ScalarType.REF:
-            return dt.ref_entity or "ref"
+        if base == ScalarType.REF and dt.ref_entity:
+            return dt.ref_entity.name or "ref"
         if base == ScalarType.STRUCT:
             return "object"
-        # map scalars to simple names
         scalar_names = {
             ScalarType.STRING: "string",
             ScalarType.INT: "int",
@@ -199,7 +211,6 @@ class ERDWriter(BaseMSDMWriter):
 
     @staticmethod
     def _cardinality_to_str(card: Cardinality) -> str:
-        """Convert Cardinality enum to string representation."""
         mapping = {
             Cardinality.ONE: "1",
             Cardinality.MANY: "*",

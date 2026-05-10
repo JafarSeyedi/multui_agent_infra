@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from .base_strategy import InteractionStrategy
-from ..buses.base_message_bus import MessageBus
 from ..agents.models import AgentOutput
-from .interaction_models import AgentMessage, InteractionRequest, InteractionResult
+from ..buses.base_message_bus import MessageBus
+from .base_strategy import InteractionStrategy
+from .interaction_models import AgentMessage
+from .interaction_models import InteractionRequest
+from .interaction_models import InteractionResult
 
 
 class GroupChatStrategy(InteractionStrategy):
@@ -15,7 +17,7 @@ class GroupChatStrategy(InteractionStrategy):
     def __init__(
         self,
         agent_registry,
-        message_bus: Optional[MessageBus],
+        message_bus: MessageBus | None,
         storage,
         default_max_rounds: int = 8,
     ):
@@ -24,9 +26,9 @@ class GroupChatStrategy(InteractionStrategy):
 
     async def execute(self, request: InteractionRequest) -> InteractionResult:
 
-        context: Dict[str, Any] = dict(request.context or {})
-        metadata: Dict[str, Any] = dict(request.metadata or {})
-        messages: List[Dict[str, Any]] = self._init_messages(context)
+        context: dict[str, Any] = dict(request.context or {})
+        metadata: dict[str, Any] = dict(request.metadata or {})
+        messages: list[dict[str, Any]] = self._init_messages(context)
 
         participants = self._resolve_participants(request.agents, metadata)
 
@@ -41,10 +43,10 @@ class GroupChatStrategy(InteractionStrategy):
         stop_on_done = bool(metadata.get("stop_on_done", True))
         stop_on_role = metadata.get("stop_on_role")
 
-        results: List[AgentOutput] = []
+        results: list[AgentOutput] = []
         speaker_index = 0
         finished = False
-        failure_reason: Optional[str] = None
+        failure_reason: str | None = None
 
         await self._publish_event(
             "group_chat_started",
@@ -157,7 +159,7 @@ class GroupChatStrategy(InteractionStrategy):
 
     # ---------------------------------------------------------
 
-    def _init_messages(self, context: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _init_messages(self, context: dict[str, Any]) -> list[dict[str, Any]]:
 
         messages = context.get("messages")
 
@@ -248,7 +250,7 @@ class GroupChatStrategy(InteractionStrategy):
 
     # ---------------------------------------------------------
 
-    async def _publish_event(self, event: str, payload: Dict[str, Any]):
+    async def _publish_event(self, event: str, payload: dict[str, Any]):
 
         if not self.message_bus:
             return

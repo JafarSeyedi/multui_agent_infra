@@ -1,24 +1,23 @@
 # rag/rag_models.py
 from pydantic import BaseModel
-from typing import List, Optional, Dict
 
 
 class Document(BaseModel):
     document_id: str
-    title: Optional[str] = None
-    source: Optional[str] = None
-    metadata: Optional[Dict] = None
+    title: str | None = None
+    source: str | None = None
+    metadata: dict | None = None
 
 
 class DocumentChunk(BaseModel):
     chunk_id: str
     document_id: str
     text: str
-    embedding: Optional[List[float]] = None
-    metadata: Optional[Dict] = None
+    embedding: list[float] | None = None
+    metadata: dict | None = None
 
 
 class RetrievedDocument(BaseModel):
     chunk: DocumentChunk
     score: float
-    document: Optional[Document] = None
+    document: Document | None = None

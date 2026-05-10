@@ -12,14 +12,11 @@
    - DMN 1.x
    - PNML (Petri Net Markup Language)
    - GraphML
-   - CNCF Serverless Workflow
    - Complex Event Processing (CEP)
    - UML State Machine
    - SCXML (State Chart XML)
    - Event‑driven Process Chain (EPC)
-   - AWS Step Functions / Azure Logic Apps
-   - DAG Models (Airflow, Prefect, etc.)
-   - YAWL (Yet Another Workflow Language)
+   - DAG Models (Prefect)
    - XPDL (XML Process Definition Language)
    - BPMN 2.0 Choreography & Collaboration (fully covered)
 2. [Conceptual Hierarchy of OSDM](#part-2-osdm-conceptual-hierarchy)
@@ -184,21 +181,6 @@
 
 ---
 
-### 1.6 CNCF Serverless Workflow
-
-**Standard**: CNCF Serverless Workflow  
-**Description**: Vendor‑neutral serverless workflow definition (JSON/YAML).
-
-| Concept / Object | OSDM Class(es) | Mapping / Notes |
-|------------------|----------------|-----------------|
-| Workflow | `ServerlessWorkflow` | Workflow definition |
-| State | `WorkflowState` | Operation, event, switch, delay, etc. |
-| Events | List of event names | Trigger definitions |
-
-**Coverage**: ✅ **Full**
-
----
-
 ### 1.7 CEP (Complex Event Processing)
 
 **No single standard; industry patterns**  
@@ -272,8 +254,7 @@
 ### 1.11 AWS Step Functions / Azure Logic Apps
 
 **Proprietary cloud formats**  
-**Description**: JSON‑based DAG/state‑machine workflows. Similar to CNCF Serverless Workflow but with cloud‑specific extensions.
-
+**Description**: JSON‑based DAG/state‑machine workflows.
 | Concept / Object | OSDM Mapping | Notes |
 |------------------|--------------|-------|
 | State machine | `ServerlessWorkflow` + `WorkflowState` | Core states map to operation/event/switch/delay |
@@ -300,24 +281,6 @@
 | Dynamic tasks | Not modelled | Would require runtime extension |
 
 **Coverage**: ✅ **Full for structure** – the DAG topology is perfectly captured. Scheduling and runtime attributes can be added via annotations.
-
----
-
-### 1.13 YAWL (Yet Another Workflow Language)
-
-**Academic, founded on Petri nets**  
-**Description**: Extends Petri nets with workflow patterns.
-
-| Concept / Object | OSDM Mapping | Notes |
-|------------------|--------------|-------|
-| Net | `PetriNet` | Direct mapping |
-| Condition | `Place` | |
-| Task | `PnTransition` | |
-| Flow relation | `Arc` | |
-| Cancellation regions | Not modelled | Could use inhibitor/reset arcs |
-| Multi‑instance tasks | `MultiInstanceLoopCharacteristics` (BPMN) | Could be reused |
-
-**Coverage**: ⚠️ **Partial** – basic Petri net structure is fully supported. Advanced YAWL patterns (cancellation, OR‑join) can be represented with inhibitor arcs or BPMN gateway concepts.
 
 ---
 
@@ -526,19 +489,6 @@ Typed, directed graphs with ports and nesting. Nodes can be anything; edges defi
 
 **When to choose**:  
 - When you need maximum flexibility and your main concern is the structure of relationships rather than execution semantics.
-
----
-
-### 11. Serverless Workflows
-**What they model**:  
-Lightweight state machines suitable for cloud‑native deployment (CNCF).
-
-**Role in a multi‑agent system**:  
-- Simple, stateless workflows that agents can trigger.  
-- Can be used to orchestrate cloud‑based microservices called by agents.
-
-**When to choose**:  
-- When deploying to a serverless platform (AWS Step Functions, Azure Logic Apps) and you want a direct mapping.
 
 ---
 

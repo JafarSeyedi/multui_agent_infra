@@ -19,15 +19,15 @@ Covers:
 All fields are strongly typed.  Metadata not required for execution is stored
 in annotations.
 """
-
 from __future__ import annotations
-from dataclasses import dataclass, field
+
+from dataclasses import dataclass
+from dataclasses import field
 from enum import Enum
-from typing import List, Optional, Dict, Any, Union
 
-from ..base import BaseDocument
-from ..media_types import DocumentStandard
-
+from .base import BaseDocument
+from .media_types import DocumentStandard
+from .ssdm_models import HttpMethod
 
 # ── Enums ─────────────────────────────────────────────────────────
 class ToolKind(str, Enum):
@@ -63,13 +63,6 @@ class ParameterType(str, Enum):
     JSON     = "json"
     BINARY   = "binary"
 
-class HttpMethod(str, Enum):
-    GET    = "GET"
-    POST   = "POST"
-    PUT    = "PUT"
-    DELETE = "DELETE"
-    PATCH  = "PATCH"
-
 class LoadBalanceStrategy(str, Enum):
     ROUND_ROBIN = "roundRobin"
     RANDOM      = "random"
@@ -91,18 +84,18 @@ class ToolParameter:
     name: str
     type: ParameterType = ParameterType.STRING
     required: bool = False
-    default: Optional[str] = None
-    description: Optional[str] = None
+    default: str | None = None
+    description: str | None = None
     source: ParameterSource = ParameterSource.CALLER_ARG
-    source_path: Optional[str] = None       # env var name, config key, etc.
-    mapping_target: Optional[str] = None    # where in the tool request this value is placed (e.g., "query.page")
+    source_path: str | None = None       # env var name, config key, etc.
+    mapping_target: str | None = None    # where in the tool request this value is placed (e.g., "query.page")
 
 @dataclass
 class ToolOutput:
     name: str
     type: ParameterType = ParameterType.JSON
-    description: Optional[str] = None
-    mapping_from: Optional[str] = None      # path in raw response to extract
+    description: str | None = None
+    mapping_from: str | None = None      # path in raw response to extract
 
 
 # ── Base Tool ────────────────────────────────────────────────────
@@ -110,14 +103,14 @@ class ToolOutput:
 class Tool:
     id: str
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     version: str = "1.0.0"
     kind: ToolKind = ToolKind.CLI
-    parameters: List[ToolParameter] = field(default_factory=list)
-    outputs: List[ToolOutput] = field(default_factory=list)
-    tags: List[str] = field(default_factory=list)
-    annotations: Dict[str, str] = field(default_factory=dict)
-    retry_policy: Optional[str] = None
+    parameters: list[ToolParameter] = field(default_factory=list)
+    outputs: list[ToolOutput] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
+    annotations: dict[str, str] = field(default_factory=dict)
+    retry_policy: str | None = None
     timeout_ms: int = 30000
 
 
@@ -140,11 +133,11 @@ class HttpServiceTool(Tool):
     """Call an HTTP/HTTPS endpoint (south‑bound service)."""
     endpoint_url: str = ""
     http_method: HttpMethod = HttpMethod.GET
-    headers: Dict[str, str] = field(default_factory=dict)
-    body_template: Optional[str] = None     # JSON template with placeholders
-    auth: Optional[str] = None              # reference to an AuthConfig id
+    headers: dict[str, str] = field(default_factory=dict)
+    body_template: str | None = None     # JSON template with placeholders
+    auth: str | None = None              # reference to an AuthConfig id
     load_balance: LoadBalanceStrategy = LoadBalanceStrategy.ROUND_ROBIN
-    endpoints: List[str] = field(default_factory=list)   # multiple URLs for LB
+    endpoints: list[str] = field(default_factory=list)   # multiple URLs for LB
 
 @dataclass
 class GrpcServiceTool(Tool):
@@ -153,14 +146,14 @@ class GrpcServiceTool(Tool):
     port: int = 50051
     service_name: str = ""
     method_name: str = ""
-    proto_file_path: Optional[str] = None
-    tls_config: Optional[str] = None
+    proto_file_path: str | None = None
+    tls_config: str | None = None
 
 @dataclass
 class GraphQLTool(Tool):
     endpoint_url: str = ""
     query_template: str = ""
-    variables: Dict[str, str] = field(default_factory=dict)
+    variables: dict[str, str] = field(default_factory=dict)
 
 @dataclass
 class TcpSocketTool(Tool):
@@ -183,9 +176,9 @@ class MessageBusTool(Tool):
 class CliTool(Tool):
     """Execute a command‑line program."""
     command: str = ""
-    args: List[str] = field(default_factory=list)
-    working_directory: Optional[str] = None
-    env_vars: Dict[str, str] = field(default_factory=dict)
+    args: list[str] = field(default_factory=list)
+    working_directory: str | None = None
+    env_vars: dict[str, str] = field(default_factory=dict)
 
 @dataclass
 class PythonFunctionTool(Tool):
@@ -197,8 +190,8 @@ class PythonFunctionTool(Tool):
 @dataclass
 class MCPTool(Tool):
     """Call a tool on an MCP server (south‑bound)."""
-    server_command: Optional[str] = None      # for STDIO transport
-    server_url: Optional[str] = None          # for SSE transport
+    server_command: str | None = None      # for STDIO transport
+    server_url: str | None = None          # for SSE transport
     tool_name: str = ""
     transport: str = "stdio"                 # "stdio" or "sse"
 
@@ -208,7 +201,7 @@ class YangNetconfTool(Tool):
     host: str = "localhost"
     port: int = 830
     username: str = ""
-    password: Optional[str] = None
+    password: str | None = None
     netconf_protocol: NetconfProtocol = NetconfProtocol.SSH
     rpc_template: str = ""                   # XML RPC body with placeholders
 
@@ -217,11 +210,11 @@ class MibSnmpTool(Tool):
     """Perform an SNMP GET / SET / WALK operation."""
     host: str = "localhost"
     port: int = 161
-    community: Optional[str] = None          # for v1/v2c
+    community: str | None = None          # for v1/v2c
     snmp_version: SnmpVersion = SnmpVersion.SNMPv2c
     oid: str = ""
     operation: str = "get"                   # "get", "set", "walk"
-    value: Optional[str] = None              # for set
+    value: str | None = None              # for set
 
 @dataclass
 class FileReadTool(Tool):
@@ -242,13 +235,13 @@ class AiModelTool(Tool):
     endpoint_url: str = ""
     model_name: str = ""
     prompt_template: str = ""
-    api_key_env: Optional[str] = None
+    api_key_env: str | None = None
 
 @dataclass
 class CompositeTool(Tool):
     """Pipeline / chain of other tools."""
-    steps: List[str] = field(default_factory=list)   # tool IDs in execution order
-    data_flow: Dict[str, str] = field(default_factory=dict)  # step → output mapping to next step input
+    steps: list[str] = field(default_factory=list)   # tool IDs in execution order
+    data_flow: dict[str, str] = field(default_factory=dict)  # step → output mapping to next step input
 
 
 # ── Top‑level TSDM Document ──────────────────────────────────────
@@ -256,4 +249,4 @@ class CompositeTool(Tool):
 class TSDMDocument(BaseDocument):
     """A document describing a set of tools (for discovery / configuration)."""
     kind: DocumentStandard = DocumentStandard.TSDM    # add TSDM to your enum
-    tools: List[Tool] = field(default_factory=list)
+    tools: list[Tool] = field(default_factory=list)

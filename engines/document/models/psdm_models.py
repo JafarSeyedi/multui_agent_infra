@@ -5,30 +5,21 @@ PSDM (Presentation Structured Document Model)
 Domain model for presentations (e.g., PPTX).
 Extends BaseDocument and reuses USDM content types.
 """
-
 from __future__ import annotations
-from dataclasses import dataclass, field
-from datetime import datetime
-from enum import Enum
-from typing import List, Optional, Dict, Tuple, Union
 
-from ..base import BaseDocument, ElementType
-from ..media_types import DocumentStandard
-from ..usdm_models import (
-    # Content types used directly in slides
-    RichTextContent,
-    ShapeContent,
-    ImageContent,
-    ChartContent,
-    TableContent,
-    AudioContent,
-    VideoContent,
-    DrawingContent,   # for SmartArt/diagrams
-    LogicalElement,
-    # Reference to styles (optional, can be used for defaults)
-    CharacterStyle,
-    StyleSheet,
-)
+from dataclasses import dataclass
+from dataclasses import field
+from enum import Enum
+from typing import Any
+
+from .base import BaseDocument
+from .media_types import DocumentStandard
+from .usdm_models import CharacterStyle
+from .usdm_models import ImageContent
+from .usdm_models import LogicalElement
+from .usdm_models import RichTextContent
+from .usdm_models import ShapeContent
+from .usdm_models import StyleSheet
 
 
 # ──────────────────────────────────────────────
@@ -107,30 +98,31 @@ class Placeholder:
 class SlideLayout:
     """Definition of a slide layout (template)."""
     name: str
-    master_name: Optional[str] = None
-    placeholders: List[Placeholder] = field(default_factory=list)
+    master_name: str | None = None
+    placeholders: list[Placeholder] = field(default_factory=list)
+    _meta: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class SlideMaster:
     """A slide master contains one or more layouts and a theme."""
     name: str
-    layouts: Dict[str, SlideLayout] = field(default_factory=dict)  # layout name → layout
-    default_text_style: Optional[CharacterStyle] = None
-    background_color: Optional[str] = None          # hex colour
-    background_image: Optional[ImageContent] = None
-
+    layouts: dict[str, SlideLayout] = field(default_factory=dict)  # layout name → layout
+    default_text_style: CharacterStyle | None = None
+    background_color: str | None = None          # hex colour
+    background_image: ImageContent | None = None
+    _meta: dict[str, Any] = field(default_factory=dict)
 
 # ──────────────────────────────────────────────
 # Transitions, Animations, Media
 # ──────────────────────────────────────────────
 
 @dataclass
-class Transition:
+class PresentationTransition:
     """Slide transition effect."""
     type: TransitionType = TransitionType.NO_TRANSITION
     duration_ms: float = 500.0               # milliseconds
-    advance_after_ms: Optional[float] = None  # auto‑advance timer
+    advance_after_ms: float | None = None  # auto‑advance timer
 
 
 @dataclass
@@ -149,9 +141,10 @@ class MediaReference:
     relationship_id: str
     media_type: str                          # "audio" or "video"
     mime_type: str                           # e.g. "audio/mp4"
-    start_time: Optional[float] = None       # trim start in seconds
-    end_time: Optional[float] = None         # trim end in seconds
+    start_time: float | None = None       # trim start in seconds
+    end_time: float | None = None         # trim end in seconds
     loop: bool = False
+    _meta: dict[str, Any] = field(default_factory=dict)
 
 
 # ──────────────────────────────────────────────
@@ -170,10 +163,10 @@ class SlideComment:
     """A comment attached to a slide."""
     comment_id: str
     author: str
-    date: Optional[str] = None                # ISO 8601 string
+    date: str | None = None                # ISO 8601 string
     text: str = ""
-    position_x: Optional[float] = None
-    position_y: Optional[float] = None
+    position_x: float | None = None
+    position_y: float | None = None
 
 
 # ──────────────────────────────────────────────
@@ -184,27 +177,27 @@ class SlideComment:
 class Slide:
     """A single presentation slide."""
     slide_id: str
-    layout: Optional[SlideLayout] = None      # layout template applied
-    background_color: Optional[str] = None    # solid fill
-    background_image: Optional[ImageContent] = None
+    layout: SlideLayout | None = None      # layout template applied
+    background_color: str | None = None    # solid fill
+    background_image: ImageContent | None = None
 
     # Content – each LogicalElement wraps one USDM content object
     # (ParagraphContent, ImageContent, ShapeContent, ChartContent, TableContent, etc.)
-    elements: List[LogicalElement] = field(default_factory=list)
+    elements: list[LogicalElement] = field(default_factory=list)
 
-    transition: Transition = field(default_factory=Transition)
-    animations: List[Animation] = field(default_factory=list)
+    transition: PresentationTransition = field(default_factory=PresentationTransition)
+    animations: list[Animation] = field(default_factory=list)
 
-    notes: Optional[NotesSlide] = None
-    comments: List[SlideComment] = field(default_factory=list)
+    notes: NotesSlide | None = None
+    comments: list[SlideComment] = field(default_factory=list)
 
     # Embedded media (audio/video) – referenced by relationships
-    media_references: List[MediaReference] = field(default_factory=list)
+    media_references: list[MediaReference] = field(default_factory=list)
 
     # Additional metadata (no raw XML) – e.g., original slide name
-    name: Optional[str] = None
-    actions: List[HyperlinkAction] = field(default_factory=list)   # attached to the slide, or you can put it inside LogicalElement metadata
-
+    name: str | None = None
+    actions: list[HyperlinkAction] = field(default_factory=list)   # attached to the slide, or you can put it inside LogicalElement metadata
+    _meta: dict[str, Any] = field(default_factory=dict)
 
 # ──────────────────────────────────────────────
 # Presentation‑wide properties
@@ -213,60 +206,62 @@ class Slide:
 @dataclass
 class PresentationProperties:
     """Global presentation settings."""
-    slide_width: Optional[float] = None       # in EMU or points (choose one)
-    slide_height: Optional[float] = None
+    slide_width: float | None = None       # in EMU or points (choose one)
+    slide_height: float | None = None
     auto_advance: bool = False
     show_type: ShowType = ShowType.DEFAULT
     loop: bool = False
     start_with_narration: bool = False
-
+    _meta: dict[str, Any] = field(default_factory=dict)
 
 # Add inside psdm_models.py (additional dataclasses)
 
 @dataclass
 class Theme:
     """Office theme colours and fonts."""
-    name: Optional[str] = None
-    color_scheme: Dict[str, str] = field(default_factory=dict)   # e.g. "dk1": "#000000"
-    major_font: Optional[str] = None      # Latin font for headings
-    minor_font: Optional[str] = None      # Latin font for body
-
+    name: str | None = None
+    color_scheme: dict[str, str] = field(default_factory=dict)   # e.g. "dk1": "#000000"
+    major_font: str | None = None      # Latin font for headings
+    minor_font: str | None = None      # Latin font for body
+    _meta: dict[str, Any] = field(default_factory=dict)
+    
 @dataclass
 class HyperlinkAction:
     """Hyperlink / mouse‑click action on an element."""
     target: str                           # URL, "slide:3", or "file:..."
-    tooltip: Optional[str] = None
+    tooltip: str | None = None
     show_and_return: bool = False
 
 @dataclass
 class GroupShapeContent:
     """A group of shapes (recursive)."""
-    name: Optional[str] = None
+    name: str | None = None
     x: int = 0
     y: int = 0
     width: int = 0
     height: int = 0
     rotation: int = 0
-    children: List[Union[ShapeContent, GroupShapeContent]] = field(default_factory=list)
+    children: list[ShapeContent | GroupShapeContent] = field(default_factory=list)
 
 def _default_shape_content() -> ShapeContent:
-    return ShapeContent()
+    return ShapeContent(shape_type="line")
 
 @dataclass
 class ConnectorContent:
     """A connector line between two shapes."""
     start_shape_id: str
     end_shape_id: str
-    start_connection_site: Optional[int] = None
-    end_connection_site: Optional[int] = None
+    start_connection_site: int | None = None
+    end_connection_site: int | None = None
     line_shape: ShapeContent = field(default_factory=_default_shape_content)   # visual appearance
 
 @dataclass
-class Section:
+class PresentationSection:
     """A named section in the presentation."""
     name: str
     first_slide_id: str                   # slide id of the first slide in the section
-
+    _meta: dict[str, Any] = field(default_factory=dict)
+    
 # ──────────────────────────────────────────────
 # Top‑level PSDM Document
 # ──────────────────────────────────────────────
@@ -275,15 +270,13 @@ class Section:
 class PSDMDocument(BaseDocument):
     """Complete presentation document model."""
     kind: DocumentStandard = DocumentStandard.PSDM
-    slides: List[Slide] = field(default_factory=list)
-    slide_masters: Dict[str, SlideMaster] = field(default_factory=dict)  # master name → master
+    slides: list[Slide] = field(default_factory=list)
+    slide_masters: dict[str, SlideMaster] = field(default_factory=dict)  # master name → master
     presentation_properties: PresentationProperties = field(default_factory=PresentationProperties)
     # Optionally a default style sheet for text
     stylesheet: StyleSheet = field(default_factory=StyleSheet)
 
     # Inherited from BaseDocument: title, document_id, media_type, raw_binary, etc.
-    theme: Optional[Theme] = None
-    sections: List[Section] = field(default_factory=list)
-    
-    
-    
+    theme: Theme | None = None
+    sections: list[PresentationSection] = field(default_factory=list)
+    _meta: dict[str, Any] = field(default_factory=dict)

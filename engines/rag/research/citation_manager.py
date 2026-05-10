@@ -1,9 +1,7 @@
 # rag/research/citation_manager.py
-
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, List
 
 
 @dataclass(slots=True)
@@ -25,8 +23,8 @@ class CitationManager:
     """
 
     def __init__(self) -> None:
-        self._refs: List[Citation] = []
-        self._source_to_id: Dict[str, int] = {}
+        self._refs: list[Citation] = []
+        self._source_to_id: dict[str, int] = {}
         self._next_id: int = 1
 
     def reset(self) -> None:
@@ -67,12 +65,12 @@ class CitationManager:
 
         return f"[{cid}]"
 
-    def build_reference_list(self) -> List[str]:
+    def build_reference_list(self) -> list[str]:
         """
         Build final formatted reference list.
         """
 
-        refs: List[str] = []
+        refs: list[str] = []
 
         for c in self._refs:
             refs.append(

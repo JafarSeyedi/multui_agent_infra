@@ -1,12 +1,11 @@
 # tests/agents/orchestration/interaction/performance/test_group_chat_strategy_performance.py
-
 import time
 
 import pytest
+
+from engines.agents.base_agents.base_agent import BaseAgent
 from engines.interaction.group_chat_strategy import GroupChatStrategy
 from engines.interaction.interaction_models import InteractionRequest
-from engines.agents.base_agents.base_agent import BaseAgent
-
 from tests.agents.interaction.interaction_unit.conftest import TestAgent
 
 

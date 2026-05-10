@@ -2,8 +2,9 @@
 from __future__ import annotations
 
 import math
-from typing import List
-from engines.rag.research.memory.memory_store import MemoryStore, MemoryItem
+
+from engines.rag.research.memory.memory_store import MemoryItem
+from engines.rag.research.memory.memory_store import MemoryStore
 
 
 class MemoryRetriever:
@@ -11,7 +12,7 @@ class MemoryRetriever:
     def __init__(self, store: MemoryStore):
         self.store = store
 
-    def retrieve_similar(self, query: str, limit: int = 5) -> List[MemoryItem]:
+    def retrieve_similar(self, query: str, limit: int = 5) -> list[MemoryItem]:
 
         scored = []
 

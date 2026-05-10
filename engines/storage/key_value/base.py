@@ -4,11 +4,11 @@
 # feature flags
 # config
 # short memory
-
 # engines/storage/key_value/base.py
+from abc import ABC
+from abc import abstractmethod
+from typing import Any
 
-from abc import ABC, abstractmethod
-from typing import Any, Optional, List
 from engines.storage.base_storage import BaseStorage
 
 
@@ -22,7 +22,7 @@ class KeyValueStorage(BaseStorage, ABC):
         pass
 
     @abstractmethod
-    async def get(self, key: str) -> Optional[Any]:
+    async def get(self, key: str) -> Any | None:
         pass
 
     @abstractmethod
@@ -34,5 +34,5 @@ class KeyValueStorage(BaseStorage, ABC):
         pass
 
     @abstractmethod
-    async def list_keys(self, prefix: Optional[str] = None) -> List[str]:
+    async def list_keys(self, prefix: str | None = None) -> list[str]:
         pass

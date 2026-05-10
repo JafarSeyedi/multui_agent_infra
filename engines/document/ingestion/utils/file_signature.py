@@ -1,9 +1,7 @@
 # engines/document/ingestion/utils/file_signature.py
-
 from __future__ import annotations
 
 import hashlib
-from typing import Optional
 
 
 def file_signature(data: bytes, sample_size: int = 4096) -> str:

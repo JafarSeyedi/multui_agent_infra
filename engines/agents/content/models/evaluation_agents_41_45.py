@@ -1,11 +1,12 @@
 from pydantic import BaseModel
-from typing import List, Optional
 
-from .common import Evidence, ReasoningTrace
-from .learning_objects import (
-    LearningObjective, Question, Lesson
-)
-from ...models import AgentInput, AgentOutput
+from ...models import AgentInput
+from ...models import AgentOutput
+from .common import Evidence
+from .common import ReasoningTrace
+from .learning_objects import LearningObjective
+from .learning_objects import Lesson
+from .learning_objects import Question
 
 
 # -------------------------------------------------------
@@ -16,9 +17,9 @@ class EvaluationCriterion(BaseModel):
 
     name: str
 
-    description: Optional[str]
+    description: str | None
 
-    weight: Optional[float]
+    weight: float | None
 
 
 class EvaluationScore(BaseModel):
@@ -29,7 +30,7 @@ class EvaluationScore(BaseModel):
 
     max_score: float = 1.0
 
-    explanation: Optional[str]
+    explanation: str | None
 
 
 class EvaluationIssue(BaseModel):
@@ -38,38 +39,38 @@ class EvaluationIssue(BaseModel):
 
     description: str
 
-    severity: Optional[str]
+    severity: str | None
 
-    evidence: Optional[List[Evidence]]
+    evidence: list[Evidence] | None
 
 
 class AlignmentResult(BaseModel):
 
     is_aligned: bool
 
-    confidence: Optional[float]
+    confidence: float | None
 
-    explanation: Optional[str]
+    explanation: str | None
 
 
 class ConsistencyError(BaseModel):
 
     description: str
 
-    conflicting_outputs: List[str]
+    conflicting_outputs: list[str]
 
-    severity: Optional[str]
+    severity: str | None
 
 
 class CoverageGap(BaseModel):
 
     concept_id: str
 
-    concept_name: Optional[str]
+    concept_name: str | None
 
-    gap_description: Optional[str]
+    gap_description: str | None
 
-    severity: Optional[str]
+    severity: str | None
 
 
 # -------------------------------------------------------
@@ -80,22 +81,22 @@ class QuestionQualityEvaluationInput(AgentInput):
 
     question: Question
 
-    related_objectives: Optional[List[LearningObjective]]
+    related_objectives: list[LearningObjective] | None
 
-    evaluation_criteria: Optional[List[EvaluationCriterion]]
+    evaluation_criteria: list[EvaluationCriterion] | None
 
 
 class QuestionQualityEvaluationOutput(AgentOutput):
 
     overall_score: float
 
-    scores: List[EvaluationScore]
+    scores: list[EvaluationScore]
 
-    issues: Optional[List[EvaluationIssue]]
+    issues: list[EvaluationIssue] | None
 
-    suggestions: Optional[List[str]]
+    suggestions: list[str] | None
 
-    reasoning: Optional[ReasoningTrace]
+    reasoning: ReasoningTrace | None
 
 
 # -------------------------------------------------------
@@ -106,9 +107,9 @@ class ExplanationQualityEvaluationInput(AgentInput):
 
     explanation_text: str
 
-    target_concepts: Optional[List[str]]
+    target_concepts: list[str] | None
 
-    evaluation_criteria: Optional[List[EvaluationCriterion]]
+    evaluation_criteria: list[EvaluationCriterion] | None
 
 
 class ExplanationQualityEvaluationOutput(AgentOutput):
@@ -119,11 +120,11 @@ class ExplanationQualityEvaluationOutput(AgentOutput):
 
     overall_score: float
 
-    issues: Optional[List[EvaluationIssue]]
+    issues: list[EvaluationIssue] | None
 
-    recommendations: Optional[List[str]]
+    recommendations: list[str] | None
 
-    reasoning: Optional[ReasoningTrace]
+    reasoning: ReasoningTrace | None
 
 
 # -------------------------------------------------------
@@ -134,16 +135,16 @@ class PedagogicalAlignmentInput(AgentInput):
 
     content_text: str
 
-    learning_objectives: List[LearningObjective]
+    learning_objectives: list[LearningObjective]
 
 
 class PedagogicalAlignmentOutput(AgentOutput):
 
     alignment_result: AlignmentResult
 
-    issues: Optional[List[EvaluationIssue]]
+    issues: list[EvaluationIssue] | None
 
-    reasoning: Optional[ReasoningTrace]
+    reasoning: ReasoningTrace | None
 
 
 # -------------------------------------------------------
@@ -152,18 +153,18 @@ class PedagogicalAlignmentOutput(AgentOutput):
 
 class ConsistencyEvaluationInput(AgentInput):
 
-    outputs: List[str]
+    outputs: list[str]
 
-    agent_names: Optional[List[str]]
+    agent_names: list[str] | None
 
 
 class ConsistencyEvaluationOutput(AgentOutput):
 
     consistency_score: float
 
-    inconsistencies: Optional[List[ConsistencyError]]
+    inconsistencies: list[ConsistencyError] | None
 
-    reasoning: Optional[ReasoningTrace]
+    reasoning: ReasoningTrace | None
 
 
 # -------------------------------------------------------
@@ -172,15 +173,15 @@ class ConsistencyEvaluationOutput(AgentOutput):
 
 class CurriculumCoverageInput(AgentInput):
 
-    lessons: List[Lesson]
+    lessons: list[Lesson]
 
-    required_objectives: List[LearningObjective]
+    required_objectives: list[LearningObjective]
 
 
 class CurriculumCoverageOutput(AgentOutput):
 
     coverage_percentage: float
 
-    missing_concepts: Optional[List[CoverageGap]]
+    missing_concepts: list[CoverageGap] | None
 
-    reasoning: Optional[ReasoningTrace]
+    reasoning: ReasoningTrace | None

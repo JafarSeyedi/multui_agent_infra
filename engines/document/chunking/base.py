@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
-from typing import List
+from abc import ABC
+from abc import abstractmethod
 
 from ..ingestion.ingestion_models import ChunkRecord
 from ..models.base import BaseDocument
-
 from .models import ChunkingConfig
 
 
@@ -17,5 +16,5 @@ class BaseChunker(ABC):
         self,
         document: BaseDocument,
         config: ChunkingConfig | None = None,
-    ) -> List[ChunkRecord]:
+    ) -> list[ChunkRecord]:
         ...

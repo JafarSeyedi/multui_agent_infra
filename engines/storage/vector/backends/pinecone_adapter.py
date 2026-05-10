@@ -1,7 +1,9 @@
 # storage/vector/backends/pinecone_adapter.py
+from typing import Any
 
-from pinecone import Pinecone, ServerlessSpec
-from typing import List, Dict, Any, Optional
+from pinecone import Pinecone
+from pinecone import ServerlessSpec
+
 from ..base import VectorDBAdapter
 from ..embedding_utils import normalize_embedding
 
@@ -45,7 +47,7 @@ class PineconeAdapter(VectorDBAdapter):
             )
 
     async def create_index(
-        self, name: str, dimension: int, config: Optional[Dict[str, Any]] = None
+        self, name: str, dimension: int, config: dict[str, Any] | None = None
     ) -> None:
         """Creates a Pinecone index if it doesn't exist, then connects to it."""
         self.index_name = name
@@ -85,9 +87,9 @@ class PineconeAdapter(VectorDBAdapter):
 
     async def upsert(
         self,
-        ids: List[str],
-        vectors: List[List[float]],
-        metadata: List[Dict[str, Any]],
+        ids: list[str],
+        vectors: list[list[float]],
+        metadata: list[dict[str, Any]],
     ) -> None:
         """Upserts vectors with metadata into the Pinecone index."""
         if not ids:
@@ -114,7 +116,7 @@ class PineconeAdapter(VectorDBAdapter):
 
         print(f"PineconeAdapter: Upserted {len(ids)} items into '{self.index_name}'.")
 
-    async def batch_upsert(self, items: List[Dict[str, Any]]) -> None:
+    async def batch_upsert(self, items: list[dict[str, Any]]) -> None:
         """Upserts a list of dicts with 'id', 'vector', 'metadata' keys."""
         if not items:
             return
@@ -125,10 +127,10 @@ class PineconeAdapter(VectorDBAdapter):
 
     async def query(
         self,
-        vector: List[float],
+        vector: list[float],
         top_k: int = 5,
-        filters: Optional[Dict[str, Any]] = None,
-    ) -> List[Dict[str, Any]]:
+        filters: dict[str, Any] | None = None,
+    ) -> list[dict[str, Any]]:
         """Queries the Pinecone index for nearest neighbours."""
         self._require_index()
 
@@ -156,7 +158,7 @@ class PineconeAdapter(VectorDBAdapter):
             print(f"PineconeAdapter: Query error: {e}")
             return []
 
-        formatted: List[Dict[str, Any]] = []
+        formatted: list[dict[str, Any]] = []
         for match in results.get("matches", []):
             meta = match.get("metadata") or {}
             formatted.append(
@@ -164,7 +166,7 @@ class PineconeAdapter(VectorDBAdapter):
             )
         return formatted
 
-    async def delete(self, ids: List[str]) -> None:
+    async def delete(self, ids: list[str]) -> None:
         """Deletes vectors by ID from the Pinecone index."""
         if not ids:
             return

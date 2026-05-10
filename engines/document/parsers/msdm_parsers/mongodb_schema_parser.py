@@ -15,28 +15,25 @@ Handles:
 
 Every MongoDB‑specific detail is stored via Annotations for lossless round‑trip.
 """
-
 from __future__ import annotations
+
 import json
 import re
 from pathlib import Path
-from typing import Optional, Dict, Any, List, Tuple, Set
 
-from .base_msdm_parser import BaseMSDMParser
+from ...models.media_types import MEDIA_TYPES
+from ...models.msdm_models import Annotation
+from ...models.msdm_models import Attribute
+from ...models.msdm_models import Constraint
+from ...models.msdm_models import ConstraintType
+from ...models.msdm_models import DataType
+from ...models.msdm_models import Entity
+from ...models.msdm_models import EntityKind
+from ...models.msdm_models import Index
+from ...models.msdm_models import MSDMDocument
+from ...models.msdm_models import ScalarType, Namespace
 from ..base import ParseOptions
-from ...models.msdm_models import (
-    MSDMDocument,
-    Entity,
-    Attribute,
-    DataType,
-    Constraint,
-    ConstraintType,
-    Index,
-    Annotation,
-    EntityKind,
-    ScalarType,
-    Relationship,
-)
+from .base_msdm_parser import BaseMSDMParser
 
 # ── MongoDB BSON type to ScalarType mapping ────────────────────
 BSON_TYPE_TO_SCALAR = {
@@ -99,8 +96,12 @@ class MongoDBSchemaParser(BaseMSDMParser):
         encoding = options.encoding or "utf-8"
         text = data.decode(encoding)
 
-        doc = MSDMDocument()
-        doc.namespace = Path(source_name).stem
+        doc = MSDMDocument(
+            document_id=Path(source_name).stem,
+            title=Path(source_name).stem,
+            media_type=MEDIA_TYPES.get("mongodb_schema", MEDIA_TYPES["json"])
+        )
+        doc.namespace = Namespace(uri=Path(source_name).stem)
 
         # Try JSON first (validator format)
         if self._try_json(text, doc):
@@ -108,6 +109,7 @@ class MongoDBSchemaParser(BaseMSDMParser):
 
         # Fallback to Mongoose JavaScript
         self._parse_mongoose_js(text, doc)
+        self.resolve_references(doc)
         return doc
 
     def _try_json(self, text: str, doc: MSDMDocument) -> bool:
@@ -176,7 +178,7 @@ class MongoDBSchemaParser(BaseMSDMParser):
                 entity.annotations.append(Annotation(key=kw, value=json.dumps(schema[kw])))
 
     def _parse_validator_field(self, name: str, prop_schema: dict,
-                               required_set: Set[str], doc: MSDMDocument) -> Attribute:
+                               required_set: set[str], doc: MSDMDocument) -> Attribute:
         """Parse a single property from a $jsonSchema object into an Attribute."""
         bson_type = prop_schema.get("bsonType")
         desc = prop_schema.get("description", "")
@@ -295,7 +297,12 @@ class MongoDBSchemaParser(BaseMSDMParser):
             idx_body = idx_match.group(1)
             try:
                 idx_obj = json.loads(idx_body)
-                idx = Index(attributes=list(idx_obj.keys()))
+                attributes: list[Attribute] = []
+                for k in idx_obj.keys():
+                    for a in entity.attributes:
+                        if a.name==k:
+                            attributes.append(a)
+                idx = Index(attributes=attributes)
                 entity.indexes.append(idx)
             except Exception:
                 entity.annotations.append(Annotation(key="raw_index", value=idx_match.group(0)))
@@ -350,7 +357,7 @@ class MongoDBSchemaParser(BaseMSDMParser):
             # Fallback: store as annotation
             entity.annotations.append(Annotation(key="raw_field", value=field_text))
 
-    def _split_mongoose_fields(self, body: str) -> List[str]:
+    def _split_mongoose_fields(self, body: str) -> list[str]:
         """Split field definitions by commas, ignoring those inside braces/brackets."""
         fields = []
         depth = 0
@@ -398,10 +405,9 @@ class MongoDBSchemaParser(BaseMSDMParser):
                                                expression=attr.default_value))
 
         if unique:
-            entity.indexes.append(Index(attributes=[name], unique=True))
+            entity.indexes.append(Index(attributes=[attr], unique=True))
 
         if enum_values:
-            # enum_values might be a JavaScript array, we'll store as annotation
             attr.annotations.append(Annotation(key="enum", value=str(enum_values)))
 
         # Ref (population)
@@ -433,7 +439,7 @@ class MongoDBSchemaParser(BaseMSDMParser):
 
         return attr
 
-    def _parse_key_values(self, text: str) -> Dict[str, str]:
+    def _parse_key_values(self, text: str) -> dict[str, str]:
         """Parse a JavaScript-like key: value dictionary, returning a simple dict of strings."""
         # This is a very simplistic parser; for production we'd use a robust tokenizer.
         # For typical Mongoose schemas, values are limited to simple types.
@@ -468,5 +474,5 @@ class MongoDBSchemaParser(BaseMSDMParser):
             return DataType(base=MONGOOSE_TYPE_MAP[type_str])
         # Could be a reference to another model
         if re.match(r'^\w+$', type_str):
-            return DataType(base=ScalarType.REF, ref_entity=type_str)
+            return DataType(base=ScalarType.REF, ref_entity_id=type_str)
         return DataType(base=ScalarType.ANY)

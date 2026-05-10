@@ -1,7 +1,6 @@
 # engines/document/models/standards.py
-
 from enum import Enum
-from typing import Dict, Any
+from typing import Any
 
 class DocumentStandard(str, Enum):
     """Supported document standards."""
@@ -13,7 +12,7 @@ class DocumentStandard(str, Enum):
     CSDM = "csdm"  # CAD/Geometric Structured Document Model
     MSDM = "msdm"  # Metadata (of data) Structured Definition Model
     SSDM = "ssdm"  # Service Structured Definition Model
-    TSDM = "tsdm"   # Tools Standard Definition Model    
+    TSDM = "tsdm"   # Tools Standard Definition Model
     OSDM = "osdm"   # Orchestration Standard Definition Model
     GENERIC = "generic"
     UNKNOWN = "unknown"
@@ -71,7 +70,7 @@ class MediaCategory(str, Enum):
     OTHER = "other"
 
 # In get_common_formats
-STANDARD_TO_CATEGORY: Dict[DocumentStandard, MediaCategory] = {
+STANDARD_TO_CATEGORY: dict[DocumentStandard, MediaCategory] = {
     DocumentStandard.DSDM: MediaCategory.STRUCTURED_DATA,
     DocumentStandard.USDM: MediaCategory.DOCUMENT,
     DocumentStandard.ESDM: MediaCategory.SPREADSHEET,
@@ -84,7 +83,7 @@ STANDARD_TO_CATEGORY: Dict[DocumentStandard, MediaCategory] = {
 }
 
 # تعاریف مخفف‌ها برای مستندات
-ABBREVIATIONS: Dict[str, str] = {
+ABBREVIATIONS: dict[str, str] = {
     # استانداردها
     "DSDM": "Data Structured Document Model",
     "USDM": "Unified Structured Document Model",
@@ -95,7 +94,7 @@ ABBREVIATIONS: Dict[str, str] = {
     "SSDM": "Service Standard Definition Model",
     "TSDM": "Tool Standard Definition Model",
     "OSDM": "Orchestration Standard Definition Model",
-    
+
     # کامپوننت‌ها
     "MIME": "Multipurpose Internet Mail Extensions",
     "API": "Application Programming Interface",
@@ -107,7 +106,7 @@ ABBREVIATIONS: Dict[str, str] = {
     "HTML": "HyperText Markup Language",
     "DOCX": "Microsoft Word Document",
     "XLSX": "Microsoft Excel Spreadsheet",
-    
+
     # مفاهیم
     "AST": "Abstract Syntax Tree",
     "DOM": "Document Object Model",
@@ -115,7 +114,7 @@ ABBREVIATIONS: Dict[str, str] = {
     "STAX": "Streaming API for XML",
 }
 
-def get_standard_info(standard: DocumentStandard) -> Dict[str, Any]:
+def get_standard_info(standard: DocumentStandard) -> dict[str, Any]:
     """دریافت اطلاعات کامل یک استاندارد"""
     return {
         "code": standard.value,
@@ -137,15 +136,13 @@ def get_common_formats(standard: DocumentStandard) -> list[str]:
         DocumentStandard.MSDM: [
             "xsd", "json_schema", "sql_ddl", "cql", "mongodb_schema",
             "influxdb_schema", "elasticsearch_mapping", "neo4j_schema",
-            "proto", "avro_schema", "thrift_idl", "graphql_schema",
-            "owl", "cue", "plantuml",
+            "proto", "thrift_idl", "graphql_schema", #"avro_schema", 
+            "owl", "plantuml", # "cue", 
             "python_model", "typescript_interface"
         ],
-        DocumentStandard.SSDM: ["openapi", "swagger", "wsdl", "yang", "mib", "asyncapi", "raml", "apib"],
+        DocumentStandard.SSDM: ["openapi", "wsdl", "yang", "asyncapi", "proto", "py", "gql", "graphql", "mcp.json"],
         DocumentStandard.SSDM: ["tsdm_json"],
         DocumentStandard.OSDM: ["bpmn", "cmmn", "dmn", "pnml", "graphml", "serverless_workflow_json", "serverless_workflow_yaml"],
 
     }
     return formats.get(standard, [])
-
-

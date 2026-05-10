@@ -1,22 +1,22 @@
 # agents/orchestration/interaction/broadcast_strategy.py
 import asyncio
-from typing import Any, Dict, Iterable, List
+from collections.abc import Iterable
+from typing import Any
 
-from .base_strategy import InteractionStrategy
 from ..agents.base_agents.base_agent import BaseAgent
-from ..agents.models import AgentOutput, AgentInput
-from .interaction_models import (
-    InteractionRequest,
-    InteractionResult,
-)
+from ..agents.models import AgentInput
+from ..agents.models import AgentOutput
+from .base_strategy import InteractionStrategy
+from .interaction_models import InteractionRequest
+from .interaction_models import InteractionResult
 
 
 class BroadcastStrategy(InteractionStrategy):
     scenario_name = "broadcast"
 
     async def execute(self, request: InteractionRequest) -> InteractionResult:
-        context: Dict[str, Any] = dict(request.context or {})
-        agents: List[BaseAgent] = request.agents or []
+        context: dict[str, Any] = dict(request.context or {})
+        agents: list[BaseAgent] = request.agents or []
 
         if not agents:
             raise ValueError("BroadcastStrategy requires at least one agent.")
@@ -27,7 +27,7 @@ class BroadcastStrategy(InteractionStrategy):
         raw_results = await asyncio.gather(*coroutines, return_exceptions=True)
 
         # ✅ فیلتر با _normalize_gather_results - خطای broadcast 28/29
-        results: List[AgentOutput] = self._normalize_gather_results(raw_results)
+        results: list[AgentOutput] = self._normalize_gather_results(raw_results)
 
         final_output = self._aggregate_outputs(results, mode)
 
@@ -42,7 +42,7 @@ class BroadcastStrategy(InteractionStrategy):
             },
         )
 
-    async def _execute_agent(self, agent: BaseAgent, context_snapshot: Dict[str, Any]) -> AgentOutput:
+    async def _execute_agent(self, agent: BaseAgent, context_snapshot: dict[str, Any]) -> AgentOutput:
 
         await self._emit(
             message_type="broadcast_agent_started",
@@ -89,9 +89,9 @@ class BroadcastStrategy(InteractionStrategy):
             )
 
     @staticmethod
-    def _normalize_gather_results(results: Iterable[Any]) -> List[AgentOutput]:
+    def _normalize_gather_results(results: Iterable[Any]) -> list[AgentOutput]:
         """✅ حل خطای assignment و extend - تبدیل Exception به AgentOutput"""
-        normalized: List[AgentOutput] = []
+        normalized: list[AgentOutput] = []
         for item in results:
             if isinstance(item, AgentOutput):
                 normalized.append(item)
@@ -105,7 +105,7 @@ class BroadcastStrategy(InteractionStrategy):
                 )
         return normalized
 
-    def _aggregate_outputs(self, results: List[AgentOutput], mode: str) -> Any:
+    def _aggregate_outputs(self, results: list[AgentOutput], mode: str) -> Any:
 
         successful = [r for r in results if r.error is None]
 
@@ -128,7 +128,7 @@ class BroadcastStrategy(InteractionStrategy):
 
         if mode == "vote":
 
-            votes: Dict[str, int] = {}
+            votes: dict[str, int] = {}
 
             for res in successful:
                 if isinstance(res.message, str):

@@ -3,12 +3,13 @@
 Extracts a DOCXDiagram from a diagram XML part (dgm:dataModel).
 Builds a full hierarchical tree of DiagramNode objects.
 """
-
 from xml.etree.ElementTree import Element
-from typing import Dict, List, Optional
-from .docx_models import DOCXDiagram
-from .docx_utils import safe_find, safe_findall, NS
+
 from ..drawingml.diagram_parser import DiagramNode
+from .docx_models import DOCXDiagram
+from .docx_utils import NS
+from .docx_utils import safe_find
+from .docx_utils import safe_findall
 
 # Namespace mapping for diagram
 DGM = 'http://schemas.openxmlformats.org/drawingml/2006/diagram'
@@ -39,19 +40,22 @@ def parse_diagram(diag_xml: Element) -> DOCXDiagram:
         cnx = safe_find(data_model, './/dgm:cxnLst', NS_DGM)
 
         # Build a map of id -> DiagramNode
-        node_map: Dict[str, DiagramNode] = {}
+        node_map: dict[str, DiagramNode] = {}
         if pts is not None:
             for pt in safe_findall(pts, './/dgm:pt', NS_DGM):
                 model_id = pt.get('modelId')
                 text = _extract_node_text(pt)
                 shape_type, fill, line = _extract_node_shape(pt)
                 node = DiagramNode(
-                    id=model_id,
+                    model_id=model_id,
                     text=text,
                     shape_type=shape_type,
                     fill_color=fill,
                     line_color=line,
                 )
+                model_id = pt.get('modelId')
+                if model_id is None:
+                    continue   # skip nodes without an ID
                 node_map[model_id] = node
                 diagram.texts.append(text)
 
@@ -60,7 +64,7 @@ def parse_diagram(diag_xml: Element) -> DOCXDiagram:
             for cxn in safe_findall(cnx, './/dgm:cxn', NS_DGM):
                 src_id = cxn.get('srcId')
                 dst_id = cxn.get('destId')
-                if src_id in node_map and dst_id in node_map:
+                if src_id and dst_id and src_id in node_map and dst_id in node_map:
                     node_map[src_id].children.append(node_map[dst_id])
 
         # Determine the root: a node that is not a destination of any connection
@@ -88,7 +92,7 @@ def _extract_node_text(pt_elem: Element) -> str:
     return ''.join(parts)
 
 
-def _extract_node_shape(pt_elem: Element) -> tuple[Optional[str], Optional[str], Optional[str]]:
+def _extract_node_shape(pt_elem: Element) -> tuple[str | None, str | None, str | None]:
     """Extract shape type, fill, line from the node's spPr."""
     sp_pr = safe_find(pt_elem, './/a:spPr', NS_DGM)
     shape_type = None

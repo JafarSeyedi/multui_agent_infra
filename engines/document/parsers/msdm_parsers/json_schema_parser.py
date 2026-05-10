@@ -23,28 +23,25 @@ is stored as a structured Annotation, guaranteeing lossless round‑trip.
 The parser first resolves all internal $ref references so that the
 resulting MSDM entities reflect the final merged schema.
 """
-
 from __future__ import annotations
+
 import json
 import re
 from pathlib import Path
-from typing import Optional, Dict, Any, List, Tuple, Set, Union
+from typing import Any
 
-from .base_msdm_parser import BaseMSDMParser
+from ...models.media_types import MEDIA_TYPES
+from ...models.msdm_models import Annotation
+from ...models.msdm_models import Attribute
+from ...models.msdm_models import Constraint
+from ...models.msdm_models import ConstraintType
+from ...models.msdm_models import DataType
+from ...models.msdm_models import Entity
+from ...models.msdm_models import EntityKind
+from ...models.msdm_models import MSDMDocument
+from ...models.msdm_models import ScalarType, Namespace
 from ..base import ParseOptions
-from ...models.msdm_models import (
-    MSDMDocument,
-    Entity,
-    Attribute,
-    DataType,
-    Constraint,
-    ConstraintType,
-    Index,
-    Annotation,
-    EntityKind,
-    ScalarType,
-    Relationship,
-)
+from .base_msdm_parser import BaseMSDMParser
 
 # ── Mapping JSON Schema type strings to ScalarType ──────────────
 JSON_TYPE_TO_SCALAR = {
@@ -70,8 +67,12 @@ class JsonSchemaParser(BaseMSDMParser):
         text = data.decode(encoding)
         raw_schema = json.loads(text)
 
-        doc = MSDMDocument()
-        doc.namespace = Path(source_name).stem
+        doc = MSDMDocument(
+            document_id=Path(source_name).stem,
+            title=Path(source_name).stem,
+            media_type=MEDIA_TYPES.get("json_schema", MEDIA_TYPES["json"])
+        )
+        doc.namespace = Namespace(uri=Path(source_name).stem)
 
         # Handle cases where the JSON is an array of schemas
         if isinstance(raw_schema, list):
@@ -80,12 +81,12 @@ class JsonSchemaParser(BaseMSDMParser):
                     self._process_schema(entry, doc, is_root=True)
         else:
             self._process_schema(raw_schema, doc, is_root=True)
-
+        self.resolve_references(doc)
         return doc
 
     # ── Main schema processing ──────────────────────────────────
     def _process_schema(self, schema: dict, doc: MSDMDocument,
-                        is_root: bool = False, parent_ref: Optional[str] = None) -> Optional[str]:
+                        is_root: bool = False, parent_ref: str | None = None) -> str | None:
         """
         Process a JSON Schema object and create an entity.
         Returns the entity name (generated from $id, title, or a placeholder).
@@ -187,7 +188,7 @@ class JsonSchemaParser(BaseMSDMParser):
 
     # ── Attribute parsing ───────────────────────────────────────
     def _parse_attribute(self, name: str, prop_schema: dict,
-                         required_set: Set[str], doc: MSDMDocument) -> Attribute:
+                         required_set: set[str], doc: MSDMDocument) -> Attribute:
         """Parse a single property from a JSON Schema object into an Attribute."""
         # Resolve refs if needed (already resolved in outer)
         prop_schema = self._resolve_refs(prop_schema, doc)
@@ -386,16 +387,16 @@ class JsonSchemaParser(BaseMSDMParser):
     def _store_definitions(self, schema: dict, doc: MSDMDocument) -> None:
         """Cache definitions ($defs / definitions) for later resolution."""
         defs = schema.get("$defs") or schema.get("definitions") or {}
-        if not hasattr(doc, '_defs_cache'):
-            doc._defs_cache = {}
-        doc._defs_cache.update(defs)
+        if not hasattr(self, '_defs_cache'):
+            self._defs_cache: dict[str, Any] = {}
+        self._defs_cache.update(defs)
 
-    def _resolve_pointer(self, pointer: str, doc: MSDMDocument) -> Optional[dict]:
+    def _resolve_pointer(self, pointer: str, doc: MSDMDocument) -> dict | None:
         """Resolve a JSON Pointer fragment (e.g., '$defs/foo') within cached definitions."""
-        if not hasattr(doc, '_defs_cache') or not doc._defs_cache:
+        if not hasattr(self, '_defs_cache') or not self._defs_cache:
             return None
         parts = pointer.strip("/").split("/")
-        current = doc._defs_cache
+        current = self._defs_cache
         for part in parts:
             if isinstance(current, dict) and part in current:
                 current = current[part]

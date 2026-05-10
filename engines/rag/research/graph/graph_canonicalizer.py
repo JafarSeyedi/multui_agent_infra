@@ -18,4 +18,3 @@ class GraphCanonicalizer:
         entity.name = self.canonicalize(entity.name)
 
         return entity
-

@@ -25,7 +25,7 @@ class FeedbackController:
                     evidences=evidences,
                     results=[],
                     chosen_chunk_id=chosen_chunk_id,
-                    positive_chunks=positive_chunks, 
+                    positive_chunks=positive_chunks,
                     negative_chunks=negative_chunks
                 )
             except Exception:

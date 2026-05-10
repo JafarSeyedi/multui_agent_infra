@@ -1,10 +1,9 @@
 # storage/vector/backends/weaviate_adapter.py
-
 from __future__ import annotations
 
-import json
 import asyncio
-from typing import Any, Dict, List, Optional
+import json
+from typing import Any
 
 import weaviate
 import weaviate.classes as wvc
@@ -20,7 +19,7 @@ class WeaviateAdapter(VectorDBAdapter):
     def __init__(
         self,
         url: str = "http://localhost:8080",
-        api_key: Optional[str] = None,
+        api_key: str | None = None,
         class_name: str = "Document",
         dim: int = 1536,
     ) -> None:
@@ -60,7 +59,7 @@ class WeaviateAdapter(VectorDBAdapter):
         return await asyncio.to_thread(_sync)
 
     async def create_index(
-        self, name: str, dimension: int, config: Optional[Dict] = None
+        self, name: str, dimension: int, config: dict | None = None
     ) -> None:
         self.class_name = name
         self._dimension = dimension
@@ -68,9 +67,9 @@ class WeaviateAdapter(VectorDBAdapter):
 
     async def upsert(
         self,
-        ids: List[str],
-        vectors: List[List[float]],
-        metadata: List[Dict],
+        ids: list[str],
+        vectors: list[list[float]],
+        metadata: list[dict],
     ) -> None:
         if not ids:
             return
@@ -91,7 +90,7 @@ class WeaviateAdapter(VectorDBAdapter):
 
         await asyncio.to_thread(_sync)
 
-    async def batch_upsert(self, items: List[Dict]) -> None:
+    async def batch_upsert(self, items: list[dict]) -> None:
         if not items:
             return
         await self.upsert(
@@ -102,14 +101,14 @@ class WeaviateAdapter(VectorDBAdapter):
 
     async def query(
         self,
-        vector: List[float],
+        vector: list[float],
         top_k: int = 5,
-        filters: Optional[Dict[str, Any]] = None,
-    ) -> List[Dict]:
+        filters: dict[str, Any] | None = None,
+    ) -> list[dict]:
         collection = await self._get_or_create_collection()
         normalized = normalize_embedding(vector)
 
-        def _sync() -> List[Dict]:
+        def _sync() -> list[dict]:
             response = collection.query.near_vector(
                 near_vector=normalized,
                 limit=top_k,
@@ -128,7 +127,7 @@ class WeaviateAdapter(VectorDBAdapter):
 
         return await asyncio.to_thread(_sync)
 
-    async def delete(self, ids: List[str]) -> None:
+    async def delete(self, ids: list[str]) -> None:
         if not ids:
             return
         collection = await self._get_or_create_collection()

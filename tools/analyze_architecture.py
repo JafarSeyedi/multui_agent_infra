@@ -5,24 +5,23 @@
 خروجی:
     architecture.md در ریشه پروژه
 """
-
 from __future__ import annotations
 
 import ast
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from dataclasses import field
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
 
 
 @dataclass
 class ClassInfo:
     name: str
-    bases: List[str] = field(default_factory=list)
-    methods: List[str] = field(default_factory=list)
-    decorators: List[str] = field(default_factory=list)
-    docstring: Optional[str] = None
+    bases: list[str] = field(default_factory=list)
+    methods: list[str] = field(default_factory=list)
+    decorators: list[str] = field(default_factory=list)
+    docstring: str | None = None
     line: int = 0
 
 
@@ -30,10 +29,10 @@ class ClassInfo:
 class FileInfo:
     path: Path
     relative: str
-    classes: List[ClassInfo] = field(default_factory=list)
-    functions: List[str] = field(default_factory=list)
-    imports: List[str] = field(default_factory=list)
-    errors: List[str] = field(default_factory=list)
+    classes: list[ClassInfo] = field(default_factory=list)
+    functions: list[str] = field(default_factory=list)
+    imports: list[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
     lines: int = 0  # تعداد خطوط کد
 
 
@@ -47,7 +46,7 @@ class ASTParser:
             source = file_path.read_text(encoding="utf-8", errors="replace")
             # شمارش خطوط
             info.lines = len(source.splitlines())
-            
+
             tree = ast.parse(source, filename=str(file_path))
             self._extract(tree, info)
         except SyntaxError as e:
@@ -124,8 +123,8 @@ class ProjectCollector:
         self.root = root
         self.parser = ASTParser()
 
-    def collect(self) -> List[FileInfo]:
-        results: List[FileInfo] = []
+    def collect(self) -> list[FileInfo]:
+        results: list[FileInfo] = []
         for py_file in sorted(self._iter_python_files()):
             results.append(self.parser.parse(py_file, self.root))
         return results
@@ -143,12 +142,12 @@ class ProjectCollector:
 
 
 class ArchitectureAnalyzer:
-    def __init__(self, files: List[FileInfo]):
+    def __init__(self, files: list[FileInfo]):
         self.files = files
 
     def folder_structure(self) -> str:
         """ساختار فولدرها بدون فایل‌ها"""
-        dirs: Set[str] = set()
+        dirs: set[str] = set()
         for f in self.files:
             parts = Path(f.relative).parts
             for i in range(1, len(parts)):
@@ -163,7 +162,7 @@ class ArchitectureAnalyzer:
         def get_depth(path: str) -> int:
             return len(Path(path).parts)
 
-        def get_children(parent: str) -> List[str]:
+        def get_children(parent: str) -> list[str]:
             if parent == "":
                 return [d for d in all_dirs if get_depth(d) == 1]
             return [d for d in all_dirs if str(Path(d).parent) == parent]
@@ -183,7 +182,7 @@ class ArchitectureAnalyzer:
 
     def folder_tree(self) -> str:
         """ساختار کامل فولدرها و فایل‌ها با نمایش تعداد خطوط"""
-        dirs: Set[str] = set()
+        dirs: set[str] = set()
         for f in self.files:
             parts = Path(f.relative).parts
             for i in range(1, len(parts)):
@@ -198,12 +197,12 @@ class ArchitectureAnalyzer:
         def get_depth(path: str) -> int:
             return len(Path(path).parts)
 
-        def get_child_dirs(parent: str) -> List[str]:
+        def get_child_dirs(parent: str) -> list[str]:
             if parent == "":
                 return [d for d in all_dirs if get_depth(d) == 1]
             return [d for d in all_dirs if str(Path(d).parent) == parent]
 
-        def get_child_files(parent: str) -> List[FileInfo]:
+        def get_child_files(parent: str) -> list[FileInfo]:
             return [f for f in self.files if str(Path(f.relative).parent) == (parent or ".")]
 
         def render(path: str, prefix: str):
@@ -234,7 +233,7 @@ class ArchitectureAnalyzer:
         return "\n".join(lines)
 
     def classes_table(self) -> str:
-        rows: List[Tuple[str, str, str, str]] = []
+        rows: list[tuple[str, str, str, str]] = []
         for f in self.files:
             for cls in f.classes:
                 methods_str = ", ".join(cls.methods[:6])
@@ -276,7 +275,7 @@ class ArchitectureAnalyzer:
         return "\n".join(lines)
 
     def abstract_classes(self) -> str:
-        items: List[str] = []
+        items: list[str] = []
         for f in self.files:
             for cls in f.classes:
                 is_abc = (
@@ -294,7 +293,7 @@ class ArchitectureAnalyzer:
         return "\n".join(items) if items else "_کلاس Abstract یافت نشد_"
 
     def potential_issues(self) -> str:
-        issues: List[str] = []
+        issues: list[str] = []
 
         parse_errors = [f for f in self.files if f.errors]
         if parse_errors:
@@ -346,7 +345,7 @@ class ArchitectureAnalyzer:
 
         return "\n".join(issues) if issues else "✅ مشکل آشکاری یافت نشد."
 
-    def summary_stats(self) -> Dict[str, int]:
+    def summary_stats(self) -> dict[str, int]:
         total_lines = sum(f.lines for f in self.files)
         return {
             "فایل‌های Python": len(self.files),
@@ -358,7 +357,7 @@ class ArchitectureAnalyzer:
 
 
 class MarkdownRenderer:
-    def __init__(self, root: Path, files: List[FileInfo]):
+    def __init__(self, root: Path, files: list[FileInfo]):
         self.root = root
         self.analyzer = ArchitectureAnalyzer(files)
 

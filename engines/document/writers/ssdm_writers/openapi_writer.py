@@ -1,49 +1,54 @@
 # engines/document/writers/ssdm_writers/openapi_writer.py
 """
-OpenAPI (Swagger) Writer – serialises an SSDM_DOCUMENT into an OpenAPI 3.0 JSON
+OpenAPI (Swagger) Writer – serialises an SSDMDocument into an OpenAPI 3.0 JSON
 specification.
 
 Uses only typed SSDM fields; all metadata, operations, parameters, request bodies,
 responses, and security schemes are faithfully reproduced.
+
+Mapping logic:
+- AuthConfig (security scheme) → OpenAPI Security Scheme Object
+- ServiceOperation.security_requirements (list of dict) → OpenAPI `security` array
+- ServiceOperation.version_status == DEPRECATED → deprecated: true
+- Parameter.type_entity (Entity) → JSON Schema
+- RequestBody/Response.content_entity → JSON Schema
+- All x-* extensions are ignored (non‑standard)
 """
-
 from __future__ import annotations
-import json
-from pathlib import Path
-from typing import Optional, Dict, Any, List, cast
 
-from .base_ssdm_writer import BaseSSDMWriter, SSDMWriteOptions
-from ...models.ssdm_models import (
-    SSDM_DOCUMENT,
-    Operation,
-    Parameter,
-    ParameterLocation,
-    RequestBody,
-    Response,
-    SecurityScheme,
-    Server,
-)
-from ...models.msdm_models import (
-    MSDMDocument,
-    Entity,
-    Attribute,
-    DataType,
-    ScalarType,
-)
-from ...models.base import BaseDocument
+import json
+from typing import Any
+
+from ...models.msdm_models import Attribute
+from ...models.msdm_models import DataType
+from ...models.msdm_models import Entity
+from ...models.msdm_models import MSDMDocument
+from ...models.msdm_models import ScalarType
+from ...models.msdm_models import VersionStatus
+from ...models.ssdm_models import ApiKeyLocation
+from ...models.ssdm_models import AuthConfig
+from ...models.ssdm_models import AuthMethod
+from ...models.ssdm_models import ServiceOperation
+from ...models.ssdm_models import Parameter
+from ...models.ssdm_models import RequestBody
+from ...models.ssdm_models import Response
+from ...models.ssdm_models import Server
+from ...models.ssdm_models import SSDMDocument
+from .base_ssdm_writer import BaseSSDMWriter
+from .base_ssdm_writer import SSDMWriteOptions
 
 
 class OpenAPIWriter(BaseSSDMWriter):
-    """Serialises an SSDM_DOCUMENT to OpenAPI 3.0 JSON."""
+    """Serialises an SSDMDocument to OpenAPI 3.0 JSON."""
 
     name = "openapi"
     supported_extensions = (".openapi.json",)
 
-    def __init__(self, options: Optional[SSDMWriteOptions] = None):
+    def __init__(self, options: SSDMWriteOptions | None = None):
         super().__init__(options)
 
-    async def _write_design(self, document: SSDM_DOCUMENT) -> bytes:
-        spec: Dict[str, Any] = {
+    async def _write_design(self, document: SSDMDocument) -> bytes:
+        spec: dict[str, Any] = {
             "openapi": "3.0.3",
             "info": self._build_info(document),
             "paths": self._build_paths(document),
@@ -52,7 +57,7 @@ class OpenAPIWriter(BaseSSDMWriter):
         if document.servers:
             spec["servers"] = self._build_servers(document.servers)
 
-        components: Dict[str, Any] = {}
+        components: dict[str, Any] = {}
         if document.security_schemes:
             components["securitySchemes"] = self._build_security_schemes(document.security_schemes)
         if document.type_definitions:
@@ -61,7 +66,7 @@ class OpenAPIWriter(BaseSSDMWriter):
             spec["components"] = components
 
         json_str = json.dumps(spec, indent=2, ensure_ascii=False)
-        return json_str.encode(self.options.encoding or "utf-8")
+        return json_str.encode(getattr(self.options, "encoding", "utf-8") or "utf-8")
 
     def get_supported_media_types(self) -> list[str]:
         return ["application/json"]
@@ -70,21 +75,23 @@ class OpenAPIWriter(BaseSSDMWriter):
         return list(self.supported_extensions)
 
     # ── Info block ──────────────────────────────────────────────────
-    def _build_info(self, doc: SSDM_DOCUMENT) -> dict:
-        info = {
+    def _build_info(self, doc: SSDMDocument) -> dict[str, Any]:
+        info: dict[str, Any] = {
             "title": doc.title or "Untitled",
             "version": doc.version or "1.0.0",
         }
         if doc.description:
             info["description"] = doc.description
         if doc.contact:
-            info["contact"] = {}
+            contact_dict: dict[str, str] = {}
             if doc.contact.name:
-                info["contact"]["name"] = doc.contact.name
+                contact_dict["name"] = doc.contact.name
             if doc.contact.url:
-                info["contact"]["url"] = doc.contact.url
+                contact_dict["url"] = doc.contact.url
             if doc.contact.email:
-                info["contact"]["email"] = doc.contact.email
+                contact_dict["email"] = doc.contact.email
+            if contact_dict:
+                info["contact"] = contact_dict
         if doc.license:
             info["license"] = {"name": doc.license.name}
             if doc.license.url:
@@ -92,10 +99,10 @@ class OpenAPIWriter(BaseSSDMWriter):
         return info
 
     # ── Servers ────────────────────────────────────────────────────
-    def _build_servers(self, servers: List[Server]) -> list:
-        result = []
+    def _build_servers(self, servers: list[Server]) -> list[dict[str, Any]]:
+        result: list[dict[str, Any]] = []
         for srv in servers:
-            entry = {"url": srv.url}
+            entry: dict[str, Any] = {"url": srv.url}
             if srv.description:
                 entry["description"] = srv.description
             if srv.variables:
@@ -106,17 +113,17 @@ class OpenAPIWriter(BaseSSDMWriter):
         return result
 
     # ── Paths ──────────────────────────────────────────────────────
-    def _build_paths(self, doc: SSDM_DOCUMENT) -> dict:
-        paths: Dict[str, dict] = {}
+    def _build_paths(self, doc: SSDMDocument) -> dict[str, dict[str, Any]]:
+        paths: dict[str, dict[str, Any]] = {}
         for op in doc.operations:
-            path = op.path or "/"
-            method = (op.http_method.value if op.http_method else "get").lower()
-            path_entry = paths.setdefault(path, {})
+            path: str = op.path or "/"
+            method: str = (op.http_method.value if op.http_method else "get").lower()
+            path_entry: dict[str, Any] = paths.setdefault(path, {})
             path_entry[method] = self._build_operation(op)
         return paths
 
-    def _build_operation(self, op: Operation) -> dict:
-        oper: Dict[str, Any] = {
+    def _build_operation(self, op: ServiceOperation) -> dict[str, Any]:
+        oper: dict[str, Any] = {
             "operationId": op.name,
         }
         if op.description:
@@ -124,9 +131,7 @@ class OpenAPIWriter(BaseSSDMWriter):
 
         # Parameters
         if op.parameters:
-            oper["parameters"] = []
-            for param in op.parameters:
-                oper["parameters"].append(self._build_parameter(param))
+            oper["parameters"] = [self._build_parameter(p) for p in op.parameters]
 
         # Request body
         if op.request_body:
@@ -139,66 +144,64 @@ class OpenAPIWriter(BaseSSDMWriter):
         if not oper["responses"]:
             oper["responses"]["200"] = {"description": "OK"}
 
-        # Tags
-        if op.tags:
-            oper["tags"] = op.tags
+        # Security requirements
+        if op.security_requirements:
+            oper["security"] = list(op.security_requirements)
 
-        # Security
-        if op.security:
-            oper["security"] = [{s: []} for s in op.security]
+        # Deprecated flag from version_status (correct field name)
+        if op.version_status == VersionStatus.DEPRECATED:
+            oper["deprecated"] = True
 
-        oper["deprecated"] = op.deprecated
         return oper
 
     # ── Parameter ──────────────────────────────────────────────────
-    def _build_parameter(self, param: Parameter) -> dict:
-        p = {
+    def _build_parameter(self, param: Parameter) -> dict[str, Any]:
+        p: dict[str, Any] = {
             "name": param.name,
             "in": param.location.value,
             "required": param.required,
         }
         if param.description:
             p["description"] = param.description
+
+        # Build schema from type_entity or fallback
         if param.type_entity:
             p["schema"] = self._entity_to_json_schema(param.type_entity)
-        elif param.type_string:
-            p["schema"] = {"type": param.type_string}
         else:
             p["schema"] = {"type": "string"}
+
         return p
 
     # ── Request Body ──────────────────────────────────────────────
-    def _build_request_body(self, body: RequestBody) -> dict:
-        rb: Dict[str, Any] = {
-            "content": {}
+    def _build_request_body(self, body: RequestBody) -> dict[str, Any]:
+        rb: dict[str, Any] = {
+            "content": {},
+            "required": body.required,
         }
         if body.description:
             rb["description"] = body.description
-        rb["required"] = body.required
 
-        # Determine media type – default JSON
-        media_type = "application/json"
+        # Determine media types
         if body.content_entity:
-            schema = self._entity_to_json_schema(body.content_entity)
+            media_type: str = "application/json"
+            rb["content"][media_type] = {
+                "schema": self._entity_to_json_schema(body.content_entity)
+            }
         elif body.content_type_entities:
             for mime, entity in body.content_type_entities.items():
-                schema = self._entity_to_json_schema(entity)
-                rb["content"][mime] = {"schema": schema}
-            return rb
+                rb["content"][mime] = {
+                    "schema": self._entity_to_json_schema(entity)
+                }
         else:
-            schema = {"type": "object"}
+            rb["content"]["application/json"] = {"schema": {"type": "object"}}
 
-        rb["content"][media_type] = {"schema": schema}
         return rb
 
     # ── Response ──────────────────────────────────────────────────
-    def _build_response(self, resp: Response) -> dict:
-        r: Dict[str, Any] = {}
-        if resp.description:
-            r["description"] = resp.description
-        else:
-            r["description"] = ""
-
+    def _build_response(self, resp: Response) -> dict[str, Any]:
+        r: dict[str, Any] = {
+            "description": resp.description or ""
+        }
         if resp.content_entity:
             r["content"] = {
                 "application/json": {
@@ -212,42 +215,76 @@ class OpenAPIWriter(BaseSSDMWriter):
                     "schema": self._entity_to_json_schema(entity)
                 }
 
+        # Headers (simplified)
         if resp.headers:
             r["headers"] = {}
             for h in resp.headers:
-                r["headers"][h.name] = {
-                    "schema": {"type": h.type_string or "string"}
-                }
+                header_schema: dict[str, Any] = {"schema": {"type": "string"}}
+                if h.description:
+                    header_schema["description"] = h.description
+                r["headers"][h.name] = header_schema
+
         return r
 
-    # ── Security Schemes ──────────────────────────────────────────
-    def _build_security_schemes(self, schemes: List[SecurityScheme]) -> dict:
-        result = {}
+    # ── Security Schemes (AuthConfig → OpenAPI) ────────────────────
+    def _build_security_schemes(self, schemes: list[AuthConfig]) -> dict[str, Any]:
+        result: dict[str, Any] = {}
         for s in schemes:
-            entry = {"type": s.type.value}
-            if s.description:
-                entry["description"] = s.description
-            if s.type.value == "apiKey":
-                entry["in"] = s.api_key_location.value if s.api_key_location else "header"
-                entry["name"] = s.api_key_param_name or "X-API-Key"
-            if s.open_id_connect_url:
-                entry["openIdConnectUrl"] = s.open_id_connect_url
-            result[s.name] = entry
+            entry: dict[str, Any] = {}
+            # Map AuthMethod to OpenAPI type
+            if s.method == AuthMethod.HTTP_BASIC:
+                entry = {"type": "http", "scheme": "basic"}
+            elif s.method == AuthMethod.BEARER_TOKEN:
+                entry = {"type": "http", "scheme": "bearer"}
+            elif s.method == AuthMethod.API_KEY:
+                entry = {"type": "apiKey"}
+                if s.location == ApiKeyLocation.HEADER:
+                    entry["in"] = "header"
+                elif s.location == ApiKeyLocation.QUERY:
+                    entry["in"] = "query"
+                elif s.location == ApiKeyLocation.COOKIE:
+                    entry["in"] = "cookie"
+                entry["name"] = s.param_name or "X-API-Key"
+            elif s.method == AuthMethod.OAUTH2:
+                entry = {"type": "oauth2"}
+                if s.oauth2_flow:
+                    flow_name = s.oauth2_flow.value
+                    entry["flows"] = {
+                        flow_name: {
+                            "authorizationUrl": s.oauth2_authorization_url,
+                            "tokenUrl": s.oauth2_token_url,
+                            "scopes": {scope: scope for scope in s.oauth2_scopes}
+                        }
+                    }
+            elif s.method == AuthMethod.OPENID_CONNECT:
+                entry = {"type": "openIdConnect", "openIdConnectUrl": s.open_id_connect_url}
+            elif s.method == AuthMethod.MUTUAL_TLS:
+                entry = {"type": "mutualTLS"}
+            else:
+                continue
+
+            if s.annotations:
+                for ann in s.annotations:
+                    if ann.key == "description":
+                        entry["description"] = ann.value
+                        break
+
+            result[f"security_{len(result)+1}"] = entry
         return result
 
     # ── Schemas from MSDM ─────────────────────────────────────────
-    def _build_schemas(self, msdm: MSDMDocument) -> dict:
-        schemas = {}
+    def _build_schemas(self, msdm: MSDMDocument) -> dict[str, Any]:
+        schemas: dict[str, Any] = {}
         for entity in msdm.entities:
             schemas[entity.name] = self._entity_to_json_schema(entity)
         return schemas
 
-    def _entity_to_json_schema(self, entity: Entity) -> dict:
-        schema: Dict[str, Any] = {
+    def _entity_to_json_schema(self, entity: Entity) -> dict[str, Any]:
+        schema: dict[str, Any] = {
             "type": "object",
             "properties": {},
         }
-        required = []
+        required: list[str] = []
         for attr in entity.attributes:
             prop = self._attribute_to_json_schema(attr)
             schema["properties"][attr.name] = prop
@@ -259,31 +296,32 @@ class OpenAPIWriter(BaseSSDMWriter):
             schema["description"] = entity.description
         return schema
 
-    def _attribute_to_json_schema(self, attr: Attribute) -> dict:
+    def _attribute_to_json_schema(self, attr: Attribute) -> dict[str, Any]:
         dt = attr.data_type
         base = dt.base
         if base == ScalarType.ARRAY:
-            items = (
-                self._attribute_to_json_schema(
-                    Attribute(name="items", data_type=dt.element_type)
-                )
-                if dt.element_type
-                else {"type": "string"}
-            )
-            return {"type": "array", "items": items}
+            if dt.element_type:
+                # Create a dummy attribute for the item type
+                item_attr = Attribute(name="item", data_type=dt.element_type)
+                items_schema = self._attribute_to_json_schema(item_attr)
+            else:
+                items_schema = {"type": "string"}
+            return {"type": "array", "items": items_schema}
         if base == ScalarType.MAP:
-            val = (
-                self._attribute_to_json_schema(
-                    Attribute(name="val", data_type=dt.value_type)
-                )
-                if dt.value_type
-                else {"type": "string"}
-            )
-            return {"type": "object", "additionalProperties": val}
-        if base == ScalarType.REF and dt.ref_entity:
-            return {"$ref": f"#/components/schemas/{dt.ref_entity}"}
+            if dt.value_type:
+                val_attr = Attribute(name="value", data_type=dt.value_type)
+                additional = self._attribute_to_json_schema(val_attr)
+            else:
+                additional = {"type": "string"}
+            return {"type": "object", "additionalProperties": additional}
+        if base == ScalarType.REF:
+            ref_name = dt.ref_entity_id or (dt.ref_entity.name if dt.ref_entity else None)
+            if ref_name:
+                return {"$ref": f"#/components/schemas/{ref_name}"}
+            return {"type": "object"}
         if base == ScalarType.STRUCT:
             return {"type": "object"}
+        # scalar
         return {"type": self._scalar_to_json_type(base)}
 
     @staticmethod

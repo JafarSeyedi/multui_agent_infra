@@ -1,31 +1,29 @@
 # engines/document/ingestion/ingestion_context.py
-
 from __future__ import annotations
 
-import uuid
 import hashlib
-from typing import Optional, Dict, Any, List
+import uuid
+from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
+from pydantic import Field
 
-from .ingestion_models import (
-    DocumentAsset,
-    DocumentRecord,
-    ParsedDocument,
-    ChunkRecord,
-    EmbeddingRecord,
-    IngestionEvent,
-)
-from ..models.base import BaseDocument
-from ..models.media_types import MediaType
-
-from engines.storage.object.base import ObjectStorage
-from ..models.document_registry import DocumentRegistry
-from ..chunking.base import ChunkingConfig, BaseChunker
-from ..storage.document_store import DocumentStore
-from ..storage.chunk_store import ChunkStore
-from ..storage.metadata_store import MetadataStore
+from ..chunking.base import BaseChunker
+from ..chunking.base import ChunkingConfig
 from ..embedding.service import DocumentEmbeddingService
+from ..models.base import BaseDocument
+from ..models.document_registry import DocumentRegistry
+from ..models.media_types import MediaType
+from ..storage.chunk_store import ChunkStore
+from ..storage.document_store import DocumentStore
+from ..storage.metadata_store import MetadataStore
+from .ingestion_models import ChunkRecord
+from .ingestion_models import DocumentAsset
+from .ingestion_models import DocumentRecord
+from .ingestion_models import EmbeddingRecord
+from .ingestion_models import IngestionEvent
+from .ingestion_models import ParsedDocument
+from engines.storage.object.base import ObjectStorage
 
 
 class IngestionContext(BaseModel):
@@ -45,51 +43,51 @@ class IngestionContext(BaseModel):
     data: bytes
 
     # Raw upstream metadata (upload/batch)
-    request_metadata: Dict[str, Any] = Field(default_factory=dict)
+    request_metadata: dict[str, Any] = Field(default_factory=dict)
 
     # ------------------------------------------------------------------
     # Parsing and document structures
     # ------------------------------------------------------------------
     # BaseDocument (raw internal representation)
-    parsed_document: Optional[BaseDocument] = None
+    parsed_document: BaseDocument | None = None
 
     # More precise parsed output (the one used in ingestion_models)
-    final_parsed_document: Optional[ParsedDocument] = None
+    final_parsed_document: ParsedDocument | None = None
 
     # ------------------------------------------------------------------
     # Storage-level records
     # ------------------------------------------------------------------
     # Historical fields (kept for backward compatibility)
-    asset_record: Optional[DocumentAsset] = None
-    document_record: Optional[DocumentRecord] = None
+    asset_record: DocumentAsset | None = None
+    document_record: DocumentRecord | None = None
 
     # Modern unified fields (direct mapping to DocumentIngestionResult)
-    asset: Optional[DocumentAsset] = None
+    asset: DocumentAsset | None = None
 
     # ------------------------------------------------------------------
     # Chunking / Embedding pipeline outputs
     # ------------------------------------------------------------------
-    chunks: List[ChunkRecord] = Field(default_factory=list)
-    embeddings: List[EmbeddingRecord] = Field(default_factory=list)
-    embedded_chunk_ids: List[str] = Field(default_factory=list)
+    chunks: list[ChunkRecord] = Field(default_factory=list)
+    embeddings: list[EmbeddingRecord] = Field(default_factory=list)
+    embedded_chunk_ids: list[str] = Field(default_factory=list)
 
     # Events collected during steps
-    events: List[IngestionEvent] = Field(default_factory=list)
+    events: list[IngestionEvent] = Field(default_factory=list)
 
     # Pipeline config
-    chunking: Optional[ChunkingConfig] = None
+    chunking: ChunkingConfig | None = None
     embed: bool = True
 
     # ------------------------------------------------------------------
     # DI‑injected subsystem references
     # ------------------------------------------------------------------
-    registry: Optional[DocumentRegistry] = None
-    document_store: Optional[DocumentStore] = None
-    chunk_store: Optional[ChunkStore] = None
-    metadata_store: Optional[MetadataStore] = None
-    object_storage: Optional[ObjectStorage] = None
-    chunker: Optional[BaseChunker] = None
-    embedding_service: Optional[DocumentEmbeddingService] = None
+    registry: DocumentRegistry | None = None
+    document_store: DocumentStore | None = None
+    chunk_store: ChunkStore | None = None
+    metadata_store: MetadataStore | None = None
+    object_storage: ObjectStorage | None = None
+    chunker: BaseChunker | None = None
+    embedding_service: DocumentEmbeddingService | None = None
 
     class Config:
         arbitrary_types_allowed = True
@@ -104,17 +102,17 @@ class IngestionContext(BaseModel):
         filename: str,
         data: bytes,
         media_type: MediaType,
-        metadata: Optional[Dict[str, Any]] = None,
-        chunking: Optional[ChunkingConfig] = None,
+        metadata: dict[str, Any] | None = None,
+        chunking: ChunkingConfig | None = None,
         embed: bool = True,
-        registry: Optional[DocumentRegistry] = None,
-        document_store: Optional[DocumentStore] = None,
-        chunk_store: Optional[ChunkStore] = None,
-        metadata_store: Optional[MetadataStore] = None,
-        object_storage: Optional[ObjectStorage] = None,
-        chunker: Optional[BaseChunker] = None,
-        embedding_service: Optional[DocumentEmbeddingService] = None,
-    ) -> "IngestionContext":
+        registry: DocumentRegistry | None = None,
+        document_store: DocumentStore | None = None,
+        chunk_store: ChunkStore | None = None,
+        metadata_store: MetadataStore | None = None,
+        object_storage: ObjectStorage | None = None,
+        chunker: BaseChunker | None = None,
+        embedding_service: DocumentEmbeddingService | None = None,
+    ) -> IngestionContext:
 
         checksum = hashlib.sha256(data).hexdigest()
 
@@ -136,7 +134,7 @@ class IngestionContext(BaseModel):
         )
 
     # ------------------------------------------------------------------
-    # Helper constructors used by step_store 
+    # Helper constructors used by step_store
     # ------------------------------------------------------------------
     def build_asset_record(self) -> DocumentAsset:
         """
@@ -172,4 +170,3 @@ class IngestionContext(BaseModel):
             text_preview=preview,
             metadata=self.request_metadata.copy(),
         )
-

@@ -1,7 +1,11 @@
-from pydantic import BaseModel, Field
-from ...models import AgentInput, AgentOutput
-from typing import List, Optional, Dict, Literal
 from datetime import datetime
+from typing import Literal
+
+from pydantic import BaseModel
+from pydantic import Field
+
+from ...models import AgentInput
+from ...models import AgentOutput
 
 
 # --------------------------------------------------
@@ -34,13 +38,13 @@ class QuizBuilderInput(AgentInput):
         description="Number of questions to generate"
     )
 
-    question_types: Optional[List[QuestionType]] = None
+    question_types: list[QuestionType] | None = None
 
-    difficulty_distribution: Optional[Dict[DifficultyLevel, int]] = None
+    difficulty_distribution: dict[DifficultyLevel, int] | None = None
 
-    learning_objectives: Optional[List[str]] = None
+    learning_objectives: list[str] | None = None
 
-    subject: Optional[str] = None
+    subject: str | None = None
 
 
 class QuizQuestion(BaseModel):
@@ -51,22 +55,22 @@ class QuizQuestion(BaseModel):
 
     question_type: QuestionType
 
-    options: Optional[List[str]] = None
+    options: list[str] | None = None
 
     correct_answer: str
 
     difficulty: DifficultyLevel
 
-    explanation: Optional[str] = None
+    explanation: str | None = None
 
 
 class QuizBuilderOutput(AgentOutput):
 
     quiz_title: str
 
-    questions: List[QuizQuestion]
+    questions: list[QuizQuestion]
 
-    estimated_time_minutes: Optional[int]
+    estimated_time_minutes: int | None
 
     created_at: datetime
 
@@ -78,17 +82,17 @@ class QuizBuilderOutput(AgentOutput):
 
 class AnswerEvaluationInput(AgentInput):
 
-    question_id: Optional[str]
+    question_id: str | None
 
     question_text: str
 
     student_answer: str
 
-    correct_answer: Optional[str]
+    correct_answer: str | None
 
-    rubric: Optional[Dict]
+    rubric: dict | None
 
-    subject: Optional[str]
+    subject: str | None
 
 
 class AnswerEvaluationOutput(AgentOutput):
@@ -115,22 +119,22 @@ class FeedbackGenerationInput(AgentInput):
 
     student_answer: str
 
-    correct_answer: Optional[str]
+    correct_answer: str | None
 
     evaluation_score: float
 
-    max_score: Optional[float]
+    max_score: float | None
 
-    student_profile: Optional[Dict]
+    student_profile: dict | None
 
 
 class FeedbackGenerationOutput(AgentOutput):
 
     feedback_text: str
 
-    encouragement: Optional[str]
+    encouragement: str | None
 
-    suggested_review_topics: Optional[List[str]]
+    suggested_review_topics: list[str] | None
 
     generated_at: datetime
 
@@ -144,7 +148,7 @@ class RubricGenerationInput(AgentInput):
 
     assignment_description: str
 
-    grading_criteria: Optional[List[str]]
+    grading_criteria: list[str] | None
 
     max_score: int
 
@@ -160,7 +164,7 @@ class RubricCriterion(BaseModel):
 
 class RubricGenerationOutput(AgentOutput):
 
-    rubric: List[RubricCriterion]
+    rubric: list[RubricCriterion]
 
     generated_at: datetime
 
@@ -172,9 +176,9 @@ class RubricGenerationOutput(AgentOutput):
 
 class MisconceptionAnalysisInput(AgentInput):
 
-    student_answers: List[str]
+    student_answers: list[str]
 
-    question_set: List[str]
+    question_set: list[str]
 
     topic: str
 
@@ -190,7 +194,7 @@ class MisconceptionPattern(BaseModel):
 
 class MisconceptionAnalysisOutput(AgentOutput):
 
-    detected_patterns: List[MisconceptionPattern]
+    detected_patterns: list[MisconceptionPattern]
 
     analyzed_at: datetime
 
@@ -206,9 +210,9 @@ class SkillMasteryInput(AgentInput):
 
     skill: str
 
-    past_scores: List[float]
+    past_scores: list[float]
 
-    attempt_history: Optional[List[Dict]]
+    attempt_history: list[dict] | None
 
 
 class SkillMasteryOutput(AgentOutput):
@@ -234,9 +238,9 @@ class SkillMasteryOutput(AgentOutput):
 
 class LearningGapInput(AgentInput):
 
-    student_performance: Dict
+    student_performance: dict
 
-    curriculum_skills: List[str]
+    curriculum_skills: list[str]
 
 
 class LearningGap(BaseModel):
@@ -245,12 +249,12 @@ class LearningGap(BaseModel):
 
     gap_severity: float
 
-    recommended_lessons: List[str]
+    recommended_lessons: list[str]
 
 
 class LearningGapOutput(AgentOutput):
 
-    gaps: List[LearningGap]
+    gaps: list[LearningGap]
 
     analyzed_at: datetime
 
@@ -264,16 +268,16 @@ class KnowledgeGraphUpdateInput(AgentInput):
 
     concept: str
 
-    related_concepts: List[str]
+    related_concepts: list[str]
 
-    source: Optional[str]
+    source: str | None
 
 
 class KnowledgeGraphUpdateOutput(AgentOutput):
 
-    nodes_added: List[str]
+    nodes_added: list[str]
 
-    edges_added: List[Dict]
+    edges_added: list[dict]
 
     update_summary: str
 
@@ -289,7 +293,7 @@ class ConceptDifficultyInput(AgentInput):
 
     concept: str
 
-    student_attempts: Optional[List[Dict]]
+    student_attempts: list[dict] | None
 
 
 class ConceptDifficultyOutput(AgentOutput):
@@ -322,6 +326,6 @@ class CurriculumMapping(BaseModel):
 
 class CurriculumMappingOutput(AgentOutput):
 
-    mapped_standards: List[CurriculumMapping]
+    mapped_standards: list[CurriculumMapping]
 
     mapped_at: datetime

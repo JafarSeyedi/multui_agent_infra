@@ -1,17 +1,18 @@
 # agents/interaction/base_strategy.py
-
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
 from datetime import datetime
-from ..agents.models import AgentInput, AgentOutput
+from typing import Any
+
+from ..agents.models import AgentInput
+from ..agents.models import AgentOutput
 from ..buses.base_message_bus import MessageBus
 from .interaction_models import AgentMessage
 
 class InteractionStrategy:
     scenario_name: str = "base"
 
-    def __init__(self, agent_registry, message_bus: Optional[MessageBus] = None, storage=None):
+    def __init__(self, agent_registry, message_bus: MessageBus | None = None, storage=None):
         self.agent_registry = agent_registry
         self.message_bus = message_bus
         self.storage = storage
@@ -26,7 +27,7 @@ class InteractionStrategy:
     async def _emit(
         self,
         message_type: str,
-        payload: Dict[str, Any],
+        payload: dict[str, Any],
         sender: str,
         recipient: str,
         message_id: str,
@@ -53,9 +54,9 @@ class InteractionStrategy:
     def _build_input(
         self,
         agent_name: str,
-        message: Optional[str] = None,
-        payload: Optional[Dict[str, Any]] = None,
-        context: Optional[Dict[str, Any]] = None,
+        message: str | None = None,
+        payload: dict[str, Any] | None = None,
+        context: dict[str, Any] | None = None,
     ) -> AgentInput:
 
         return AgentInput(
@@ -73,9 +74,9 @@ class InteractionStrategy:
         self,
         agent_name: str,
         agent_id: str,
-        context: Dict[str, Any],
-        payload: Optional[Dict[str, Any]] = None,
-        message: Optional[str] = None,
+        context: dict[str, Any],
+        payload: dict[str, Any] | None = None,
+        message: str | None = None,
     ) -> AgentOutput:
 
         agent = self.agent_registry.get(agent_name)

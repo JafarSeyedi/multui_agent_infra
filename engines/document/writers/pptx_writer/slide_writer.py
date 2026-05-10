@@ -2,23 +2,29 @@
 """
 Write a complete <p:sld> element from a Slide object.
 """
-
 from __future__ import annotations
-from typing import Optional
-from xml.etree.ElementTree import Element, SubElement
 
-from ...models.psdm_models import Slide, MediaReference
-from ...models.usdm_models import (
-    ShapeContent, ImageContent, ChartContent, TableContent,
-    OLEObjectContent, DrawingContent,
-    LogicalElement, ElementType,
-)
+from xml.etree.ElementTree import Element
+from xml.etree.ElementTree import SubElement
+
+from ...models.psdm_models import MediaReference
+from ...models.psdm_models import Slide
+from ...models.usdm_models import ChartContent
+from ...models.usdm_models import DrawingContent
+from ...models.usdm_models import ElementType
+from ...models.usdm_models import ImageContent
+from ...models.usdm_models import LogicalElement
+from ...models.usdm_models import OLEObjectContent
+from ...models.usdm_models import ShapeContent
+from ...models.usdm_models import TableContent
+from .animation_writer import write_animations
+from .animation_writer import write_transition
 from .constants import NAMESPACES
-from .drawingml_helpers import set_solid_color, write_rich_text_body
-from .shape_writer import write_shape, write_picture, write_group_shape
-from .table_writer import write_table
-from .animation_writer import write_transition, write_animations
+from ..drawingml_helpers import set_solid_color
 from .ole_writer import write_ole_element
+from .shape_writer import write_picture
+from .shape_writer import write_shape
+from .table_writer import write_table
 from .utils import dict_to_element
 
 P = f"{{{NAMESPACES['p']}}}"
@@ -56,7 +62,7 @@ def write_slide(slide: Slide) -> Element:
     spTree = SubElement(cSld, f"{P}spTree")
     _write_spTree(spTree, slide)
 
-    # Transition
+    # PresentationTransition
     trans_elem = write_transition(slide.transition)
     if trans_elem is not None:
         sld.append(trans_elem)

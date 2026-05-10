@@ -10,26 +10,18 @@ Mapping rules:
 - <port> → Locator (attached to the parent node/edge)
 - Nested <graph> inside a node → composite state with a sub‑region
 """
-
 from __future__ import annotations
-from pathlib import Path
-from typing import Optional, Dict, Any, List
+
+import uuid
 from xml.etree import ElementTree as ET
 
-from .base_osdm_parser import BaseOSDMParser
-from ..base import ParseOptions
+from ...models.media_types import MEDIA_TYPES
 from ...models.osdm_models import (
-    BaseOSDMDocument,
-    StateMachineDocument,
-    StateMachineModel,
-    StateMachineRegion,
-    State,
-    StateTransition,
-    Locator,
-    BaseElement,
+    BaseOSDMDocument, Locator, State, StateMachineDocument,
+    StateMachineModel, StateMachineRegion, StateTransition
 )
-from ...models.base import BaseDocument
-
+from ..base import ParseOptions
+from .base_osdm_parser import BaseOSDMParser
 
 GRAPHML_NS = "http://graphml.graphdrawing.org/xmlns"
 NS = {"g": GRAPHML_NS}
@@ -48,7 +40,12 @@ class GraphMLXMLParser(BaseOSDMParser):
         text = data.decode(encoding)
         root = ET.fromstring(text)
 
-        doc = StateMachineDocument()
+        doc = StateMachineDocument(
+            document_id=root.get("id", source_name),
+            title=root.get("name", source_name),
+            media_type=MEDIA_TYPES.get("graphml", MEDIA_TYPES["xml"])
+        )
+        doc.source_file = source_name
 
         # Process top‑level <graph> elements
         for graph_elem in root.findall("g:graph", NS):
@@ -61,12 +58,12 @@ class GraphMLXMLParser(BaseOSDMParser):
         graph_id = graph_elem.get("id", "")
         graph_name = graph_elem.get("name", graph_id)
         sm = StateMachineModel(id=graph_id, name=graph_name)
-        top_region = StateMachineRegion()
+        top_region = StateMachineRegion(id=str(uuid.uuid4().hex), name="top_region")
         sm.top_region = top_region
 
         # Temporary map of node id → State
-        node_map: Dict[str, State] = {}
-        edges: List[ET.Element] = []
+        node_map: dict[str, State] = {}
+        edges: list[ET.Element] = []
 
         # Process children: nodes, edges, nested graphs
         for child in graph_elem:
@@ -108,6 +105,7 @@ class GraphMLXMLParser(BaseOSDMParser):
             sub_sm = self._parse_graph(nested_graph)
             # The sub‑state machine becomes a sub‑region
             sub_region = StateMachineRegion(
+                id=str(uuid.uuid4().hex),
                 states=sub_sm.top_region.states,
                 transitions=sub_sm.top_region.transitions,
                 initial_state=sub_sm.top_region.initial_state,
@@ -117,7 +115,7 @@ class GraphMLXMLParser(BaseOSDMParser):
 
         return state
 
-    def _parse_edge(self, elem: ET.Element, node_map: Dict[str, State]) -> Optional[StateTransition]:
+    def _parse_edge(self, elem: ET.Element, node_map: dict[str, State]) -> StateTransition | None:
         source_id = elem.get("source")
         target_id = elem.get("target")
         if not source_id or not target_id:
@@ -128,9 +126,10 @@ class GraphMLXMLParser(BaseOSDMParser):
             return None
 
         trans = StateTransition(
-            id=elem.get("id", f"{source_id}_{target_id}"),
+            id=elem.get("id", str(uuid.uuid4().hex)),
             source=source,
             target=target,
+            directed=elem.get("directed", "true").lower() == "true",
         )
 
         # Extract edge_type from <data key="edge_type">
@@ -144,14 +143,12 @@ class GraphMLXMLParser(BaseOSDMParser):
             locator = self._parse_port(port_elem)
             trans.locators.append(locator)
 
-        # Directed attribute (default true)
-        directed = elem.get("directed", "true").lower() == "true"
-        trans.directed = directed
-
         return trans
 
     def _parse_port(self, elem: ET.Element) -> Locator:
-        locator = Locator(id=elem.get("id", ""), name=elem.get("name", ""))
+        port_id = elem.get("id", str(uuid.uuid4().hex))
+        port_name = elem.get("name", "")
+        locator = Locator(id=port_id, name=port_name)
         # Coordinates stored as data elements
         for data_elem in elem.findall("g:data", NS):
             key = data_elem.get("key", "")

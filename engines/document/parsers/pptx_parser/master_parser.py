@@ -4,22 +4,18 @@ Parses slide masters and slide layouts from PPTX XML.
 Populates SlideMaster and SlideLayout with all necessary detail
 for round‑trip fidelity.
 """
-
 from __future__ import annotations
-from typing import Dict, List, Optional, Any
+
 from xml.etree.ElementTree import Element
 
-from ...models.psdm_models import (
-    SlideMaster,
-    SlideLayout,
-    Placeholder,
-    PlaceholderType,
-)
+from ...models.psdm_models import Placeholder
+from ...models.psdm_models import PlaceholderType
+from ...models.psdm_models import SlideLayout
+from ...models.psdm_models import SlideMaster
 from ...models.usdm_models import (
     CharacterStyle,
-    ShapeContent,
 )
-from .constants import NAMESPACES, PPTX_PLACEHOLDER_MAP
+from .constants import NAMESPACES
 from .shape_parser import parse_pptx_shape
 from .utils import element_to_dict
 
@@ -78,8 +74,8 @@ def parse_layout(layout_xml: Element) -> SlideLayout:
 
 def parse_master(
     master_xml: Element,
-    layouts: Dict[str, SlideLayout],
-    master_name: Optional[str] = None,
+    layouts: dict[str, SlideLayout],
+    master_name: str | None = None,
 ) -> SlideMaster:
     """
     Parse a <p:sldMaster> element into a SlideMaster.
@@ -179,7 +175,7 @@ def _parse_def_rpr(def_rpr: Element) -> CharacterStyle:
     return cs
 
 
-def _get_font_size(def_rpr: Element) -> Optional[float]:
+def _get_font_size(def_rpr: Element) -> float | None:
     """Extract font size in points from <a:sz>."""
     sz = def_rpr.find("a:sz", NS)
     if sz is not None:

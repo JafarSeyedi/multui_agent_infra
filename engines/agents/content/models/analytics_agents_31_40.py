@@ -1,14 +1,13 @@
-from pydantic import BaseModel
-from ...models import AgentInput, AgentOutput
-from typing import List, Optional, Dict
 from datetime import datetime
 
-from .learning_objects import (
-    LearningEvent,
-    AssessmentResult,
-    LearningProgress,
-    SkillPerformance
-)
+from pydantic import BaseModel
+
+from ...models import AgentInput
+from ...models import AgentOutput
+from .learning_objects import AssessmentResult
+from .learning_objects import LearningEvent
+from .learning_objects import LearningProgress
+from .learning_objects import SkillPerformance
 
 
 # --------------------------------------------------
@@ -20,9 +19,9 @@ class StudentBehaviorAnalysisInput(AgentInput):
 
     student_id: str
 
-    events: List[LearningEvent]
+    events: list[LearningEvent]
 
-    time_window_days: Optional[int] = 30
+    time_window_days: int | None = 30
 
 
 class BehaviorPattern(BaseModel):
@@ -36,9 +35,9 @@ class BehaviorPattern(BaseModel):
 
 class StudentBehaviorAnalysisOutput(AgentOutput):
 
-    detected_patterns: List[BehaviorPattern]
+    detected_patterns: list[BehaviorPattern]
 
-    engagement_score: Optional[float]
+    engagement_score: float | None
 
     analyzed_at: datetime
 
@@ -52,7 +51,7 @@ class EngagementDetectionInput(AgentInput):
 
     student_id: str
 
-    recent_events: List[LearningEvent]
+    recent_events: list[LearningEvent]
 
 
 class EngagementDetectionOutput(AgentOutput):
@@ -61,7 +60,7 @@ class EngagementDetectionOutput(AgentOutput):
 
     engagement_score: float
 
-    indicators: Optional[List[str]]
+    indicators: list[str] | None
 
     detected_at: datetime
 
@@ -75,18 +74,18 @@ class MotivationAnalysisInput(AgentInput):
 
     student_id: str
 
-    events: List[LearningEvent]
+    events: list[LearningEvent]
 
-    performance_history: Optional[List[AssessmentResult]]
+    performance_history: list[AssessmentResult] | None
 
 
 class MotivationAnalysisOutput(AgentOutput):
 
     motivation_level: str
 
-    key_factors: Optional[List[str]]
+    key_factors: list[str] | None
 
-    recommended_interventions: Optional[List[str]]
+    recommended_interventions: list[str] | None
 
     analyzed_at: datetime
 
@@ -102,9 +101,9 @@ class DropoutRiskPredictionInput(AgentInput):
 
     learning_progress: LearningProgress
 
-    recent_events: List[LearningEvent]
+    recent_events: list[LearningEvent]
 
-    assessment_results: Optional[List[AssessmentResult]]
+    assessment_results: list[AssessmentResult] | None
 
 
 class DropoutRiskPredictionOutput(AgentOutput):
@@ -113,9 +112,9 @@ class DropoutRiskPredictionOutput(AgentOutput):
 
     risk_level: str
 
-    risk_factors: Optional[List[str]]
+    risk_factors: list[str] | None
 
-    recommended_actions: Optional[List[str]]
+    recommended_actions: list[str] | None
 
     predicted_at: datetime
 
@@ -129,7 +128,7 @@ class StudyPatternMiningInput(AgentInput):
 
     student_id: str
 
-    events: List[LearningEvent]
+    events: list[LearningEvent]
 
 
 class StudyPattern(BaseModel):
@@ -143,9 +142,9 @@ class StudyPattern(BaseModel):
 
 class StudyPatternMiningOutput(AgentOutput):
 
-    patterns: List[StudyPattern]
+    patterns: list[StudyPattern]
 
-    preferred_study_times: Optional[List[str]]
+    preferred_study_times: list[str] | None
 
     analyzed_at: datetime
 
@@ -159,7 +158,7 @@ class PerformanceTrendAnalysisInput(AgentInput):
 
     student_id: str
 
-    assessment_results: List[AssessmentResult]
+    assessment_results: list[AssessmentResult]
 
 
 class PerformanceTrend(BaseModel):
@@ -168,14 +167,14 @@ class PerformanceTrend(BaseModel):
 
     confidence: float
 
-    description: Optional[str]
+    description: str | None
 
 
 class PerformanceTrendAnalysisOutput(AgentOutput):
 
     trend: PerformanceTrend
 
-    predicted_next_score: Optional[float]
+    predicted_next_score: float | None
 
     analyzed_at: datetime
 
@@ -189,16 +188,16 @@ class LearningOutcomePredictionInput(AgentInput):
 
     student_id: str
 
-    skill_performance: List[SkillPerformance]
+    skill_performance: list[SkillPerformance]
 
-    recent_assessments: Optional[List[AssessmentResult]]
+    recent_assessments: list[AssessmentResult] | None
 
 
 class LearningOutcomePredictionOutput(AgentOutput):
 
-    predicted_mastery_levels: Dict[str, float]
+    predicted_mastery_levels: dict[str, float]
 
-    predicted_course_completion_probability: Optional[float]
+    predicted_course_completion_probability: float | None
 
     generated_at: datetime
 
@@ -212,16 +211,16 @@ class ClassroomAnalyticsInput(AgentInput):
 
     class_id: str
 
-    student_progress_data: List[LearningProgress]
+    student_progress_data: list[LearningProgress]
 
 
 class ClassroomAnalyticsOutput(AgentOutput):
 
     average_mastery: float
 
-    struggling_students: List[str]
+    struggling_students: list[str]
 
-    top_performing_students: List[str]
+    top_performing_students: list[str]
 
     generated_at: datetime
 
@@ -237,9 +236,9 @@ class CohortComparisonInput(AgentInput):
 
     cohort_b_id: str
 
-    cohort_a_results: List[AssessmentResult]
+    cohort_a_results: list[AssessmentResult]
 
-    cohort_b_results: List[AssessmentResult]
+    cohort_b_results: list[AssessmentResult]
 
 
 class CohortComparisonOutput(AgentOutput):
@@ -250,7 +249,7 @@ class CohortComparisonOutput(AgentOutput):
 
     performance_difference: float
 
-    interpretation: Optional[str]
+    interpretation: str | None
 
     generated_at: datetime
 
@@ -264,21 +263,21 @@ class TeacherDashboardAggregationInput(AgentInput):
 
     class_id: str
 
-    student_progress: List[LearningProgress]
+    student_progress: list[LearningProgress]
 
-    assessment_results: Optional[List[AssessmentResult]]
+    assessment_results: list[AssessmentResult] | None
 
-    engagement_data: Optional[Dict]
+    engagement_data: dict | None
 
 
 class TeacherDashboardAggregationOutput(AgentOutput):
 
-    class_average_score: Optional[float]
+    class_average_score: float | None
 
-    engagement_overview: Optional[Dict]
+    engagement_overview: dict | None
 
-    risk_students: Optional[List[str]]
+    risk_students: list[str] | None
 
-    suggested_actions: Optional[List[str]]
+    suggested_actions: list[str] | None
 
     generated_at: datetime

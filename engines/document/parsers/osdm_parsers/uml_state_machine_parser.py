@@ -15,29 +15,19 @@ Mapping rules (UML → OSDM):
 
 No annotations are used; all data is stored in typed fields defined by the unified model.
 """
-
 from __future__ import annotations
-from pathlib import Path
-from typing import Optional, Dict, Any, List, Tuple
+
+import uuid
 from xml.etree import ElementTree as ET
 
-from .base_osdm_parser import BaseOSDMParser
-from ..base import ParseOptions
+from ...models.media_types import MEDIA_TYPES
 from ...models.osdm_models import (
-    BaseOSDMDocument,
-    StateMachineDocument,
-    StateMachineModel,
-    StateMachineRegion,
-    State,
-    StateTransition,
-    PseudoState,
-    PseudoStateKind,
-    Script,
-    ScriptLanguage,
-    FormalExpression,
+    BaseOSDMDocument, FormalExpression, PseudoState, PseudoStateKind,
+    Script, ScriptLanguage, State, StateMachineDocument, StateMachineModel,
+    StateMachineRegion, StateTransition
 )
-from ...models.base import BaseDocument
-
+from ..base import ParseOptions
+from .base_osdm_parser import BaseOSDMParser
 
 UML_NS = "http://www.omg.org/spec/UML/20131001"
 XMI_NS = "http://www.omg.org/spec/XMI/20131001"
@@ -57,7 +47,13 @@ class UMLStateMachineParser(BaseOSDMParser):
         text = data.decode(encoding)
         root = ET.fromstring(text)
 
-        doc = StateMachineDocument()
+        doc = StateMachineDocument(
+            document_id=root.get("id", source_name),
+            title=root.get("name", source_name),
+            media_type=MEDIA_TYPES.get("uml_state_machine", MEDIA_TYPES["xml"])
+        )
+        doc.source_file = source_name
+
         for sm_elem in root.findall(".//uml:StateMachine", NS):
             sm = self._parse_state_machine(sm_elem)
             doc.state_machines.append(sm)
@@ -75,16 +71,19 @@ class UMLStateMachineParser(BaseOSDMParser):
             sm.top_region = region
             sm.pseudo_states = list(pseudo_map.values())
         else:
-            sm.top_region = StateMachineRegion()
+            sm.top_region = StateMachineRegion(id=str(uuid.uuid4().hex))
 
         return sm
 
     def _parse_region(
-        self, region_elem: ET.Element, parent_state: Optional[State]
-    ) -> Tuple[StateMachineRegion, Dict[str, PseudoState]]:
-        region = StateMachineRegion()
-        state_map: Dict[str, State] = {}
-        pseudo_map: Dict[str, PseudoState] = {}
+        self, region_elem: ET.Element, parent_state: State | None
+    ) -> tuple[StateMachineRegion, dict[str, PseudoState]]:
+        region = StateMachineRegion(
+            id=str(uuid.uuid4().hex),
+            name=region_elem.get("name", "")
+        )
+        state_map: dict[str, State] = {}
+        pseudo_map: dict[str, PseudoState] = {}
 
         # First pass: collect states, pseudo‑states, final states
         for child in region_elem:
@@ -120,10 +119,12 @@ class UMLStateMachineParser(BaseOSDMParser):
 
         return region, pseudo_map
 
-    def _parse_state(self, elem: ET.Element) -> Tuple[State, Dict[str, PseudoState]]:
-        st = State(id=elem.get(f"{{{XMI_NS}}}id", elem.get("id", "")),
-                   name=elem.get("name", ""))
-        pseudo_map: Dict[str, PseudoState] = {}
+    def _parse_state(self, elem: ET.Element) -> tuple[State, dict[str, PseudoState]]:
+        st = State(
+            id=elem.get(f"{{{XMI_NS}}}id", elem.get("id", str(uuid.uuid4().hex))),
+            name=elem.get("name", "")
+        )
+        pseudo_map: dict[str, PseudoState] = {}
 
         # Entry/Exit/Do activities
         for child in elem:
@@ -142,7 +143,7 @@ class UMLStateMachineParser(BaseOSDMParser):
 
         return st, pseudo_map
 
-    def _parse_activity(self, elem: ET.Element, actions: List[Script]) -> None:
+    def _parse_activity(self, elem: ET.Element, actions: list[Script]) -> None:
         spec = elem.find("uml:specification", NS)
         body = ""
         if spec is not None:
@@ -150,15 +151,22 @@ class UMLStateMachineParser(BaseOSDMParser):
         elif elem.text:
             body = elem.text
         if body:
-            actions.append(Script(script_body=body, script_language=ScriptLanguage.PYTHON))
+            script_id = str(uuid.uuid4().hex)
+            actions.append(Script(
+                id=script_id,
+                script_body=body,
+                script_language=ScriptLanguage.PYTHON
+            ))
 
     def _parse_final_state(self, elem: ET.Element) -> State:
-        st = State(id=elem.get(f"{{{XMI_NS}}}id", elem.get("id", "")),
-                   name=elem.get("name", ""),
-                   is_final=True)
+        st = State(
+            id=elem.get(f"{{{XMI_NS}}}id", elem.get("id", str(uuid.uuid4().hex))),
+            name=elem.get("name", ""),
+            is_final=True
+        )
         return st
 
-    def _parse_pseudo_state(self, elem: ET.Element, parent_state: Optional[State]) -> PseudoState:
+    def _parse_pseudo_state(self, elem: ET.Element, parent_state: State | None) -> PseudoState:
         kind_str = elem.get("kind", "initial")
         kind_map = {
             "initial": PseudoStateKind.INITIAL,
@@ -173,17 +181,19 @@ class UMLStateMachineParser(BaseOSDMParser):
             "terminate": PseudoStateKind.TERMINATE,
         }
         kind = kind_map.get(kind_str, PseudoStateKind.INITIAL)
-        ps = PseudoState(id=elem.get(f"{{{XMI_NS}}}id", elem.get("id", "")),
-                         kind=kind,
-                         parent_state=parent_state)
+        ps = PseudoState(
+            id=elem.get(f"{{{XMI_NS}}}id", elem.get("id", str(uuid.uuid4().hex))),
+            kind=kind,
+            parent_state=parent_state
+        )
         return ps
 
     def _parse_transition(
         self, elem: ET.Element,
-        state_map: Dict[str, State],
-        pseudo_map: Dict[str, PseudoState],
-    ) -> Optional[StateTransition]:
-        trans_id = elem.get(f"{{{XMI_NS}}}id", elem.get("id", ""))
+        state_map: dict[str, State],
+        pseudo_map: dict[str, PseudoState],
+    ) -> StateTransition | None:
+        trans_id = elem.get(f"{{{XMI_NS}}}id", elem.get("id", str(uuid.uuid4().hex)))
         source_id = elem.get("source")
         target_id = elem.get("target")
         if not source_id or not target_id:
@@ -205,7 +215,10 @@ class UMLStateMachineParser(BaseOSDMParser):
         if trigger_elem is not None:
             name = trigger_elem.get("name", "")
             if name:
-                trans.trigger = FormalExpression(body=name)
+                trans.trigger = FormalExpression(
+                    id=str(uuid.uuid4().hex),
+                    body=name
+                )
 
         # Guard
         guard_elem = elem.find("uml:guard", NS)
@@ -214,7 +227,10 @@ class UMLStateMachineParser(BaseOSDMParser):
             if spec is not None:
                 guard_body = spec.get("value", "") or spec.text or ""
                 if guard_body:
-                    trans.guard = FormalExpression(body=guard_body)
+                    trans.guard = FormalExpression(
+                        id=str(uuid.uuid4().hex),
+                        body=guard_body
+                    )
 
         # Effect
         effect_elem = elem.find("uml:effect", NS)
@@ -223,6 +239,9 @@ class UMLStateMachineParser(BaseOSDMParser):
             if spec is not None:
                 effect_body = spec.get("value", "") or spec.text or ""
                 if effect_body:
-                    trans.effect = FormalExpression(body=effect_body)
+                    trans.effect = FormalExpression(
+                        id=str(uuid.uuid4().hex),
+                        body=effect_body
+                    )
 
         return trans

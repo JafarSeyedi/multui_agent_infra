@@ -17,31 +17,26 @@ Handles:
   are preserved as Annotations for lossless round‑trip.
 
 Every semantic element is mapped to MSDM Entity (kind=OBJECT), Attribute,
-and Relationship objects.  Non‑standard constructs are stored as structured
+and EntityRelationship objects.  Non‑standard constructs are stored as structured
 annotations.
 """
-
 from __future__ import annotations
+
 import re
 from pathlib import Path
-from typing import Optional, Dict, Any, List, Tuple, Set
 
-from .base_msdm_parser import BaseMSDMParser
+from ...models.media_types import MEDIA_TYPES
+from ...models.msdm_models import Annotation
+from ...models.msdm_models import Attribute
+from ...models.msdm_models import Cardinality
+from ...models.msdm_models import DataType
+from ...models.msdm_models import Entity
+from ...models.msdm_models import EntityKind
+from ...models.msdm_models import MSDMDocument
+from ...models.msdm_models import EntityRelationship
+from ...models.msdm_models import ScalarType, Namespace
 from ..base import ParseOptions
-from ...models.msdm_models import (
-    MSDMDocument,
-    Entity,
-    Attribute,
-    DataType,
-    Constraint,
-    ConstraintType,
-    Index,
-    Annotation,
-    EntityKind,
-    ScalarType,
-    Relationship,
-    Cardinality,
-)
+from .base_msdm_parser import BaseMSDMParser
 
 # ── Regular expressions ──────────────────────────────────────────
 
@@ -64,7 +59,7 @@ RE_METHOD = re.compile(
     r'^\s*([+#\-~])?\s*(\w+)\s*\(\s*(.*?)\s*\)\s*(?::\s*(.+))?\s*$'
 )
 
-# Relationship line: ClassA  ["label"] [mult] --|> / --> / --* / --o / .. etc  [mult] ClassB [ : label ]
+# EntityRelationship line: ClassA  ["label"] [mult] --|> / --> / --* / --o / .. etc  [mult] ClassB [ : label ]
 # We'll break it down:  LeftClass  (["left_label"])?  (multiplicity_left)?  arrow  (multiplicity_right)?  RightClass  ( : label)?
 RE_RELATION = re.compile(
     r'^\s*(\w+)\s*'                                  # classA
@@ -98,19 +93,23 @@ class PlantUMLParser(BaseMSDMParser):
         encoding = options.encoding or "utf-8"
         text = data.decode(encoding)
 
-        doc = MSDMDocument()
-        doc.namespace = Path(source_name).stem
+        doc = MSDMDocument(
+            document_id=Path(source_name).stem,
+            title=Path(source_name).stem,
+            media_type=MEDIA_TYPES.get("plantuml", MEDIA_TYPES["txt"])
+        )
+        doc.namespace = Namespace(uri=Path(source_name).stem)
 
         lines = text.splitlines()
 
         # State
-        current_entity: Optional[Entity] = None
+        current_entity: Entity | None = None
         in_block = False
-        block_lines: List[str] = []
+        block_lines: list[str] = []
         # Map of class name -> Entity for relationship resolution
-        entities_by_name: Dict[str, Entity] = {}
+        entities_by_name: dict[str, Entity] = {}
         # List of raw relationship strings to parse after all entities are defined
-        raw_relations: List[str] = []
+        raw_relations: list[str] = []
 
         for line in lines:
             stripped = line.strip()
@@ -127,6 +126,7 @@ class PlantUMLParser(BaseMSDMParser):
             if in_block:
                 if stripped == "}":
                     # End of block – finalize entity
+                    assert current_entity is not None
                     self._finalize_class_block(current_entity, block_lines, doc, entities_by_name)
                     in_block = False
                     current_entity = None
@@ -201,10 +201,11 @@ class PlantUMLParser(BaseMSDMParser):
             if ent not in doc.entities:
                 doc.entities.append(ent)
 
+        self.resolve_references(doc)
         return doc
 
-    def _finalize_class_block(self, entity: Entity, lines: List[str],
-                              doc: MSDMDocument, entities_by_name: Dict[str, Entity]) -> None:
+    def _finalize_class_block(self, entity: Entity, lines: list[str],
+                              doc: MSDMDocument, entities_by_name: dict[str, Entity]) -> None:
         """
         Parse the interior of a class/interface body.
         Lines contain field definitions and method definitions.
@@ -291,10 +292,10 @@ class PlantUMLParser(BaseMSDMParser):
         if lower in mapping:
             return DataType(base=mapping[lower])
         # Otherwise, treat as a reference to another class
-        return DataType(base=ScalarType.REF, ref_entity=type_str)
+        return DataType(base=ScalarType.REF, ref_entity_id=type_str)
 
     def _parse_relationship_line(self, line: str,
-                                 entities_by_name: Dict[str, Entity],
+                                 entities_by_name: dict[str, Entity],
                                  doc: MSDMDocument) -> None:
         """
         Parse a full relationship line and add a Relationship object to doc.
@@ -322,20 +323,20 @@ class PlantUMLParser(BaseMSDMParser):
                     # left is parent, right is child
                     if right_class in entities_by_name:
                         child_entity = entities_by_name[right_class]
-                        child_entity.extends = left_class
+                        child_entity.extends_ref_id = left_class
                         if arrow == "..|>":
                             # realisation: class ..|> interface (left is class, right is interface?)
                             # Actually it's usually Child ..|> Parent or Class ..|> Interface
                             # We'll treat left as child and right as interface, so set extends and mark interface annotation
                             if left_class in entities_by_name:
                                 left_entity = entities_by_name[left_class]
-                                left_entity.extends = right_class
+                                left_entity.extends_ref_id = right_class
                                 left_entity.annotations.append(Annotation(key="implements", value="true"))
                             return
                 else:  # --|>  (left child, right parent)
                     if left_class in entities_by_name:
                         left_entity = entities_by_name[left_class]
-                        left_entity.extends = right_class
+                        left_entity.extends_ref_id = right_class
                 return
             # Arrow like --|> or similar directional
             # We'll handle general cases later
@@ -344,10 +345,10 @@ class PlantUMLParser(BaseMSDMParser):
             from_card = self._to_card(left_mult_str)
             to_card = self._to_card(right_mult_str)
             # Determine direction: if arrow contains > at end, direction is left->right
-            rel = Relationship(
+            rel = EntityRelationship(
                 name=label,
-                from_entity=left_class,
-                to_entity=right_class,
+                from_ref_id=left_class,
+                to_ref_id=right_class,
                 cardinality_from=from_card,
                 cardinality_to=to_card,
             )
@@ -355,7 +356,7 @@ class PlantUMLParser(BaseMSDMParser):
                 rel.annotations.append(Annotation(key="left_label", value=left_label))
             doc.relationships.append(rel)
 
-    def _to_card(self, mult_str: Optional[str]) -> Cardinality:
+    def _to_card(self, mult_str: str | None) -> Cardinality:
         if not mult_str:
             return Cardinality.ONE
         mult_str = mult_str.strip()

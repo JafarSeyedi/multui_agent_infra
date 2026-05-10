@@ -2,13 +2,13 @@
 """
 PPTX parser utility functions – used throughout the parsing process.
 """
-
 from __future__ import annotations
-from typing import Any, Dict, List, Optional
+
+from typing import Any
 from xml.etree.ElementTree import Element
 
 
-def element_to_dict(elem: Element) -> Dict[str, Any]:
+def element_to_dict(elem: Element) -> dict[str, Any]:
     """
     Convert an XML Element to a nested dictionary that captures
     the tag name, attributes, text, and children – without any XML.
@@ -21,7 +21,7 @@ def element_to_dict(elem: Element) -> Dict[str, Any]:
         - "_children": list of child dicts (preserving order)
     """
     tag = elem.tag.split("}")[-1] if "}" in elem.tag else elem.tag
-    d: Dict[str, Any] = {"_tag": tag}
+    d: dict[str, Any] = {"_tag": tag}
     # Attributes
     for key, val in elem.attrib.items():
         # keep full attribute name including namespace if any
@@ -38,7 +38,7 @@ def element_to_dict(elem: Element) -> Dict[str, Any]:
     return d
 
 
-def dict_to_element(d: Dict[str, Any], namespaces: Dict[str, str]) -> Element:
+def dict_to_element(d: dict[str, Any], namespaces: dict[str, str]) -> Element:
     """
     Reconstruct an XML Element from a dictionary produced by element_to_dict.
     This is used in the writer for round‑trip.

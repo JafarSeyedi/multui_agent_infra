@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import hashlib
 import math
-from typing import Dict, Iterable, List, Sequence
+from collections.abc import Iterable
+from collections.abc import Sequence
 
 from ..ingestion.ingestion_models import ChunkRecord
-
 from .base import EmbeddingProvider
 
 
@@ -15,10 +15,10 @@ class HashEmbeddingProvider(EmbeddingProvider):
     def __init__(self, dimensions: int = 128) -> None:
         self.dimensions = dimensions
 
-    async def embed_texts(self, texts: Sequence[str]) -> List[List[float]]:
+    async def embed_texts(self, texts: Sequence[str]) -> list[list[float]]:
         return [self._embed_single(text) for text in texts]
 
-    def _embed_single(self, text: str) -> List[float]:
+    def _embed_single(self, text: str) -> list[float]:
         vector = [0.0] * self.dimensions
         for token in text.lower().split():
             digest = hashlib.sha256(token.encode("utf-8")).digest()
@@ -40,8 +40,8 @@ class DocumentEmbeddingService:
         self.provider = provider
         self.batch_size = batch_size
 
-    async def embed_chunks(self, chunks: Sequence[ChunkRecord]) -> Dict[str, List[float]]:
-        result: Dict[str, List[float]] = {}
+    async def embed_chunks(self, chunks: Sequence[ChunkRecord]) -> dict[str, list[float]]:
+        result: dict[str, list[float]] = {}
         for batch in self._batched(chunks):
             embeddings = await self.provider.embed_texts([chunk.text for chunk in batch])
             for chunk, embedding in zip(batch, embeddings):

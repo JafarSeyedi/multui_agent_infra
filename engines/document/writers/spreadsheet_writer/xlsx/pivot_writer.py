@@ -2,10 +2,10 @@
 Pivot tables and pivot caches writer for XLSX.
 Generates pivotCacheDefinition.xml and pivotTable.xml parts.
 """
-
 from __future__ import annotations
+
 import xml.etree.ElementTree as ET
-from typing import TYPE_CHECKING, List, Tuple, Optional, Dict, Any
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ....models.esdm_models import Workbook, PivotCache, PivotTable, PivotField
@@ -31,7 +31,7 @@ class PivotWriter:
 
     def write(
         self, workbook: Workbook
-    ) -> Tuple[Optional[str], Dict[str, str], List[Tuple[int, List[Tuple[str, str, str]]]]]:
+    ) -> tuple[str | None, dict[str, str], list[tuple[int, list[tuple[str, str, str]]]]]:
         """
         Returns:
         - XML of the first pivot cache definition (or None)
@@ -48,8 +48,8 @@ class PivotWriter:
             self._parent._pivot_cache_xmls[path] = cache_xml
 
         # Write each pivot table
-        table_xmls: Dict[str, str] = {}
-        sheet_rels_extra: List[Tuple[int, List[Tuple[str, str, str]]]] = []
+        table_xmls: dict[str, str] = {}
+        sheet_rels_extra: list[tuple[int, list[tuple[str, str, str]]]] = []
 
         for pt in workbook.pivot_tables:
             self._table_counter += 1
@@ -109,10 +109,10 @@ class PivotWriter:
     # ------------------------------------------------------------------
     def _write_pivot_table(self, pt: PivotTable, table_id: int) -> str:
         # Group fields by orientation
-        row_fields: List[PivotField] = []
-        col_fields: List[PivotField] = []
-        data_fields: List[PivotField] = []
-        page_fields: List[PivotField] = []
+        row_fields: list[PivotField] = []
+        col_fields: list[PivotField] = []
+        data_fields: list[PivotField] = []
+        page_fields: list[PivotField] = []
 
         for field in pt.fields:
             orient = field.orientation.lower()

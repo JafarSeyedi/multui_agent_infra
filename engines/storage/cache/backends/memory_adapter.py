@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from ..base import CacheStorage
 
@@ -11,7 +11,7 @@ class InMemoryCacheStorage(CacheStorage):
 
     def __init__(self) -> None:
         super().__init__()
-        self._store: Dict[str, Tuple[Any, Optional[float]]] = {}
+        self._store: dict[str, tuple[Any, float | None]] = {}
 
     async def connect(self) -> None:
         self._connected = True
@@ -29,12 +29,12 @@ class InMemoryCacheStorage(CacheStorage):
         for key in expired:
             self._store.pop(key, None)
 
-    async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
+    async def set(self, key: str, value: Any, ttl: int | None = None) -> None:
         self._purge_expired()
         expiry = time.time() + ttl if ttl else None
         self._store[key] = (value, expiry)
 
-    async def get(self, key: str) -> Optional[Any]:
+    async def get(self, key: str) -> Any | None:
         self._purge_expired()
         item = self._store.get(key)
         return item[0] if item else None
@@ -46,7 +46,7 @@ class InMemoryCacheStorage(CacheStorage):
         self._purge_expired()
         return key in self._store
 
-    async def list_keys(self, prefix: Optional[str] = None) -> List[str]:
+    async def list_keys(self, prefix: str | None = None) -> list[str]:
         self._purge_expired()
         keys = list(self._store.keys())
         if prefix is None:

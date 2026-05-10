@@ -1,19 +1,14 @@
 # engines/document/ingestion/ingestion_service.py
-
 from __future__ import annotations
 
-from typing import Optional, Dict, Any
+from typing import Any
 
-from ..models.media_types import MediaType, DocumentFormat
-
+from ..models.document_registry import DocumentRegistry
 from .ingestion_context import IngestionContext
-from .ingestion_pipeline import IngestionPipeline
-from .ingestion_runner import IngestionRunner
-
-from .ingestion_models import DocumentIngestionResult
-from .ingestion_validator import IngestionValidator
 from .ingestion_errors import IngestionError
-
+from .ingestion_models import DocumentIngestionResult
+from .ingestion_runner import IngestionRunner
+from .workflow_registry import WorkflowRegistry
 # from ..parsers.pdf_parser import PdfParser
 # from ..parsers.docx_parser import DocxParser
 # from ..parsers.html_parser import HTMLParser
@@ -26,7 +21,6 @@ from .ingestion_errors import IngestionError
 # from ..parsers.yaml_parser import YAMLParser
 # from ..parsers.binary_parser import BinaryParser
 # from ..parsers.cad_parser.csdm_parser import CSDMDocumentParser
-
 # from ..writers.pdf_writer import PDFWriter
 # from ..writers.docx_writer import DocxWriter
 # from ..writers.html_writer import HTMLWriter
@@ -39,9 +33,6 @@ from .ingestion_errors import IngestionError
 # from ..writers.yaml_writer import YAMLWriter
 # from ..writers.binary_writer import BinaryWriter
 # from ..writers.cad_writer import CADWriter
-
-from .workflow_registry import WorkflowRegistry
-from ..models.document_registry import DocumentRegistry
 
 class IngestionService:
     """
@@ -144,8 +135,8 @@ class IngestionService:
         filename: str,
         media_type,
         data: bytes,
-        metadata: Optional[Dict[str, Any]] = None,
-        context: Optional[IngestionContext] = None,
+        metadata: dict[str, Any] | None = None,
+        context: IngestionContext | None = None,
     ) -> DocumentIngestionResult:
         """
         Runs full ingestion pipeline.

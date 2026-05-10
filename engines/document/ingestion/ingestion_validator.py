@@ -1,14 +1,12 @@
 # engines/document/ingestion/ingestion_validator.py
-
 from __future__ import annotations
 
-from typing import Dict, Any
+from typing import Any
 
-from .ingestion_errors import (
-    InvalidDocumentError,
-    UnsupportedMediaTypeError,
-)
-from ..models.media_types import MediaType, MEDIA_TYPES
+from ..models.media_types import MEDIA_TYPES
+from ..models.media_types import MediaType
+from .ingestion_errors import InvalidDocumentError
+from .ingestion_errors import UnsupportedMediaTypeError
 
 
 class IngestionValidator:
@@ -24,7 +22,7 @@ class IngestionValidator:
         filename: str,
         media_type: str | MediaType,
         data: bytes,
-        metadata: Dict[str, Any] | None,
+        metadata: dict[str, Any] | None,
     ):
         if not document_id:
             raise InvalidDocumentError("document_id must not be empty")
@@ -38,7 +36,7 @@ class IngestionValidator:
         # Validate media_type
         if isinstance(media_type, MediaType):
             try:
-                _ = media_type 
+                _ = media_type
             except Exception:
                 raise UnsupportedMediaTypeError(media_type.mime)
         if isinstance(media_type, str):

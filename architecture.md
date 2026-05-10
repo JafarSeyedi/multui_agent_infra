@@ -1618,7 +1618,7 @@
 | `engines/document/models/msdm_models.py` | `Index` | `—` | `` |
 | `engines/document/models/msdm_models.py` | `Attribute` | `—` | `` |
 | `engines/document/models/msdm_models.py` | `Entity` | `—` | `` |
-| `engines/document/models/msdm_models.py` | `CompositionEntity` | `—` | `` |
+| `engines/document/models/msdm_models.py` | `EntityComposition` | `—` | `` |
 | `engines/document/models/msdm_models.py` | `Relationship` | `—` | `` |
 | `engines/document/models/msdm_models.py` | `MSDMDocument` | `BaseDocument` | `` |
 | `engines/document/models/osdm_models.py` | `YAWLJoinType` | `str, Enum` | `` |
@@ -1919,7 +1919,7 @@
 | `engines/document/models/ssdm_models.py` | `MibModule` | `—` | `` |
 | `engines/document/models/ssdm_models.py` | `GraphQLService` | `—` | `` |
 | `engines/document/models/ssdm_models.py` | `AsyncAPIInfo` | `—` | `` |
-| `engines/document/models/ssdm_models.py` | `SSDM_DOCUMENT` | `BaseDocument` | `` |
+| `engines/document/models/ssdm_models.py` | `SSDMDocument ` | `BaseDocument` | `` |
 | `engines/document/models/ssdm_models.py` | `Transport` | `str, Enum` | `` |
 | `engines/document/models/ssdm_models.py` | `AuthMethod` | `str, Enum` | `` |
 | `engines/document/models/ssdm_models.py` | `ApiKeyLocation` | `str, Enum` | `` |
@@ -3569,7 +3569,7 @@ str  →  SnmpAccess
 Enum  →  SnmpAccess
 str  →  SnmpStatus
 Enum  →  SnmpStatus
-BaseDocument  →  SSDM_DOCUMENT
+BaseDocument  →  SSDMDocument 
 str  →  Transport
 Enum  →  Transport
 str  →  AuthMethod

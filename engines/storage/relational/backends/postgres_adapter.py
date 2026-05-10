@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import Any
+from typing import TYPE_CHECKING
 
 from ..base import RelationalStorage
 
@@ -14,7 +15,7 @@ class PostgresStorageAdapter(RelationalStorage):
     def __init__(self, dsn: str) -> None:
         super().__init__()
         self.dsn = dsn
-        self._engine: Optional["AsyncEngine"] = None
+        self._engine: AsyncEngine | None = None
 
     async def connect(self) -> None:
         try:
@@ -46,7 +47,7 @@ class PostgresStorageAdapter(RelationalStorage):
         except Exception:
             return False
 
-    async def execute(self, query: str, params: Optional[Dict[str, Any]] = None) -> None:
+    async def execute(self, query: str, params: dict[str, Any] | None = None) -> None:
         if self._engine is None:
             await self.connect()
 
@@ -57,7 +58,7 @@ class PostgresStorageAdapter(RelationalStorage):
         async with self._engine.begin() as conn:
             await conn.execute(text(query), params or {})
 
-    async def fetch_one(self, query: str, params: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+    async def fetch_one(self, query: str, params: dict[str, Any] | None = None) -> dict[str, Any] | None:
         if self._engine is None:
             await self.connect()
 
@@ -71,7 +72,7 @@ class PostgresStorageAdapter(RelationalStorage):
 
             return dict(row) if row is not None else None
 
-    async def fetch_all(self, query: str, params: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+    async def fetch_all(self, query: str, params: dict[str, Any] | None = None) -> list[dict[str, Any]]:
         if self._engine is None:
             await self.connect()
 

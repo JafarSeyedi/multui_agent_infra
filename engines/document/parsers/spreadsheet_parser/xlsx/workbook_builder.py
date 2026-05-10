@@ -8,30 +8,33 @@ Assembles a full Workbook from the top-level parts:
 - worksheets
 - optional external links, pivot caches/tables, calc chain
 """
-
 from __future__ import annotations
-from typing import Dict, List, Optional, Tuple
+
 from xml.etree.ElementTree import Element
 
-from ....models.esdm_models import (
-    Workbook,
-    WorkbookProperties,
-    Worksheet,   # will be built by worksheet_builder
-    SharedStrings,
-    RelationshipCollection,
-    SpreadsheetStyleSheet,
-    DocumentMetadata,
-)
-from .styles_builder import build_stylesheet
-from .relationships_builder import build_defined_names, build_external_links_from_rels
-from .tables_builder import build_table, build_auto_filter
-from .pivot_builder import build_pivot_cache_from_xml, build_pivot_table_from_xml
+from ....models.esdm_models import DocumentMetadata
+from ....models.esdm_models import ExternalLink
+from ....models.esdm_models import RelationshipCollection
+from ....models.esdm_models import SharedStrings
+from ....models.esdm_models import Workbook
+from ....models.esdm_models import WorkbookProperties
+from ....models.usdm_models import RichTextContent, RichTextSpan, ChartContent
 from .formulas_builder import build_calculation_chain
+from .namespaces import MAIN
+from .namespaces import REL
+from .pivot_builder import build_pivot_cache_from_xml
+from .pivot_builder import build_pivot_table_from_xml
+from .relationships_builder import build_defined_names
+from .relationships_builder import build_external_links_from_rels
+from .styles_builder import build_stylesheet
+from .utils import color_hex_from_xml
+from .utils import xml_attr
+from .utils import xml_bool
+from .utils import xml_find
+from .utils import xml_findall
+from .utils import xml_int
+from .utils import xml_text
 from .worksheet_builder import build_worksheet
-from .drawing_builder import parse_drawing
-
-from .utils import xml_find, xml_findall, xml_attr, xml_text, xml_int, xml_bool
-from .namespaces import MAIN, REL
 
 NS = {"": MAIN, "r": REL}
 
@@ -41,18 +44,18 @@ def build_workbook(
     shared_strings_xml: Element,
     styles_xml: Element,
     workbook_rels: RelationshipCollection,
-    sheet_xmls: Dict[str, Element],          # sheet name -> sheet XML root
-    comments_xmls: Dict[str, Element] = None,    # sheet name -> comments XML root
-    threaded_comments_xmls: Dict[str, Element] = None,
-    table_xmls: Dict[str, List[Element]] = None,  # sheet name -> list of table XML roots
-    calc_chain_xml: Optional[Element] = None,
-    pivot_cache_xmls: Optional[List[Element]] = None,
-    pivot_table_xmls: Optional[List[Element]] = None,
-    external_links_xmls: Optional[Dict[int, Element]] = None,  # link id -> XML
-    vba_bin: Optional[bytes] = None,
-    drawing_xmls: Dict[str, Element] = None,  # sheet name -> list of table XML roots
-    image_map: Dict[str, str] = None,
-    chart_map: Dict[str, Element] = None
+    sheet_xmls: dict[str, Element],          # sheet name -> sheet XML root
+    comments_xmls: dict[str, Element] | None = None,
+    threaded_comments_xmls: dict[str, Element] | None = None,
+    table_xmls: dict[str, list[Element]] | None = None,
+    calc_chain_xml: Element | None = None,
+    pivot_cache_xmls: list[Element] | None = None,
+    pivot_table_xmls: list[Element] | None = None,
+    external_links_xmls: dict[int, Element] | None = None,
+    vba_bin: bytes | None = None,
+    drawing_xmls: dict[str, Element] | None = None,
+    image_map: dict[str, str] | None = None,
+    chart_map: dict[str, ChartContent] | None = None
 ) -> Workbook:
     """
     Main entry point: creates a fully populated Workbook.
@@ -115,7 +118,7 @@ def build_workbook(
         comments_xml = comments_xmls.get(sheet_name) if comments_xmls else None
         threaded_comments_xml = threaded_comments_xmls.get(sheet_name) if threaded_comments_xmls else None
         table_xml_list = table_xmls.get(sheet_name) if table_xmls else []
-        drawing_xml = drawing_xmls.get(sheet_name) if drawing_xmls else []
+        drawing_xml: Element | None = drawing_xmls.get(sheet_name) if drawing_xmls else None
 
         ws = build_worksheet(
             sheet_name=sheet_name,
@@ -129,7 +132,7 @@ def build_workbook(
             image_map=image_map,
             chart_map=chart_map
         )
-        
+
         # Sheet ID may be used for calc chain; store if needed
         wb.sheets.append(ws)
 
@@ -174,12 +177,33 @@ def _build_workbook_properties(wb_xml: Element) -> WorkbookProperties:
             props.window_height = xml_int(wbv, "windowHeight", 1080)
     return props
 
+def _parse_rich_text_runs(r_eles: list[Element]) -> RichTextContent:
+    spans = []
+    for r in r_eles:
+        rpr = xml_find(r, "rPr", NS)
+        t = xml_find(r, "t", NS)
+        text = xml_text(t) if t is not None else ""
+        span = RichTextSpan(text=text)
+        if rpr is not None:
+            span.bold = xml_find(rpr, "b", NS) is not None
+            span.italic = xml_find(rpr, "i", NS) is not None
+            span.underline = xml_find(rpr, "u", NS) is not None
+            color_el = xml_find(rpr, "color", NS)
+            if color_el is not None:
+                span.color = color_hex_from_xml(color_el, NS)
+            latin = xml_find(rpr, "latin", NS)
+            if latin is not None:
+                span.font = xml_attr(latin, "typeface")
+        spans.append(span)
+    return RichTextContent(spans=spans)
+
 def _build_shared_strings(ss_xml: Element) -> SharedStrings:
+    """Parse sharedStrings.xml into SharedStrings object."""
     strings = []
     index_map = {}
     rich_text_map = {}
     for i, si in enumerate(xml_findall(ss_xml, "si", NS)):
-        # Check if rich text
+        # A string can be either <t> directly or <r> rich text.
         r_eles = xml_findall(si, "r", NS)
         if r_eles:
             rich_text = _parse_rich_text_runs(r_eles)
@@ -194,50 +218,11 @@ def _build_shared_strings(ss_xml: Element) -> SharedStrings:
     ss.rich_text_map = rich_text_map  # attach extra attribute
     return ss
 
-def _parse_rich_text_runs(r_eles: List[Element]) -> RichTextContent:
-    spans = []
-    for r in r_eles:
-        rpr = xml_find(r, "rPr", NS)
-        t = xml_find(r, "t", NS)
-        text = xml_text(t) if t is not None else ""
-        span = RichTextSpan(text=text)
-        if rpr is not None:
-            # map formatting
-            span.bold = xml_find(rpr, "b", NS) is not None
-            span.italic = xml_find(rpr, "i", NS) is not None
-            underline = xml_find(rpr, "u", NS)
-            if underline is not None:
-                span.underline = True  # simplified
-            color = xml_find(rpr, "color", NS)
-            if color is not None:
-                span.color = color_hex_from_xml(color, NS)
-            # font, size, etc.
-        spans.append(span)
-    return RichTextContent(spans=spans)
-
-def _build_shared_strings(ss_xml: Element) -> SharedStrings:
-    """Parse sharedStrings.xml into SharedStrings object."""
-    strings = []
-    index_map = {}
-    for i, si in enumerate(xml_findall(ss_xml, "si", NS)):
-        # A string can be either <t> directly or <r> rich text.
-        t = xml_find(si, "t", NS)
-        if t is not None:
-            text = xml_text(t)
-        else:
-            # rich text: join all <r><t> elements
-            parts = [xml_text(r_t) for r in xml_findall(si, "r/t", NS)]
-            text = "".join(parts)
-        strings.append(text)
-        index_map[text] = i
-    return SharedStrings(strings=strings, index_map=index_map)
-
-
-def _parse_sheets(wb_xml: Element, rels: RelationshipCollection) -> List[Tuple[str, int, str, str]]:
+def _parse_sheets(wb_xml: Element, rels: RelationshipCollection) -> list[tuple[str, int, str, str]]:
     """
     Return list of (name, sheetId, rId, target) for each sheet in workbook.xml.
     """
-    sheets = []
+    sheets: list[tuple[str, int, str, str]] = []
     sheets_elem = xml_find(wb_xml, "sheets", NS)
     if sheets_elem is None:
         return sheets

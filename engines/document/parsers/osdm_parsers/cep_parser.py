@@ -12,29 +12,20 @@ Mapping rules:
                   filter_expression, actions list)
 - Actions can be plain strings (action ids) or objects with a "script" key
   (representing a Script action). Both are stored in the ActionList.
-- Operator is parsed into the CEPOperator enum; if unrecognised it defaults
-  to AND.
+- Operator is parsed into the CEPOperator enum; if unrecognised it defaults to AND.
 """
-
 from __future__ import annotations
-import json
-from pathlib import Path
-from typing import Optional, Any, List
 
-from .base_osdm_parser import BaseOSDMParser
-from ..base import ParseOptions
+import json
+import uuid
+
+from ...models.media_types import MEDIA_TYPES
 from ...models.osdm_models import (
-    BaseOSDMDocument,
-    CEPDocument,
-    EventStream,
-    CEPRule,
-    CEPDefinition,
-    CEPOperator,
-    ActionList,
-    Script,
-    ScriptLanguage,
+    ActionList, BaseOSDMDocument, CEPDefinition, CEPDocument, CEPOperator,
+    CEPRule, EventStream, Script, ScriptLanguage
 )
-from ...models.base import BaseDocument
+from ..base import ParseOptions
+from .base_osdm_parser import BaseOSDMParser
 
 
 class CEPParser(BaseOSDMParser):
@@ -50,7 +41,12 @@ class CEPParser(BaseOSDMParser):
         text = data.decode(encoding)
         raw = json.loads(text)
 
-        doc = CEPDocument()
+        doc = CEPDocument(
+            document_id=source_name,
+            title=source_name,
+            media_type=MEDIA_TYPES.get("cep_json", MEDIA_TYPES["json"])
+        )
+        doc.source_file = source_name
 
         # Support both a single object and an array of definitions
         if isinstance(raw, list):
@@ -72,7 +68,7 @@ class CEPParser(BaseOSDMParser):
         rules = [self._parse_rule(r) for r in rules_data]
 
         return CEPDefinition(
-            id=data.get("id", ""),
+            id=data.get("id", str(uuid.uuid4().hex)),
             name=data.get("name", ""),
             streams=streams,
             rules=rules,
@@ -86,7 +82,6 @@ class CEPParser(BaseOSDMParser):
 
     def _parse_rule(self, data: dict) -> CEPRule:
         operator_str = data.get("operator", "and").lower()
-        # Map common operator strings to CEPOperator
         operator_map = {
             "and": CEPOperator.AND,
             "or": CEPOperator.OR,
@@ -99,20 +94,19 @@ class CEPParser(BaseOSDMParser):
         operator = operator_map.get(operator_str, CEPOperator.AND)
 
         # Parse actions
-        actions = ActionList()
+        actions = ActionList(id=str(uuid.uuid4().hex))
         raw_actions = data.get("actions", [])
         for action in raw_actions:
             if isinstance(action, str):
                 actions.actions.append(action)
             elif isinstance(action, dict) and "script" in action:
-                # Store as a Script object
                 script = Script(
+                    id=str(uuid.uuid4().hex),
                     script_body=action["script"],
                     script_language=ScriptLanguage(action.get("language", "Python")),
                 )
                 actions.actions.append(script)
             else:
-                # Fallback: convert to string
                 actions.actions.append(str(action))
 
         return CEPRule(

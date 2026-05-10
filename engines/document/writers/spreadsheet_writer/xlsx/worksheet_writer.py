@@ -3,14 +3,14 @@ Worksheet XML writer for XLSX.
 Generates sheetX.xml files with rows, cells, formulas, merged cells, hyperlinks,
 data validations, conditional formatting, tables references, and drawings.
 """
-
 from __future__ import annotations
+
 import xml.etree.ElementTree as ET
-from typing import TYPE_CHECKING, Tuple, List, Optional, Dict, Any
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ....models.esdm_models import Worksheet, Workbook, Cell, Row
+    from ....models.esdm_models import Worksheet, Workbook
     from ..base import ESDMBaseWriter
 
 from .const import XML_NAMESPACES
@@ -35,13 +35,13 @@ class WorksheetWriter:
         self._comment_writer = CommentWriter(parent_writer)
         self._drawing_writer = DrawingsWriter(parent_writer)
 
-    def write(self, worksheet: Worksheet, sheet_index: int, workbook: Workbook) -> Tuple[str, List[Tuple[str, str, str]]]:
+    def write(self, worksheet: Worksheet, sheet_index: int, workbook: Workbook) -> tuple[str, list[tuple[str, str, str]]]:
         """
         Generate the sheetX.xml content and the list of relationships for this worksheet.
         Returns (xml_string, relationships_list).
         """
         root = ET.Element('worksheet', {'xmlns': XML_NAMESPACES['']})
-        rels: List[Tuple[str, str, str]] = []
+        rels: list[tuple[str, str, str]] = []
 
         # 1. Dimension
         dim = self._get_sheet_dimension(worksheet)
@@ -51,7 +51,7 @@ class WorksheetWriter:
         # 2. Sheet views
         sheet_views = ET.SubElement(root, 'sheetViews')
         show_grid = '1' if getattr(worksheet.properties, 'show_gridlines', True) else '0'
-        view_attrs: Dict[str, str] = {
+        view_attrs: dict[str, str] = {
             'workbookViewId': '0',
             'showGridLines': show_grid,
         }
@@ -188,7 +188,7 @@ class WorksheetWriter:
     # Cell writing (formats, formulas, values, rich text)
     # ------------------------------------------------------------------
     def _write_cell(self, cell, row: int, col: int, sheet_idx: int,
-                   workbook: Workbook, rels: List) -> Optional[ET.Element]:
+                   workbook: Workbook, rels: list) -> ET.Element | None:
         """Create <c> element for a cell."""
         if cell.value is None and not cell.formula and not cell.rich_text:
             return None
@@ -278,7 +278,7 @@ class WorksheetWriter:
     # ------------------------------------------------------------------
     # Helper utilities
     # ------------------------------------------------------------------
-    def _get_sheet_dimension(self, worksheet: Worksheet) -> Optional[str]:
+    def _get_sheet_dimension(self, worksheet: Worksheet) -> str | None:
         if not worksheet.rows:
             return None
         min_row = min(worksheet.rows.keys())
@@ -301,7 +301,7 @@ class WorksheetWriter:
             result = chr(65 + remainder) + result
         return result
 
-    def _normalize_color(self, color: Optional[str]) -> Optional[str]:
+    def _normalize_color(self, color: str | None) -> str | None:
         if color is None:
             return None
         color = color.lstrip('#').upper()

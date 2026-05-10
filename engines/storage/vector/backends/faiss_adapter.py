@@ -1,8 +1,8 @@
 # storage/vector/backends/faiss_adapter.py
+from typing import Any
 
 import faiss # type: ignore[import-untyped, import-not-found]
 import numpy as np
-from typing import List, Dict, Any, Optional
 
 from ..base import VectorDBAdapter
 from ..embedding_utils import normalize_embedding
@@ -19,11 +19,11 @@ class FaissAdapter(VectorDBAdapter):
     """
 
     def __init__(self) -> None:
-        self.index: Optional[Any] = None
-        self.dimension: Optional[int] = None
+        self.index: Any | None = None
+        self.dimension: int | None = None
 
-        self.id_map: Dict[int, str] = {}
-        self.metadata_store: Dict[str, Dict[str, Any]] = {}
+        self.id_map: dict[int, str] = {}
+        self.metadata_store: dict[str, dict[str, Any]] = {}
 
         self._next_internal_id: int = 0
 
@@ -31,7 +31,7 @@ class FaissAdapter(VectorDBAdapter):
         self,
         name: str,
         dimension: int,
-        config: Optional[Dict[str, Any]] = None
+        config: dict[str, Any] | None = None
     ) -> None:
 
         self.dimension = dimension
@@ -65,9 +65,9 @@ class FaissAdapter(VectorDBAdapter):
 
     async def upsert(
         self,
-        ids: List[str],
-        vectors: List[List[float]],
-        metadata: List[Dict[str, Any]]
+        ids: list[str],
+        vectors: list[list[float]],
+        metadata: list[dict[str, Any]]
     ) -> None:
 
         if self.index is None:
@@ -76,7 +76,7 @@ class FaissAdapter(VectorDBAdapter):
         if len(ids) != len(vectors):
             raise ValueError("IDs and vectors mismatch")
 
-        vectors_list: List[Any] = []
+        vectors_list: list[Any] = []
         for v in vectors:
             vec = normalize_embedding(v)
             vectors_list.append(vec)
@@ -103,7 +103,7 @@ class FaissAdapter(VectorDBAdapter):
 
     async def batch_upsert(
         self,
-        items: List[Dict[str, Any]]
+        items: list[dict[str, Any]]
     ) -> None:
 
         ids = [x["id"] for x in items]
@@ -114,10 +114,10 @@ class FaissAdapter(VectorDBAdapter):
 
     async def query(
         self,
-        vector: List[float],
+        vector: list[float],
         top_k: int = 5,
-        filters: Optional[Dict[str, Any]] = None
-    ) -> List[Dict[str, Any]]:
+        filters: dict[str, Any] | None = None
+    ) -> list[dict[str, Any]]:
 
         if self.index is None:
             raise RuntimeError("Index not initialized")
@@ -147,10 +147,10 @@ class FaissAdapter(VectorDBAdapter):
                     continue
 
             results.append({"_id": external_id, "_score": float(score), **meta})
-            
+
         return results
 
-    async def delete(self, ids: List[str]) -> None:
+    async def delete(self, ids: list[str]) -> None:
 
         if self.index is None:
             return

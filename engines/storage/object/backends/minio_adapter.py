@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from ..base import ObjectStorage
 
@@ -28,7 +28,7 @@ class MinioAdapter(ObjectStorage):
         self.bucket_name = bucket_name
         self.secure = secure
 
-        self._client: Optional["Minio"] = None
+        self._client: Minio | None = None
 
     async def connect(self) -> None:
         try:
@@ -67,7 +67,7 @@ class MinioAdapter(ObjectStorage):
         self,
         key: str,
         data: bytes,
-        content_type: Optional[str] = None,
+        content_type: str | None = None,
     ) -> None:
         await self.ensure_connected()
         client = self._client
@@ -126,7 +126,7 @@ class MinioAdapter(ObjectStorage):
 
         return await asyncio.to_thread(_exists)
 
-    async def generate_url(self, key: str) -> Optional[str]:
+    async def generate_url(self, key: str) -> str | None:
         await self.ensure_connected()
         client = self._client
         assert client is not None

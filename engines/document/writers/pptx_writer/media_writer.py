@@ -3,18 +3,18 @@
 Handles media file relationships for a slide.
 The actual binary data must be provided by the caller (e.g., from the original ZIP).
 """
-
 from __future__ import annotations
-from typing import Dict, List, Optional
-from ...models.psdm_models import Slide, MediaReference
+
+from ...models.psdm_models import MediaReference
+from ...models.psdm_models import Slide
 
 
-def build_slide_media_rels(slide: Slide) -> Dict[str, str]:
+def build_slide_media_rels(slide: Slide) -> dict[str, str]:
     """
     Return a dict mapping the original relationship ID → target path
     for every media file associated with the slide.
     """
-    rels: Dict[str, str] = {}
+    rels: dict[str, str] = {}
 
     # 1. Standalone media (slide.media_references)
     for ref in slide.media_references:
@@ -27,23 +27,23 @@ def build_slide_media_rels(slide: Slide) -> Dict[str, str]:
 
     # 2. Media attached to shapes (stored in element._meta["media_reference"])
     for elem in slide.elements:
-        ref = elem._meta.get("media_reference")
-        if isinstance(ref, MediaReference) and ref.relationship_id:
-            ext = _mime_to_ext(ref.mime_type)
-            target = f"../media/{ref.relationship_id}.{ext}"
-            rels[ref.relationship_id] = target
+        elem_ref = elem._meta.get("media_reference")
+        if isinstance(elem_ref, MediaReference) and elem_ref.relationship_id:
+            ext = _mime_to_ext(elem_ref.mime_type)
+            target = f"../media/{elem_ref.relationship_id}.{ext}"
+            rels[elem_ref.relationship_id] = target
 
     return rels
 
 
-def collect_media_files(slides: List[Slide]) -> Dict[str, bytes]:
+def collect_media_files(slides: list[Slide]) -> dict[str, bytes]:
     """
     Walk all slides and collect media binary data.
     It is assumed that the parser loaded the media binaries and stored them
     in MediaReference._meta["data"] (for round‑trip). If not present, the
     caller must supply the files separately.
     """
-    media_files: Dict[str, bytes] = {}
+    media_files: dict[str, bytes] = {}
     for slide in slides:
         for ref in slide.media_references:
             data = ref._meta.get("data")
@@ -53,12 +53,12 @@ def collect_media_files(slides: List[Slide]) -> Dict[str, bytes]:
                 media_files[filename] = data
 
         for elem in slide.elements:
-            ref = elem._meta.get("media_reference")
-            if isinstance(ref, MediaReference):
-                data = ref._meta.get("data")
+            elem_ref = elem._meta.get("media_reference")
+            if isinstance(elem_ref, MediaReference):
+                data = elem_ref._meta.get("data")
                 if data:
-                    ext = _mime_to_ext(ref.mime_type)
-                    filename = f"media/{ref.relationship_id}.{ext}"
+                    ext = _mime_to_ext(elem_ref.mime_type)
+                    filename = f"media/{elem_ref.relationship_id}.{ext}"
                     media_files[filename] = data
 
     return media_files

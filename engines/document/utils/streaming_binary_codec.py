@@ -1,9 +1,9 @@
 # engnes/document/utils/streaming_binary_codec.py
-
 import hashlib  # رفع خطای مربوط به نام hashlib
-from typing import Iterable, List # برای دقت بیشتر در تایپ‌هینت‌ها
+
+from ..models.base import BinaryEncoding
+from ..models.base import BinaryPayload
 from ..models.media_types import MediaType
-from ..models.base import BinaryEncoding, BinaryPayload 
 from .binary_codec import BinaryCodecAdvanced
 
 class StreamingBinaryCodec:
@@ -22,7 +22,7 @@ class StreamingBinaryCodec:
                 block = f.read(StreamingBinaryCodec.CHUNK_SIZE)
                 if not block:
                     break
-                
+
                 encoded = BinaryCodecAdvanced.encode(block, encoding)
 
                 yield BinaryPayload(

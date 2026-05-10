@@ -2,18 +2,18 @@
 """
 Complete XML → ESDM for pivot tables and caches.
 """
-
 from xml.etree.ElementTree import Element
-from typing import List, Optional
-from .namespaces import MAIN, REL
-from .utils import (
-    xml_find, xml_findall, xml_attr, xml_text, xml_int, xml_bool,
-    parse_range, col_letter_to_index,
-)
-from ....models.esdm_models import (
-    PivotCache, PivotCacheReference,
-    PivotTable, PivotField,
-)
+
+from ....models.esdm_models import PivotCache
+from ....models.esdm_models import PivotCacheReference
+from ....models.esdm_models import PivotField
+from ....models.esdm_models import PivotTable
+from .namespaces import MAIN
+from .namespaces import REL
+from .utils import xml_attr
+from .utils import xml_find
+from .utils import xml_findall
+from .utils import xml_int
 
 NS = {"": MAIN, "r": REL}
 
@@ -38,7 +38,7 @@ def build_pivot_table_from_xml(pivot_elem: Element) -> PivotTable:
     # location is a reference like "Sheet1!A3"
     location = xml_attr(pivot_elem, "location", "")
     # Pivot fields
-    fields: List[PivotField] = []
+    fields: list[PivotField] = []
     # In OOXML, pivotFields can be under <pivotFields>
     pf_container = xml_find(pivot_elem, "pivotFields", NS)
     if pf_container is not None:
@@ -59,7 +59,7 @@ def build_pivot_table_from_xml(pivot_elem: Element) -> PivotTable:
         fields=fields,
     )
 
-def parse_cache_fields_for_names(cache_elem: Element) -> Dict[int, str]:
+def parse_cache_fields_for_names(cache_elem: Element) -> dict[int, str]:
     """Return a dict of cache field index → name."""
     names = {}
     cache_fields_elem = xml_find(cache_elem, "cacheFields", NS)

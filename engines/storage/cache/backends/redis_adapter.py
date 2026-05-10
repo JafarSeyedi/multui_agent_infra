@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any
 
-from engines.storage.key_value.backends.redis_adapter import RedisManager
 from ..base import CacheStorage
+from engines.storage.key_value.backends.redis_adapter import RedisManager
 
 
 class RedisCacheStorage(CacheStorage):
@@ -40,11 +40,11 @@ class RedisCacheStorage(CacheStorage):
         except Exception:
             return False
 
-    async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
+    async def set(self, key: str, value: Any, ttl: int | None = None) -> None:
         client = await self.manager.get_client()
         await client.set(self._key(key), value, ex=ttl)
 
-    async def get(self, key: str) -> Optional[Any]:
+    async def get(self, key: str) -> Any | None:
         client = await self.manager.get_client()
         return await client.get(self._key(key))
 
@@ -57,7 +57,7 @@ class RedisCacheStorage(CacheStorage):
         result = await client.exists(self._key(key))
         return bool(result)
 
-    async def list_keys(self, prefix: Optional[str] = None) -> List[str]:
+    async def list_keys(self, prefix: str | None = None) -> list[str]:
         client = await self.manager.get_client()
 
         pattern = self._key(prefix or "") + "*"

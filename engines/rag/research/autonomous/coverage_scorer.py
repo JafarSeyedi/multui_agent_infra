@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from typing import Any, List
+from typing import Any
 
 
 class EvidenceCoverageScorer:
     def __init__(self, llm: Any = None):
         self.llm = llm
 
-    async def score(self, query: str, evidence: List[Any]) -> float:
+    async def score(self, query: str, evidence: list[Any]) -> float:
         texts = [self._to_text(item) for item in evidence[:30] if self._to_text(item)]
         if not texts:
             return 0.0

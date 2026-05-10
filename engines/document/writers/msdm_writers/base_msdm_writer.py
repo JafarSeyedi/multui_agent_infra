@@ -17,18 +17,20 @@ Extends the generic BaseDocumentWriter with MSDM‑specific helpers:
 Configuration is passed via the standard `WriteOptions.custom` dict or
 through sensible constructor defaults.
 """
-
 from __future__ import annotations
+
 from abc import abstractmethod
-from pathlib import Path
-from typing import Optional, Dict, Any, AsyncIterator, Union
+from collections.abc import AsyncIterator
 from enum import Enum
+from pathlib import Path
+from typing import Any
 
 from pydantic import BaseModel
 
-from ..base import BaseDocumentWriter, WriteOptions
-from ...models.msdm_models import MSDMDocument
 from ...models.base import BaseDocument
+from ...models.msdm_models import MSDMDocument
+from ..base import BaseDocumentWriter
+from ..base import WriteOptions
 
 
 # ── Enumerations ────────────────────────────────────────────────
@@ -54,13 +56,14 @@ class ConnectionConfig(BaseModel):
     connection string).  All fields are optional so that each dialect
     can pick what it needs.
     """
-    host: Optional[str] = None
-    port: Optional[int] = None
-    database: Optional[str] = None
-    username: Optional[str] = None
-    password: Optional[str] = None
-    url: Optional[str] = None        # full connection string (e.g. SQLAlchemy)
-    extra_args: Dict[str, Any] = {}
+    host: str | None = None
+    port: int | None = None
+    database: str | None = None
+    username: str | None = None
+    password: str | None = None
+    url: str | None = None        # full connection string (e.g. SQLAlchemy)
+    extra_args: dict[str, Any] = {}
+    dialect: str = "mysql"
 
 
 # ── Base MSDM Writer ────────────────────────────────────────────
@@ -79,7 +82,7 @@ class BaseMSDMWriter(BaseDocumentWriter):
 
     def __init__(
         self,
-        options: Optional[WriteOptions] = None,
+        options: WriteOptions | None = None,
         target_mode: WriteTarget = WriteTarget.DESIGN_FILE,
         soft_delete_strategy: SoftDeleteStrategy = SoftDeleteStrategy.NONE,
     ):
@@ -109,7 +112,7 @@ class BaseMSDMWriter(BaseDocumentWriter):
         self,
         document: BaseDocument,
         target: Path,
-        options: Optional[Dict[str, Any]] = None
+        options: dict[str, Any] | None = None
     ) -> None:
         data = await self.write(document)
         target.write_bytes(data)
@@ -118,7 +121,7 @@ class BaseMSDMWriter(BaseDocumentWriter):
     async def apply_to_database(
         self,
         document: MSDMDocument,
-        connection: Optional[ConnectionConfig] = None,
+        connection: ConnectionConfig | None = None,
     ) -> None:
         """
         Apply the model to a live database.  `connection` provides
@@ -170,7 +173,7 @@ class BaseMSDMWriter(BaseDocumentWriter):
         return existing_name
 
     # ── Optional meta helpers ───────────────────────────────────
-    def get_soft_delete_annotation(self) -> Optional[str]:
+    def get_soft_delete_annotation(self) -> str | None:
         """Return the annotation value that marks an entity/attribute as deleted."""
         if self.soft_delete_strategy == SoftDeleteStrategy.ANNOTATE:
             return "deleted"

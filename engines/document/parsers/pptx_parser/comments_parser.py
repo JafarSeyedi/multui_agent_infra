@@ -2,9 +2,8 @@
 """
 Parses a PPTX comments XML part into a list of SlideComment objects.
 """
-
 from __future__ import annotations
-from typing import Dict, List, Optional
+
 from xml.etree.ElementTree import Element
 
 from ...models.psdm_models import SlideComment
@@ -15,9 +14,9 @@ NS = {
     "a": NAMESPACES["a"],
 }
 
-def parse_comments(comments_xml: Element) -> List[SlideComment]:
+def parse_comments(comments_xml: Element) -> list[SlideComment]:
     """Parse a <p:cmLst> element (from comments.xml) and return a list of comments."""
-    comments: List[SlideComment] = []
+    comments: list[SlideComment] = []
     for cm_elem in comments_xml.findall("p:cm", NS):
         comment_id = cm_elem.get("cmId", "")
         author = cm_elem.get("author", "")

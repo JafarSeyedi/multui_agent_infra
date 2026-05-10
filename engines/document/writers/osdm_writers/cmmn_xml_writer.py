@@ -4,32 +4,32 @@ CMMN 1.1 XML Writer – serialises OSDM CMMN definitions into CMMN 1.1 XML.
 Handles cases, stages, milestones, event listeners, sentries, plan items,
 discretionary items, case file items, and all associated elements.
 """
-
 from __future__ import annotations
-from pathlib import Path
-from typing import Optional, Dict, Any, List, Union, cast
-from xml.etree.ElementTree import Element, SubElement, tostring
 
-from .base_osdm_writer import BaseOSDMWriter, OSDMWriteOptions
-from ...models.osdm_models import (
-    BaseOSDMDocument, CMMNDocument,
-    CMMNDefinition,
-    Stage,
-    Milestone,
-    EventListener,
-    Sentry,
-    PlanItem,
-    DiscretionaryItem,
-    CaseFileItem,
-    CaseTask,
-    ProcessTask,
-    HumanTask,
-    ApplicabilityRule,
-    EntryCriterion,
-    ExitCriterion,
-    BaseElement,
-)
-from ...models.base import BaseDocument
+from typing import cast
+from xml.etree.ElementTree import Element
+from xml.etree.ElementTree import SubElement
+from xml.etree.ElementTree import tostring
+
+from ...models.osdm_models import ApplicabilityRule
+from ...models.osdm_models import BaseElement
+from ...models.osdm_models import BaseOSDMDocument
+from ...models.osdm_models import CaseFileItem
+from ...models.osdm_models import CaseTask
+from ...models.osdm_models import CMMNDefinition
+from ...models.osdm_models import CMMNDocument
+from ...models.osdm_models import DiscretionaryItem
+from ...models.osdm_models import EntryCriterion
+from ...models.osdm_models import EventListener
+from ...models.osdm_models import ExitCriterion
+from ...models.osdm_models import HumanTask
+from ...models.osdm_models import Milestone
+from ...models.osdm_models import PlanItem
+from ...models.osdm_models import ProcessTask
+from ...models.osdm_models import Sentry
+from ...models.osdm_models import Stage
+from .base_osdm_writer import BaseOSDMWriter
+from .base_osdm_writer import OSDMWriteOptions
 
 
 # ── Namespaces ────────────────────────────────────────────────────
@@ -46,9 +46,9 @@ class CMMNXMLWriter(BaseOSDMWriter):
     name = "cmmn_xml"
     supported_extensions = (".cmmn",)
 
-    def __init__(self, options: Optional[OSDMWriteOptions] = None):
+    def __init__(self, options: OSDMWriteOptions | None = None):
         super().__init__(options)
-        self._id_map: Dict[str, str] = {}
+        self._id_map: dict[str, str] = {}
         self._next_internal_id = 0
 
     async def _write_design(self, base_document: BaseOSDMDocument) -> bytes:
@@ -77,7 +77,7 @@ class CMMNXMLWriter(BaseOSDMWriter):
             self._write_case(root, cmmn_def)
 
         xml_bytes = tostring(root, encoding="unicode", method="xml")
-        return xml_bytes.encode(self.options.encoding or "utf-8")
+        return xml_bytes.encode(getattr(self.options, "encoding", "utf-8") or "utf-8")
 
     def get_supported_media_types(self) -> list[str]:
         return ["application/xml"]
@@ -89,7 +89,7 @@ class CMMNXMLWriter(BaseOSDMWriter):
     def _obj_id(self, obj: BaseElement) -> str:
         return obj.id
 
-    def _add_cmmn_element(self, parent: Element, tag: str, obj: Optional[BaseElement] = None, **attrs):
+    def _add_cmmn_element(self, parent: Element, tag: str, obj: BaseElement | None = None, **attrs):
         if obj:
             attrs.setdefault("id", self._obj_id(obj))
         return SubElement(parent, f"{{{CMMN_NS}}}{tag}", attrs)

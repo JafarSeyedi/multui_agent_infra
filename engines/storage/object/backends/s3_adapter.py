@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Optional
 
 from ..base import ObjectStorage
 
@@ -12,10 +11,10 @@ class S3Adapter(ObjectStorage):
     def __init__(
         self,
         bucket_name: str,
-        region_name: Optional[str] = None,
-        aws_access_key_id: Optional[str] = None,
-        aws_secret_access_key: Optional[str] = None,
-        endpoint_url: Optional[str] = None,
+        region_name: str | None = None,
+        aws_access_key_id: str | None = None,
+        aws_secret_access_key: str | None = None,
+        endpoint_url: str | None = None,
     ) -> None:
         super().__init__()
         self.bucket_name = bucket_name
@@ -47,7 +46,7 @@ class S3Adapter(ObjectStorage):
     async def health(self) -> bool:
         return self._client is not None
 
-    async def put(self, key: str, data: bytes, content_type: Optional[str] = None) -> None:
+    async def put(self, key: str, data: bytes, content_type: str | None = None) -> None:
         await self.ensure_connected()
         if self._client is None:
             raise RuntimeError("S3 client is not initialized.")
@@ -91,7 +90,7 @@ class S3Adapter(ObjectStorage):
 
         return await asyncio.to_thread(_exists)
 
-    async def generate_url(self, key: str) -> Optional[str]:
+    async def generate_url(self, key: str) -> str | None:
         if not await self.exists(key):
             return None
         if self._client is None:

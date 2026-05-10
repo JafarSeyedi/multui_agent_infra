@@ -5,24 +5,40 @@ Complete XML → ESDM builders for:
 - AutoFilters
 - Conditional formatting
 """
-
 from xml.etree.ElementTree import Element
-from typing import List, Optional, Dict
-from .namespaces import MAIN, REL
-from .utils import (
-    xml_find, xml_findall, xml_attr, xml_text, xml_bool, xml_int, xml_float,
-    color_hex_from_xml, parse_range, col_letter_to_index,
-)
-from ....models.esdm_models import (
-    Table, TableColumn, TableStyleInfo,
-    AutoFilter, FilterColumn, Filters, CustomFilter, DynamicFilterType, FilterOperator,
-    ConditionalFormatting, CFRule, CFType, CFOperator, CFValueObject,
-    ColorScale, DataBar, IconSet, IconSetType, IconCriterion,
-)
-from .constants import (
-    DYNAMIC_FILTER_TYPE_MAP, FILTER_OPERATOR_MAP,
-    CF_TYPE_MAP, CF_OPERATOR_MAP, ICON_SET_MAP,
-)
+
+from ....models.esdm_models import AutoFilter
+from ....models.esdm_models import CFRule
+from ....models.esdm_models import CFType
+from ....models.esdm_models import CFValueObject
+from ....models.esdm_models import ColorScale
+from ....models.esdm_models import ConditionalFormatting
+from ....models.esdm_models import CustomFilter
+from ....models.esdm_models import DataBar
+from ....models.esdm_models import DynamicFilterType
+from ....models.esdm_models import FilterColumn
+from ....models.esdm_models import FilterOperator
+from ....models.esdm_models import Filters
+from ....models.esdm_models import IconCriterion
+from ....models.esdm_models import IconSet
+from ....models.esdm_models import IconSetType
+from ....models.esdm_models import Table
+from ....models.esdm_models import TableColumn
+from ....models.esdm_models import TableStyleInfo
+from .constants import CF_OPERATOR_MAP
+from .constants import CF_TYPE_MAP
+from .constants import DYNAMIC_FILTER_TYPE_MAP
+from .constants import FILTER_OPERATOR_MAP
+from .constants import ICON_SET_MAP
+from .namespaces import MAIN
+from .namespaces import REL
+from .utils import color_hex_from_xml
+from .utils import xml_attr
+from .utils import xml_bool
+from .utils import xml_find
+from .utils import xml_findall
+from .utils import xml_int
+from .utils import xml_text
 
 NS = {"": MAIN, "r": REL}
 
@@ -76,7 +92,7 @@ def build_table(table_elem: Element) -> Table:
         )
     return table
 
-def build_all_tables(tables_root: Element) -> List[Table]:
+def build_all_tables(tables_root: Element) -> list[Table]:
     """Build all <table> elements from a workbook's tables.xml part (if any)."""
     # Typically each table is in a separate file, but a "tables.xml" isn't standard.
     # In OOXML, each table is in xl/tables/tableN.xml. We'll handle it in the parser.
@@ -119,7 +135,7 @@ def build_auto_filter(af_elem: Element) -> AutoFilter:
 # ────────────────────────────────────────
 # CONDITIONAL FORMATTING
 # ────────────────────────────────────────
-def build_conditional_formatting(ws_root: Element) -> List[ConditionalFormatting]:
+def build_conditional_formatting(ws_root: Element) -> list[ConditionalFormatting]:
     """Extract all conditional formatting from worksheet XML."""
     cf_list = []
     for cf_elem in xml_findall(ws_root, "conditionalFormatting", NS):
@@ -180,17 +196,22 @@ def _build_color_scale(cs: Element) -> ColorScale:
 
 def _build_data_bar(db: Element) -> DataBar:
     vos = xml_findall(db, "cfvo", NS)
-    min_val = CFValueObject()
-    max_val = CFValueObject()
+    min_val = CFValueObject(type="min", value=0)
+    max_val = CFValueObject(type="max", value=100)
     if len(vos) >= 1:
         min_val = CFValueObject(type=vos[0].get("type", ""), value=vos[0].get("val"))
     if len(vos) >= 2:
         max_val = CFValueObject(type=vos[1].get("type", ""), value=vos[1].get("val"))
     color_el = xml_find(db, "color", NS)
+    color = None
+    if color_el is not None:
+        color = color_hex_from_xml(color_el, NS)
+    if color is None:
+        color = "#638EC6"
     return DataBar(
         min_value=min_val,
         max_value=max_val,
-        color=color_hex_from_xml(color_el, NS) if color_el is not None else "#638EC6",
+        color=color,
         show_value=xml_bool(db, "showValue", True),
     )
 

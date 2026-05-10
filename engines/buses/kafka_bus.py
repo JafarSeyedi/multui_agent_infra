@@ -1,12 +1,14 @@
 # Apache Kafka (aiokafka)
 # مناسب برای: event streaming، replay، audit log، throughput بالا
-
 # agents/buses/kafka_bus.py
 import asyncio
 import logging
-from typing import Dict, Set, Any
+from typing import Any
+
 from aiokafka import AIOKafkaProducer, AIOKafkaConsumer  # type: ignore[import-untyped]
-from .base_message_bus import MessageBus, HandlerType
+
+from .base_message_bus import HandlerType
+from .base_message_bus import MessageBus
 from engines.interaction.interaction_models import AgentMessage
 
 logger = logging.getLogger(__name__)
@@ -19,8 +21,8 @@ class KafkaMessageBus(MessageBus):
         self._servers = bootstrap_servers
         self._group_id = group_id
         self._producer: Any = None  # AIOKafkaProducer
-        self._consumers: Dict[str, asyncio.Task[None]] = {}
-        self._handlers: Dict[str, Set[HandlerType]] = {}
+        self._consumers: dict[str, asyncio.Task[None]] = {}
+        self._handlers: dict[str, set[HandlerType]] = {}
 
     async def start(self) -> None:
         self._producer = AIOKafkaProducer(bootstrap_servers=self._servers)

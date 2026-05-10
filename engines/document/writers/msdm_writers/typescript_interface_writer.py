@@ -5,26 +5,22 @@ declarations (interfaces, type aliases, enums, classes).
 Preserves modifiers (readonly, public, private, static), optionality, defaults,
 and TypeScript‑specific annotations for lossless round‑trip.
 """
-
 from __future__ import annotations
-from typing import Optional, Dict, Any, List, Tuple, Set
 
-from .base_msdm_writer import BaseMSDMWriter, WriteTarget, SoftDeleteStrategy
+import re
+
+from ...models.msdm_models import Attribute
+from ...models.msdm_models import DataType
+from ...models.msdm_models import Entity
+from ...models.msdm_models import MSDMDocument
+from ...models.msdm_models import ScalarType
 from ..base import WriteOptions
-from ...models.msdm_models import (
-    MSDMDocument,
-    Entity,
-    Attribute,
-    DataType,
-    ScalarType,
-    Constraint,
-    ConstraintType,
-    Annotation,
-    EntityKind,
-)
+from .base_msdm_writer import BaseMSDMWriter
+from .base_msdm_writer import SoftDeleteStrategy
+from .base_msdm_writer import WriteTarget
 
 # ── ScalarType → TypeScript type ──────────────────────────────────
-_SCALAR_TO_TS: Dict[ScalarType, str] = {
+_SCALAR_TO_TS: dict[ScalarType, str] = {
     ScalarType.STRING:    "string",
     ScalarType.INT:       "number",
     ScalarType.LONG:      "number",
@@ -49,7 +45,7 @@ class TypeScriptInterfaceWriter(BaseMSDMWriter):
 
     def __init__(
         self,
-        options: Optional[WriteOptions] = None,
+        options: WriteOptions | None = None,
         target_mode: WriteTarget = WriteTarget.DESIGN_FILE,
         soft_delete_strategy: SoftDeleteStrategy = SoftDeleteStrategy.NONE,
     ):
@@ -57,33 +53,28 @@ class TypeScriptInterfaceWriter(BaseMSDMWriter):
 
     # ── Public API ─────────────────────────────────────────────────
     async def _write_design(self, document: MSDMDocument) -> bytes:
-        lines: List[str] = []
+        lines: list[str] = []
         for entity in document.entities:
             block = self._entity_to_declaration(entity)
             if block:
                 lines.append(block)
                 lines.append("")
         source = "\n".join(lines).strip() + "\n"
-        return source.encode(self.options.encoding or "utf-8")
+        return source.encode(getattr(self.options, "encoding", "utf-8") or "utf-8")
 
-    async def get_supported_media_types(self) -> list[str]:
+    def get_supported_media_types(self) -> list[str]:
         return ["text/typescript"]
 
-    async def get_supported_extensions(self) -> list[str]:
-        return self.supported_extensions
+    def get_supported_extensions(self) -> list[str]:
+        return list(self.supported_extensions)
 
     # ── Entity dispatch ───────────────────────────────────────────
     def _entity_to_declaration(self, entity: Entity) -> str:
-        # Enum detection
         if self._is_enum(entity):
             return self._build_enum(entity)
 
-        # Type alias detection (the parser stored annotation "type_alias")
         type_alias_body = self._get_annotation(entity, "type_alias")
         if type_alias_body:
-            # This entity is a type alias; its attributes contain only a "value" pseudo-attribute
-            # with the alias expression. We'll output the original type expression for round‑trip,
-            # or reconstruct from attribute.
             if entity.attributes and entity.attributes[0].name == "value":
                 alias_expr = type_alias_body
             else:
@@ -91,7 +82,6 @@ class TypeScriptInterfaceWriter(BaseMSDMWriter):
             export = self._get_annotation(entity, "exported") == "true"
             return f"{'export ' if export else ''}type {entity.name} = {alias_expr};"
 
-        # Interface / class detection
         ts_type = self._get_annotation(entity, "ts_type") or "interface"
         if ts_type == "class":
             return self._build_class(entity)
@@ -99,12 +89,11 @@ class TypeScriptInterfaceWriter(BaseMSDMWriter):
             return self._build_interface(entity)
 
     def _is_enum(self, entity: Entity) -> bool:
-        """Check if entity represents an enum (has member annotations or appropriate constraint)."""
         if any(a.key == "enum_member" for a in entity.annotations):
             return True
         if len(entity.attributes) == 1:
             attr = entity.attributes[0]
-            if attr.name == "value" and any(c.expression.startswith("IN (") for c in attr.constraints):
+            if attr.name == "value" and any(c.expression and c.expression.startswith("IN (") for c in attr.constraints):
                 return True
         return False
 
@@ -114,10 +103,9 @@ class TypeScriptInterfaceWriter(BaseMSDMWriter):
         export = self._get_annotation(entity, "exported") == "true"
         lines = [f"{'export ' if export else ''}enum {name} {{"]
 
-        members: List[Tuple[str, Optional[str]]] = []
+        members: list[tuple[str, str | None]] = []
         for ann in entity.annotations:
-            if ann.key == "enum_member":
-                # Value is "MEMBER=VALUE"
+            if ann.key == "enum_member" and ann.value is not None:
                 parts = ann.value.split("=", 1)
                 mem_name = parts[0].strip()
                 mem_val = parts[1].strip() if len(parts) > 1 else None
@@ -125,7 +113,7 @@ class TypeScriptInterfaceWriter(BaseMSDMWriter):
         if not members and entity.attributes:
             attr = entity.attributes[0]
             for c in attr.constraints:
-                if c.expression.startswith("IN ("):
+                if c.expression and c.expression.startswith("IN ("):
                     inner = c.expression[4:].rstrip(")")
                     vals = [v.strip().strip("'\"") for v in inner.split(",")]
                     for v in vals:
@@ -144,8 +132,8 @@ class TypeScriptInterfaceWriter(BaseMSDMWriter):
     def _build_interface(self, entity: Entity) -> str:
         name = entity.name
         export = self._get_annotation(entity, "exported") == "true"
-        extends = entity.implements  # interfaces are stored here by parser
-        ext_str = f" extends {', '.join(extends)}" if extends else ""
+        extends = entity.implements
+        ext_str = f" extends {', '.join([imp.name for imp in extends])}" if extends else ""
         lines = [f"{'export ' if export else ''}interface {name}{ext_str} {{"]
 
         for attr in entity.attributes:
@@ -162,21 +150,19 @@ class TypeScriptInterfaceWriter(BaseMSDMWriter):
     def _build_class(self, entity: Entity) -> str:
         name = entity.name
         export = self._get_annotation(entity, "exported") == "true"
-        extends = entity.extends or ""
+        extends = entity.extends or None
         implements = entity.implements
         ext_str = ""
         if extends:
-            ext_str += f" extends {extends}"
+            ext_str += f" extends {extends.name}"
         if implements:
-            ext_str += f" implements {', '.join(implements)}"
+            ext_str += f" implements {', '.join([imp.name for imp in implements])}"
         lines = [f"{'export ' if export else ''}class {name}{ext_str} {{"]
 
-        # Only public fields with type annotations are output (as per parser)
         for attr in entity.attributes:
             if self._is_soft_deleted(attr):
                 continue
             if self._is_method(attr):
-                # Methods in class – output as function signature (no body)
                 lines.append(f"  {self._method_to_ts(attr, is_class_method=True)};")
             else:
                 visibility = self._get_annotation(attr, "visibility")
@@ -201,7 +187,7 @@ class TypeScriptInterfaceWriter(BaseMSDMWriter):
     def _field_to_ts(self, attr: Attribute) -> str:
         modifiers = []
         for ann in attr.annotations:
-            if ann.key == "modifier":
+            if ann.key == "modifier" and ann.value is not None:
                 modifiers.append(ann.value)
         modifiers_str = " ".join(modifiers) + " " if modifiers else ""
 
@@ -212,24 +198,28 @@ class TypeScriptInterfaceWriter(BaseMSDMWriter):
 
     # ── Method → method signature ──────────────────────────────────
     def _method_to_ts(self, attr: Attribute, is_class_method: bool = False) -> str:
-        # Recover method name and parameters from pseudo-name stored by parser
-        op_name = attr.name
+        # Retrieve stored operation name
+        op_name = self._get_annotation(attr, "operation_name")
         params_str = ""
-        # The parser stored the method name with parameters in the attribute name: methodName(param1:type1, param2:type2)
-        # and the original operation name in annotation "operation_name" for class methods.
-        if self._get_annotation(attr, "operation_name"):
-            op_name = self._get_annotation(attr, "operation_name")
-        # Extract params from attribute name
-        m = __import__("re").match(r"(\w+)\(([^)]*)\)", attr.name)
-        if m:
-            op_name = m.group(1)
-            params_str = m.group(2) if m.group(2) else ""
+
+        # If we have a stored operation name, use it; otherwise try to extract from attribute name
+        if not op_name:
+            m = re.match(r"(\w+)\(([^)]*)\)", attr.name)
+            if m:
+                op_name = m.group(1)
+                params_str = m.group(2) if m.group(2) else ""
+            else:
+                op_name = attr.name
+
+        # If we still have no name, fallback to a default
+        if not op_name:
+            op_name = "method"
 
         ret_type = self._datatype_to_ts(attr.data_type)
 
         modifiers = []
         for ann in attr.annotations:
-            if ann.key == "visibility":
+            if ann.key == "visibility" and ann.value is not None:
                 modifiers.append(ann.value)
             elif ann.key == "modifier" and ann.value in ("static", "abstract"):
                 modifiers.append(ann.value)
@@ -248,17 +238,19 @@ class TypeScriptInterfaceWriter(BaseMSDMWriter):
             val = self._datatype_to_ts(dt.value_type) if dt.value_type else "any"
             return f"Record<{key}, {val}>"
         if base == ScalarType.REF:
-            return dt.ref_entity or "any"
+            if dt.ref_entity:
+                return dt.ref_entity.name or "any"
+            return "any"
         if base == ScalarType.STRUCT:
-            # If there's a ref_entity, use it; else fallback to object
-            return dt.ref_entity or "object"
-        if base in _SCALAR_TO_TS:
-            return _SCALAR_TO_TS[base]
-        return "any"
+            if dt.ref_entity:
+                return dt.ref_entity.name or "object"
+            return "object"
+        return _SCALAR_TO_TS.get(base, "any")
 
     # ── Default formatting ────────────────────────────────────────
     def _format_default(self, default_str: str, dt: DataType) -> str:
-        """Format a default value as a TypeScript literal."""
+        if default_str is None:
+            return ""
         default_str = default_str.strip()
         base = dt.base
         if base == ScalarType.STRING:
@@ -268,17 +260,20 @@ class TypeScriptInterfaceWriter(BaseMSDMWriter):
         if base == ScalarType.BOOLEAN:
             return default_str.lower()
         if base in (ScalarType.INT, ScalarType.LONG, ScalarType.FLOAT,
-                     ScalarType.DOUBLE, ScalarType.DECIMAL):
+                    ScalarType.DOUBLE, ScalarType.DECIMAL):
             return default_str
-        # arrays, objects, etc.
         return default_str
 
     # ── Helpers ────────────────────────────────────────────────────
-    def _get_annotation(self, obj, key: str) -> Optional[str]:
+    def _get_annotation(self, obj, key: str) -> str | None:
         if isinstance(obj, Entity):
-            return next((a.value for a in obj.annotations if a.key == key), None)
-        if isinstance(obj, Attribute):
-            return next((a.value for a in obj.annotations if a.key == key), None)
+            for a in obj.annotations:
+                if a.key == key:
+                    return a.value
+        elif isinstance(obj, Attribute):
+            for a in obj.annotations:
+                if a.key == key:
+                    return a.value
         return None
 
     def _is_method(self, attr: Attribute) -> bool:

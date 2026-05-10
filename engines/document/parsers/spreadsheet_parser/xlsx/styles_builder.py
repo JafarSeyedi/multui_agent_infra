@@ -11,52 +11,48 @@ Handles:
 - Differential formatting (dxf)
 - Table styles
 """
-
 from xml.etree.ElementTree import Element
-from typing import List, Dict, Optional, Sequence
 
-from ....models.esdm_models import (
-    SpreadsheetStyleSheet,
-    NumberFormatCollection,
-    NumberFormat,
-    FontCollection,
-    Font,
-    FontUnderline,
-    FillCollection,
-    Fill,
-    PatternFill,
-    PatternType,
-    GradientFill,
-    GradientStop,
-    BorderCollection,
-    Border,
-    BorderSide,
-    BorderStyle,
-    CellFormatCollection,
-    CellFormat,
-    Alignment,
-    HorizontalAlign,
-    VerticalAlign,
-    Protection,
-    CellStyle,
-    DifferentialFormat,
-    ExcelTableStyle,
-    TableStyleElement,
-)
-
+from ....models.esdm_models import Alignment
+from ....models.esdm_models import Border
+from ....models.esdm_models import BorderCollection
+from ....models.esdm_models import BorderSide
+from ....models.esdm_models import BorderStyle
+from ....models.esdm_models import CellFormat
+from ....models.esdm_models import CellFormatCollection
+from ....models.esdm_models import CellStyle
+from ....models.esdm_models import DifferentialFormat
+from ....models.esdm_models import ExcelTableStyle
+from ....models.esdm_models import Fill
+from ....models.esdm_models import FillCollection
+from ....models.esdm_models import Font
+from ....models.esdm_models import FontCollection
+from ....models.esdm_models import FontUnderline
+from ....models.esdm_models import GradientFill
+from ....models.esdm_models import GradientStop
+from ....models.esdm_models import HorizontalAlign
+from ....models.esdm_models import NumberFormat
+from ....models.esdm_models import NumberFormatCollection
+from ....models.esdm_models import PatternFill
+from ....models.esdm_models import PatternType
+from ....models.esdm_models import Protection
+from ....models.esdm_models import SpreadsheetStyleSheet
+from ....models.esdm_models import TableStyleElement
+from ....models.esdm_models import VerticalAlign
+from .constants import BUILTIN_NUMBER_FORMATS
+from .constants import OPENPYXL_BORDER_STYLE_TO_ESDM
+from .constants import OPENPYXL_FILL_PATTERN_TO_ESDM
+from .constants import OPENPYXL_HORIZONTAL_TO_ESDM
+from .constants import OPENPYXL_UNDERLINE_TO_ESDM
+from .constants import OPENPYXL_VERTICAL_TO_ESDM
 from .namespaces import MAIN
-from .utils import (
-    xml_find, xml_findall, xml_attr, xml_text, xml_int, xml_float, xml_bool,
-    color_hex_from_xml,
-)
-from .constants import (
-    BUILTIN_NUMBER_FORMATS,
-    OPENPYXL_UNDERLINE_TO_ESDM,
-    OPENPYXL_FILL_PATTERN_TO_ESDM,
-    OPENPYXL_BORDER_STYLE_TO_ESDM,
-    OPENPYXL_HORIZONTAL_TO_ESDM,
-    OPENPYXL_VERTICAL_TO_ESDM,
-)
+from .utils import color_hex_from_xml
+from .utils import xml_attr
+from .utils import xml_bool
+from .utils import xml_find
+from .utils import xml_findall
+from .utils import xml_float
+from .utils import xml_int
 
 NS = {"": MAIN}
 
@@ -98,7 +94,7 @@ def build_stylesheet(styles_xml: Element) -> SpreadsheetStyleSheet:
     # We register all xf records: first from cellStyleXfs then cellXfs
     for xf in style_xf_records:
         ss.cell_formats.register(xf)
-    cell_xf_offset = len(style_xf_records)
+    len(style_xf_records)
     for xf in cell_xf_records:
         ss.cell_formats.register(xf)
 
@@ -121,7 +117,7 @@ def build_stylesheet(styles_xml: Element) -> SpreadsheetStyleSheet:
 # Internal builders
 # ══════════════════════════════════════════════
 
-def _build_number_formats(num_fmts: Optional[Element]) -> NumberFormatCollection:
+def _build_number_formats(num_fmts: Element | None) -> NumberFormatCollection:
     """Parse <numFmts> into NumberFormatCollection."""
     coll = NumberFormatCollection(builtin_formats=BUILTIN_NUMBER_FORMATS)
     if num_fmts is None:
@@ -133,7 +129,7 @@ def _build_number_formats(num_fmts: Optional[Element]) -> NumberFormatCollection
     return coll
 
 
-def _build_fonts(fonts_elem: Optional[Element]) -> FontCollection:
+def _build_fonts(fonts_elem: Element | None) -> FontCollection:
     """Parse <fonts> into FontCollection (indexed list)."""
     coll = FontCollection()
     if fonts_elem is None:
@@ -180,7 +176,7 @@ def _build_fonts(fonts_elem: Optional[Element]) -> FontCollection:
     return coll
 
 
-def _build_fills(fills_elem: Optional[Element]) -> FillCollection:
+def _build_fills(fills_elem: Element | None) -> FillCollection:
     """Parse <fills> into FillCollection (indexed list)."""
     coll = FillCollection()
     if fills_elem is None:
@@ -213,13 +209,15 @@ def _build_fills(fills_elem: Optional[Element]) -> FillCollection:
                 pos = xml_float(stop_el, "position", 0.0)
                 col_el = xml_find(stop_el, "color", NS)
                 col = color_hex_from_xml(col_el, NS) if col_el is not None else ""
+                if col is None:
+                    col = ""
                 gradient.stops.append(GradientStop(position=pos, color=col))
             f.gradient = gradient
         coll.register(f)
     return coll
 
 
-def _build_borders(borders_elem: Optional[Element]) -> BorderCollection:
+def _build_borders(borders_elem: Element | None) -> BorderCollection:
     """Parse <borders> into BorderCollection."""
     coll = BorderCollection()
     if borders_elem is None:
@@ -244,9 +242,9 @@ def _build_borders(borders_elem: Optional[Element]) -> BorderCollection:
     return coll
 
 
-def _build_cell_formats(xfs_elem: Element) -> List[CellFormat]:
+def _build_cell_formats(xfs_elem: Element) -> list[CellFormat]:
     """Parse an <cellStyleXfs> or <cellXfs> element into a list of CellFormat."""
-    formats: List[CellFormat] = []
+    formats: list[CellFormat] = []
     for xf_el in xml_findall(xfs_elem, "xf", NS):
         xf = CellFormat(
             number_format_id=xml_int(xf_el, "numFmtId", None) or None,
@@ -279,9 +277,9 @@ def _build_cell_formats(xfs_elem: Element) -> List[CellFormat]:
 
 
 def _build_cell_styles(cell_styles_elem: Element,
-                       style_xf_records: List[CellFormat]) -> Dict[str, CellStyle]:
+                       style_xf_records: list[CellFormat]) -> dict[str, CellStyle]:
     """Parse <cellStyles> linking to style xf records. Returns dict name -> CellStyle."""
-    cell_styles: Dict[str, CellStyle] = {}
+    cell_styles: dict[str, CellStyle] = {}
     for cs_el in xml_findall(cell_styles_elem, "cellStyle", NS):
         name = xml_attr(cs_el, "name", "")
         xf_id = xml_int(cs_el, "xfId")
@@ -295,9 +293,9 @@ def _build_cell_styles(cell_styles_elem: Element,
     return cell_styles
 
 
-def _build_dxfs(dxfs_elem: Element) -> List[DifferentialFormat]:
+def _build_dxfs(dxfs_elem: Element) -> list[DifferentialFormat]:
     """Parse <dxfs> into list of DifferentialFormat."""
-    dxfs: List[DifferentialFormat] = []
+    dxfs: list[DifferentialFormat] = []
     for dxf_el in xml_findall(dxfs_elem, "dxf", NS):
         dxf = DifferentialFormat()
         # Font
@@ -341,14 +339,14 @@ def _build_dxfs(dxfs_elem: Element) -> List[DifferentialFormat]:
     return dxfs
 
 
-def _build_table_styles(table_styles_elem: Optional[Element]) -> Dict[str, ExcelTableStyle]:
+def _build_table_styles(table_styles_elem: Element | None) -> dict[str, ExcelTableStyle]:
     """Parse <tableStyles> into dict name -> ExcelTableStyle."""
-    table_styles: Dict[str, ExcelTableStyle] = {}
+    table_styles: dict[str, ExcelTableStyle] = {}
     if table_styles_elem is None:
         return table_styles
     # Default attributes
-    default_name = xml_attr(table_styles_elem, "defaultTableStyle", "TableStyleMedium9")
-    default_pivot = xml_attr(table_styles_elem, "defaultPivotStyle", "PivotStyleLight16")
+    xml_attr(table_styles_elem, "defaultTableStyle", "TableStyleMedium9")
+    xml_attr(table_styles_elem, "defaultPivotStyle", "PivotStyleLight16")
 
     for ts_el in xml_findall(table_styles_elem, "tableStyle", NS):
         name = xml_attr(ts_el, "name", "")

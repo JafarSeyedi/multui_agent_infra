@@ -5,26 +5,20 @@ Outputs class definitions, attributes, methods, and relationships with full
 round‑trip fidelity.  Raw relation lines stored by the parser take precedence;
 otherwise relationships are generated from the model.  Soft‑delete is ignored.
 """
-
 from __future__ import annotations
-import re
-from typing import Optional, Dict, Any, List, Tuple
 
-from .base_msdm_writer import BaseMSDMWriter, WriteTarget, SoftDeleteStrategy
+import re
+
+from ...models.msdm_models import Attribute
+from ...models.msdm_models import Cardinality
+from ...models.msdm_models import DataType
+from ...models.msdm_models import Entity
+from ...models.msdm_models import MSDMDocument
+from ...models.msdm_models import ScalarType
 from ..base import WriteOptions
-from ...models.msdm_models import (
-    MSDMDocument,
-    Entity,
-    Attribute,
-    DataType,
-    ScalarType,
-    Relationship,
-    Cardinality,
-    Constraint,
-    ConstraintType,
-    Annotation,
-    EntityKind,
-)
+from .base_msdm_writer import BaseMSDMWriter
+from .base_msdm_writer import SoftDeleteStrategy
+from .base_msdm_writer import WriteTarget
 
 
 class PlantUMLWriter(BaseMSDMWriter):
@@ -34,7 +28,7 @@ class PlantUMLWriter(BaseMSDMWriter):
 
     def __init__(
         self,
-        options: Optional[WriteOptions] = None,
+        options: WriteOptions | None = None,
         target_mode: WriteTarget = WriteTarget.DESIGN_FILE,
         soft_delete_strategy: SoftDeleteStrategy = SoftDeleteStrategy.NONE,
     ):
@@ -70,13 +64,13 @@ class PlantUMLWriter(BaseMSDMWriter):
                 lines.append(ann.value)
 
         puml = "\n".join(lines)
-        return puml.encode(self.options.encoding or "utf-8")
+        return puml.encode(getattr(self.options, "encoding", "utf-8") or "utf-8")
 
-    async def get_supported_media_types(self) -> list[str]:
+    def get_supported_media_types(self) -> list[str]:
         return ["text/plain"]
 
-    async def get_supported_extensions(self) -> list[str]:
-        return self.supported_extensions
+    def get_supported_extensions(self) -> list[str]:
+        return list(self.supported_extensions)
 
     # ── Entity → class block ───────────────────────────────────────
     def _entity_to_block(self, entity: Entity) -> str:
@@ -160,22 +154,24 @@ class PlantUMLWriter(BaseMSDMWriter):
             return f"{visibility}{modifier_str}{op_name}({params_str})"
 
     # ── Relationship generation ────────────────────────────────────
-    def _generate_relationship_lines(self, document: MSDMDocument) -> List[str]:
+    def _generate_relationship_lines(self, document: MSDMDocument) -> list[str]:
         lines = []
         entity_names = {e.name for e in document.entities}
 
         # Inheritance
         for entity in document.entities:
-            if entity.extends and entity.extends in entity_names:
+            if entity.extends and entity.extends.name in entity_names:
                 # PlantUML: Child --|> Parent
-                lines.append(f"{entity.name} --|> {entity.extends}")
+                lines.append(f"{entity.name} --|> {entity.extends.name}")
 
         # Explicit Relationships
         for rel in document.relationships:
-            if rel.from_entity not in entity_names or rel.to_entity not in entity_names:
+            if rel.from_entity is None or rel.to_entity is None:
+                continue
+            if rel.from_entity.name not in entity_names or rel.to_entity.name not in entity_names:
                 continue
             arrow = self._cardinality_to_arrow(rel.cardinality_from, rel.cardinality_to)
-            line = f"{rel.from_entity} {arrow} {rel.to_entity}"
+            line = f"{rel.from_entity.name} {arrow} {rel.to_entity.name}"
             if rel.name:
                 line += f" : {rel.name}"
             lines.append(line)
@@ -212,8 +208,8 @@ class PlantUMLWriter(BaseMSDMWriter):
             key = self._datatype_to_string(dt.key_type) if dt.key_type else "String"
             val = self._datatype_to_string(dt.value_type) if dt.value_type else "Object"
             return f"Map<{key},{val}>"
-        if base == ScalarType.REF:
-            return dt.ref_entity or "Object"
+        if base == ScalarType.REF and dt.ref_entity:
+            return dt.ref_entity.name or "Object"
         if base == ScalarType.STRUCT:
             return "Object"
         # Scalars
@@ -235,7 +231,7 @@ class PlantUMLWriter(BaseMSDMWriter):
         return mapping.get(base, "Object")
 
     # ── Helpers ────────────────────────────────────────────────────
-    def _get_annotation(self, obj, key: str) -> Optional[str]:
+    def _get_annotation(self, obj, key: str) -> str | None:
         if isinstance(obj, Entity):
             return next((a.value for a in obj.annotations if a.key == key), None)
         if isinstance(obj, Attribute):

@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import json
 from types import SimpleNamespace
-from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
+from typing import Any
+from typing import Protocol
+from typing import runtime_checkable
 
 from engines.rag.research.memory.reasoning.event_types import ReasoningEventType
 from engines.rag.research.memory.reasoning_memory import ReasoningMemory
@@ -12,7 +14,7 @@ from engines.rag.research.memory.reasoning_memory import ReasoningMemory
 class LLMProtocol(Protocol):
     async def complete(self, prompt: str) -> str: ...
 
-@runtime_checkable  
+@runtime_checkable
 class LLMGenerateProtocol(Protocol):
     async def generate(self, prompt: str) -> str: ...
 
@@ -21,7 +23,7 @@ class LLMInvokeProtocol(Protocol):
     async def ainvoke(self, prompt: str) -> str: ...
 
 class AnswerPlanner:
-    def __init__(self, llm: Optional[Any] = None, reasoning: Optional[ReasoningMemory] = None):
+    def __init__(self, llm: Any | None = None, reasoning: ReasoningMemory | None = None):
         self.llm = llm
         self.reasoning = reasoning or ReasoningMemory()
         self.memory = None
@@ -29,8 +31,8 @@ class AnswerPlanner:
     async def create_plan(
         self,
         query: str,
-        raw_evidence: Optional[List[Any]] = None,
-        graph_edges: Optional[List[Any]] = None,
+        raw_evidence: list[Any] | None = None,
+        graph_edges: list[Any] | None = None,
     ):
         plan = await self._llm_plan(query, raw_evidence or [], graph_edges or [])
         if not plan:
@@ -43,7 +45,7 @@ class AnswerPlanner:
         )
         return SimpleNamespace(sections=plan)
 
-    async def _llm_plan(self, query: str, raw_evidence: List[Any], graph_edges: List[Any]) -> List[Dict[str, Any]]:
+    async def _llm_plan(self, query: str, raw_evidence: list[Any], graph_edges: list[Any]) -> list[dict[str, Any]]:
         if self.llm is None:
             return []
 
@@ -61,7 +63,7 @@ class AnswerPlanner:
         except Exception:
             return []
 
-        plan: List[Dict[str, Any]] = []
+        plan: list[dict[str, Any]] = []
         for item in data if isinstance(data, list) else []:
             if not isinstance(item, dict):
                 continue
@@ -74,7 +76,7 @@ class AnswerPlanner:
             )
         return plan
 
-    def _fallback_plan(self, query: str, raw_evidence: List[Any]) -> List[Dict[str, Any]]:
+    def _fallback_plan(self, query: str, raw_evidence: list[Any]) -> list[dict[str, Any]]:
         sections = [
             {"title": "Overview", "description": f"Direct answer to: {query}", "evidence_ids": [0, 1]},
             {"title": "Evidence", "description": "Key supporting findings", "evidence_ids": [0, 1, 2, 3]},
@@ -90,14 +92,14 @@ class AnswerPlanner:
     async def _complete(self, prompt: str) -> str:
         if self.llm is None:
             raise TypeError("LLM is not initialized")
-        
+
         if isinstance(self.llm, LLMProtocol):
             return str(await self.llm.complete(prompt))
         if isinstance(self.llm, LLMGenerateProtocol):
             return str(await self.llm.generate(prompt))
         if isinstance(self.llm, LLMInvokeProtocol):
             return str(await self.llm.ainvoke(prompt))
-        
+
         raise TypeError("Unsupported LLM interface")
 
     def _evidence_to_text(self, item: Any) -> str:

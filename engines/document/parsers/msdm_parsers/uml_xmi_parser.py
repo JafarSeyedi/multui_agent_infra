@@ -2,57 +2,83 @@
 """
 UML XMI Parser – converts .xmi / .uml files into an MSDMDocument.
 
-Supports UML 2.x XMI (as exported by MagicDraw, Papyrus, EA, etc.).
-Parses:
-- packagedElement (uml:Class, uml:Interface, uml:DataType, uml:Enumeration,
-  uml:PrimitiveType, uml:Association, uml:Generalization, uml:Package, etc.)
-- ownedAttribute (properties, association ends)
-- ownedOperation (methods) and ownedParameter
-- ownedLiteral (enum values)
-- generalizations (extends relationship)
-- associations with member ends, multiplicities, navigability
-- stereotypes and tagged values are stored as Annotations.
-- nested packages are flattened; their fully qualified names are used.
+================================================================================
+COMPLETE MAPPING DECISIONS (final, approved)
+================================================================================
+
+1. UML Class / Interface / DataType / PrimitiveType
+   → MSDM Entity (kind=OBJECT). Interface flag stored in is_interface.
+
+2. UML Enumeration
+   → NOT CREATED AS SEPARATE ENTITY.
+   → Enum literals are collected and later attached as a CHECK constraint
+     on any attribute whose type references that enumeration.
+   → The attribute's data type is set to ScalarType.STRING.
+
+3. UML ownedAttribute (property)
+   → MSDM Attribute.
+   → Multiplicity bounds (lowerValue/upperValue) mapped to Cardinality enum
+     and to the 'required' flag.
+   → Default value mapped to Constraint(type=DEFAULT).
+   → Visibility, isStatic, isDerived mapped to corresponding Attribute fields.
+   → Type reference stored in DataType.ref_entity_id (resolved in second pass).
+
+4. UML ownedOperation (method/operation)
+   → COMPLETELY IGNORED. No Attribute created. No output.
+
+5. UML Association
+   → MSDM EntityRelationship.
+   → Ends (ownedEnd) provide type references (stored in from_ref_id / to_ref_id),
+     multiplicities (mapped to Cardinality), and role names.
+   → Role names stored as allowed annotations (from_role, to_role).
+
+6. UML Generalization
+   → MSDM Entity.extends_ref_id (temporary string), resolved later.
+
+7. UML Stereotype (applied to Class, Attribute, Association)
+   → Stored as allowed annotation (key="stereotype_ref", value=ref).
+
+8. XMI ID (xmi:id)
+   → Stored as allowed annotation (key="xmi_id", value=id) on Entity and EntityRelationship.
+
+9. No other annotations are allowed or stored.
+
+10. Reference resolution:
+    → Uses the base class method resolve_references() which resolves
+      extends_ref_id, from_ref_id, to_ref_id, ref_entity_id, etc.
+
+11. Cardinality mapping (UML bounds → Cardinality enum):
+    - "1"               → ONE
+    - "0..1"            → ZERO_OR_ONE
+    - "1..*"            → ONE_OR_MANY
+    - "*", "0..*", "n"  → MANY
+    - Other numeric ranges → MANY or ONE heuristically.
+
+================================================================================
+All original parsing capabilities except operations and separate enum entities.
+================================================================================
 """
-
 from __future__ import annotations
-import re
+
 from pathlib import Path
-from typing import Optional, Dict, Any, List, Tuple
 from xml.etree import ElementTree as ET
+from typing import Any
 
-from .base_msdm_parser import BaseMSDMParser
-from ..base import ParseOptions
+from ...models.media_types import MEDIA_TYPES
 from ...models.msdm_models import (
-    MSDMDocument,
-    Entity,
-    Attribute,
-    DataType,
-    Constraint,
-    ConstraintType,
-    Index,
-    Annotation,
-    EntityKind,
-    ScalarType,
-    Relationship,
-    Cardinality,
+    Annotation, Attribute, Cardinality, Constraint, ConstraintType, DataType,
+    Entity, EntityKind, MSDMDocument, Namespace, EntityRelationship, ScalarType, VisibilityKind
 )
+from ..base import ParseOptions
+from .base_msdm_parser import BaseMSDMParser
 
-# ── Namespaces ─────────────────────────────────────────────────────
-NS_UML = "http://www.omg.org/spec/UML/20131001"        # UML 2.5 standard
+NS_UML = "http://www.omg.org/spec/UML/20131001"
 NS_XMI = "http://www.omg.org/spec/XMI/20131001"
 NS_XSI = "http://www.w3.org/2001/XMLSchema-instance"
-
-# Also commonly seen: UML 2.4.1, 2.1, etc. We'll try to detect from the root attribute.
-NS_ALL = {
-    "uml": NS_UML,
-    "xmi": NS_XMI,
-    "xsi": NS_XSI,
-}
+NS_ALL = {"uml": NS_UML, "xmi": NS_XMI, "xsi": NS_XSI}
 
 
 class UMLXmiParser(BaseMSDMParser):
-    """Parser for UML XMI files (.xmi, .uml)."""
     name = "uml_xmi"
     supported_extensions = (".xmi", ".uml")
 
@@ -63,72 +89,81 @@ class UMLXmiParser(BaseMSDMParser):
         text = data.decode(encoding)
         root = ET.fromstring(text)
 
-        doc = MSDMDocument()
-        doc.namespace = Path(source_name).stem
+        doc = MSDMDocument(
+            document_id=Path(source_name).stem,
+            title=Path(source_name).stem,
+            media_type=MEDIA_TYPES.get("uml_xmi", MEDIA_TYPES["xml"])
+        )
+        doc.namespace = Namespace(uri=Path(source_name).stem)
 
-        # Detect actual UML namespace from root (default namespace)
         ns = root.tag.split("}")[0][1:] if root.tag.startswith("{") else ""
         if ns:
             NS_ALL["uml"] = ns
-        # Also scan for explicit uml: namespace in attributes
-        # (XMI often declares xmlns:uml="...")
-        # We'll just rely on the registered NS; we'll try both common ones.
-        # For safety, we'll also accept any tag ending with 'Class' etc.
         self._ns = ns
 
-        # First pass: collect all packaged elements into a flat list (recursively)
-        self._entity_map: Dict[str, Entity] = {}        # xmi:id → Entity
-        self._class_names: Dict[str, str] = {}           # name → xmi:id (for duplicate handling)
-        self._class_elements: List[ET.Element] = []
-        self._association_elements: List[ET.Element] = []
-        self._generalizations: List[ET.Element] = []
+        # Temporary storage
+        self._entity_map: dict[str, Entity] = {}
+        self._class_names: dict[str, str] = {}
+        self._class_elements: list[ET.Element] = []
+        self._association_elements: list[ET.Element] = []
+        self._generalizations: list[ET.Element] = []
+        self._enum_map: dict[str, list[str]] = {}  # xmi_id -> list of literal names
 
         self._collect_elements(root, "")
 
-        # Second pass: parse classes and interfaces
+        # First pass: parse classes (skip enumerations)
         for elem in self._class_elements:
             self._parse_class(elem, doc)
 
-        # Third pass: generalize
+        # Parse generalizations (store refs)
         for gen_elem in self._generalizations:
             self._parse_generalization(gen_elem, doc)
 
-        # Fourth pass: associations
+        # Parse associations
         for assoc_elem in self._association_elements:
             self._parse_association(assoc_elem, doc)
 
+        # Second pass: resolve all references using base method
+        self.resolve_references(doc)
+
         return doc
 
-    # ── Element collection ──────────────────────────────────────────
     def _collect_elements(self, parent: ET.Element, qualified_name_prefix: str) -> None:
-        """
-        Recursively walk through packagedElement and collect classes,
-        associations, generalizations, and nested packages.
-        """
         for child in parent:
             tag = child.tag.split("}")[-1]
             if tag == "packagedElement":
                 xmi_type = child.get(f"{{{NS_XMI}}}type", "")
                 if not xmi_type:
-                    # The element name itself may be uml:Class etc.
                     local = child.tag.split("}")[-1] if "}" in child.tag else child.tag
-                    if local in ("Class", "Interface", "DataType", "Enumeration", "PrimitiveType", "Association", "Generalization"):
+                    if local in ("Class", "Interface", "DataType", "PrimitiveType", "Enumeration", "Association", "Generalization"):
                         xmi_type = "uml:" + local
-                # Determine element kind
-                if xmi_type in ("uml:Class", "uml:Interface", "uml:DataType", "uml:Enumeration"):
+                # Class-like elements (including DataType, PrimitiveType) go to class list
+                if xmi_type in ("uml:Class", "uml:Interface", "uml:DataType", "uml:PrimitiveType"):
                     self._class_elements.append(child)
+                elif xmi_type == "uml:Enumeration":
+                    self._collect_enum_literals(child)
                 elif xmi_type == "uml:Association":
                     self._association_elements.append(child)
                 elif xmi_type == "uml:Generalization":
                     self._generalizations.append(child)
                 elif xmi_type == "uml:Package":
-                    # Recurse
                     name = child.get("name", "")
                     new_prefix = f"{qualified_name_prefix}{name}::" if qualified_name_prefix else f"{name}::"
                     self._collect_elements(child, new_prefix)
 
-    def _parse_class(self, elem: ET.Element, doc: MSDMDocument) -> Entity:
-        """Parse a Class/Interface/DataType/Enumeration element."""
+    def _collect_enum_literals(self, enum_elem: ET.Element) -> None:
+        xmi_id = enum_elem.get(f"{{{NS_XMI}}}id", enum_elem.get("id", ""))
+        if not xmi_id:
+            return
+        literals = []
+        for lit in enum_elem.findall("uml:ownedLiteral", NS_ALL):
+            lit_name = lit.get("name", "")
+            if lit_name:
+                literals.append(lit_name)
+        if literals:
+            self._enum_map[xmi_id] = literals
+
+    def _parse_class(self, elem: ET.Element, doc: MSDMDocument) -> Entity | None:
         xmi_id = elem.get(f"{{{NS_XMI}}}id", elem.get("id", ""))
         name = elem.get("name", "anonymous")
         xmi_type = elem.get(f"{{{NS_XMI}}}type", "")
@@ -136,49 +171,28 @@ class UMLXmiParser(BaseMSDMParser):
             local = elem.tag.split("}")[-1]
             xmi_type = "uml:" + local
 
+        # Skip enumeration (already handled separately)
+        if xmi_type == "uml:Enumeration":
+            return None
+
         is_interface = xmi_type == "uml:Interface"
-        is_enum = xmi_type == "uml:Enumeration"
-        is_datatype = xmi_type == "uml:DataType" or xmi_type == "uml:PrimitiveType"
 
-        kind = EntityKind.OBJECT
-        entity = Entity(name=name, kind=kind)
-        entity.annotations.append(Annotation(key="xmi_id", value=xmi_id))
-        entity.annotations.append(Annotation(key="xmi_type", value=xmi_type))
-        if is_interface:
-            entity.annotations.append(Annotation(key="interface", value="true"))
-        elif is_enum:
-            entity.annotations.append(Annotation(key="enumeration", value="true"))
-        elif is_datatype:
-            entity.annotations.append(Annotation(key="datatype", value="true"))
-
-        # Stereotypes & tagged values (from child elements)
+        entity = Entity(name=name, kind=EntityKind.OBJECT)
+        if xmi_id:
+            entity.annotations.append(Annotation(key="xmi_id", value=xmi_id))
+        entity.is_interface = is_interface
+        entity.is_abstract = elem.get("isAbstract", "false").lower() == "true"
         self._extract_stereotypes(elem, entity)
 
-        # Attributes (ownedAttribute)
+        # Parse owned attributes
         for attr_elem in elem.findall("uml:ownedAttribute", NS_ALL):
             if self._is_association_end(attr_elem):
-                continue    # association ends handled later
+                continue
             attr = self._parse_attribute(attr_elem)
             if attr:
                 entity.attributes.append(attr)
 
-        # Operations (ownedOperation)
-        for op_elem in elem.findall("uml:ownedOperation", NS_ALL):
-            op_attr = self._parse_operation(op_elem)
-            if op_attr:
-                entity.attributes.append(op_attr)   # store as pseudo-attribute
-
-        # Enum literals (ownedLiteral)
-        if is_enum:
-            enum_values = []
-            for lit_elem in elem.findall("uml:ownedLiteral", NS_ALL):
-                val_name = lit_elem.get("name", "")
-                enum_values.append(val_name)
-            if enum_values:
-                attr = Attribute(name="value", data_type=DataType(base=ScalarType.STRING), required=True)
-                quoted = ", ".join(repr(v) for v in enum_values)
-                attr.constraints.append(Constraint(type=ConstraintType.CHECK, expression=f"IN ({quoted})"))
-                entity.attributes.append(attr)
+        # ownedOperation elements are completely ignored
 
         doc.entities.append(entity)
         self._entity_map[xmi_id] = entity
@@ -186,239 +200,149 @@ class UMLXmiParser(BaseMSDMParser):
         return entity
 
     def _is_association_end(self, attr_elem: ET.Element) -> bool:
-        """Check if the ownedAttribute is actually an association end (part of an association)."""
-        assoc = attr_elem.get("association")
-        return assoc is not None
+        return attr_elem.get("association") is not None
 
-    def _parse_attribute(self, attr_elem: ET.Element) -> Optional[Attribute]:
-        """Parse a UML Property as an MSDM Attribute."""
+    def _parse_attribute(self, attr_elem: ET.Element) -> Attribute | None:
         name = attr_elem.get("name", "")
+        if not name:
+            return None
+
         visibility = attr_elem.get("visibility")
         is_static = attr_elem.get("isStatic", "false").lower() == "true"
         is_derived = attr_elem.get("isDerived", "false").lower() == "true"
+        type_ref = attr_elem.get("type")
 
-        # Type
         dt = self._resolve_type(attr_elem)
-        attr = Attribute(name=name, data_type=dt)
 
-        # Lower / upper multiplicity
+        attr = Attribute(name=name, data_type=dt)
+        attr.is_static = is_static
+        attr.is_derived = is_derived
+        if visibility:
+            vis_map = {"+": VisibilityKind.PUBLIC, "-": VisibilityKind.PRIVATE,
+                       "#": VisibilityKind.PROTECTED, "~": VisibilityKind.PACKAGE}
+            attr.visibility = vis_map.get(visibility)
+
+        # Multiplicity
         lower = self._get_bound(attr_elem, "lowerValue")
         upper = self._get_bound(attr_elem, "upperValue")
         if upper == "1":
             attr.required = True
-        elif upper == "*" or (upper.isdigit() and int(upper) > 1):
+        elif upper == "*" or (upper and upper.isdigit() and int(upper) > 1):
             attr.required = False
-            attr.annotations.append(Annotation(key="max_multiplicity", value=upper))
         if lower and lower != "0":
             attr.required = True
-            attr.annotations.append(Annotation(key="min_multiplicity", value=lower))
 
         # Default value
-        default = attr_elem.find("uml:defaultValue", NS_ALL)
-        if default is not None:
-            val_elem = default.get("value", default.text)
-            if val_elem:
-                attr.default_value = val_elem
-                attr.constraints.append(Constraint(type=ConstraintType.DEFAULT, expression=val_elem))
+        default_elem = attr_elem.find("uml:defaultValue", NS_ALL)
+        if default_elem is not None:
+            val = default_elem.get("value", default_elem.text)
+            if val:
+                attr.default_value = val
+                attr.constraints.append(Constraint(type=ConstraintType.DEFAULT, expression=val))
 
-        # Stereotype and tagged values on attribute
+        # Enumeration handling: if type_ref points to an enumeration we collected,
+        # replace data type with STRING and add CHECK constraint.
+        if type_ref and type_ref in self._enum_map:
+            literals = self._enum_map[type_ref]
+            if literals:
+                quoted = ", ".join(repr(v) for v in literals)
+                check_expr = f"IN ({quoted})"
+                attr.constraints.append(Constraint(type=ConstraintType.CHECK, expression=check_expr))
+                attr.data_type = DataType(base=ScalarType.STRING)
+
         self._extract_stereotypes(attr_elem, attr)
-
-        # Static / Derived markers
-        if is_static:
-            attr.annotations.append(Annotation(key="static", value="true"))
-        if is_derived:
-            attr.annotations.append(Annotation(key="derived", value="true"))
-
-        if visibility:
-            attr.annotations.append(Annotation(key="visibility", value=visibility))
-
-        return attr
-
-    def _parse_operation(self, op_elem: ET.Element) -> Optional[Attribute]:
-        """Parse a UML Operation into an MSDM Attribute (stored as method annotation)."""
-        name = op_elem.get("name", "")
-        visibility = op_elem.get("visibility")
-        is_static = op_elem.get("isStatic", "false").lower() == "true"
-        is_abstract = op_elem.get("isAbstract", "false").lower() == "true"
-
-        # Parameters
-        params = []
-        param_list = op_elem.findall("uml:ownedParameter", NS_ALL)
-        return_type = None
-        for param in param_list:
-            p_name = param.get("name", "")
-            direction = param.get("direction", "in")
-            p_type = self._resolve_type(param)
-            if direction == "return":
-                return_type = p_type
-            else:
-                params.append(f"{p_name}: {self._type_to_string(p_type)}")
-
-        # Build pseudo-name: methodName(param1,param2): returnType
-        pseudo_name = f"{name}({', '.join(params)})"
-        dt = return_type if return_type else DataType(base=ScalarType.ANY)
-        attr = Attribute(name=pseudo_name, data_type=dt)
-        attr.annotations.append(Annotation(key="method", value="true"))
-        attr.annotations.append(Annotation(key="operation_name", value=name))
-        if visibility:
-            attr.annotations.append(Annotation(key="visibility", value=visibility))
-        if is_static:
-            attr.annotations.append(Annotation(key="static", value="true"))
-        if is_abstract:
-            attr.annotations.append(Annotation(key="abstract", value="true"))
         return attr
 
     def _resolve_type(self, elem: ET.Element) -> DataType:
-        """Resolve the type of a property or parameter."""
         type_ref = elem.get("type")
         if type_ref:
-            # It's a reference by xmi:id
-            # We'll try to find the entity name later; for now store as unknown
-            ref_entity = self._entity_map.get(type_ref, None)
-            if ref_entity:
-                return DataType(base=ScalarType.REF, ref_entity=ref_entity.name)
-            else:
-                # Not yet resolved, store placeholder
-                return DataType(base=ScalarType.REF, ref_entity=f"xmi:{type_ref}")
-        # Check for inline type definition (rare)
-        child = elem.find("uml:type", NS_ALL)
-        if child is not None:
-            type_name = child.get("name", "anonymous")
-            return DataType(base=ScalarType.REF, ref_entity=type_name)
-        # Check for default UML primitive types (String, Integer, Boolean, etc.)
+            return DataType(base=ScalarType.REF, ref_entity_id=type_ref)
         return DataType(base=ScalarType.ANY)
 
-    def _type_to_string(self, dt: DataType) -> str:
-        """Convert DataType to a simple string for parameter display."""
-        if dt.base == ScalarType.REF:
-            return dt.ref_entity or "Unknown"
-        return dt.base.value
-
-    def _get_bound(self, elem: ET.Element, tag: str) -> Optional[str]:
-        """Extract a multiplicity bound (e.g., lowerValue / upperValue) from a Property element."""
+    def _get_bound(self, elem: ET.Element, tag: str) -> str | None:
         bound_elem = elem.find(f"uml:{tag}", NS_ALL)
         if bound_elem is not None:
-            val_attr = bound_elem.get("value")
-            if val_attr is not None:
-                return val_attr
-            # XMI 2.1 sometimes stores as type with an attribute
+            val = bound_elem.get("value")
+            if val is not None:
+                return val
             type_ref = bound_elem.get(f"{{{NS_XMI}}}type")
             if type_ref and "LiteralString" in type_ref:
                 return bound_elem.get("value")
         return None
 
-    def _extract_stereotypes(self, elem: ET.Element, target: Entity | Attribute) -> None:
-        """Extract stereotype and tagged value annotations from an element."""
+    def _extract_stereotypes(self, elem: ET.Element, target: Any) -> None:
         for child in elem:
             tag = child.tag.split("}")[-1]
             if tag == "stereotype":
-                # stereotype reference
                 ref = child.get(f"{{{NS_XMI}}}idref") or child.get("href", "")
                 if ref:
                     target.annotations.append(Annotation(key="stereotype_ref", value=ref))
-            elif tag == "xmi:Extension":
-                # tag = "Extension" in XMI extension namespace
-                ext_key = child.get("extender", "")
-                ext_value = child.get("extenderValue", "")
-                if ext_key:
-                    target.annotations.append(Annotation(key=ext_key, value=ext_value))
+            # Extensions ignored
 
-    # ── Generalization ─────────────────────────────────────────────
     def _parse_generalization(self, gen_elem: ET.Element, doc: MSDMDocument) -> None:
-        """Handle generalization – set extends on the specific entity."""
         specific_ref = gen_elem.get("specific")
         general_ref = gen_elem.get("general")
-        if specific_ref and general_ref:
-            specific_entity = self._entity_map.get(specific_ref)
-            general_entity = self._entity_map.get(general_ref)
-            if specific_entity and general_entity:
-                specific_entity.extends = general_entity.name
+        if specific_ref and general_ref and specific_ref in self._entity_map:
+            self._entity_map[specific_ref].extends_ref_id = general_ref
 
-    # ── Association ─────────────────────────────────────────────────
     def _parse_association(self, assoc_elem: ET.Element, doc: MSDMDocument) -> None:
-        """
-        Parse a UML Association element and produce one or two Relationships.
-        Association has memberEnds (xmi:idrefs) and potentially ownedEnds.
-        """
         name = assoc_elem.get("name")
         member_end_refs = assoc_elem.get("memberEnd", "")
         owned_ends = assoc_elem.findall("uml:ownedEnd", NS_ALL)
 
-        # memberEnd is a space‑separated list of xmi:idrefs
         end_ids = member_end_refs.split() if member_end_refs else []
         if len(end_ids) < 2 and len(owned_ends) >= 2:
-            # Some tools store as ownedEnd children
             end1 = owned_ends[0]
             end2 = owned_ends[1]
             self._create_relationship_from_ends(end1, end2, name, assoc_elem, doc)
         elif len(end_ids) >= 2:
-            # We need to find the actual ownedEnd elements from the association or from the target classes
-            # Usually the association owns the ends.
             end_elems = []
             for rid in end_ids:
                 found = None
-                # Search in association's children
                 for child in assoc_elem:
                     if child.get(f"{{{NS_XMI}}}id") == rid or child.get("id") == rid:
                         found = child
                         break
-                if not found:
-                    # The memberEnd might be defined in the class's ownedAttribute
-                    # We'll try to find from _entity_map? Not straightforward.
-                    # Fallback: create a relationship with just the idrefs.
-                    pass
                 if found:
                     end_elems.append(found)
             if len(end_elems) >= 2:
                 self._create_relationship_from_ends(end_elems[0], end_elems[1], name, assoc_elem, doc)
-            else:
-                # Record association as annotation for round‑trip
-                doc.annotations.append(Annotation(key="association_raw", value=ET.tostring(assoc_elem, encoding="unicode")))
 
     def _create_relationship_from_ends(self, end1: ET.Element, end2: ET.Element,
-                                      assoc_name: Optional[str], assoc_elem: ET.Element,
+                                      assoc_name: str | None, assoc_elem: ET.Element,
                                       doc: MSDMDocument) -> None:
-        """Extract details from two UML Property ends and build a Relationship."""
-        # Get class references from the end's type attribute
-        def get_class_ref(end: ET.Element) -> Optional[str]:
-            type_ref = end.get("type")
-            if type_ref:
-                ent = self._entity_map.get(type_ref)
-                return ent.name if ent else None
-            return None
+        def get_class_ref(end: ET.Element) -> str | None:
+            return end.get("type")
 
-        from_class = get_class_ref(end1)
-        to_class = get_class_ref(end2)
-        if not from_class or not to_class:
+        from_id = get_class_ref(end1)
+        to_id = get_class_ref(end2)
+        if not from_id or not to_id:
             return
 
-        # Multiplicities
         mult_from = self._get_bound(end1, "upperValue") or "1"
         mult_to = self._get_bound(end2, "upperValue") or "1"
         card_from = self._to_card(mult_from)
         card_to = self._to_card(mult_to)
 
-        # Name of the association end (if any)
         role_from = end1.get("name")
         role_to = end2.get("name")
 
-        rel = Relationship(
+        rel = EntityRelationship(
             name=assoc_name,
-            from_entity=from_class,
-            to_entity=to_class,
+            from_entity=None,
+            to_entity=None,
             cardinality_from=card_from,
             cardinality_to=card_to,
             description=assoc_elem.get("documentation", ""),
         )
+        rel.from_ref_id = from_id
+        rel.to_ref_id = to_id
         if role_from:
             rel.annotations.append(Annotation(key="from_role", value=role_from))
         if role_to:
             rel.annotations.append(Annotation(key="to_role", value=role_to))
 
-        # Stereotype on association
         self._extract_stereotypes(assoc_elem, rel)
-
         doc.relationships.append(rel)
 
     def _to_card(self, mult: str) -> Cardinality:
@@ -431,7 +355,6 @@ class UMLXmiParser(BaseMSDMParser):
             return Cardinality.ZERO_OR_ONE
         if mult == "1..*":
             return Cardinality.ONE_OR_MANY
-        # Try to parse numeric range
         if ".." in mult:
             parts = mult.split("..")
             lower = parts[0].strip()
@@ -444,10 +367,6 @@ class UMLXmiParser(BaseMSDMParser):
                 return Cardinality.ONE_OR_MANY
             if lower == "0" and (upper == "*" or upper == "n"):
                 return Cardinality.MANY
-        # Numeric if digit
         if mult.isdigit():
-            if mult == "1":
-                return Cardinality.ONE
-            else:
-                return Cardinality.MANY
+            return Cardinality.ONE if mult == "1" else Cardinality.MANY
         return Cardinality.ONE

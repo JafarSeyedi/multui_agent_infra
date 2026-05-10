@@ -2,22 +2,26 @@
 """
 Writes slide transition and animation XML elements.
 """
-
 from __future__ import annotations
-from typing import List, Optional
-from xml.etree.ElementTree import Element, SubElement
 
-from ...models.psdm_models import Transition, Animation, TriggerType
-from .constants import NAMESPACES, PSDM_TO_PPTX_TRANSITION, PSDM_TO_PPTX_ANIM
+from xml.etree.ElementTree import Element
+from xml.etree.ElementTree import SubElement
+
+from ...models.psdm_models import Animation
+from ...models.psdm_models import PresentationTransition
+from ...models.psdm_models import TriggerType
+from .constants import NAMESPACES
+from .constants import PSDM_TO_PPTX_ANIM
+from .constants import PSDM_TO_PPTX_TRANSITION
 
 NS = NAMESPACES
 P = f"{{{NS['p']}}}"
 A = f"{{{NS['a']}}}"
 
 
-def write_transition(transition: Transition) -> Optional[Element]:
+def write_transition(transition: PresentationTransition) -> Element | None:
     """
-    Create a <p:transition> element from a Transition object.
+    Create a <p:transition> element from a PresentationTransition object.
 
     Returns None if the transition is NONE.
     """
@@ -37,7 +41,7 @@ def write_transition(transition: Transition) -> Optional[Element]:
     return trans_elem
 
 
-def write_animations(animations: List[Animation]) -> Optional[Element]:
+def write_animations(animations: list[Animation]) -> Element | None:
     """
     Build the <p:timing> element tree for a list of animations.
     Returns None if the list is empty.

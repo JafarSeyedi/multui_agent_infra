@@ -1,21 +1,23 @@
 # tests/agents/orchestration/interaction/interaction_unit/conftest.py
-
 import inspect
-from typing import Any, Callable, Dict, List
+from collections.abc import Callable
+from typing import Any
 
 import pytest
-from engines.interaction.interaction_models import AgentMessage
+
 from engines.agents.base_agents.base_agent import BaseAgent
-from engines.buses.base_message_bus import MessageBus, HandlerType
+from engines.buses.base_message_bus import HandlerType
+from engines.buses.base_message_bus import MessageBus
+from engines.interaction.interaction_models import AgentMessage
 
 
 class TestAgent:
-    def __init__(self, name: str, behavior: Callable[[Dict[str, Any]], Any]) -> None:
+    def __init__(self, name: str, behavior: Callable[[dict[str, Any]], Any]) -> None:
         self.name = name
         self.behavior = behavior
-        self.calls: List[Dict[str, Any]] = []
+        self.calls: list[dict[str, Any]] = []
 
-    async def execute(self, payload: Dict[str, Any]) -> Any:
+    async def execute(self, payload: dict[str, Any]) -> Any:
         self.calls.append(payload)
         result = self.behavior(payload)
         if inspect.isawaitable(result):
@@ -25,13 +27,13 @@ class TestAgent:
 
 class TestRegistry:
     def __init__(self) -> None:
-        self._agents: Dict[str, TestAgent] = {}
+        self._agents: dict[str, TestAgent] = {}
 
     def register(self, agent: TestAgent) -> TestAgent:
         self._agents[agent.name] = agent
         return agent
 
-    async def execute(self, agent_name: str, payload: Dict[str, Any]) -> Any:
+    async def execute(self, agent_name: str, payload: dict[str, Any]) -> Any:
         agent = self._agents.get(agent_name)
         if agent is None:
             raise KeyError(f"Agent '{agent_name}' is not registered.")
@@ -40,7 +42,7 @@ class TestRegistry:
 
 class DummyMessageBus1(MessageBus):
     def __init__(self) -> None:
-        self.published: List[AgentMessage] = []
+        self.published: list[AgentMessage] = []
 
     async def publish(self, message: AgentMessage) -> None:
         self.published.append(message)

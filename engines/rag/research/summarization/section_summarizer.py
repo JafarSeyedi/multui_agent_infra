@@ -1,8 +1,7 @@
 # rag/research/summarization/section_summarizer.py
-
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from engines.rag.research.citation_manager import CitationManager
 from engines.rag.research.memory.reasoning.event_types import ReasoningEventType
@@ -12,28 +11,28 @@ from engines.rag.research.summarization.base_summarizer import BaseSummarizer
 class SectionSummarizer(BaseSummarizer):
     """Builds a structured report from a plan and evidence bundle."""
 
-    def __init__(self, llm: Optional[Any] = None, reasoning: Optional[ReasoningMemory] = None):
+    def __init__(self, llm: Any | None = None, reasoning: ReasoningMemory | None = None):
         self.llm = llm
         self.reasoning = reasoning or ReasoningMemory()
 
     async def summarize(
         self,
         query: str,
-        plan: Optional[List[Dict[str, Any]]] = None,
-        raw_evidence: Optional[List[Any]] = None,
-        hidden_edges: Optional[List[Any]] = None,
-        citation_manager: Optional[CitationManager] = None,
+        plan: list[dict[str, Any]] | None = None,
+        raw_evidence: list[Any] | None = None,
+        hidden_edges: list[Any] | None = None,
+        citation_manager: CitationManager | None = None,
     ) -> str:
-        compiled_sections: List[str] = []
+        compiled_sections: list[str] = []
         plan = plan or []
         raw_evidence = raw_evidence or []
-        hidden_edges = hidden_edges or []        
+        hidden_edges = hidden_edges or []
         for section in plan:
             title = str(section.get("title", "Section"))
             description = str(section.get("description", "")).strip()
             supporting_items = self._select_supporting_evidence(section, raw_evidence)
 
-            body_parts: List[str] = []
+            body_parts: list[str] = []
             if description:
                 body_parts.append(description)
             for item in supporting_items:
@@ -61,7 +60,7 @@ class SectionSummarizer(BaseSummarizer):
                 report += "\n\n---\n### References\n" + "\n".join(references)
         return report
 
-    def _select_supporting_evidence(self, section: Dict[str, Any], raw_evidence: List[Any]) -> List[Any]:
+    def _select_supporting_evidence(self, section: dict[str, Any], raw_evidence: list[Any]) -> list[Any]:
         evidence_ids = section.get("evidence_ids") or []
         selected = [raw_evidence[idx] for idx in evidence_ids if isinstance(idx, int) and 0 <= idx < len(raw_evidence)]
         return selected or raw_evidence[:3]

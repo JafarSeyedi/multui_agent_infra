@@ -2,26 +2,18 @@
 """
 GraphML XML Writer – serialises a unified OSDM StateMachineModel to GraphML.
 The unified model uses State for nodes and StateTransition for edges.
-Node/edge types are preserved via annotations (e.g., "node_type", "edge_type").
-Ports (Locators) are represented as nested elements on nodes/edges.
+Node/edge types are stored in dedicated fields (node_type, edge_type).
+Ports (Locator objects) are written as GraphML <port> elements.
 """
-
 from __future__ import annotations
-from pathlib import Path
-from typing import Optional, Dict, Any, List, cast
+
+from typing import cast
 from xml.etree.ElementTree import Element, SubElement, tostring
 
+from ...models.osdm_models import BaseElement, BaseOSDMDocument, State
+from ...models.osdm_models import StateMachineDocument, StateMachineModel
+from ...models.osdm_models import StateMachineRegion, StateTransition
 from .base_osdm_writer import BaseOSDMWriter, OSDMWriteOptions
-from ...models.osdm_models import (
-    BaseOSDMDocument, StateMachineDocument,
-    StateMachineModel,
-    State,
-    StateTransition,
-    StateMachineRegion,
-    BaseElement,
-)
-from ...models.base import BaseDocument
-
 
 GRAPHML_NS = "http://graphml.graphdrawing.org/xmlns"
 XSI_NS = "http://www.w3.org/2001/XMLSchema-instance"
@@ -29,12 +21,10 @@ SCHEMA_LOCATION = "http://graphml.graphdrawing.org/xmlns http://graphml.graphdra
 
 
 class GraphMLXMLWriter(BaseOSDMWriter):
-    """Serialises OSDM state machines to GraphML XML."""
-
     name = "graphml_xml"
     supported_extensions = (".graphml",)
 
-    def __init__(self, options: Optional[OSDMWriteOptions] = None):
+    def __init__(self, options: OSDMWriteOptions | None = None):
         super().__init__(options)
 
     async def _write_design(self, base_document: BaseOSDMDocument) -> bytes:
@@ -44,17 +34,14 @@ class GraphMLXMLWriter(BaseOSDMWriter):
             "xmlns:xsi": XSI_NS,
             f"{{{XSI_NS}}}schemaLocation": SCHEMA_LOCATION,
         })
-
-        # Define attributes for node type, edge type, and port coordinates
         self._define_attributes(root)
 
-        # Each state machine becomes a <graph> element
         if document:
             for sm in document.state_machines:
                 self._write_graph(root, sm)
 
         xml_bytes = tostring(root, encoding="unicode", method="xml")
-        return xml_bytes.encode(self.options.encoding or "utf-8")
+        return xml_bytes.encode(getattr(self.options, "encoding", "utf-8") or "utf-8")
 
     def get_supported_media_types(self) -> list[str]:
         return ["application/xml"]
@@ -64,64 +51,49 @@ class GraphMLXMLWriter(BaseOSDMWriter):
 
     # ── Attribute definitions ───────────────────────────────────
     def _define_attributes(self, root: Element) -> None:
-        # Node type attribute
-        key_node_type = SubElement(root, f"{{{GRAPHML_NS}}}key", {
-            "id": "node_type",
-            "for": "node",
-            "attr.name": "node_type",
-            "attr.type": "string",
+        SubElement(root, f"{{{GRAPHML_NS}}}key", {
+            "id": "node_type", "for": "node", "attr.name": "node_type", "attr.type": "string"
         })
-        # Edge type attribute
-        key_edge_type = SubElement(root, f"{{{GRAPHML_NS}}}key", {
-            "id": "edge_type",
-            "for": "edge",
-            "attr.name": "edge_type",
-            "attr.type": "string",
+        SubElement(root, f"{{{GRAPHML_NS}}}key", {
+            "id": "edge_type", "for": "edge", "attr.name": "edge_type", "attr.type": "string"
         })
-        # Locator attributes (for ports)
         for port_attr in ("x", "y"):
             SubElement(root, f"{{{GRAPHML_NS}}}key", {
-                "id": port_attr,
-                "for": "port",
-                "attr.name": port_attr,
-                "attr.type": "double",
+                "id": port_attr, "for": "port", "attr.name": port_attr, "attr.type": "double"
             })
 
     # ── Write a single graph ─────────────────────────────────────
     def _write_graph(self, root: Element, sm: StateMachineModel) -> None:
         graph = SubElement(root, f"{{{GRAPHML_NS}}}graph", {
-            "id": sm.id,
-            "edgedefault": "directed",   # OSDM transitions are directed
+            "id": sm.id, "edgedefault": "directed"
         })
         if sm.name:
             graph.set("name", sm.name)
 
-        # Collect all states recursively from the top region
-        all_states: List[State] = []
+        all_states: list[State] = []
         self._collect_states(sm.top_region, all_states)
-        # Collect all transitions
-        all_transitions: List[StateTransition] = []
+        all_transitions: list[StateTransition] = []
         self._collect_transitions(sm.top_region, all_transitions)
 
-        # Write nodes
         for state in all_states:
             self._write_node(graph, state)
-
-        # Write edges
         for trans in all_transitions:
             self._write_edge(graph, trans)
 
-    def _collect_states(self, region: StateMachineRegion, all_states: List[State]) -> None:
+    def _collect_states(self, region: StateMachineRegion, all_states: list[State]) -> None:
         for state in region.states:
             all_states.append(state)
             for sub_region in state.regions:
                 self._collect_states(sub_region, all_states)
 
-    def _collect_transitions(self, region: StateMachineRegion, all_transitions: List[StateTransition]) -> None:
+    def _collect_transitions(self, region: StateMachineRegion, all_transitions: list[StateTransition]) -> None:
+        # region.transitions is already list[StateTransition]
         all_transitions.extend(region.transitions)
         for state in region.states:
-            # Transitions owned by the state itself (outgoing)
-            all_transitions.extend(state.outgoing_transitions)
+            # state.outgoing_transitions is list[Transition] – filter only StateTransition
+            for t in state.outgoing_transitions:
+                if isinstance(t, StateTransition):
+                    all_transitions.append(t)
             for sub_region in state.regions:
                 self._collect_transitions(sub_region, all_transitions)
 
@@ -131,51 +103,32 @@ class GraphMLXMLWriter(BaseOSDMWriter):
         if state.name:
             node.set("name", state.name)
 
-        # Node type from annotation (saved by parser)
-        node_type = self._get_annotation(state, "node_type")
-        if node_type:
-            SubElement(node, f"{{{GRAPHML_NS}}}data", {"key": "node_type"}).text = node_type
+        # Node type from dedicated field
+        if state.node_type:
+            SubElement(node, f"{{{GRAPHML_NS}}}data", {"key": "node_type"}).text = state.node_type
 
-        # Locators (ports) – we don't have Locator objects in the unified model, but the parser could store them as annotations.
-        # We'll output any locator annotation as a <port> element.
-        self._write_locators(node, state)
+        # Locators (ports) – from the locators list
+        for locator in state.locators:
+            self._write_locator(node, locator)
 
-        # Nested graphs: if a state is composite, we don't have a nested GraphML graph; we could output a nested <graph> but GraphML allows graphs inside nodes. We'll skip for simplicity.
+        # Nested graphs could be written but skipped for simplicity
 
-    def _write_locators(self, parent: Element, obj: BaseElement) -> None:
-        """If the object has locator annotations, write them as <port> elements."""
-        for ann in getattr(obj, 'annotations', []):
-            if ann.key == "locator":
-                parts = ann.value.split(",")
-                port = SubElement(parent, f"{{{GRAPHML_NS}}}port", {"name": ann.name or "port"})
-                if len(parts) == 2:
-                    SubElement(port, f"{{{GRAPHML_NS}}}data", {"key": "x"}).text = parts[0].strip()
-                    SubElement(port, f"{{{GRAPHML_NS}}}data", {"key": "y"}).text = parts[1].strip()
+    def _write_locator(self, parent: Element, locator) -> None:
+        port = SubElement(parent, f"{{{GRAPHML_NS}}}port", {"name": locator.name or "port"})
+        SubElement(port, f"{{{GRAPHML_NS}}}data", {"key": "x"}).text = str(locator.x)
+        SubElement(port, f"{{{GRAPHML_NS}}}data", {"key": "y"}).text = str(locator.y)
 
     # ── Write edge ────────────────────────────────────────────────
     def _write_edge(self, parent: Element, trans: StateTransition) -> None:
-        # Need source and target ids
-        source = trans.source.id if trans.source else None
-        target = trans.target.id if trans.target else None
-        if not source or not target:
+        if not trans.source or not trans.target:
             return
         edge = SubElement(parent, f"{{{GRAPHML_NS}}}edge", {
             "id": trans.id,
-            "source": source,
-            "target": target,
+            "source": trans.source.id,
+            "target": trans.target.id,
         })
-        # Edge type from annotation
-        edge_type = self._get_annotation(trans, "edge_type")
-        if edge_type:
-            SubElement(edge, f"{{{GRAPHML_NS}}}data", {"key": "edge_type"}).text = edge_type
+        if trans.edge_type:
+            SubElement(edge, f"{{{GRAPHML_NS}}}data", {"key": "edge_type"}).text = trans.edge_type
 
-        # Locators on the edge
-        self._write_locators(edge, trans)
-
-    # ── Annotation helper ───────────────────────────────────────
-    @staticmethod
-    def _get_annotation(obj: BaseElement, key: str) -> Optional[str]:
-        for ann in getattr(obj, 'annotations', []):
-            if ann.key == key:
-                return ann.value
-        return None
+        for locator in trans.locators:
+            self._write_locator(edge, locator)

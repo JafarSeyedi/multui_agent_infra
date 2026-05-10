@@ -1,8 +1,8 @@
 # engines/document/models/media_types.py
-
 from enum import Enum
-from typing import List, Dict, Optional
+
 from pydantic import BaseModel
+
 from .standard import DocumentStandard
 
 
@@ -60,11 +60,9 @@ class DocumentFormat(str, Enum):
     UML_XMI = "uml_xmi"
     PLANTUML = "plantuml"
     PROTOBUF = "proto"
-    AVRO_SCHEMA = "avro_schema"
     THRIFT_IDL = "thrift"
     GRAPHQL_SCHEMA = "graphql_schema"
     OWL = "owl"
-    CUE = "cue"
     # MSDM – NoSQL & time‑series
     CQL = "cql"                                     # Cassandra
     MONGODB_SCHEMA = "mongodb_schema"               # MongoDB validator / Mongoose
@@ -73,21 +71,19 @@ class DocumentFormat(str, Enum):
     NEO4J_SCHEMA = "neo4j_schema"                   # Neo4j / Cypher schema
     PYTHON_MODEL = "python_model"          # or "py_model"
     TYPESCRIPT_INTERFACE = "typescript_interface"
-        
+
     # SSDM formats
     OPENAPI_JSON = "openapi_json"
     OPENAPI_YAML = "openapi_yaml"
     WSDL = "wsdl"
     YANG = "yang"
-    MIB = "mib"
     ASYNCAPI = "asyncapi"
-    RAML = "raml"
-    API_BLUEPRINT = "apib"
-    WEB_IDL = "webidl"
-    POSTMAN_COLLECTION = "postman_collection"
-    CDDL = "cddl"
     MCP = "mcp"
-    
+    PROTOBUF_SERVICE = "proto_service"
+    PYTHON_SERVICE = "python_service"
+    GRAPHQL_SERVICE = "graphql_service"
+
+    # TSDM formats
     TSDM_JSON = "tsdm_json"
 
     # OSDM formats
@@ -96,19 +92,13 @@ class DocumentFormat(str, Enum):
     DMN_XML = "dmn_xml"
     PNML_XML = "pnml_xml"
     GRAPHML_XML = "graphml_xml"
-    CNCF_SERVERLESS_WORKFLOW_JSON = "cncf_serverless_workflow_json"
-    CNCF_SERVERLESS_WORKFLOW_YAML = "cncf_serverless_workflow_yaml"
     CEP_JSON = "cep_json"
     UML_STATE_MACHINE_XML = "uml_state_machine_xml"
     SCXML_XML = "scxml_xml"
     EPC_XML = "epc_xml"
-    AWS_STEP_FUNCTIONS_JSON = "aws_step_functions_json"
-    AZURE_LOGIC_APPS_JSON = "azure_logic_apps_json"
-    AIRFLOW_DAG_PY = "airflow_dag_py"
     PREFECT_DAG_PY = "prefect_dag_py"
-    YAWL_XML = "yawl_xml"
-    XPDL_XML = "xpd_xml"    
-    
+    XPDL_XML = "xpd_xml"
+
     UNKNOWN = "unknown"
 
 
@@ -127,7 +117,7 @@ class MediaContentKind(str, Enum):
     PRESENTATION = "presentation"
     SCHEMA_DEFINITION = "schema_definition"
     SERVICE_DEFINITION = "service_definition"
-    ORCHESTRATION_DEFINITION = "orchestration_definition"    
+    ORCHESTRATION_DEFINITION = "orchestration_definition"
     UNKNOWN = "unknown"
 
 
@@ -146,16 +136,16 @@ class MediaType(BaseModel):
     mime: str
     format: DocumentFormat
     standard: DocumentStandard
-    extensions: List[str]
+    extensions: list[str]
     kind: MediaContentKind
     raw_type: MediaRawType
-    description: Optional[str] = None
+    description: str | None = None
 
 
 # ------------------------
 # FULL REGISTRY
 # ------------------------
-MEDIA_TYPES: Dict[str, MediaType] = {
+MEDIA_TYPES: dict[str, MediaType] = {
 
     # ======================
     # USDM
@@ -549,15 +539,6 @@ MEDIA_TYPES: Dict[str, MediaType] = {
         raw_type=MediaRawType.TEXT,
         description="Protobuf IDL"
     ),
-    "avro_schema": MediaType(
-        mime="application/vnd.apache.avro+json",
-        format=DocumentFormat.AVRO_SCHEMA,
-        standard=DocumentStandard.MSDM,
-        extensions=[".avsc"],
-        kind=MediaContentKind.SCHEMA_DEFINITION,
-        raw_type=MediaRawType.TEXT,
-        description="Apache Avro Schema"
-    ),
     "thrift_idl": MediaType(
         mime="text/plain",
         format=DocumentFormat.THRIFT_IDL,
@@ -585,21 +566,11 @@ MEDIA_TYPES: Dict[str, MediaType] = {
         raw_type=MediaRawType.TEXT,
         description="Web Ontology Language (OWL)"
     ),
-    "cue": MediaType(
-        mime="text/plain",
-        format=DocumentFormat.CUE,
-        standard=DocumentStandard.MSDM,
-        extensions=[".cue"],
-        kind=MediaContentKind.SCHEMA_DEFINITION,
-        raw_type=MediaRawType.TEXT,
-        description="CUE Data Language"
-    ),
-    
-    
+
     # ======================
     # MSDM - NoSQL, Time-based
     # ======================
-    
+
     "cql": MediaType(
         mime="text/plain",
         format=DocumentFormat.CQL,
@@ -644,7 +615,7 @@ MEDIA_TYPES: Dict[str, MediaType] = {
         kind=MediaContentKind.SCHEMA_DEFINITION,
         raw_type=MediaRawType.TEXT,
         description="Neo4j Cypher Schema"
-    ),    
+    ),
     "python_model": MediaType(
         mime="text/plain",
         format=DocumentFormat.PYTHON_MODEL,
@@ -653,7 +624,7 @@ MEDIA_TYPES: Dict[str, MediaType] = {
         kind=MediaContentKind.SCHEMA_DEFINITION,
         raw_type=MediaRawType.TEXT,
         description="Python class for model definition"
-    ),    
+    ),
     "typescript_interface": MediaType(
         mime="text/plain",
         format=DocumentFormat.TYPESCRIPT_INTERFACE,
@@ -662,7 +633,7 @@ MEDIA_TYPES: Dict[str, MediaType] = {
         kind=MediaContentKind.SCHEMA_DEFINITION,
         raw_type=MediaRawType.TEXT,
         description="Python class for model definition"
-    ),    
+    ),
 
     # ======================
     # SSDM
@@ -703,15 +674,6 @@ MEDIA_TYPES: Dict[str, MediaType] = {
         raw_type=MediaRawType.TEXT,
         description="YANG Data Model"
     ),
-    "mib": MediaType(
-        mime="text/plain",
-        format=DocumentFormat.MIB,
-        standard=DocumentStandard.SSDM,
-        extensions=[".mib"],
-        kind=MediaContentKind.SERVICE_DEFINITION,
-        raw_type=MediaRawType.TEXT,
-        description="SNMP MIB"
-    ),
     "asyncapi": MediaType(
         mime="application/json",
         format=DocumentFormat.ASYNCAPI,
@@ -721,50 +683,32 @@ MEDIA_TYPES: Dict[str, MediaType] = {
         raw_type=MediaRawType.TEXT,
         description="AsyncAPI"
     ),
-    "raml": MediaType(
-        mime="application/raml+yaml",
-        format=DocumentFormat.RAML,
-        standard=DocumentStandard.SSDM,
-        extensions=[".raml"],
-        kind=MediaContentKind.SERVICE_DEFINITION,
-        raw_type=MediaRawType.TEXT,
-        description="RAML"
-    ),
-    "apib": MediaType(
-        mime="text/vnd.apiblueprint+markdown",
-        format=DocumentFormat.API_BLUEPRINT,
-        standard=DocumentStandard.SSDM,
-        extensions=[".apib"],
-        kind=MediaContentKind.SERVICE_DEFINITION,
-        raw_type=MediaRawType.TEXT,
-        description="API Blueprint"
-    ),
-    "webidl": MediaType(
+    "proto_service": MediaType(
         mime="text/plain",
-        format=DocumentFormat.WEB_IDL,
+        format=DocumentFormat.PROTOBUF_SERVICE,
         standard=DocumentStandard.SSDM,
-        extensions=[".webidl"],
+        extensions=[".proto"],
         kind=MediaContentKind.SERVICE_DEFINITION,
         raw_type=MediaRawType.TEXT,
-        description="Web IDL"
+        description="Protobuf IDL Service"
     ),
-    "postman_collection": MediaType(
-        mime="application/json",
-        format=DocumentFormat.POSTMAN_COLLECTION,
-        standard=DocumentStandard.SSDM,
-        extensions=[".postman_collection.json"],
-        kind=MediaContentKind.SERVICE_DEFINITION,
-        raw_type=MediaRawType.TEXT,
-        description="Postman Collection"
-    ),
-    "cddl": MediaType(
+    "python_service": MediaType(
         mime="text/plain",
-        format=DocumentFormat.CDDL,
+        format=DocumentFormat.PYTHON_SERVICE,
         standard=DocumentStandard.SSDM,
-        extensions=[".cddl"],
+        extensions=[".py"],
         kind=MediaContentKind.SERVICE_DEFINITION,
         raw_type=MediaRawType.TEXT,
-        description="CBOR Data Definition Language"
+        description="Python class for service definition"
+    ),
+    "graphql_service": MediaType(
+        mime="application/graphql-schema+json",   # common MIME
+        format=DocumentFormat.GRAPHQL_SERVICE,
+        standard=DocumentStandard.SSDM,
+        extensions=[".graphql", ".gql"],
+        kind=MediaContentKind.SERVICE_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="GraphQL service definition"
     ),
     "mcp": MediaType(
         mime="application/json",
@@ -787,7 +731,7 @@ MEDIA_TYPES: Dict[str, MediaType] = {
         kind=MediaContentKind.STRUCTURED,   # or a new kind "tool_definition"
         raw_type=MediaRawType.TEXT,
         description="TSDM Tool Definition (JSON)"
-    ),    
+    ),
 
     # ======================
     # OSDM
@@ -837,24 +781,6 @@ MEDIA_TYPES: Dict[str, MediaType] = {
         raw_type=MediaRawType.TEXT,
         description="GraphML"
     ),
-    "cncf_serverless_workflow_json": MediaType(
-        mime="application/json",
-        format=DocumentFormat.CNCF_SERVERLESS_WORKFLOW_JSON,
-        standard=DocumentStandard.OSDM,
-        extensions=[".sw.json"],
-        kind=MediaContentKind.ORCHESTRATION_DEFINITION,
-        raw_type=MediaRawType.TEXT,
-        description="CNCF Serverless Workflow JSON"
-    ),
-    "cncf_serverless_workflow_yaml": MediaType(
-        mime="application/x-yaml",
-        format=DocumentFormat.CNCF_SERVERLESS_WORKFLOW_YAML,
-        standard=DocumentStandard.OSDM,
-        extensions=[".sw.yaml", ".sw.yml"],
-        kind=MediaContentKind.ORCHESTRATION_DEFINITION,
-        raw_type=MediaRawType.TEXT,
-        description="CNCF Serverless Workflow YAML"
-    ),
     "cep_json": MediaType(
         mime="application/json",
         format=DocumentFormat.CEP_JSON,
@@ -885,35 +811,11 @@ MEDIA_TYPES: Dict[str, MediaType] = {
         kind=MediaContentKind.ORCHESTRATION_DEFINITION,
         raw_type=MediaRawType.TEXT, description="Event‑driven Process Chain"
     ),
-    "aws_step_functions_json": MediaType(
-        mime="application/json", format=DocumentFormat.AWS_STEP_FUNCTIONS_JSON,
-        standard=DocumentStandard.OSDM, extensions=[".asl.json"],
-        kind=MediaContentKind.ORCHESTRATION_DEFINITION,
-        raw_type=MediaRawType.TEXT, description="AWS Step Functions ASL JSON"
-    ),
-    "azure_logic_apps_json": MediaType(
-        mime="application/json", format=DocumentFormat.AZURE_LOGIC_APPS_JSON,
-        standard=DocumentStandard.OSDM, extensions=[".logicapp.json"],
-        kind=MediaContentKind.ORCHESTRATION_DEFINITION,
-        raw_type=MediaRawType.TEXT, description="Azure Logic Apps Workflow JSON"
-    ),
-    "airflow_dag_py": MediaType(
-        mime="text/x-python", format=DocumentFormat.AIRFLOW_DAG_PY,
-        standard=DocumentStandard.OSDM, extensions=[".py"],
-        kind=MediaContentKind.ORCHESTRATION_DEFINITION,
-        raw_type=MediaRawType.TEXT, description="Apache Airflow DAG (Python)"
-    ),
     "prefect_dag_py": MediaType(
         mime="text/x-python", format=DocumentFormat.PREFECT_DAG_PY,
         standard=DocumentStandard.OSDM, extensions=[".py"],
         kind=MediaContentKind.ORCHESTRATION_DEFINITION,
         raw_type=MediaRawType.TEXT, description="Prefect DAG (Python)"
-    ),
-    "yawl_xml": MediaType(
-        mime="application/xml", format=DocumentFormat.YAWL_XML,
-        standard=DocumentStandard.OSDM, extensions=[".yawl"],
-        kind=MediaContentKind.ORCHESTRATION_DEFINITION,
-        raw_type=MediaRawType.TEXT, description="YAWL Specification"
     ),
     "xpd_xml": MediaType(
         mime="application/xml", format=DocumentFormat.XPDL_XML,
@@ -948,18 +850,18 @@ MEDIA_TYPES: Dict[str, MediaType] = {
 
 class MediaTypeRegistry:
     """Logical wrapper around MEDIA_TYPES data."""
-    
+
     _items = MEDIA_TYPES
 
     @classmethod
-    def get_by_format(cls, fmt: DocumentFormat) -> Optional[MediaType]:
+    def get_by_format(cls, fmt: DocumentFormat) -> MediaType | None:
         for mt in cls._items.values():
             if mt.format == fmt:
                 return mt
         return None
 
     @classmethod
-    def get_by_extension(cls, ext: str) -> Optional[MediaType]:
+    def get_by_extension(cls, ext: str) -> MediaType | None:
         if not ext.startswith("."): ext = f".{ext}"
         for mt in cls._items.values():
             if ext.lower() in [e.lower() for e in mt.extensions]:
@@ -967,12 +869,12 @@ class MediaTypeRegistry:
         return None
 
     @classmethod
-    def get_by_mime(cls, mime: str) -> Optional[MediaType]:
+    def get_by_mime(cls, mime: str) -> MediaType | None:
         for mt in cls._items.values():
             if mt.mime == mime:
                 return mt
         return None
 
     @classmethod
-    def all(cls) -> List[MediaType]:
+    def all(cls) -> list[MediaType]:
         return list(cls._items.values())

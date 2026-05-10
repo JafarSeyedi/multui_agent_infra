@@ -1,18 +1,17 @@
 # engines/document/models/csdm_tables.py
-
 # csdm_tables.py
 # CSDM v2.0 Ultra — Full DWG/DCF Tables
 # Requires: csdm_core.py
-
 from __future__ import annotations
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple, Any
-from enum import Enum
 
-from .csdm_core import (
-    CSDMDocument, CSDMObject, CSDMHandle, CSDMEntity,
-    CSDMDictionary, CSDMDictionaryEntry,
-)
+from dataclasses import dataclass
+from dataclasses import field
+from enum import Enum
+from typing import Any
+
+from .csdm_core import CSDMDocument
+from .csdm_core import CSDMHandle
+from .csdm_core import CSDMObject
 
 # ============================================
 # COMMON BASE FOR ALL TABLE ENTRIES
@@ -37,12 +36,12 @@ class LayerEntry(TableEntry):
     frozen: bool = False
     locked: bool = False
     is_xref: bool = False
-    xref_path: Optional[str] = None
+    xref_path: str | None = None
 
 
 @dataclass
 class LayerTable(CSDMObject):
-    entries: Dict[str, LayerEntry] = field(default_factory=dict)
+    entries: dict[str, LayerEntry] = field(default_factory=dict)
 
     def add(self, layer: LayerEntry):
         self.entries[layer.name] = layer
@@ -55,20 +54,20 @@ class LayerTable(CSDMObject):
 @dataclass
 class LinetypeSegment:
     length: float
-    shape_index: Optional[int] = None
-    text: Optional[str] = None
-    style: Optional[str] = None
+    shape_index: int | None = None
+    text: str | None = None
+    style: str | None = None
 
 
 @dataclass
 class LinetypeEntry(TableEntry):
     pattern_length: float = 0.0
-    segments: List[LinetypeSegment] = field(default_factory=list)
+    segments: list[LinetypeSegment] = field(default_factory=list)
 
 
 @dataclass
 class LinetypeTable(CSDMObject):
-    entries: Dict[str, LinetypeEntry] = field(default_factory=dict)
+    entries: dict[str, LinetypeEntry] = field(default_factory=dict)
 
     def add(self, item: LinetypeEntry):
         self.entries[item.name] = item
@@ -81,7 +80,7 @@ class LinetypeTable(CSDMObject):
 @dataclass
 class TextStyleEntry(TableEntry):
     font: str = "txt.shx"
-    bigfont: Optional[str] = None
+    bigfont: str | None = None
     height: float = 0.0
     width_factor: float = 1.0
     oblique: float = 0.0
@@ -90,7 +89,7 @@ class TextStyleEntry(TableEntry):
 
 @dataclass
 class TextStyleTable(CSDMObject):
-    entries: Dict[str, TextStyleEntry] = field(default_factory=dict)
+    entries: dict[str, TextStyleEntry] = field(default_factory=dict)
 
     def add(self, style: TextStyleEntry):
         self.entries[style.name] = style
@@ -122,7 +121,7 @@ class DimStyleEntry(TableEntry):
 
 @dataclass
 class DimStyleTable(CSDMObject):
-    entries: Dict[str, DimStyleEntry] = field(default_factory=dict)
+    entries: dict[str, DimStyleEntry] = field(default_factory=dict)
 
     def add(self, dimstyle: DimStyleEntry):
         self.entries[dimstyle.name] = dimstyle
@@ -134,14 +133,14 @@ class DimStyleTable(CSDMObject):
 
 @dataclass
 class UCSRecord(TableEntry):
-    origin: Tuple[float, float, float] = (0, 0, 0)
-    x_axis: Tuple[float, float, float] = (1, 0, 0)
-    y_axis: Tuple[float, float, float] = (0, 1, 0)
+    origin: tuple[float, float, float] = (0, 0, 0)
+    x_axis: tuple[float, float, float] = (1, 0, 0)
+    y_axis: tuple[float, float, float] = (0, 1, 0)
 
 
 @dataclass
 class UCSTable(CSDMObject):
-    entries: Dict[str, UCSRecord] = field(default_factory=dict)
+    entries: dict[str, UCSRecord] = field(default_factory=dict)
 
     def add(self, item: UCSRecord):
         self.entries[item.name] = item
@@ -153,16 +152,16 @@ class UCSTable(CSDMObject):
 
 @dataclass
 class ViewRecord(TableEntry):
-    center: Tuple[float, float] = (0, 0)
+    center: tuple[float, float] = (0, 0)
     height: float = 100
     width: float = 100
-    direction: Tuple[float, float, float] = (0, 0, 1)
-    target: Tuple[float, float, float] = (0, 0, 0)
+    direction: tuple[float, float, float] = (0, 0, 1)
+    target: tuple[float, float, float] = (0, 0, 0)
 
 
 @dataclass
 class ViewTable(CSDMObject):
-    entries: Dict[str, ViewRecord] = field(default_factory=dict)
+    entries: dict[str, ViewRecord] = field(default_factory=dict)
 
     def add(self, item: ViewRecord):
         self.entries[item.name] = item
@@ -174,17 +173,17 @@ class ViewTable(CSDMObject):
 
 @dataclass
 class VPortRecord(TableEntry):
-    lower_left: Tuple[float, float] = (0, 0)
-    upper_right: Tuple[float, float] = (1, 1)
+    lower_left: tuple[float, float] = (0, 0)
+    upper_right: tuple[float, float] = (1, 1)
     view_height: float = 100
-    view_center: Tuple[float, float] = (0, 0)
+    view_center: tuple[float, float] = (0, 0)
     grid_on: bool = False
     snap_on: bool = False
 
 
 @dataclass
 class VPortTable(CSDMObject):
-    entries: Dict[str, VPortRecord] = field(default_factory=dict)
+    entries: dict[str, VPortRecord] = field(default_factory=dict)
 
     def add(self, item: VPortRecord):
         self.entries[item.name] = item
@@ -201,7 +200,7 @@ class AppIDEntry(TableEntry):
 
 @dataclass
 class AppIDTable(CSDMObject):
-    entries: Dict[str, AppIDEntry] = field(default_factory=dict)
+    entries: dict[str, AppIDEntry] = field(default_factory=dict)
 
     def add(self, item: AppIDEntry):
         self.entries[item.name] = item
@@ -214,16 +213,16 @@ class AppIDTable(CSDMObject):
 @dataclass
 class BlockRecord(TableEntry):
     is_xref: bool = False
-    xref_path: Optional[str] = None
+    xref_path: str | None = None
     units: str = "none"
     allows_exploding: bool = True
     has_preview: bool = False
-    layout_handle: Optional[CSDMHandle] = None
+    layout_handle: CSDMHandle | None = None
 
 
 @dataclass
 class BlockRecordTable(CSDMObject):
-    entries: Dict[str, BlockRecord] = field(default_factory=dict)
+    entries: dict[str, BlockRecord] = field(default_factory=dict)
 
     def add(self, item: BlockRecord):
         self.entries[item.name] = item
@@ -235,14 +234,14 @@ class BlockRecordTable(CSDMObject):
 
 @dataclass
 class PlotStyleEntry(TableEntry):
-    color: Tuple[int, int, int] = (0, 0, 0)
+    color: tuple[int, int, int] = (0, 0, 0)
     lineweight: float = 0.25
     screening: int = 100
 
 
 @dataclass
 class PlotStyleTable(CSDMObject):
-    entries: Dict[str, PlotStyleEntry] = field(default_factory=dict)
+    entries: dict[str, PlotStyleEntry] = field(default_factory=dict)
 
     def add(self, item: PlotStyleEntry):
         self.entries[item.name] = item
@@ -254,16 +253,16 @@ class PlotStyleTable(CSDMObject):
 
 @dataclass
 class MaterialEntry(TableEntry):
-    diffuse: Tuple[float, float, float] = (1, 1, 1)
-    specular: Tuple[float, float, float] = (1, 1, 1)
+    diffuse: tuple[float, float, float] = (1, 1, 1)
+    specular: tuple[float, float, float] = (1, 1, 1)
     reflection: float = 0.0
     transparency: float = 0.0
-    texture: Optional[str] = None
+    texture: str | None = None
 
 
 @dataclass
 class MaterialTableDWG(CSDMObject):
-    entries: Dict[str, MaterialEntry] = field(default_factory=dict)
+    entries: dict[str, MaterialEntry] = field(default_factory=dict)
 
     def add(self, item: MaterialEntry):
         self.entries[item.name] = item
@@ -280,7 +279,7 @@ class DimStyleOverride:
 
 @dataclass
 class DimStyleOverrideTable(CSDMObject):
-    overrides: Dict[str, DimStyleOverride] = field(default_factory=dict)
+    overrides: dict[str, DimStyleOverride] = field(default_factory=dict)
 
     def set(self, key: str, value):
         self.overrides[key] = DimStyleOverride(key, value)
@@ -299,14 +298,14 @@ class MLineElement:
 
 @dataclass
 class MLineStyle(TableEntry):
-    elements: List[MLineElement] = field(default_factory=list)
-    fill_color: Optional[int] = None
+    elements: list[MLineElement] = field(default_factory=list)
+    fill_color: int | None = None
     show_miter_joint: bool = True
 
 
 @dataclass
 class MLineStyleTable(CSDMObject):
-    entries: Dict[str, MLineStyle] = field(default_factory=dict)
+    entries: dict[str, MLineStyle] = field(default_factory=dict)
 
     def add(self, item: MLineStyle):
         self.entries[item.name] = item
@@ -321,7 +320,7 @@ class TableCellStyle:
     text_style: str = "Standard"
     text_height: float = 2.5
     alignment: str = "middle_left"
-    fill_color: Optional[int] = None
+    fill_color: int | None = None
 
 
 @dataclass
@@ -336,7 +335,7 @@ class CADTableStyle(TableEntry):
 
 @dataclass
 class TableStyleTable(CSDMObject):
-    entries: Dict[str, CADTableStyle] = field(default_factory=dict)
+    entries: dict[str, CADTableStyle] = field(default_factory=dict)
 
     def add(self, item: CADTableStyle):
         self.entries[item.name] = item
@@ -367,7 +366,7 @@ class MLeaderStyle(TableEntry):
 
 @dataclass
 class MLeaderStyleTable(CSDMObject):
-    entries: Dict[str, MLeaderStyle] = field(default_factory=dict)
+    entries: dict[str, MLeaderStyle] = field(default_factory=dict)
 
     def add(self, item: MLeaderStyle):
         self.entries[item.name] = item
@@ -386,16 +385,16 @@ class LightType(Enum):
 @dataclass
 class LightRecord(TableEntry):
     light_type: LightType = LightType.DISTANT
-    position: Tuple[float, float, float] = (0, 0, 0)
-    target: Tuple[float, float, float] = (0, 0, -1)
+    position: tuple[float, float, float] = (0, 0, 0)
+    target: tuple[float, float, float] = (0, 0, -1)
     intensity: float = 1.0
-    color: Tuple[float, float, float] = (1, 1, 1)
+    color: tuple[float, float, float] = (1, 1, 1)
     shadow: bool = False
 
 
 @dataclass
 class LightTable(CSDMObject):
-    entries: Dict[str, LightRecord] = field(default_factory=dict)
+    entries: dict[str, LightRecord] = field(default_factory=dict)
 
     def add(self, item: LightRecord):
         self.entries[item.name] = item
@@ -407,15 +406,15 @@ class LightTable(CSDMObject):
 
 @dataclass
 class RenderEnvironment(TableEntry):
-    background_color: Tuple[float, float, float] = (0, 0, 0)
+    background_color: tuple[float, float, float] = (0, 0, 0)
     enable_fog: bool = False
     fog_density: float = 0.0
-    fog_color: Tuple[float, float, float] = (1, 1, 1)
+    fog_color: tuple[float, float, float] = (1, 1, 1)
 
 
 @dataclass
 class RenderEnvironmentTable(CSDMObject):
-    entries: Dict[str, RenderEnvironment] = field(default_factory=dict)
+    entries: dict[str, RenderEnvironment] = field(default_factory=dict)
 
     def add(self, item: RenderEnvironment):
         self.entries[item.name] = item
@@ -431,12 +430,12 @@ class RenderSettings(TableEntry):
     exposure: float = 1.0
     indirect_bounce: int = 2
     shadows: bool = False
-    output_resolution: Tuple[int, int] = (1920, 1080)
+    output_resolution: tuple[int, int] = (1920, 1080)
 
 
 @dataclass
 class RenderSettingsTable(CSDMObject):
-    entries: Dict[str, RenderSettings] = field(default_factory=dict)
+    entries: dict[str, RenderSettings] = field(default_factory=dict)
 
     def add(self, item: RenderSettings):
         self.entries[item.name] = item
@@ -463,7 +462,7 @@ class UnderlayDefinition(TableEntry):
 
 @dataclass
 class UnderlayTable(CSDMObject):
-    entries: Dict[str, UnderlayDefinition] = field(default_factory=dict)
+    entries: dict[str, UnderlayDefinition] = field(default_factory=dict)
 
     def add(self, item: UnderlayDefinition):
         self.entries[item.name] = item
@@ -476,13 +475,13 @@ class UnderlayTable(CSDMObject):
 @dataclass
 class RasterImageDef(TableEntry):
     file_path: str = ""
-    resolution: Tuple[int, int] = (0, 0)
+    resolution: tuple[int, int] = (0, 0)
     units: str = "none"
 
 
 @dataclass
 class RasterImageTable(CSDMObject):
-    entries: Dict[str, RasterImageDef] = field(default_factory=dict)
+    entries: dict[str, RasterImageDef] = field(default_factory=dict)
 
     def add(self, item: RasterImageDef):
         self.entries[item.name] = item
@@ -502,7 +501,7 @@ class PlotConfig(TableEntry):
 
 @dataclass
 class PlotConfigTable(CSDMObject):
-    entries: Dict[str, PlotConfig] = field(default_factory=dict)
+    entries: dict[str, PlotConfig] = field(default_factory=dict)
 
     def add(self, item: PlotConfig):
         self.entries[item.name] = item
@@ -516,12 +515,12 @@ class PlotConfigTable(CSDMObject):
 class OLEObject(TableEntry):
     ole_data: bytes = b""
     format: str = ""
-    linked_path: Optional[str] = None
+    linked_path: str | None = None
 
 
 @dataclass
 class OLETable(CSDMObject):
-    entries: Dict[str, OLEObject] = field(default_factory=dict)
+    entries: dict[str, OLEObject] = field(default_factory=dict)
 
     def add(self, item: OLEObject):
         self.entries[item.name] = item
@@ -534,13 +533,13 @@ class OLETable(CSDMObject):
 @dataclass
 class DataLink(TableEntry):
     source_path: str = ""
-    range_name: Optional[str] = None
+    range_name: str | None = None
     update_policy: str = "manual"
 
 
 @dataclass
 class DataLinkTable(CSDMObject):
-    entries: Dict[str, DataLink] = field(default_factory=dict)
+    entries: dict[str, DataLink] = field(default_factory=dict)
 
     def add(self, item: DataLink):
         self.entries[item.name] = item
@@ -552,12 +551,12 @@ class DataLinkTable(CSDMObject):
 
 @dataclass
 class DCFTableEntry(TableEntry):
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class DCFCustomTable(CSDMObject):
-    entries: Dict[str, DCFTableEntry] = field(default_factory=dict)
+    entries: dict[str, DCFTableEntry] = field(default_factory=dict)
 
     def add(self, item: DCFTableEntry):
         self.entries[item.name] = item
@@ -568,37 +567,37 @@ class DCFCustomTable(CSDMObject):
 
 @dataclass
 class CSDMTableCollection:
-    layer: Optional[LayerTable] = None
-    linetype: Optional[LinetypeTable] = None
-    textstyle: Optional[TextStyleTable] = None
-    dimstyle: Optional[DimStyleTable] = None
-    dimstyle_override: Optional[DimStyleOverrideTable] = None
-    ucs: Optional[UCSTable] = None
-    view: Optional[ViewTable] = None
-    vport: Optional[VPortTable] = None
-    appid: Optional[AppIDTable] = None
-    regapp: Optional[AppIDTable] = None
-    block_record: Optional[BlockRecordTable] = None
-    plotstyle: Optional[PlotStyleTable] = None
+    layer: LayerTable | None = None
+    linetype: LinetypeTable | None = None
+    textstyle: TextStyleTable | None = None
+    dimstyle: DimStyleTable | None = None
+    dimstyle_override: DimStyleOverrideTable | None = None
+    ucs: UCSTable | None = None
+    view: ViewTable | None = None
+    vport: VPortTable | None = None
+    appid: AppIDTable | None = None
+    regapp: AppIDTable | None = None
+    block_record: BlockRecordTable | None = None
+    plotstyle: PlotStyleTable | None = None
 
     # DWG-level materials (different from CSDMObject.material)
-    material: Optional[MaterialTableDWG] = None
+    material: MaterialTableDWG | None = None
 
     # Advanced DWG
-    mlinestyle: Optional[MLineStyleTable] = None
-    tablestyle: Optional[TableStyleTable] = None
-    mleaderstyle: Optional[MLeaderStyleTable] = None
-    light: Optional[LightTable] = None
-    render_env: Optional[RenderEnvironmentTable] = None
-    render_settings: Optional[RenderSettingsTable] = None
-    underlay: Optional[UnderlayTable] = None
-    raster: Optional[RasterImageTable] = None
-    plotconfig: Optional[PlotConfigTable] = None
-    ole: Optional[OLETable] = None
-    datalink: Optional[DataLinkTable] = None
+    mlinestyle: MLineStyleTable | None = None
+    tablestyle: TableStyleTable | None = None
+    mleaderstyle: MLeaderStyleTable | None = None
+    light: LightTable | None = None
+    render_env: RenderEnvironmentTable | None = None
+    render_settings: RenderSettingsTable | None = None
+    underlay: UnderlayTable | None = None
+    raster: RasterImageTable | None = None
+    plotconfig: PlotConfigTable | None = None
+    ole: OLETable | None = None
+    datalink: DataLinkTable | None = None
 
     # DCF Extensions
-    dcf_tables: Optional[DCFCustomTable] = None
+    dcf_tables: DCFCustomTable | None = None
 
     def create_defaults(self):
         self.layer = LayerTable()
@@ -657,5 +656,3 @@ def bootstrap_tables():
     doc = CSDMDocument()
     doc.create_standard_tables()
     return doc
-
-

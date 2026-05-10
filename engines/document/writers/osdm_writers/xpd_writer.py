@@ -6,38 +6,24 @@ Since XPDL is semantically equivalent to BPMN 2.0, this writer reuses the
 same OSDM classes (Process, Activity, SequenceFlow, etc.) and produces a
 valid XPDL Package containing WorkflowProcesses and Participants.
 """
-
 from __future__ import annotations
-from pathlib import Path
-from typing import Optional, Dict, Any, List, cast
-from xml.etree.ElementTree import Element, SubElement, tostring
 
-from .base_osdm_writer import BaseOSDMWriter, OSDMWriteOptions
-from ...models.osdm_models import (
-    BaseOSDMDocument, BPMNDocument,
-    Process,
-    Activity,
-    Task,
-    SubProcess,
-    Event,
-    Gateway,
-    SequenceFlow,
-    LaneSet,
-    Lane,
-    ResourceRole,
-    DataObject,
-    DataStore,
-    DataInput,
-    DataOutput,
-    Property,
-    MessageFlow,
-    Participant,
-    Collaboration,
-    FlowElement,
-    FlowNode,
-    BaseElement,
-)
-from ...models.base import BaseDocument
+from typing import cast
+from xml.etree.ElementTree import Element
+from xml.etree.ElementTree import SubElement
+from xml.etree.ElementTree import tostring
+
+from ...models.osdm_models import BaseOSDMDocument
+from ...models.osdm_models import BPMNDocument
+from ...models.osdm_models import Event
+from ...models.osdm_models import FlowElement
+from ...models.osdm_models import Participant
+from ...models.osdm_models import Process
+from ...models.osdm_models import SequenceFlow
+from ...models.osdm_models import SubProcess
+from ...models.osdm_models import Task
+from .base_osdm_writer import BaseOSDMWriter
+from .base_osdm_writer import OSDMWriteOptions
 
 
 XPDL_NS = "http://www.wfmc.org/2008/XPDL2.1"
@@ -50,7 +36,7 @@ class XPDLWriter(BaseOSDMWriter):
     name = "xpd"
     supported_extensions = (".xpdl",)
 
-    def __init__(self, options: Optional[OSDMWriteOptions] = None):
+    def __init__(self, options: OSDMWriteOptions | None = None):
         super().__init__(options)
 
     async def _write_design(self, base_document: BaseOSDMDocument) -> bytes:
@@ -60,7 +46,7 @@ class XPDLWriter(BaseOSDMWriter):
             root = Element(f"{{{XPDL_NS}}}Package", {
                 "xmlns": XPDL_NS,
                 "xmlns:xsi": XSI_NS,
-                "Id": document.id or "osdm_package",
+                "Id": document.document_id or "osdm_package",
                 "Name": document.title or "OSDM Package",
             })
             # Package header
@@ -88,7 +74,7 @@ class XPDLWriter(BaseOSDMWriter):
             })
 
         xml_bytes = tostring(root, encoding="unicode", method="xml")
-        return xml_bytes.encode(self.options.encoding or "utf-8")
+        return xml_bytes.encode(getattr(self.options, "encoding", "utf-8") or "utf-8")
 
     def get_supported_media_types(self) -> list[str]:
         return ["application/xml"]

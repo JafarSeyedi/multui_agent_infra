@@ -2,9 +2,7 @@
 """
 PPTX writer constants – shared namespace definitions and reverse mappings.
 """
-
 from __future__ import annotations
-from enum import Enum
 
 # ── XML Namespaces (identical to parser) ────────────────────────────
 NAMESPACES = {
@@ -33,7 +31,7 @@ REL_TYPE = {
     "vmlDrawing":    "http://schemas.openxmlformats.org/officeDocument/2006/relationships/vmlDrawing",
 }
 
-# ── Reverse Transition Map (PSDM → PPTX) ───────────────────────────
+# ── Reverse PresentationTransition Map (PSDM → PPTX) ───────────────────────────
 PSDM_TO_PPTX_TRANSITION = {
     "fade":    "fade",
     "push":    "push",

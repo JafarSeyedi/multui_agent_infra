@@ -3,11 +3,12 @@
 Write a diagram XML part from a DrawingContent that holds a structured
 SmartArt tree in its vector_data (JSON).  No raw XML needed.
 """
-
 from __future__ import annotations
-from typing import Dict, Any, Optional
-from xml.etree.ElementTree import Element, SubElement, tostring
+
 import json
+from xml.etree.ElementTree import Element
+from xml.etree.ElementTree import SubElement
+from xml.etree.ElementTree import tostring
 
 from ...models.usdm_models import DrawingContent
 
@@ -41,14 +42,15 @@ def write_diagram(drawing: DrawingContent) -> bytes:
         data = {}
 
     root_node = data.get("root")
-    layout_name = data.get("type", "hierarchy")
+    data.get("type", "hierarchy")
 
     # 2. Build the data model XML
     dgm_elem = Element(f"{{{DGM}}}dataModel")
 
     # ---- point list (ptLst) ----
     pt_lst = SubElement(dgm_elem, f"{{{DGM}}}ptLst")
-    _build_point_list(pt_lst, root_node, node_id_map := {})
+    node_id_map :dict[str, str] = {}
+    _build_point_list(pt_lst, root_node, node_id_map)
 
     # ---- connection list (cxnLst) ----
     if root_node:
@@ -59,7 +61,7 @@ def write_diagram(drawing: DrawingContent) -> bytes:
     return tostring(dgm_elem, xml_declaration=True, encoding="UTF-8")
 
 
-def _build_point_list(parent: Element, node: Optional[dict], id_map: Dict[str, str]) -> None:
+def _build_point_list(parent: Element, node: dict | None, id_map: dict[str, str]) -> None:
     """Recursively create <dgm:pt> elements and populate id_map."""
     if node is None:
         return
@@ -88,11 +90,12 @@ def _build_point_list(parent: Element, node: Optional[dict], id_map: Dict[str, s
         _build_point_list(parent, child, id_map)
 
 
-def _build_connections(parent: Element, node: Optional[dict], id_map: Dict[str, str]) -> None:
+def _build_connections(parent: Element, node: dict | None, id_map: dict[str, str]) -> None:
     """Create <dgm:cxn> elements for parent→child relationships."""
     if node is None:
         return
-    src_unique = id_map.get(node.get("id"))
+    id = str(node.get("id"))
+    src_unique = id_map.get(id)
     if src_unique is None:
         return
     for child in node.get("children", []):

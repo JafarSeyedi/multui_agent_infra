@@ -1,8 +1,10 @@
 # agents/orchestration/interaction/strategy_registry.py
 from __future__ import annotations
 
+from collections.abc import Iterable
 from threading import RLock
-from typing import Dict, Generic, Iterable, List, Optional, TypeVar
+from typing import Generic
+from typing import TypeVar
 
 from .base_strategy import InteractionStrategy
 
@@ -16,7 +18,7 @@ class InteractionStrategyRegistry(Generic[TStrategy]):
     """
 
     def __init__(self) -> None:
-        self._strategies: Dict[str, TStrategy] = {}
+        self._strategies: dict[str, TStrategy] = {}
         self._lock = RLock()
 
     def register(self, strategy: TStrategy, *, replace: bool = False) -> TStrategy:
@@ -36,7 +38,7 @@ class InteractionStrategyRegistry(Generic[TStrategy]):
         with self._lock:
             self._strategies.pop(scenario, None)
 
-    def get(self, scenario: str) -> Optional[TStrategy]:
+    def get(self, scenario: str) -> TStrategy | None:
         """استراتژی را بدون خطا دادن برمی‌گرداند (اگر ثبت شده باشد)."""
         with self._lock:
             return self._strategies.get(scenario)
@@ -51,7 +53,7 @@ class InteractionStrategyRegistry(Generic[TStrategy]):
             raise KeyError(f"No interaction strategy registered for scenario '{scenario}'.")
         return strategy
 
-    def list_scenarios(self) -> List[str]:
+    def list_scenarios(self) -> list[str]:
         """تمام سناریوهای ثبت‌شده را برمی‌گرداند."""
         with self._lock:
             return list(self._strategies.keys())

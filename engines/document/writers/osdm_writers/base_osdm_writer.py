@@ -2,19 +2,19 @@
 """
 Base class for all OSDM format writers.
 """
-
 from __future__ import annotations
-from abc import abstractmethod
-from pathlib import Path
-from typing import Optional, Dict, Any, AsyncIterator, List, Tuple
-from enum import Enum
+
 import re
+from abc import abstractmethod
+from collections.abc import AsyncIterator
+from enum import Enum
+from pathlib import Path
+from typing import Any
 
-from pydantic import BaseModel
-
-from ..base import BaseDocumentWriter, WriteOptions
-from ...models.osdm_models import BaseOSDMDocument
 from ...models.base import BaseDocument
+from ...models.osdm_models import BaseOSDMDocument
+from ..base import BaseDocumentWriter
+from ..base import WriteOptions
 
 
 class VersionStrategy(str, Enum):
@@ -51,7 +51,7 @@ class BaseOSDMWriter(BaseDocumentWriter):
     name: str = "osdm"
     supported_extensions: tuple[str, ...] = ()
 
-    def __init__(self, options: Optional[OSDMWriteOptions] = None):
+    def __init__(self, options: OSDMWriteOptions | None = None):
         super().__init__(options or OSDMWriteOptions())
         self.osdm_options: OSDMWriteOptions = (
             self.options if isinstance(self.options, OSDMWriteOptions) else OSDMWriteOptions()
@@ -68,12 +68,12 @@ class BaseOSDMWriter(BaseDocumentWriter):
         if not isinstance(document, BaseOSDMDocument):
             raise TypeError("BaseOSDMWriter expects a BaseOSDMDocument (or subclass)")
         return await self._write_design(document)
-    
+
     async def write_to_file(
         self,
         document: BaseDocument,
         target: Path,
-        options: Optional[Dict[str, Any]] = None,
+        options: dict[str, Any] | None = None,
     ) -> None:
         if not isinstance(document, BaseOSDMDocument):
             raise TypeError("Expected BaseOSDMDocument")

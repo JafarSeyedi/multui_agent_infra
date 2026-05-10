@@ -1,9 +1,10 @@
 # agents/content/models/learning_objects.py
-
-from typing import List, Optional, Dict, Literal
 from datetime import datetime
 from enum import Enum
-from pydantic import BaseModel, Field
+from typing import Literal
+
+from pydantic import BaseModel
+from pydantic import Field
 
 
 # --------------------------------------------------
@@ -12,17 +13,17 @@ from pydantic import BaseModel, Field
 
 class StudentProfile(BaseModel):
     student_id: str
-    name: Optional[str]
-    grade_level: Optional[str]
-    learning_style: Optional[str]
-    interests: Optional[List[str]]
-    preferred_language: Optional[str]
+    name: str | None
+    grade_level: str | None
+    learning_style: str | None
+    interests: list[str] | None
+    preferred_language: str | None
 
 
 class InstructorProfile(BaseModel):
     instructor_id: str
-    name: Optional[str]
-    subject_specialization: Optional[List[str]]
+    name: str | None
+    subject_specialization: list[str] | None
 
 # -------------------------------
 # LearningStyle CLASS
@@ -64,7 +65,7 @@ class LearningStyle(BaseModel):
     primary_style: VAKRStyle = VAKRStyle.READING
 
     # سبک ثانویه (اختیاری - بعضی‌ها ترکیبی یاد می‌گیرند)
-    secondary_style: Optional[VAKRStyle] = None
+    secondary_style: VAKRStyle | None = None
 
     # سرعت پیشرفت
     pace: PacePreference = PacePreference.MODERATE
@@ -89,7 +90,7 @@ class LearningStyle(BaseModel):
 
     # امتیاز اطمینان به هر بُعد (0.0 تا 1.0) - برای adaptive learning
     # هر چه بیشتر با کاربر تعامل شود، این مقادیر دقیق‌تر می‌شوند
-    confidence_scores: Dict[str, float] = Field(
+    confidence_scores: dict[str, float] = Field(
         default_factory=lambda: {
             "primary_style":      0.5,
             "pace":               0.5,
@@ -98,7 +99,7 @@ class LearningStyle(BaseModel):
     )
 
     # متادیتا - منبع تشخیص سبک
-    detected_from: Optional[str] = None  # e.g., "quiz", "interaction_history", "manual"
+    detected_from: str | None = None  # e.g., "quiz", "interaction_history", "manual"
 
 # --------------------------------------------------
 # Learning Content Models
@@ -110,7 +111,7 @@ class LearningStyle(BaseModel):
 class LearningObjective(BaseModel):
     objective_id: str
     description: str
-    skill_tag: Optional[str]
+    skill_tag: str | None
     grade_level: str
     subject: str
 
@@ -120,26 +121,26 @@ class Lesson(BaseModel):
     title: str
     subject: str
     grade_level: str
-    content_summary: Optional[str]
-    learning_objectives: Optional[List[LearningObjective]]
-    prerequisites: List[str] = []           # وابستگی‌ها
-    metadata: Dict[str, str] = {}           # اضافات
+    content_summary: str | None
+    learning_objectives: list[LearningObjective] | None
+    prerequisites: list[str] = []           # وابستگی‌ها
+    metadata: dict[str, str] = {}           # اضافات
 
 
 class ConceptNode(BaseModel):
     concept_id: str
     name: str
-    description: Optional[str]
-    related_concepts: Optional[List[str]]
-    difficulty_estimate: Optional[float]
+    description: str | None
+    related_concepts: list[str] | None
+    difficulty_estimate: float | None
 
 
 class GlossaryEntry(BaseModel):
     term: str
     definition: str
     grade_level: str
-    examples: List[str] = []
-    related_lessons: List[str] = []
+    examples: list[str] = []
+    related_lessons: list[str] = []
 
 
 # --------------------------------------------------
@@ -160,16 +161,16 @@ class Question(BaseModel):
     text: str
     question_type: QuestionType
     difficulty: DifficultyLevel
-    options: Optional[List[str]] = None
-    correct_answer: Optional[str] = None
-    concept_tags: Optional[List[str]]
+    options: list[str] | None = None
+    correct_answer: str | None = None
+    concept_tags: list[str] | None
 
 
 class StudentAnswer(BaseModel):
     question_id: str
     student_id: str
     answer_text: str
-    is_correct: Optional[bool]
+    is_correct: bool | None
     attempt_timestamp: datetime
 
 class AssessmentResult(BaseModel):
@@ -177,21 +178,21 @@ class AssessmentResult(BaseModel):
     student_id: str
     title: str
     lesson_id: str
-    questions: List[Question]
+    questions: list[Question]
     adaptive: bool = False       # آیا آزمون تطبیقی است؟
     created_at: datetime
     total_score: float
     max_score: float
     start_time: datetime
     end_time: datetime
-    detailed_scores: Optional[Dict[str, float]]  # question_id: score
+    detailed_scores: dict[str, float] | None  # question_id: score
 
 class Assignment(BaseModel):
     id: str
     title: str
     lesson_id: str
-    questions: List[Question]
-    due_date: Optional[datetime] = None
+    questions: list[Question]
+    due_date: datetime | None = None
     created_at: datetime
 
 
@@ -206,7 +207,7 @@ class LearningEvent(BaseModel):
         "interaction"
     ]
     timestamp: datetime
-    metadata: Optional[Dict]
+    metadata: dict | None
 
 
 # --------------------------------------------------
@@ -222,14 +223,14 @@ class SkillPerformance(BaseModel):
 
 class LearningProgress(BaseModel):
     student_id: str
-    completed_lessons: List[str]
-    recent_scores: Optional[List[float]]
-    overall_mastery: Optional[float]
+    completed_lessons: list[str]
+    recent_scores: list[float] | None
+    overall_mastery: float | None
     last_activity_ts: datetime
     objective: str
     status: Literal["on_track", "needs_improvement", "mastered", "struggling"]
-    score_trend: Optional[List[float]] = None
-    confidence_level: Optional[float] = None
+    score_trend: list[float] | None = None
+    confidence_level: float | None = None
 
 
 # --------------------------------------------------
@@ -239,6 +240,6 @@ class LearningProgress(BaseModel):
 class LearningResource(BaseModel):
     resource_id: str
     title: str
-    url: Optional[str]
+    url: str | None
     resource_type: Literal["video", "article", "exercise", "simulation"]
-    associated_concepts: Optional[List[str]]
+    associated_concepts: list[str] | None

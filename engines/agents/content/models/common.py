@@ -1,6 +1,6 @@
-from pydantic import BaseModel
-from typing import List, Optional
 from datetime import datetime
+
+from pydantic import BaseModel
 
 
 class ContentVersion(BaseModel):
@@ -15,9 +15,9 @@ class ContentVersion(BaseModel):
     body: str                 # متن محتوا
     created_at: datetime
 
-    created_by_agent: Optional[str]
+    created_by_agent: str | None
 
-    change_summary: Optional[str]
+    change_summary: str | None
 
 # --------------------------------------------------
 # Generic scoring & confidence
@@ -27,7 +27,7 @@ class ConfidenceScore(BaseModel):
 
     score: float
 
-    explanation: Optional[str]
+    explanation: str | None
 
 
 class ScoreRange(BaseModel):
@@ -36,7 +36,7 @@ class ScoreRange(BaseModel):
 
     max_score: float
 
-    average: Optional[float]
+    average: float | None
 
 
 # --------------------------------------------------
@@ -45,18 +45,18 @@ class ScoreRange(BaseModel):
 
 class Evidence(BaseModel):
 
-    source: Optional[str]
+    source: str | None
 
-    description: Optional[str]
+    description: str | None
 
-    confidence: Optional[float]
+    confidence: float | None
 
 
 class ReasoningTrace(BaseModel):
 
     summary: str
 
-    evidence: Optional[List[Evidence]]
+    evidence: list[Evidence] | None
 
 
 # --------------------------------------------------
@@ -67,9 +67,9 @@ class Recommendation(BaseModel):
 
     title: str
 
-    description: Optional[str]
+    description: str | None
 
-    priority: Optional[str]
+    priority: str | None
 
 
 class ActionSuggestion(BaseModel):
@@ -78,7 +78,7 @@ class ActionSuggestion(BaseModel):
 
     description: str
 
-    expected_impact: Optional[str]
+    expected_impact: str | None
 
 
 # --------------------------------------------------
@@ -89,20 +89,20 @@ class ConceptReference(BaseModel):
 
     concept_id: str
 
-    concept_name: Optional[str]
+    concept_name: str | None
 
-    weight: Optional[float]
+    weight: float | None
 
 
 class ResourceReference(BaseModel):
 
     resource_id: str
 
-    title: Optional[str]
+    title: str | None
 
-    resource_type: Optional[str]
+    resource_type: str | None
 
-    relevance_score: Optional[float]
+    relevance_score: float | None
 
 
 # --------------------------------------------------
@@ -115,9 +115,9 @@ class DetectedIssue(BaseModel):
 
     description: str
 
-    severity: Optional[str]
+    severity: str | None
 
-    related_concepts: Optional[List[str]]
+    related_concepts: list[str] | None
 
 
 # --------------------------------------------------
@@ -128,9 +128,9 @@ class Pattern(BaseModel):
 
     name: str
 
-    description: Optional[str]
+    description: str | None
 
-    confidence: Optional[float]
+    confidence: float | None
 
 
 # --------------------------------------------------
@@ -141,9 +141,9 @@ class Prediction(BaseModel):
 
     predicted_value: float
 
-    confidence: Optional[float]
+    confidence: float | None
 
-    explanation: Optional[str]
+    explanation: str | None
 
 
 # --------------------------------------------------
@@ -152,8 +152,8 @@ class Prediction(BaseModel):
 
 class TimeWindow(BaseModel):
 
-    start_time: Optional[datetime]
+    start_time: datetime | None
 
-    end_time: Optional[datetime]
+    end_time: datetime | None
 
-    duration_days: Optional[int]
+    duration_days: int | None

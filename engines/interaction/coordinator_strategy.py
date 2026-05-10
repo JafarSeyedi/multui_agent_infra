@@ -1,16 +1,14 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Sequence
+from collections.abc import Sequence
+from typing import Any
 
-from engines.buses.base_message_bus import MessageBus
 from ..agents.base_agents.base_agent import BaseAgent
 from ..agents.models import AgentOutput
-from .interaction_models import (
-    InteractionRequest,
-    InteractionResult,
-)
-
 from .base_strategy import InteractionStrategy
+from .interaction_models import InteractionRequest
+from .interaction_models import InteractionResult
+from engines.buses.base_message_bus import MessageBus
 
 
 class CoordinatorStrategy(InteractionStrategy):
@@ -20,7 +18,7 @@ class CoordinatorStrategy(InteractionStrategy):
     def __init__(
         self,
         agent_registry,
-        message_bus: Optional[MessageBus] = None,
+        message_bus: MessageBus | None = None,
         storage=None,
         validation_agent: str | None = None,
         aggregator_agent: str | None = None,
@@ -31,8 +29,8 @@ class CoordinatorStrategy(InteractionStrategy):
 
     async def execute(self, request: InteractionRequest) -> InteractionResult:
 
-        shared_context: Dict[str, Any] = dict(request.context)
-        results: List[AgentOutput] = []
+        shared_context: dict[str, Any] = dict(request.context)
+        results: list[AgentOutput] = []
 
         worker_agents: Sequence[BaseAgent] = request.agents
 
@@ -95,7 +93,7 @@ class CoordinatorStrategy(InteractionStrategy):
             },
         )
 
-    async def _run_validation(self, shared_context: Dict[str, Any], results: List[AgentOutput]) -> None:
+    async def _run_validation(self, shared_context: dict[str, Any], results: list[AgentOutput]) -> None:
         if not self.validation_agent:
             return
         payload = {
@@ -115,7 +113,7 @@ class CoordinatorStrategy(InteractionStrategy):
         else:
             shared_context.setdefault("validation_errors", []).append(output.error)
 
-    async def _aggregate(self, shared_context: Dict[str, Any], results: List[AgentOutput]) -> Any:
+    async def _aggregate(self, shared_context: dict[str, Any], results: list[AgentOutput]) -> Any:
 
         if not self.aggregator_agent:
             return shared_context.get("worker_outputs", {})
@@ -145,7 +143,7 @@ class CoordinatorStrategy(InteractionStrategy):
         self,
         agent_name: str,
         agent_id: str,
-        input_payload: Dict[str, Any],
+        input_payload: dict[str, Any],
         output_payload: Any,
     ) -> None:
 

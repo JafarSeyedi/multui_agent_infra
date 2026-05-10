@@ -1,17 +1,19 @@
 # engines/document/parsers/tsdm_parsers/base_tsdm_parser.py
 from abc import abstractmethod
-from typing import Optional, Dict, Any, Union, AsyncIterator
 from pathlib import Path
-from ..base import BaseDocumentParser, ParseOptions
+from typing import Any
+
 from ...models.tsdm_models import TSDMDocument
+from ..base import BaseDocumentParser
+from ..base import ParseOptions
 
 class BaseTSDMParser(BaseDocumentParser):
     name = "tsdm"
     supported_extensions = (".tsdm.json", ".tools.json")
 
     async def parse_bytes(self, data: bytes, document_id: str, source_name: str,
-                          metadata: Optional[Dict[str, Any]] = None,
-                          options: Optional[ParseOptions] = None) -> TSDMDocument:
+                          metadata: dict[str, Any] | None = None,
+                          options: ParseOptions | None = None) -> TSDMDocument:
         opts = options or ParseOptions()
         doc = await self._parse_to_tsdm(data, source_name, opts)
         doc.document_id = document_id

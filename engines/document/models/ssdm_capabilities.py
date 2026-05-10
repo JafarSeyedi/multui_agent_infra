@@ -2,11 +2,12 @@
 """
 Format Capability Profiles – describes what each SSDM format can express.
 """
-
 from __future__ import annotations
-from dataclasses import dataclass, field
+
+from dataclasses import dataclass
+from dataclasses import field
 from enum import Enum
-from typing import List, Optional, Dict, Set
+
 from .media_types import DocumentFormat
 
 
@@ -83,14 +84,14 @@ class FormatCapability:
     # Request & response bodies
     request_body_supported: bool
     response_body_supported: bool
-    request_media_types: List[BodyMediaType] = field(default_factory=list)
-    response_media_types: List[BodyMediaType] = field(default_factory=list)
+    request_media_types: list[BodyMediaType] = field(default_factory=list)
+    response_media_types: list[BodyMediaType] = field(default_factory=list)
 
     # Security
-    security_features: List[SecurityFeature] = field(default_factory=list)
+    security_features: list[SecurityFeature] = field(default_factory=list)
 
     # Transport
-    transport_bindings: List[TransportBinding] = field(default_factory=list)
+    transport_bindings: list[TransportBinding] = field(default_factory=list)
 
     # Schema / type system
     schema_kind: SchemaKind = SchemaKind.NONE

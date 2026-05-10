@@ -1,17 +1,13 @@
 # # engines/document/parsers/cad_parser/csdm_loader.py
-
 # from __future__ import annotations
-
 # import traceback
 # from typing import Any, Dict, List, Optional, Tuple, Iterable
-
 # # ODA Bridge
 # from .oda_bridge import (
 #     ODADocumentHandle,
 #     ODAObjectProxy,
 #     ODAHandle,
 # )
-
 # # CSDM Core
 # from ...models.base.csdm_core import (
 #     CSDMDocument,
@@ -20,7 +16,6 @@
 #     CSDMXData,
 #     CSDMReactorLink,
 # )
-
 # # Tables
 # from ...models.base.csdm_tables import (
 #     CSDMLayer,
@@ -33,7 +28,6 @@
 #     CSDMBlockRecord,
 #     CSDMAppID,
 # )
-
 # # Entities
 # from ...models.base.csdm_entities import (
 #     CSDMEntityBase,
@@ -63,8 +57,6 @@
 #     CSDMUnderlay,
 #     # ... (تمام entity های دیگر CSDM v2)
 # )
-
-
 # # ------------------------------------------------------------------------------
 # #  CSDMLoader - تبدیل یکپارچه ODA → CSDM
 # # ------------------------------------------------------------------------------
@@ -72,13 +64,11 @@
 #     """
 #     Loader اصلی که یک ODADocumentHandle را به مدل CSDM v2.0 Ultra تبدیل می‌کند.
 #     """
-
 #     def __init__(self, oda_doc: ODADocumentHandle):
 #         self.oda = oda_doc
 #         self.doc = CSDMDocument()
 #         self.entity_map: Dict[str, CSDMEntityBase] = {}
 #         self.object_map: Dict[str, CSDMObjectBase] = {}
-
 #     # ======================================================================
 #     #   Public API
 #     # ======================================================================
@@ -89,13 +79,11 @@
 #         self._load_xrefs()
 #         self._resolve_references()
 #         return self.doc
-
 #     # ======================================================================
 #     #   Table Loaders
 #     # ======================================================================
 #     def _load_tables(self) -> None:
 #         tables = self.oda.list_tables()
-
 #         self._load_layer_table(tables.get("layers", []))
 #         self._load_linetype_table(tables.get("linetypes", []))
 #         self._load_textstyle_table(tables.get("text_styles", []))
@@ -104,7 +92,6 @@
 #         self._load_view_table(tables.get("views", []))
 #         self._load_vport_table(tables.get("vports", []))
 #         self._load_appid_table(tables.get("appids", []))
-
 #     # ------------------------------- Layer Table --------------------------
 #     def _load_layer_table(self, records: List[ODAObjectProxy]):
 #         for rec in records:
@@ -124,7 +111,6 @@
 #                 self.object_map[str(rec.handle)] = cs
 #             except Exception:
 #                 traceback.print_exc()
-
 #     # ------------------------------- Linetype Table -----------------------
 #     def _load_linetype_table(self, records: List[ODAObjectProxy]):
 #         for rec in records:
@@ -139,7 +125,6 @@
 #                 self.object_map[str(rec.handle)] = cs
 #             except Exception:
 #                 traceback.print_exc()
-
 #     # ------------------------------- TextStyle Table -----------------------
 #     def _load_textstyle_table(self, records: List[ODAObjectProxy]):
 #         for rec in records:
@@ -156,7 +141,6 @@
 #                 self.object_map[str(rec.handle)] = cs
 #             except Exception:
 #                 traceback.print_exc()
-
 #     # ------------------------------- DimStyle Table ------------------------
 #     def _load_dimstyle_table(self, records: List[ODAObjectProxy]):
 #         for rec in records:
@@ -171,7 +155,6 @@
 #                 self.object_map[str(rec.handle)] = cs
 #             except Exception:
 #                 traceback.print_exc()
-
 #     # ------------------------------- UCS Table -----------------------------
 #     def _load_ucs_table(self, records: List[ODAObjectProxy]):
 #         for rec in records:
@@ -185,7 +168,6 @@
 #                 self.object_map[str(rec.handle)] = cs
 #             except Exception:
 #                 traceback.print_exc()
-
 #     # ------------------------------- View Table ----------------------------
 #     def _load_view_table(self, records: List[ODAObjectProxy]):
 #         for rec in records:
@@ -196,7 +178,6 @@
 #                 self.object_map[str(rec.handle)] = cs
 #             except Exception:
 #                 traceback.print_exc()
-
 #     # ------------------------------- VPort Table ---------------------------
 #     def _load_vport_table(self, records: List[ODAObjectProxy]):
 #         for rec in records:
@@ -213,7 +194,6 @@
 #                 self.object_map[str(rec.handle)] = cs
 #             except Exception:
 #                 traceback.print_exc()
-
 #     # ------------------------------- AppID Table ---------------------------
 #     def _load_appid_table(self, records: List[ODAObjectProxy]):
 #         for rec in records:
@@ -224,13 +204,11 @@
 #                 self.object_map[str(rec.handle)] = cs
 #             except Exception:
 #                 traceback.print_exc()
-
 #     # ======================================================================
 #     #   Block Records & Entities
 #     # ======================================================================
 #     def _load_block_records(self):
 #         block_records = self.oda.list_block_records()
-
 #         for blk in block_records:
 #             try:
 #                 o = blk._obj
@@ -241,14 +219,11 @@
 #                 )
 #                 self.doc.tables.block_records.append(cs)
 #                 self.object_map[str(blk.handle)] = cs
-
 #                 # Load entities inside block
 #                 ents = self.oda.list_entities_in_block(blk)
 #                 self._load_entities(blk_handle=str(blk.handle), entities=ents)
-
 #             except Exception:
 #                 traceback.print_exc()
-
 #     # ======================================================================
 #     #   Entity Loader
 #     # ======================================================================
@@ -262,10 +237,8 @@
 #                     self.entity_map[str(ent.handle)] = cs_ent
 #             except Exception:
 #                 traceback.print_exc()
-
 #     def _map_entity(self, ent: ODAObjectProxy) -> Optional[CSDMEntityBase]:
 #         cls = ent.object_class.lower()
-
 #         if "line" in cls:
 #             return self._map_line(ent)
 #         if "circle" in cls:
@@ -302,7 +275,6 @@
 #             return self._map_underlay(ent)
 #         if "viewport" in cls:
 #             return self._map_viewportent(ent)
-
 #         # اگر انتیتی ناشناخته بود:
 #         return CSDMEntityBase(
 #             handle=str(ent.handle),
@@ -310,10 +282,8 @@
 #             layer=self._safe_layer(ent),
 #             raw_xdata=ent.read_xdata(),
 #         )
-
 #     # ------------------------ Entity mappers --------------------------
 #     # هر mapper کاملاً عملیاتی و بدون TODO است.
-
 #     def _map_line(self, ent: ODAObjectProxy) -> CSDMLine:
 #         o = ent._obj
 #         s = o.startPoint()
@@ -325,7 +295,6 @@
 #             end=(e.x, e.y, e.z),
 #             raw_xdata=ent.read_xdata(),
 #         )
-
 #     def _map_circle(self, ent: ODAObjectProxy) -> CSDMCircle:
 #         o = ent._obj
 #         c = o.center()
@@ -336,7 +305,6 @@
 #             radius=o.radius(),
 #             raw_xdata=ent.read_xdata(),
 #         )
-
 #     def _map_arc(self, ent: ODAObjectProxy) -> CSDMArc:
 #         o = ent._obj
 #         c = o.center()
@@ -349,7 +317,6 @@
 #             end_angle=o.endAngle(),
 #             raw_xdata=ent.read_xdata(),
 #         )
-
 #     def _map_polyline2d(self, ent: ODAObjectProxy) -> CSDMPolyline2D:
 #         o = ent._obj
 #         pts = [(o.getPointAt(i).x, o.getPointAt(i).y) for i in range(o.numVerts())]
@@ -360,7 +327,6 @@
 #             closed=o.isClosed(),
 #             raw_xdata=ent.read_xdata(),
 #         )
-
 #     def _map_polyline3d(self, ent: ODAObjectProxy) -> CSDMPolyline3D:
 #         o = ent._obj
 #         pts = [(o.getPointAt(i).x, o.getPointAt(i).y, o.getPointAt(i).z) for i in range(o.numVerts())]
@@ -370,7 +336,6 @@
 #             points=pts,
 #             raw_xdata=ent.read_xdata(),
 #         )
-
 #     def _map_text(self, ent: ODAObjectProxy) -> CSDMText:
 #         o = ent._obj
 #         p = o.position()
@@ -384,7 +349,6 @@
 #             style_handle=o.textStyle().getHandle().ascii() if hasattr(o, "textStyle") else "0",
 #             raw_xdata=ent.read_xdata(),
 #         )
-
 #     def _map_mtext(self, ent: ODAObjectProxy) -> CSDMMText:
 #         o = ent._obj
 #         p = o.location()
@@ -399,7 +363,6 @@
 #             style_handle=o.textStyle().getHandle().ascii() if hasattr(o, "textStyle") else "0",
 #             raw_xdata=ent.read_xdata(),
 #         )
-
 #     def _map_insert(self, ent: ODAObjectProxy) -> CSDMInsert:
 #         o = ent._obj
 #         p = o.position()
@@ -412,11 +375,9 @@
 #             rotation=o.rotation(),
 #             raw_xdata=ent.read_xdata(),
 #         )
-
 #     def _map_dimension(self, ent: ODAObjectProxy) -> CSDMEntityBase:
 #         cls = ent.object_class.lower()
 #         o = ent._obj
-
 #         # Linear
 #         if "aligned" in cls:
 #             return CSDMDimensionAligned(
@@ -425,7 +386,6 @@
 #                 dimstyle=o.dimensionStyle().getHandle().ascii(),
 #                 raw_xdata=ent.read_xdata(),
 #             )
-
 #         if "rotated" in cls or "linear" in cls:
 #             return CSDMDimensionLinear(
 #                 handle=str(ent.handle),
@@ -433,7 +393,6 @@
 #                 dimstyle=o.dimensionStyle().getHandle().ascii(),
 #                 raw_xdata=ent.read_xdata(),
 #             )
-
 #         if "angular" in cls:
 #             return CSDMDimensionAngular(
 #                 handle=str(ent.handle),
@@ -441,7 +400,6 @@
 #                 dimstyle=o.dimensionStyle().getHandle().ascii(),
 #                 raw_xdata=ent.read_xdata(),
 #             )
-
 #         if "radial" in cls:
 #             return CSDMDimensionRadial(
 #                 handle=str(ent.handle),
@@ -449,7 +407,6 @@
 #                 dimstyle=o.dimensionStyle().getHandle().ascii(),
 #                 raw_xdata=ent.read_xdata(),
 #             )
-
 #         if "diameter" in cls:
 #             return CSDMDimensionDiameter(
 #                 handle=str(ent.handle),
@@ -457,7 +414,6 @@
 #                 dimstyle=o.dimensionStyle().getHandle().ascii(),
 #                 raw_xdata=ent.read_xdata(),
 #             )
-
 #         if "ordinate" in cls:
 #             return CSDMDimensionOrdinate(
 #                 handle=str(ent.handle),
@@ -465,14 +421,12 @@
 #                 dimstyle=o.dimensionStyle().getHandle().ascii(),
 #                 raw_xdata=ent.read_xdata(),
 #             )
-
 #         return CSDMEntityBase(
 #             handle=str(ent.handle),
 #             layer=self._safe_layer(ent),
 #             object_class=ent.object_class,
 #             raw_xdata=ent.read_xdata(),
 #         )
-
 #     def _map_hatch(self, ent: ODAObjectProxy) -> CSDMHatch:
 #         o = ent._obj
 #         loops = []
@@ -488,7 +442,6 @@
 #                 loops.append(pts)
 #         except Exception:
 #             pass
-
 #         return CSDMHatch(
 #             handle=str(ent.handle),
 #             layer=self._safe_layer(ent),
@@ -496,7 +449,6 @@
 #             pattern=o.patternName(),
 #             raw_xdata=ent.read_xdata(),
 #         )
-
 #     def _map_3dsolid(self, ent: ODAObjectProxy) -> CSDM3DSolid:
 #         geom = self.oda.extract_geometry(ent)
 #         return CSDM3DSolid(
@@ -505,7 +457,6 @@
 #             acis_data=geom.get("acis_data", None),
 #             raw_xdata=ent.read_xdata(),
 #         )
-
 #     def _map_mesh(self, ent: ODAObjectProxy) -> CSDMMesh:
 #         geom = self.oda.extract_geometry(ent)
 #         return CSDMMesh(
@@ -514,7 +465,6 @@
 #             raw_geometry=geom,
 #             raw_xdata=ent.read_xdata(),
 #         )
-
 #     def _map_spline(self, ent: ODAObjectProxy) -> CSDMSpline:
 #         o = ent._obj
 #         pts = []
@@ -524,7 +474,6 @@
 #                 pts.append((p.x, p.y, p.z))
 #         except Exception:
 #             pass
-
 #         return CSDMSpline(
 #             handle=str(ent.handle),
 #             layer=self._safe_layer(ent),
@@ -532,7 +481,6 @@
 #             degree=o.degree() if hasattr(o, "degree") else 3,
 #             raw_xdata=ent.read_xdata(),
 #         )
-
 #     def _map_leader(self, ent: ODAObjectProxy) -> CSDMLeader:
 #         o = ent._obj
 #         pts = []
@@ -542,21 +490,18 @@
 #                 pts.append((p.x, p.y, p.z))
 #         except Exception:
 #             pass
-
 #         return CSDMLeader(
 #             handle=str(ent.handle),
 #             layer=self._safe_layer(ent),
 #             points=pts,
 #             raw_xdata=ent.read_xdata(),
 #         )
-
 #     def _map_mleader(self, ent: ODAObjectProxy) -> CSDMMLedef:
 #         return CSDMMLedef(
 #             handle=str(ent.handle),
 #             layer=self._safe_layer(ent),
 #             raw_xdata=ent.read_xdata(),
 #         )
-
 #     def _map_raster(self, ent: ODAObjectProxy) -> CSDMImageRaster:
 #         o = ent._obj
 #         return CSDMImageRaster(
@@ -565,7 +510,6 @@
 #             image_source=o.imageDef().sourceFileName() if hasattr(o, "imageDef") else "",
 #             raw_xdata=ent.read_xdata(),
 #         )
-
 #     def _map_underlay(self, ent: ODAObjectProxy) -> CSDMUnderlay:
 #         o = ent._obj
 #         return CSDMUnderlay(
@@ -574,7 +518,6 @@
 #             filepath=o.filePath() if hasattr(o, "filePath") else "",
 #             raw_xdata=ent.read_xdata(),
 #         )
-
 #     def _map_viewportent(self, ent: ODAObjectProxy) -> CSDMViewportEntity:
 #         o = ent._obj
 #         return CSDMViewportEntity(
@@ -585,7 +528,6 @@
 #             height=o.height() if hasattr(o, "height") else 1.0,
 #             raw_xdata=ent.read_xdata(),
 #         )
-
 #     # ======================================================================
 #     #   Dictionary / Xrefs
 #     # ======================================================================
@@ -603,7 +545,6 @@
 #                 self.object_map[str(obj.handle)] = cs
 #             except Exception:
 #                 traceback.print_exc()
-
 #     def _load_xrefs(self):
 #         xrefs = self.oda.list_xrefs()
 #         for obj in xrefs:
@@ -618,7 +559,6 @@
 #                 self.object_map[str(obj.handle)] = cs
 #             except Exception:
 #                 traceback.print_exc()
-
 #     # ======================================================================
 #     #   Resolve final relations (owners, reactors, xdata, handles)
 #     # ======================================================================
@@ -630,7 +570,6 @@
 #                 ent.reactors = [CSDMReactorLink(target=str(r)) for r in reactors]
 #             except Exception:
 #                 pass
-
 #     # ======================================================================
 #     #   Helpers
 #     # ======================================================================

@@ -2,18 +2,18 @@
 """
 Base class for all SSDM (Service Standard Definition Model) writers.
 """
-
 from __future__ import annotations
+
 from abc import abstractmethod
-from pathlib import Path
-from typing import Optional, Dict, Any, AsyncIterator
+from collections.abc import AsyncIterator
 from enum import Enum
+from pathlib import Path
+from typing import Any
 
-from pydantic import BaseModel
-
-from ..base import BaseDocumentWriter, WriteOptions
-from ...models.ssdm_models import SSDM_DOCUMENT
 from ...models.base import BaseDocument
+from ...models.ssdm_models import SSDMDocument 
+from ..base import BaseDocumentWriter
+from ..base import WriteOptions
 
 
 class VersionStrategy(str, Enum):
@@ -49,7 +49,7 @@ class BaseSSDMWriter(BaseDocumentWriter):
     name: str = "ssdm"
     supported_extensions: tuple[str, ...] = ()
 
-    def __init__(self, options: Optional[SSDMWriteOptions] = None):
+    def __init__(self, options: SSDMWriteOptions | None = None):
         super().__init__(options or SSDMWriteOptions())
         self.sdm_options: SSDMWriteOptions = (
             self.options if isinstance(self.options, SSDMWriteOptions) else SSDMWriteOptions()
@@ -63,19 +63,19 @@ class BaseSSDMWriter(BaseDocumentWriter):
         yield data
 
     async def write(self, document: BaseDocument) -> bytes:
-        if not isinstance(document, SSDM_DOCUMENT):
-            raise TypeError("BaseSSDMWriter expects an SSDM_DOCUMENT")
+        if not isinstance(document, SSDMDocument ):
+            raise TypeError("BaseSSDMWriter expects an SSDMDocument ")
         return await self._write_design(document)
 
     async def write_to_file(
         self,
         document: BaseDocument,
         target: Path,
-        options: Optional[Dict[str, Any]] = None,
+        options: dict[str, Any] | None = None,
     ) -> None:
         data = await self.write(document)
-        if not isinstance(document, SSDM_DOCUMENT):
-            raise TypeError("Expected SSDM_DOCUMENT")
+        if not isinstance(document, SSDMDocument ):
+            raise TypeError("Expected SSDMDocument ")
 
         # Handle AUTO_INCREMENT before computing versioned path
         if self.sdm_options.version_strategy == VersionStrategy.AUTO_INCREMENT:
@@ -86,7 +86,7 @@ class BaseSSDMWriter(BaseDocumentWriter):
         final_path.write_bytes(data)
 
     @abstractmethod
-    async def _write_design(self, document: SSDM_DOCUMENT) -> bytes:
+    async def _write_design(self, document: SSDMDocument ) -> bytes:
         """Return the serialised service definition as bytes."""
         ...
 
@@ -99,7 +99,7 @@ class BaseSSDMWriter(BaseDocumentWriter):
         ...
 
     # ── Versioning helpers (identical to OSDM base) ──────────────
-    def _versioned_path(self, original: Path, document: SSDM_DOCUMENT) -> Path:
+    def _versioned_path(self, original: Path, document: SSDMDocument ) -> Path:
         if self.sdm_options.version_strategy == VersionStrategy.OVERWRITE:
             return original
         ver = document.version or "1.0.0"

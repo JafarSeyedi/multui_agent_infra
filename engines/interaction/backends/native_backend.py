@@ -1,27 +1,23 @@
 # agents/interaction/backends/native_backend.py
 from datetime import datetime
-from typing import Optional, Dict, Type
 
-from engines.interaction.interaction_models import (
-    InteractionRequest,
-    InteractionResult,
-)
+from .base_backend import BaseOrchestrationBackend
 from engines.buses.base_message_bus import MessageBus
 from engines.interaction.base_strategy import InteractionStrategy
-
-# import همه استراتژی‌ها
 from engines.interaction.broadcast_strategy import BroadcastStrategy
+from engines.interaction.coordinator_strategy import CoordinatorStrategy
 from engines.interaction.debate_strategy import DebateStrategy
 from engines.interaction.ensemble_strategy import EnsembleStrategy
 from engines.interaction.group_chat_strategy import GroupChatStrategy
-from engines.interaction.coordinator_strategy import CoordinatorStrategy
+from engines.interaction.interaction_models import InteractionRequest
+from engines.interaction.interaction_models import InteractionResult
 from engines.interaction.round_robin_strategy import RoundRobinStrategy
 from engines.interaction.self_refine_strategy import SelfRefineStrategy
-from .base_backend import BaseOrchestrationBackend
+# import همه استراتژی‌ها
 
 
 # نگاشت سناریو → کلاس استراتژی
-STRATEGY_REGISTRY: Dict[str, Type[InteractionStrategy]] = {
+STRATEGY_REGISTRY: dict[str, type[InteractionStrategy]] = {
     "broadcast":         BroadcastStrategy,
     "round_robin":       RoundRobinStrategy,
     "group_chat":        GroupChatStrategy,
@@ -36,9 +32,9 @@ class NativeOrchestrationBackend(BaseOrchestrationBackend):
     def __init__(
         self,
         agent_registry,
-        message_bus: Optional[MessageBus] = None,
+        message_bus: MessageBus | None = None,
         storage=None,
-        strategy_overrides: Optional[Dict[str, Type[InteractionStrategy]]] = None,
+        strategy_overrides: dict[str, type[InteractionStrategy]] | None = None,
     ):
         self.agent_registry = agent_registry
         self.message_bus = message_bus
@@ -59,12 +55,12 @@ class NativeOrchestrationBackend(BaseOrchestrationBackend):
 
     async def execute(self, request: InteractionRequest) -> InteractionResult:
         started_at = datetime.utcnow()
-        
+
         strategy = self._build_strategy(request.scenario)
         result = await strategy.execute(request)
-        
+
         completed_at = datetime.utcnow()
-        
+
         # اطمینان از پر بودن فیلدهای tracking
         return result.model_copy(
             update={

@@ -1,31 +1,27 @@
 # engines/document/models/csdm_entities.py
-
 # ================================================================
-# csdm_entities.py 
+# csdm_entities.py
 # CSDM v2.0 Ultra — Complete Entity System (DWG 98% / DCF 100%)
 # ================================================================
-
 from __future__ import annotations
-from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Tuple, Any
-from enum import Enum
 
-from .csdm_core import (
-    CSDMObject,
-    CSDMHandle,
-    Vector3,
-    Matrix4,
-    XDataEntry,
-    AddReactorsMixin,
-    GeometryUnits,
-)
+from dataclasses import dataclass
+from dataclasses import field
+from enum import Enum
+from typing import Any
+
+from .csdm_core import AddReactorsMixin
+from .csdm_core import CSDMHandle
+from .csdm_core import CSDMObject
+from .csdm_core import Matrix4
+from .csdm_core import Vector3
 
 
 # ================================================================
 # ENTITY REGISTRY (for Round-Trip DWG/DCF)
 # ================================================================
 
-ENTITY_REGISTRY: Dict[str, type] = {}
+ENTITY_REGISTRY: dict[str, type] = {}
 
 def register_entity(name: str):
     def decorator(cls):
@@ -69,12 +65,12 @@ class Extrusion:
 @dataclass
 class BaseEntity(CSDMObject, AddReactorsMixin):
     handle: CSDMHandle = field(default_factory=CSDMHandle.new)
-    owner_block: Optional[CSDMHandle] = None
+    owner_block: CSDMHandle | None = None
 
     layer: str = "0"
-    linetype: Optional[str] = None
-    color: Optional[int] = None
-    lineweight: Optional[int] = None
+    linetype: str | None = None
+    color: int | None = None
+    lineweight: int | None = None
 
     # Global entity-level transforms (matrix-based)
     transform: Matrix4 = field(default_factory=Matrix4)
@@ -85,7 +81,7 @@ class BaseEntity(CSDMObject, AddReactorsMixin):
     is_locked: bool = False
 
     # annotation scale context
-    annot_scale: Optional[float] = None
+    annot_scale: float | None = None
 
     def add_xdata(self, appid: str, value: Any):
         self.xdata.add(appid=appid, data=value)
@@ -112,7 +108,7 @@ class SurfaceEntity(BaseEntity):
 
 @dataclass
 class SolidEntity(BaseEntity):
-    acis_data: Optional[bytes] = None  # ACIS SAT binary or SAB
+    acis_data: bytes | None = None  # ACIS SAT binary or SAB
 
 
 # ================================================================
@@ -145,7 +141,7 @@ class DimensionType(Enum):
 @dataclass
 class DimensionBase(BaseEntity):
     dimstyle: str = "Standard"
-    text: Optional[str] = None
+    text: str | None = None
     measurement: float = 0.0
     dim_type: DimensionType = DimensionType.LINEAR
     normal: NormalVector = field(default_factory=NormalVector)
@@ -162,7 +158,7 @@ class BlockRefBase(BaseEntity):
     insert: Vector3 = field(default_factory=lambda: Vector3())
     scale: Vector3 = field(default_factory=lambda: Vector3(1, 1, 1))
     rotation: float = 0.0
-    attribs: List[Any] = field(default_factory=list)
+    attribs: list[Any] = field(default_factory=list)
 
 
 
@@ -210,7 +206,7 @@ class EllipseEntity(CurveEntity):
 @register_entity("POLYLINE")
 @dataclass
 class PolylineEntity(CurveEntity):
-    vertices: List[Vertex] = field(default_factory=list)
+    vertices: list[Vertex] = field(default_factory=list)
     is_closed: bool = False
     is_2d: bool = True
     elevation: float = 0.0
@@ -219,8 +215,8 @@ class PolylineEntity(CurveEntity):
 @register_entity("LWPOLYLINE")
 @dataclass
 class LWPolylineEntity(CurveEntity):
-    vertices: List[Vertex] = field(default_factory=list)
-    constant_width: Optional[float] = None
+    vertices: list[Vertex] = field(default_factory=list)
+    constant_width: float | None = None
     is_closed: bool = False
 
 
@@ -232,10 +228,10 @@ class LWPolylineEntity(CurveEntity):
 @dataclass
 class SplineEntity(CurveEntity):
     degree: int = 3
-    knots: List[float] = field(default_factory=list)
-    control_points: List[Vector3] = field(default_factory=list)
-    weights: List[float] = field(default_factory=list)
-    fit_points: List[Vector3] = field(default_factory=list)
+    knots: list[float] = field(default_factory=list)
+    control_points: list[Vector3] = field(default_factory=list)
+    weights: list[float] = field(default_factory=list)
+    fit_points: list[Vector3] = field(default_factory=list)
     is_rational: bool = False
     is_closed: bool = False
 
@@ -277,7 +273,7 @@ class Face3DEntity(CurveEntity):
     p1: Vector3 = field(default_factory=lambda: Vector3())
     p2: Vector3 = field(default_factory=lambda: Vector3())
     p3: Vector3 = field(default_factory=lambda: Vector3())
-    p4: Optional[Vector3] = None
+    p4: Vector3 | None = None
 
 
 @register_entity("TRACE")
@@ -304,25 +300,25 @@ class ShapeEntity(CurveEntity):
 @register_entity("REGION")
 @dataclass
 class RegionEntity(SolidEntity):
-    brep_data: Optional[bytes] = None   # Uninterpreted BREP
+    brep_data: bytes | None = None   # Uninterpreted BREP
 
 
 @register_entity("BODY")
 @dataclass
 class BodyEntity(SolidEntity):
-    acis_data: Optional[bytes] = None
+    acis_data: bytes | None = None
 
 
 @register_entity("3DSOLID")
 @dataclass
 class Solid3DEntity(SolidEntity):
-    acis_data: Optional[bytes] = None
+    acis_data: bytes | None = None
 
 
 @register_entity("SURFACE")
 @dataclass
 class SurfaceACISEntity(SurfaceEntity):
-    acis_data: Optional[bytes] = None
+    acis_data: bytes | None = None
 
 
 # ================================================================
@@ -332,7 +328,7 @@ class SurfaceACISEntity(SurfaceEntity):
 @dataclass
 class HatchLoop:
     loop_type: str = "poly"
-    edges: List[Tuple[str, List[float]]] = field(default_factory=list)
+    edges: list[tuple[str, list[float]]] = field(default_factory=list)
 
 
 @register_entity("HATCH")
@@ -341,7 +337,7 @@ class HatchEntity(BaseEntity):
     pattern_name: str = "SOLID"
     angle: float = 0.0
     scale: float = 1.0
-    loops: List[HatchLoop] = field(default_factory=list)
+    loops: list[HatchLoop] = field(default_factory=list)
     is_solid: bool = False
     origin: Vector3 = field(default_factory=lambda: Vector3())
     extrusion: Extrusion = field(default_factory=Extrusion)
@@ -373,16 +369,16 @@ class MTextEntity(TextBaseEntity):
 @register_entity("LEADER")
 @dataclass
 class LeaderEntity(CurveEntity):
-    vertices: List[Vector3] = field(default_factory=list)
-    annotation: Optional[CSDMHandle] = None
+    vertices: list[Vector3] = field(default_factory=list)
+    annotation: CSDMHandle | None = None
 
 
 @register_entity("MLEADER")
 @dataclass
 class MLeaderEntity(BaseEntity):
-    style: Optional[str] = None
-    leader_lines: List[List[Vector3]] = field(default_factory=list)
-    content: Optional[CSDMHandle] = None
+    style: str | None = None
+    leader_lines: list[list[Vector3]] = field(default_factory=list)
+    content: CSDMHandle | None = None
 
 
 # ================================================================
@@ -438,17 +434,17 @@ class AttributeDefEntity(TextBaseEntity):
 @register_entity("IMAGE")
 @dataclass
 class ImageEntity(BaseEntity):
-    image_def: Optional[CSDMHandle] = None
+    image_def: CSDMHandle | None = None
     insertion: Vector3 = field(default_factory=lambda: Vector3())
     uvec: Vector3 = field(default_factory=lambda: Vector3(1, 0, 0))
     vvec: Vector3 = field(default_factory=lambda: Vector3(0, 1, 0))
-    display_props: Dict[str, float] = field(default_factory=dict)
+    display_props: dict[str, float] = field(default_factory=dict)
 
 
 @register_entity("UNDERLAY")
 @dataclass
 class UnderlayEntity(BaseEntity):
-    definition: Optional[CSDMHandle] = None
+    definition: CSDMHandle | None = None
     insertion: Vector3 = field(default_factory=lambda: Vector3())
     scale: float = 1.0
     rotation: float = 0.0
@@ -457,13 +453,13 @@ class UnderlayEntity(BaseEntity):
 @register_entity("WIPEOUT")
 @dataclass
 class WipeoutEntity(BaseEntity):
-    points: List[Vector3] = field(default_factory=list)
+    points: list[Vector3] = field(default_factory=list)
 
 
 @register_entity("OLE2FRAME")
 @dataclass
 class OLE2FrameEntity(BaseEntity):
-    ole_id: Optional[CSDMHandle] = None
+    ole_id: CSDMHandle | None = None
     width: float = 0.0
     height: float = 0.0
 
@@ -488,7 +484,7 @@ class PointEntity(BaseEntity):
 class MLineEntity(BaseEntity):
     style: str = "Standard"
     scale: float = 1.0
-    vertices: List[Vector3] = field(default_factory=list)
+    vertices: list[Vector3] = field(default_factory=list)
     justification: int = 0
 
 
@@ -515,7 +511,7 @@ class FieldEntity(BaseEntity):
     code: str = ""                     # formatted field code
     result: str = ""                   # cached result
     has_cache: bool = False
-    obj_refs: List[CSDMHandle] = field(default_factory=list)
+    obj_refs: list[CSDMHandle] = field(default_factory=list)
 
 
 # ================================================================
@@ -525,14 +521,14 @@ class FieldEntity(BaseEntity):
 @dataclass
 class MLeaderTextContent:
     text: str
-    style: Optional[str] = None
+    style: str | None = None
     width: float = 0.0
 
 
 @dataclass
 class MLeaderBlockContent:
     block_name: str
-    block_attribs: Dict[str, Any] = field(default_factory=dict)
+    block_attribs: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -544,9 +540,9 @@ class MLeaderToleranceContent:
 @dataclass
 class MLeaderContentEntity(BaseEntity):
     content_type: str = "TEXT"         # TEXT / BLOCK / TOLERANCE
-    text_content: Optional[MLeaderTextContent] = None
-    block_content: Optional[MLeaderBlockContent] = None
-    tolerance_content: Optional[MLeaderToleranceContent] = None
+    text_content: MLeaderTextContent | None = None
+    block_content: MLeaderBlockContent | None = None
+    tolerance_content: MLeaderToleranceContent | None = None
 
 
 # ================================================================
@@ -558,28 +554,28 @@ class CADTableCell:
     value: Any
     data_type: str = "string"          # string, number, field, block, formula
     alignment: str = "middle_left"
-    style: Optional[str] = None
-    field: Optional[FieldEntity] = None
-    block_ref: Optional[CSDMHandle] = None
+    style: str | None = None
+    field: FieldEntity | None = None
+    block_ref: CSDMHandle | None = None
 
 
 @dataclass
 class CADTableRow:
     height: float = 1.0
-    cells: List[CADTableCell] = field(default_factory=list)
+    cells: list[CADTableCell] = field(default_factory=list)
 
 
 @register_entity("TABLE")
 @dataclass
 class TableEntity(BaseEntity):
-    rows: List[CADTableRow] = field(default_factory=list)
+    rows: list[CADTableRow] = field(default_factory=list)
     columns: int = 0
-    title: Optional[str] = None
+    title: str | None = None
     table_style: str = "Standard"
     direction: int = 0
     insertion: Vector3 = field(default_factory=lambda: Vector3())
 
-    def add_row(self, values: List[Any]):
+    def add_row(self, values: list[Any]):
         row = CADTableRow()
         for v in values:
             row.cells.append(CADTableCell(value=v))
@@ -591,7 +587,7 @@ class TableEntity(BaseEntity):
 # GEOMETRIC CONSTRAINT ENTITIES
 # ================================================================
 
-class ConstraintType:
+class CadConstraintType(Enum):
     COINCIDENT = "coincident"
     PARALLEL = "parallel"
     PERPENDICULAR = "perpendicular"
@@ -605,15 +601,15 @@ class ConstraintType:
 @register_entity("GEOMCONSTRAINT")
 @dataclass
 class GeometricConstraintEntity(BaseEntity):
-    constraint_type: str = ConstraintType.FIXED
-    target_entities: List[CSDMHandle] = field(default_factory=list)
+    constraint_type: CadConstraintType = CadConstraintType.FIXED
+    target_entities: list[CSDMHandle] = field(default_factory=list)
 
 
 # ================================================================
 # DIMENSIONAL CONSTRAINT
 # ================================================================
 
-class DimConstraintKind:
+class DimConstraintKind(Enum):
     DISTANCE = "distance"
     ANGLE = "angle"
     RADIUS = "radius"
@@ -623,10 +619,10 @@ class DimConstraintKind:
 @register_entity("DIMCONSTRAINT")
 @dataclass
 class DimensionalConstraintEntity(BaseEntity):
-    kind: str = DimConstraintKind.DISTANCE
+    kind: DimConstraintKind = DimConstraintKind.DISTANCE
     value: float = 0.0
-    measured: Optional[float] = None
-    ref_entities: List[CSDMHandle] = field(default_factory=list)
+    measured: float | None = None
+    ref_entities: list[CSDMHandle] = field(default_factory=list)
 
 
 # ================================================================
@@ -637,8 +633,8 @@ class DimensionalConstraintEntity(BaseEntity):
 @dataclass
 class DCFCustomEntity(BaseEntity):
     type_name: str = ""
-    properties: Dict[str, Any] = field(default_factory=dict)
-    geometry: Dict[str, Any] = field(default_factory=dict)
+    properties: dict[str, Any] = field(default_factory=dict)
+    geometry: dict[str, Any] = field(default_factory=dict)
 
 
 # ================================================================
@@ -651,4 +647,3 @@ def create_entity_by_dwg_name(name: str, **kwargs):
         raise ValueError(f"Unknown DWG/DCF entity type: {name}")
     cls = ENTITY_REGISTRY[cname]
     return cls(**kwargs)
-

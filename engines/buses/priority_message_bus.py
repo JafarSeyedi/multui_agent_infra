@@ -1,12 +1,14 @@
 # پیام‌ها بر اساس اولویت پردازش می‌شوند، نه FIFO.
-
 # agents/buses/priority_message_bus.py
 import asyncio
 import heapq
 import logging
-from dataclasses import dataclass, field
-from typing import Any, Dict, List
-from .base_message_bus import MessageBus, HandlerType
+from dataclasses import dataclass
+from dataclasses import field
+from typing import Any
+
+from .base_message_bus import HandlerType
+from .base_message_bus import MessageBus
 from engines.interaction.interaction_models import AgentMessage
 
 logger = logging.getLogger(__name__)
@@ -22,8 +24,8 @@ class PriorityMessageBus(MessageBus):
     """Priority-based message bus."""
 
     def __init__(self) -> None:
-        self._queue: List[PrioritizedMessage] = []
-        self._subscribers: Dict[str, List[HandlerType]] = {}
+        self._queue: list[PrioritizedMessage] = []
+        self._subscribers: dict[str, list[HandlerType]] = {}
         self._lock = asyncio.Lock()
         self._processor_task: asyncio.Task | None = None
         self._running = False

@@ -3,16 +3,15 @@
 Data validation writer for XLSX.
 Generates the <dataValidations> element for a worksheet.
 """
-
 from __future__ import annotations
+
 import xml.etree.ElementTree as ET
-from typing import TYPE_CHECKING, Optional, List
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ....models.esdm_models import Worksheet, DataValidation, DataValidationRule
+    from ....models.esdm_models import Worksheet, DataValidation
     from ..base import ESDMBaseWriter
 
-from .const import XML_NAMESPACES
 
 
 class DataValidationWriter:
@@ -24,7 +23,7 @@ class DataValidationWriter:
     def __init__(self, parent_writer: ESDMBaseWriter):
         self._parent = parent_writer
 
-    def write(self, worksheet: Worksheet) -> Optional[ET.Element]:
+    def write(self, worksheet: Worksheet) -> ET.Element | None:
         """
         Generate the <dataValidations> element for the worksheet.
         Returns None if there are no data validations.

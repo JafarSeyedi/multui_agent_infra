@@ -1,10 +1,11 @@
 # agents/buses/redis_pub_sub_bus.py
-
 import asyncio
 import logging
-from typing import Dict, List
+
 from redis.asyncio import Redis
-from .base_message_bus import MessageBus, HandlerType
+
+from .base_message_bus import HandlerType
+from .base_message_bus import MessageBus
 from engines.interaction.interaction_models import AgentMessage
 
 logger = logging.getLogger(__name__)
@@ -16,7 +17,7 @@ class RedisMessageBus(MessageBus):
     def __init__(self, redis: Redis) -> None:
         self._redis = redis
         self._pubsub = redis.pubsub()
-        self._handlers: Dict[str, List[HandlerType]] = {}
+        self._handlers: dict[str, list[HandlerType]] = {}
         self._listener_task: asyncio.Task | None = None
         self._running = False
 

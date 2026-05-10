@@ -1,20 +1,18 @@
 # rag/research/memory/reasoning/reasoning_exporter.py
-
 from __future__ import annotations
 
 import json
-from typing import Dict
 
 
 class ReasoningExporter:
 
     @staticmethod
-    def to_json(trace: Dict):
+    def to_json(trace: dict):
 
         return json.dumps(trace, indent=2)
 
     @staticmethod
-    def summary(trace: Dict):
+    def summary(trace: dict):
 
         lines = []
 
@@ -35,4 +33,3 @@ class ReasoningExporter:
         walk(trace)
 
         return "\n".join(lines)
-

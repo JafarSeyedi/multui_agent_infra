@@ -3,19 +3,22 @@
 Write <p:sp>, <p:pic>, <p:grpSp> from ShapeContent / ImageContent / GroupShapeContent.
 No missing features; all visual properties recovered from model + _meta.
 """
-
 from __future__ import annotations
-from typing import Optional, Union
-from xml.etree.ElementTree import Element, SubElement
 
-from ...models.usdm_models import ShapeContent, ImageContent
-from ...models.psdm_models import GroupShapeContent, Placeholder
+from xml.etree.ElementTree import Element
+from xml.etree.ElementTree import SubElement
+
+from ...models.psdm_models import GroupShapeContent
+from ...models.psdm_models import Placeholder
+from ...models.usdm_models import ImageContent
+from ...models.usdm_models import ShapeContent
+from ..drawingml_helpers import write_effects
+from ..drawingml_helpers import write_fill
+from ..drawingml_helpers import write_line
+from ..drawingml_helpers import write_rich_text_body
+from ..drawingml_helpers import write_scene3d
+from ..drawingml_helpers import write_sp3d
 from .constants import NAMESPACES
-from ..drawingml_helpers import (
-    write_fill, write_line, write_effects,
-    write_scene3d, write_sp3d,
-    write_rich_text_body,
-)
 
 P = f"{{{NAMESPACES['p']}}}"
 A = f"{{{NAMESPACES['a']}}}"
@@ -54,7 +57,8 @@ def write_shape(shape: ShapeContent, element_id: str = "1") -> Element:
     if isinstance(ph, Placeholder):
         from .constants import PSDM_TO_PPTX_PLACEHOLDER
         pptx_type = PSDM_TO_PPTX_PLACEHOLDER.get(ph.type.value, "body")
-        SubElement(nvPr, f"{P}ph", {"type": pptx_type, "idx": str(ph.idx) if ph.idx >= 0 else None})
+        if pptx_type:
+            SubElement(nvPr, f"{P}ph", {"type": pptx_type, "idx": str(ph.idx) if ph.idx >= 0 else "1"})
     else:
         ph_type = shape._meta.get("placeholder_type")
         if ph_type:
@@ -79,7 +83,12 @@ def _write_spPr_content(spPr: Element, shape: ShapeContent) -> None:
     if shape.rotation:
         xfrm.set("rot", str(shape.rotation * 60000))  # degrees → EMU
     SubElement(xfrm, f"{A}off", {"x": str(shape.x), "y": str(shape.y)})
-    SubElement(xfrm, f"{A}ext", {"cx": str(shape.width), "cy": str(shape.height)})
+    attrs = {}
+    if shape.width is not None:
+        attrs["cx"] = str(shape.width)
+    if shape.height is not None:
+        attrs["cy"] = str(shape.height)
+    SubElement(xfrm, f"{A}ext", attrs)
 
     # Preset geometry
     SubElement(spPr, f"{A}prstGeom", {"prst": shape.shape_type})

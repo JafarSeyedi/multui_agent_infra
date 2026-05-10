@@ -1,8 +1,7 @@
 # storage/vector/backends/memory_adapter.py
-
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import numpy as np
 
@@ -14,24 +13,24 @@ class InMemoryVectorStore(VectorDBAdapter):
     """Simple in-memory cosine-similarity vector store for tests and local use."""
 
     def __init__(self) -> None:
-        self._vectors: List[List[float]] = []
-        self._metadatas: List[Dict[str, Any]] = []
-        self._ids: List[str] = []
-        self._dimension: Optional[int] = None
+        self._vectors: list[list[float]] = []
+        self._metadatas: list[dict[str, Any]] = []
+        self._ids: list[str] = []
+        self._dimension: int | None = None
 
     async def create_index(
         self,
         name: str,
         dimension: int,
-        config: Optional[Dict[str, Any]] = None,
+        config: dict[str, Any] | None = None,
     ) -> None:
         self._dimension = dimension
 
     async def upsert(
         self,
-        ids: List[str],
-        vectors: List[List[float]],
-        metadata: List[Dict[str, Any]],
+        ids: list[str],
+        vectors: list[list[float]],
+        metadata: list[dict[str, Any]],
     ) -> None:
         if len(ids) != len(vectors) or len(ids) != len(metadata):
             raise ValueError("Length of ids, vectors, and metadata must match.")
@@ -55,7 +54,7 @@ class InMemoryVectorStore(VectorDBAdapter):
                 self._vectors.append(normalized)
                 self._metadatas.append(meta)
 
-    async def batch_upsert(self, items: List[Dict[str, Any]]) -> None:
+    async def batch_upsert(self, items: list[dict[str, Any]]) -> None:
         if not items:
             return
         await self.upsert(
@@ -66,10 +65,10 @@ class InMemoryVectorStore(VectorDBAdapter):
 
     async def query(
         self,
-        vector: List[float],
+        vector: list[float],
         top_k: int = 5,
-        filters: Optional[Dict[str, Any]] = None,
-    ) -> List[Dict[str, Any]]:
+        filters: dict[str, Any] | None = None,
+    ) -> list[dict[str, Any]]:
         if not self._vectors:
             return []
         if self._dimension is None:
@@ -83,7 +82,7 @@ class InMemoryVectorStore(VectorDBAdapter):
         similarities = matrix @ normalized_query
         best_indices = np.argsort(similarities)[::-1][: min(top_k, len(self._vectors))]
 
-        results: List[Dict[str, Any]] = []
+        results: list[dict[str, Any]] = []
         for idx in best_indices:
             metadata = self._metadatas[idx]
             if filters and any(metadata.get(key) != value for key, value in filters.items()):
@@ -95,7 +94,7 @@ class InMemoryVectorStore(VectorDBAdapter):
             })
         return results
 
-    async def delete(self, ids: List[str]) -> None:
+    async def delete(self, ids: list[str]) -> None:
         ids_to_remove = set(ids)
         if not ids_to_remove:
             return

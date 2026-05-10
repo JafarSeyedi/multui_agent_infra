@@ -1,5 +1,4 @@
 # rag/research/memory/reasoning/reasoning_tree.py
-
 from __future__ import annotations
 
 from .reasoning_node import ReasoningNode
@@ -50,4 +49,3 @@ class ReasoningTree:
     def to_dict(self):
 
         return self.root.to_dict()
-

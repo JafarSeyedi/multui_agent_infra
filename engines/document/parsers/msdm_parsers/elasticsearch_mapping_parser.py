@@ -12,26 +12,21 @@ Handles:
 Every ES‑specific detail is preserved via annotations and constraints,
 ensuring lossless round‑trip.
 """
-
 from __future__ import annotations
+
 import json
 from pathlib import Path
-from typing import Optional, Dict, Any, List, Tuple
 
-from .base_msdm_parser import BaseMSDMParser
+from ...models.media_types import MEDIA_TYPES
+from ...models.msdm_models import Annotation
+from ...models.msdm_models import Attribute
+from ...models.msdm_models import DataType
+from ...models.msdm_models import Entity
+from ...models.msdm_models import EntityKind
+from ...models.msdm_models import MSDMDocument
+from ...models.msdm_models import ScalarType, Namespace
 from ..base import ParseOptions
-from ...models.msdm_models import (
-    MSDMDocument,
-    Entity,
-    Attribute,
-    DataType,
-    Constraint,
-    ConstraintType,
-    Index,
-    Annotation,
-    EntityKind,
-    ScalarType,
-)
+from .base_msdm_parser import BaseMSDMParser
 
 # ── Mapping from Elasticsearch field type to MSDM ScalarType ─────
 ES_TYPE_TO_SCALAR = {
@@ -49,7 +44,7 @@ ES_TYPE_TO_SCALAR = {
     "date_nanos": ScalarType.TIMESTAMP,
     "boolean":    ScalarType.BOOLEAN,
     "binary":     ScalarType.BINARY,
-    "integer_range":  ScalarType.STRING,   # range types stored as string/struct
+    "integer_range":  ScalarType.STRING,
     "float_range":    ScalarType.STRING,
     "long_range":     ScalarType.STRING,
     "double_range":   ScalarType.STRING,
@@ -60,8 +55,8 @@ ES_TYPE_TO_SCALAR = {
     "geo_shape":  ScalarType.STRING,
     "completion": ScalarType.STRING,
     "percolator": ScalarType.STRING,
-    "alias":      ScalarType.REF,   # alias to another field
-    "join":       ScalarType.STRING,   # parent/child relationship
+    "alias":      ScalarType.REF,
+    "join":       ScalarType.STRING,
     "rank_feature": ScalarType.FLOAT,
     "rank_features": ScalarType.ANY,
     "dense_vector": ScalarType.BINARY,
@@ -86,8 +81,12 @@ class ElasticsearchMappingParser(BaseMSDMParser):
         text = data.decode(encoding)
         raw = json.loads(text)
 
-        doc = MSDMDocument()
-        doc.namespace = Path(source_name).stem
+        doc = MSDMDocument(
+            document_id=Path(source_name).stem,
+            title=Path(source_name).stem,
+            media_type=MEDIA_TYPES.get("elasticsearch_mapping", MEDIA_TYPES["json"])
+        )
+        doc.namespace = Namespace(uri=Path(source_name).stem)
 
         # Determine if the top-level is just the mapping or a full index definition
         if "mappings" in raw:
@@ -100,6 +99,7 @@ class ElasticsearchMappingParser(BaseMSDMParser):
             mappings = raw
 
         self._parse_mappings(mappings, doc)
+        self.resolve_references(doc)
         return doc
 
     def _store_settings(self, settings: dict, doc: MSDMDocument) -> None:

@@ -3,22 +3,21 @@
 Complete DrawingML parser for SpreadsheetML drawings.
 Extracts shapes, images, and chart references with full detail.
 """
-
 from __future__ import annotations
-from typing import Dict, List, Optional, Tuple
+
 from xml.etree.ElementTree import Element
 
 from ....models.esdm_models import ShapeContent
-from ....models.usdm_models import (
-    ImageContent,
-    ChartContent,
-    RichTextContent,
-    RichTextSpan,
-)
-from .utils import (
-    xml_find, xml_findall, xml_attr, xml_text, xml_int, xml_float,
-    parse_cell_coordinate, color_hex_from_xml,
-)
+from ....models.usdm_models import ChartContent
+from ....models.usdm_models import ImageContent
+from ....models.usdm_models import RichTextContent
+from ....models.usdm_models import RichTextSpan
+from .utils import xml_attr
+from .utils import xml_find
+from .utils import xml_findall
+from .utils import xml_float
+from .utils import xml_int
+from .utils import xml_text
 
 # Namespaces
 XDR = "http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"
@@ -36,13 +35,15 @@ NS = {
 
 def parse_drawing(
     drawing_xml: Element,
-    image_map: Dict[str, str] = None,   # relId -> zip path of image file
-) -> Tuple[List[ShapeContent], List[ImageContent], List[ChartContent]]:
+    image_map: dict[str, str] | None = None,   # relId -> zip path of image file
+) -> tuple[list[ShapeContent], list[ImageContent], list[ChartContent]]:
     """
     Returns lists of fully populated ShapeContent, ImageContent, ChartContent.
     image_map can be empty; if provided, image src will be replaced with real path.
     """
-    shapes, images, charts = [], [], []
+    shapes: list[ShapeContent] = []
+    images: list[ImageContent] = []
+    charts:list[ChartContent] = []
     # Iterate over all possible anchor types
     for anchor in (
         xml_findall(drawing_xml, "xdr:twoCellAnchor", NS) +
@@ -58,17 +59,17 @@ def _parse_anchor(
     shapes: list,
     images: list,
     charts: list,
-    image_map: Dict[str, str],
+    image_map: dict[str, str],
 ):
     # Position (from/to)
     from_el = xml_find(anchor, "xdr:from", NS)
     to_el   = xml_find(anchor, "xdr:to", NS)
     from_col, from_row, from_col_off, from_row_off = 0, 0, 0, 0
     if from_el is not None:
-        from_col = xml_int(xml_find(from_el, "xdr:col", NS), 0)
-        from_row = xml_int(xml_find(from_el, "xdr:row", NS), 0)
-        from_col_off = xml_int(xml_find(from_el, "xdr:colOff", NS), 0)
-        from_row_off = xml_int(xml_find(from_el, "xdr:rowOff", NS), 0)
+        from_col = xml_int(from_el, "xdr:col", 0)
+        from_row = xml_int(from_el, "xdr:row", 0)
+        from_col_off = xml_int(from_el, "xdr:colOff", 0)
+        from_row_off = xml_int(from_el, "xdr:rowOff", 0)
 
     # Common shape parsing
     def extract_shapes(element):
@@ -89,14 +90,16 @@ def _parse_anchor(
 
     # Graphic frames (charts)
     for gf in xml_findall(anchor, "xdr:graphicFrame", NS):
-        charts.append(_parse_chart_ref(gf))
+        chart = _parse_chart_ref(gf)
+        if chart is not None:
+            charts.append(chart)
 
 
 def _parse_shape(
     sp: Element,
     col: int, row: int,
     col_off: int, row_off: int,
-) -> Optional[ShapeContent]:
+) -> ShapeContent | None:
     nv_sp_pr = xml_find(sp, "xdr:nvSpPr", NS)
     sp_pr = xml_find(sp, "xdr:spPr", NS)
     tx_body = xml_find(sp, "xdr:txBody", NS)
@@ -171,7 +174,7 @@ def _parse_shape(
     )
 
 
-def _parse_drawing_rich_text(tx_body: Element) -> Optional[RichTextContent]:
+def _parse_drawing_rich_text(tx_body: Element) -> RichTextContent | None:
     """
     Parse <a:p> elements with <a:r> runs and <a:rPr> formatting.
     Returns a RichTextContent with full run properties.
@@ -210,8 +213,8 @@ def _parse_drawing_rich_text(tx_body: Element) -> Optional[RichTextContent]:
 def _parse_image(
     pic: Element,
     col_off: int, row_off: int,
-    image_map: Dict[str, str],
-) -> Optional[ImageContent]:
+    image_map: dict[str, str],
+) -> ImageContent | None:
     nv_pic_pr = xml_find(pic, "xdr:nvPicPr", NS)
     blip_fill = xml_find(pic, "xdr:blipFill", NS)
     if blip_fill is None:
@@ -247,7 +250,7 @@ def _parse_image(
         metadata={"col_off": col_off, "row_off": row_off, "x": x, "y": y},
     )
 
-def _parse_chart_ref(gf: Element) -> ChartContent:
+def _parse_chart_ref(gf: Element) -> ChartContent | None:
     """Return a placeholder ChartContent with only the relationship ID."""
     graphic = xml_find(gf, "a:graphic", NS)
     if graphic is None:

@@ -1,13 +1,12 @@
-from typing import List, Optional
-from ...models import AgentInput, AgentOutput
-
-from .common import ConfidenceScore, Recommendation, Evidence
-from .learning_objects import (
-    ConceptNode,
-    Lesson,
-    LearningObjective,
-    StudentProfile
-)
+from ...models import AgentInput
+from ...models import AgentOutput
+from .common import ConfidenceScore
+from .common import Evidence
+from .common import Recommendation
+from .learning_objects import ConceptNode
+from .learning_objects import LearningObjective
+from .learning_objects import Lesson
+from .learning_objects import StudentProfile
 
 
 # --------------------------------------------------
@@ -16,16 +15,16 @@ from .learning_objects import (
 
 class ConceptGraphBuilderInput(AgentInput):
 
-    lessons: List[Lesson]
+    lessons: list[Lesson]
 
 
 class ConceptGraphBuilderOutput(AgentOutput):
 
-    concepts: List[ConceptNode]
+    concepts: list[ConceptNode]
 
-    relationships: List[str]
+    relationships: list[str]
 
-    confidence: Optional[ConfidenceScore]
+    confidence: ConfidenceScore | None
 
 
 # --------------------------------------------------
@@ -34,16 +33,16 @@ class ConceptGraphBuilderOutput(AgentOutput):
 
 class ConceptRelationExtractorInput(AgentInput):
 
-    concepts: List[ConceptNode]
+    concepts: list[ConceptNode]
 
-    lesson_texts: Optional[List[str]]
+    lesson_texts: list[str] | None
 
 
 class ConceptRelationExtractorOutput(AgentOutput):
 
-    extracted_relations: List[str]
+    extracted_relations: list[str]
 
-    evidence: Optional[List[Evidence]]
+    evidence: list[Evidence] | None
 
 
 # --------------------------------------------------
@@ -52,14 +51,14 @@ class ConceptRelationExtractorOutput(AgentOutput):
 
 class PrerequisiteInferenceInput(AgentInput):
 
-    concepts: List[ConceptNode]
+    concepts: list[ConceptNode]
 
 
 class PrerequisiteInferenceOutput(AgentOutput):
 
-    prerequisite_pairs: List[str]
+    prerequisite_pairs: list[str]
 
-    confidence: Optional[ConfidenceScore]
+    confidence: ConfidenceScore | None
 
 
 # --------------------------------------------------
@@ -68,16 +67,16 @@ class PrerequisiteInferenceOutput(AgentOutput):
 
 class CurriculumPlannerInput(AgentInput):
 
-    learning_objectives: List[LearningObjective]
+    learning_objectives: list[LearningObjective]
 
-    target_level: Optional[str]
+    target_level: str | None
 
 
 class CurriculumPlannerOutput(AgentOutput):
 
-    curriculum_lessons: List[Lesson]
+    curriculum_lessons: list[Lesson]
 
-    rationale: Optional[str]
+    rationale: str | None
 
 
 # --------------------------------------------------
@@ -86,14 +85,14 @@ class CurriculumPlannerOutput(AgentOutput):
 
 class LessonSequencePlannerInput(AgentInput):
 
-    lessons: List[Lesson]
+    lessons: list[Lesson]
 
 
 class LessonSequencePlannerOutput(AgentOutput):
 
-    ordered_lessons: List[Lesson]
+    ordered_lessons: list[Lesson]
 
-    reasoning: Optional[str]
+    reasoning: str | None
 
 
 # --------------------------------------------------
@@ -104,14 +103,14 @@ class LearningPathGeneratorInput(AgentInput):
 
     student: StudentProfile
 
-    objectives: List[LearningObjective]
+    objectives: list[LearningObjective]
 
 
 class LearningPathGeneratorOutput(AgentOutput):
 
-    recommended_lessons: List[Lesson]
+    recommended_lessons: list[Lesson]
 
-    recommendations: Optional[List[Recommendation]]
+    recommendations: list[Recommendation] | None
 
 
 # --------------------------------------------------
@@ -122,14 +121,14 @@ class PersonalizedCurriculumInput(AgentInput):
 
     student: StudentProfile
 
-    curriculum_lessons: List[Lesson]
+    curriculum_lessons: list[Lesson]
 
 
 class PersonalizedCurriculumOutput(AgentOutput):
 
-    personalized_lessons: List[Lesson]
+    personalized_lessons: list[Lesson]
 
-    rationale: Optional[str]
+    rationale: str | None
 
 
 # --------------------------------------------------
@@ -140,14 +139,14 @@ class SkillGapCurriculumAdapterInput(AgentInput):
 
     student: StudentProfile
 
-    missing_concepts: List[str]
+    missing_concepts: list[str]
 
 
 class SkillGapCurriculumAdapterOutput(AgentOutput):
 
-    remedial_lessons: List[Lesson]
+    remedial_lessons: list[Lesson]
 
-    recommendations: Optional[List[Recommendation]]
+    recommendations: list[Recommendation] | None
 
 
 # --------------------------------------------------
@@ -156,16 +155,16 @@ class SkillGapCurriculumAdapterOutput(AgentOutput):
 
 class DifficultyBalancerInput(AgentInput):
 
-    lessons: List[Lesson]
+    lessons: list[Lesson]
 
     student: StudentProfile
 
 
 class DifficultyBalancerOutput(AgentOutput):
 
-    balanced_lessons: List[Lesson]
+    balanced_lessons: list[Lesson]
 
-    reasoning: Optional[str]
+    reasoning: str | None
 
 
 # --------------------------------------------------
@@ -176,14 +175,14 @@ class StudyStrategyPlannerInput(AgentInput):
 
     student: StudentProfile
 
-    objectives: List[LearningObjective]
+    objectives: list[LearningObjective]
 
 
 class StudyStrategyPlannerOutput(AgentOutput):
 
-    study_plan: List[str]
+    study_plan: list[str]
 
-    recommendations: Optional[List[Recommendation]]
+    recommendations: list[Recommendation] | None
 
 
 # --------------------------------------------------
@@ -192,14 +191,14 @@ class StudyStrategyPlannerOutput(AgentOutput):
 
 class ReviewSchedulerInput(AgentInput):
 
-    concepts: List[ConceptNode]
+    concepts: list[ConceptNode]
 
     student: StudentProfile
 
 
 class ReviewSchedulerOutput(AgentOutput):
 
-    review_schedule: List[str]
+    review_schedule: list[str]
 
 
 # --------------------------------------------------
@@ -210,14 +209,14 @@ class RemediationPlannerInput(AgentInput):
 
     student: StudentProfile
 
-    weak_concepts: List[str]
+    weak_concepts: list[str]
 
 
 class RemediationPlannerOutput(AgentOutput):
 
-    remediation_lessons: List[Lesson]
+    remediation_lessons: list[Lesson]
 
-    recommendations: Optional[List[Recommendation]]
+    recommendations: list[Recommendation] | None
 
 
 # --------------------------------------------------
@@ -228,12 +227,12 @@ class EnrichmentPlannerInput(AgentInput):
 
     student: StudentProfile
 
-    mastered_concepts: List[str]
+    mastered_concepts: list[str]
 
 
 class EnrichmentPlannerOutput(AgentOutput):
 
-    enrichment_lessons: List[Lesson]
+    enrichment_lessons: list[Lesson]
 
 
 # --------------------------------------------------
@@ -242,14 +241,14 @@ class EnrichmentPlannerOutput(AgentOutput):
 
 class ConceptReinforcementInput(AgentInput):
 
-    concepts: List[ConceptNode]
+    concepts: list[ConceptNode]
 
     student: StudentProfile
 
 
 class ConceptReinforcementOutput(AgentOutput):
 
-    reinforcement_activities: List[str]
+    reinforcement_activities: list[str]
 
 
 # --------------------------------------------------
@@ -260,11 +259,11 @@ class LongTermLearningPlannerInput(AgentInput):
 
     student: StudentProfile
 
-    long_term_goals: List[str]
+    long_term_goals: list[str]
 
 
 class LongTermLearningPlannerOutput(AgentOutput):
 
-    long_term_plan: List[str]
+    long_term_plan: list[str]
 
-    milestones: Optional[List[str]]
+    milestones: list[str] | None

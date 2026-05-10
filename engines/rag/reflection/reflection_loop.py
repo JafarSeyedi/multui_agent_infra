@@ -1,4 +1,3 @@
-from typing import List
 from engines.rag.rag_models import RetrievedDocument
 
 
@@ -35,7 +34,7 @@ Produce a single improved query.
     async def run(
         self,
         original_query: str,
-        retrieved_docs: List[RetrievedDocument],
+        retrieved_docs: list[RetrievedDocument],
         retriever_callable,
     ):
         """

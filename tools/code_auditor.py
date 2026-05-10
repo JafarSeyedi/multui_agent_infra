@@ -1,9 +1,13 @@
-
 import ast
 import sys
-from pathlib import Path
+from collections.abc import Iterator
 from dataclasses import dataclass
-from typing import Iterator, Dict, Any, List, Optional, Tuple, Union, Set # Import Set
+from pathlib import Path
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Set
 
 # Assuming necessary imports from pygls and server.utils are available
 # If not, they would need to be included or mocked. For this example,
@@ -72,7 +76,7 @@ class CodeAuditor:
     def __init__(self) -> None:
         self.issues: list[Issue] = []
 
-    def _iter_files(self, root: str) -> Iterator[tuple[str, str, Optional[ast.Module]]]:
+    def _iter_files(self, root: str) -> Iterator[tuple[str, str, ast.Module | None]]:
         """Yield (relative_path, source, ast_tree) for each .py file"""
         root_path = Path(root).resolve()
         for py_file in root_path.rglob("*.py"):
@@ -91,7 +95,7 @@ class CodeAuditor:
             tree = self._check_syntax(rel, source)
             yield rel, source, tree
 
-    def _check_syntax(self, rel: str, source: str) -> Optional[ast.Module]:
+    def _check_syntax(self, rel: str, source: str) -> ast.Module | None:
         try:
             return ast.parse(source, filename=rel)
         except IndentationError as e:
@@ -158,7 +162,7 @@ class CodeAuditor:
 
         return False
 
-    def _assign_to_stmt(self, node: ast.AST, target_var_name: str, lineno: int, rel: str) -> Optional[Any]:
+    def _assign_to_stmt(self, node: ast.AST, target_var_name: str, lineno: int, rel: str) -> Any | None:
         """
         Attempts to assign an AST node to a variable typed as 'stmt', performing checks.
         Returns the node if successful, otherwise adds an issue and returns None.
@@ -180,7 +184,7 @@ class CodeAuditor:
 
     def _check_signature_mismatch(self, rel: str, tree: ast.Module, source_lines: list[str]) -> list[Issue]:
         issues = []
-        class_signatures: Dict[str, Dict[str, Dict[str, Any]]] = {}
+        class_signatures: dict[str, dict[str, dict[str, Any]]] = {}
 
         for node in ast.walk(tree):
             if isinstance(node, ast.ClassDef):
@@ -233,7 +237,7 @@ class CodeAuditor:
                             elif parent_sig.get('is_abstract') and child_sig is None:
                                 issues.append(Issue(ABSTRACT_VIOLATION, rel, node.lineno,
                                                     f"Class '{current_class_name}' does not implement abstract method '{meth_name}' from base"))
-        
+
         for node in ast.walk(tree):
              # --- Fix for error 179 and 181 ---
              # Check iteration and subtraction operations more carefully.
@@ -252,7 +256,7 @@ class CodeAuditor:
                       # Instead, we can flag the potential issue if the iterable is not clearly defined as iterable.
                       # For this fix, we assume the mypy error points to a specific variable misuse.
                       # This placeholder flags the line where iteration occurs.
-                      issues.append(Issue(SIGNATURE_MISMATCH, rel, node.lineno, 
+                      issues.append(Issue(SIGNATURE_MISMATCH, rel, node.lineno,
                                           f"Potential TypeError: The iterable in the for loop may not be of an iterable type (mypy error 179 related). Variable '{iterable_node.id}' might be involved."))
 
              # Check for binary operations like subtraction
@@ -270,7 +274,7 @@ class CodeAuditor:
                          operands_involved.append(left.id)
                      if isinstance(right, ast.Name):
                          operands_involved.append(right.id)
-                     
+
                      if operands_involved:
                           issues.append(Issue(SIGNATURE_MISMATCH, rel, node.lineno,
                                               f"Potential TypeError: Unsupported operand type for '-' involving {', '.join(operands_involved)} (mypy error 181 related)."))
@@ -279,7 +283,7 @@ class CodeAuditor:
 
     def _check_calls(self, rel: str, tree: ast.Module) -> list[Issue]:
         issues = []
-        signatures: Dict[str, Dict[str, Any]] = {}
+        signatures: dict[str, dict[str, Any]] = {}
 
         for node in ast.walk(tree):
             if isinstance(node, ast.ClassDef):
@@ -298,7 +302,7 @@ class CodeAuditor:
             if isinstance(node, ast.Call):
                 func_node = node.func
                 func_name = ""
-                
+
                 if isinstance(func_node, ast.Name):
                     func_name = func_node.id
                 elif isinstance(func_node, ast.Attribute):
@@ -308,15 +312,15 @@ class CodeAuditor:
                 if func_name and func_name in signatures:
                     target_sig = signatures[func_name]
                     target_params = target_sig['params']
-                    
+
                     provided_args = node.args
                     provided_keywords = node.keywords
-                    
+
                     num_provided_positional = len(provided_args)
                     num_provided_keywords = len(provided_keywords)
-                    
+
                     total_provided = num_provided_positional + num_provided_keywords
-                    
+
                     # Simple argument count check (needs refinement for defaults/kwarg matching)
                     if total_provided < len(target_params):
                          issues.append(Issue(SIGNATURE_MISMATCH, rel, node.lineno,
@@ -335,15 +339,15 @@ class CodeAuditor:
                             # Basic check: if it's not an int literal, flag it.
                             if not is_constant_int:
                                 issues.append(Issue(SIGNATURE_MISMATCH, rel, node.lineno,
-                                                    f"Argument 3 to 'Issue' call has incompatible type. Expected 'int', but received potentially non-integer type."))
-                                                    
+                                                    "Argument 3 to 'Issue' call has incompatible type. Expected 'int', but received potentially non-integer type."))
+
         return issues
 
     def _check_unused_imports(self, rel: str, tree: ast.Module) -> list[Issue]:
         if Path(rel).name == "__init__.py":
             return []
 
-        imported_names: Dict[str, int] = {}
+        imported_names: dict[str, int] = {}
 
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
@@ -359,7 +363,7 @@ class CodeAuditor:
                     name = alias.asname or alias.name
                     imported_names[name] = node.lineno
 
-        used_names: Set[str] = set()
+        used_names: set[str] = set()
         for node in ast.walk(tree):
             if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):
                 used_names.add(node.id)
@@ -416,13 +420,13 @@ class CodeAuditor:
                         continue
                     has_real_content = True
                     break
-                
+
                 if not has_real_content:
                     issues.append(Issue(EMPTY_CLASS, rel, node.lineno,
                                         f"Class '{node.name}' has an empty body. Use 'pass' or '...'."))
 
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                
+
                 self._check_untyped_defs(rel, node, source_lines)
 
                 is_intentionally_empty_body = self._is_intentionally_empty(node, source_lines)
@@ -434,7 +438,7 @@ class CodeAuditor:
                          has_real_content = True
                          break
                     elif not (isinstance(item, ast.Pass) or (isinstance(item, ast.Expr) and isinstance(item.value, ast.Constant) and item.value.value is ...)):
-                         pass 
+                         pass
 
                 only_docstring = len(node.body) == 1 and isinstance(node.body[0], ast.Expr) and isinstance(node.body[0].value, ast.Constant) and isinstance(node.body[0].value.value, str)
                 if only_docstring and not is_intentionally_empty_body:
@@ -475,11 +479,11 @@ class CodeAuditor:
 
     def report(self, output_file: str = "audit_report.md"):
         """Generate markdown report"""
-        
+
         # --- Fix for error 498: Need type annotation for "by_type" ---
         # Declare by_type with its type hint.
-        by_type: Dict[str, List[Issue]] = {}
-        
+        by_type: dict[str, list[Issue]] = {}
+
         for issue in self.issues:
             if issue.type not in by_type:
                 by_type[issue.type] = []
@@ -513,11 +517,11 @@ class CodeAuditor:
             print(f"Error writing report to {output_file}: {e}")
             print("--- Report Content ---")
             print(report_text)
-            
+
         return report_text
 
     def _check_abstract_methods(self, rel: str, tree: ast.Module) -> list[Issue]:
-        return [] 
+        return []
 
 def main():
     if len(sys.argv) < 2:

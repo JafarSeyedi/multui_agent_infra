@@ -3,29 +3,30 @@
 Builds a fully populated Slide from a <p:sld> element and associated relationships.
 Preserves all content for round‑trip.
 """
-
 from __future__ import annotations
-from typing import Optional, Dict, List, Any, Tuple
+
 from xml.etree.ElementTree import Element
 
-from ...models.psdm_models import (
-    Slide, SlideLayout, SlideMaster, NotesSlide,
-)
-from ...models.usdm_models import (
-    LogicalElement, ElementType,
-    ShapeContent, ImageContent, ChartContent, TableContent,
-)
-from .ole_parser import parse_ole_objects
-from .shape_parser import parse_pptx_shape, parse_group_shape
-from .media_parser import parse_media_references
-
-from .animation_parser import parse_slide_transition, parse_slide_animations
-from .constants import NAMESPACES, REL_TYPE
-from ..drawingml.image_parser import (
-    parse_image_from_pic, resolve_image,
-)
+from ...models.psdm_models import Slide
+from ...models.psdm_models import SlideLayout
+from ...models.psdm_models import SlideMaster, MediaReference
+from ...models.usdm_models import ElementType
+from ...models.usdm_models import ImageContent
+from ...models.usdm_models import LogicalElement
+from ...models.usdm_models import ShapeContent
 from ..drawingml.chart_ref_parser import parse_chart_ref
 from ..drawingml.diagram_parser import parse_diagram_ref
+from ..drawingml.image_parser import (
+    parse_image_from_pic,
+)
+from .animation_parser import parse_slide_animations
+from .animation_parser import parse_slide_transition
+from .constants import NAMESPACES
+from .media_parser import parse_media_references
+from .ole_parser import parse_ole_objects
+from .table_parser import parse_table
+from .shape_parser import parse_group_shape
+from .shape_parser import parse_pptx_shape
 from .utils import element_to_dict
 
 NS = NAMESPACES
@@ -35,10 +36,10 @@ def build_slide(
     slide_xml: Element,
     slide_zip_path: str,
     zip_file,                      # ZipFile
-    slide_rels: Dict[str, Tuple[str, str]],
-    layouts: Dict[str, SlideLayout],
-    masters: Dict[str, SlideMaster],
-    package_rels: Dict[str, Tuple[str, str]],
+    slide_rels: dict[str, tuple[str, str]],
+    layouts: dict[str, SlideLayout],
+    masters: dict[str, SlideMaster],
+    package_rels: dict[str, tuple[str, str]],
 ) -> Slide:
     """
     Assemble a Slide from its XML.
@@ -55,7 +56,7 @@ def build_slide(
 
     # ---------- Common slide data (cSld) ----------
     cSld = slide_xml.find("p:cSld", NS)
-    elements: List[LogicalElement] = []
+    elements: list[LogicalElement] = []
     background_color = None
     background_image = None
 
@@ -106,10 +107,20 @@ def build_slide(
                             element_id=f"chart_{len(elements)}",
                             element_type=ElementType.CHART,
                             content=chart,
-                        ))
+                        ))                        
                     else:
-                        # could be a diagram or table; we skip for now but preserve in meta
-                        pass
+                        # Could be a diagram – check graphicData URI
+                        graphic = child.find(".//a:graphic", NS)
+                        if graphic is not None:
+                            graphic_data = graphic.find("a:graphicData", NS)
+                            if graphic_data is not None:
+                                diag = parse_diagram_ref(graphic_data)
+                                if diag:
+                                    elements.append(LogicalElement(
+                                        element_id=f"diagram_{len(elements)}",
+                                        element_type=ElementType.DRAWING,
+                                        content=diag,
+                                    ))
                 elif tag == "grpSp":
                     shapes = parse_group_shape(child)
                     for shape_obj in shapes:
@@ -132,45 +143,30 @@ def build_slide(
                         element_type=ElementType.TABLE,
                         content=table_content,
                     ))
-                elif tag == "graphicFrame":
-                    chart = parse_chart_ref(child)  # existing
-                    if chart:
-                        elements.append(...)
-                    else:
-                        # Could be a diagram – check graphicData URI
-                        graphic = child.find(".//a:graphic", NS)
-                        if graphic is not None:
-                            graphic_data = graphic.find("a:graphicData", NS)
-                            if graphic_data is not None:
-                                diag = parse_diagram_ref(graphic_data)
-                                if diag:
-                                    elements.append(LogicalElement(
-                                        element_id=f"diagram_{len(elements)}",
-                                        element_type=ElementType.DRAWING,
-                                        content=diag,
-                                    ))                    
                 elif tag == "media":
                     # A media container (audio/video) – contains a shape and media reference
-                    # Extract the inner shape (sp, pic, etc.) for visual representation
                     shape_elem = child.find("p:sp", NS) or child.find("p:pic", NS) or child.find("p:grpSp", NS)
                     if shape_elem is not None:
-                        # Parse the shape normally
                         if shape_elem.tag.endswith("sp"):
                             shape = parse_pptx_shape(shape_elem)
-                            elem = LogicalElement(...)
+                            elem = LogicalElement(
+                                element_id=shape.name or f"shape_{len(elements)}",
+                                element_type=ElementType.SHAPE,
+                                content=shape,
+                            )
                             elements.append(elem)
                         elif shape_elem.tag.endswith("pic"):
                             img = parse_image_from_pic(shape_elem)
                             if img:
-                                elements.append(LogicalElement(..., element_type=ElementType.IMAGE, content=img))
-                        # No media reference here – it will be handled by parse_media_references
-                        # # Then parse the media reference from the <p:media> element itself
-                        # media_ref = _parse_media_from_container(child)
-                        # if media_ref:
-                        #     # Attach the media ref to the last added element (the shape)
-                        #     elements[-1]._meta["media_reference"] = media_ref
+                                elem = LogicalElement(
+                                    element_id=img.src or f"pic_{len(elements)}",
+                                    element_type=ElementType.IMAGE,
+                                    content=img,
+                                )
+                                elements.append(elem)
+                        # Media reference will be attached later via media_refs map
                     else:
-                        # Possibly a direct media element without visual?
+                        # Possibly a direct media element without visual? skip for now
                         pass
 
     ole_objects = parse_ole_objects(slide_xml)
@@ -201,7 +197,7 @@ def build_slide(
 
     # Any remaining media references are standalone (e.g., background music)
     standalone_media = list(refs_by_rid.values())
-    # ---------- Transition ----------
+    # ---------- PresentationTransition ----------
     transition = parse_slide_transition(slide_xml)
 
     # ---------- Animations ----------
@@ -210,7 +206,7 @@ def build_slide(
     # ---------- Timing (additional) ----------
     timing_elem = slide_xml.find("p:timing", NS)
     timing_data = element_to_dict(timing_elem) if timing_elem is not None else None
-    
+
     # ---------- Build Slide ----------
     slide = Slide(
         slide_id=slide_id,
@@ -235,7 +231,14 @@ def build_slide(
 def _dir_of(path: str) -> str:
     return path.rsplit("/", 1)[0] if "/" in path else ""
 
-def _parse_media_from_container(media_elem: Element) -> Optional[MediaReference]:
+def _guess_type_from_ext(rel_id: str) -> str:
+    """
+    Placeholder – actual mime type would need to look up relationship target.
+    For now return a generic type.
+    """
+    return "application/octet-stream"
+
+def _parse_media_from_container(media_elem: Element) -> MediaReference | None:
     """Extract a MediaReference from a <p:media> element."""
     # The relationship to the media file is in the <p:media> attributes (r:link)
     r_id = media_elem.get(f"{{{NS['r']}}}link")
@@ -250,12 +253,12 @@ def _parse_media_from_container(media_elem: Element) -> Optional[MediaReference]
     return MediaReference(
         relationship_id=r_id,
         media_type=media_type,
-        mime_type=_guess_type_from_ext(r_id),  # would need the relationship to get real path, but we can leave empty
+        mime_type=_guess_type_from_ext(r_id),
         start_time=start,
         end_time=end,
         loop=loop,
     )
-    
+
 def _attach_media_to_element(elem: LogicalElement, r_id: str, media_type: str, media_elem: Element):
     """Attach a MediaReference to a shape element."""
     start = _parse_time(media_elem.get("start"))
@@ -264,13 +267,14 @@ def _attach_media_to_element(elem: LogicalElement, r_id: str, media_type: str, m
     ref = MediaReference(
         relationship_id=r_id,
         media_type=media_type,
+        mime_type=_guess_type_from_ext(r_id),
         start_time=start,
         end_time=end,
         loop=loop,
     )
     elem._meta["media_reference"] = ref
 
-def _add_media_ref(refs: List[MediaReference], r_id: str, media_type: str, elem: Element):
+def _add_media_ref(refs: list[MediaReference], r_id: str, media_type: str, elem: Element):
     """Add a MediaReference to the list (for standalone media)."""
     start = _parse_time(elem.get("start"))
     end = _parse_time(elem.get("end"))
@@ -278,15 +282,16 @@ def _add_media_ref(refs: List[MediaReference], r_id: str, media_type: str, elem:
     refs.append(MediaReference(
         relationship_id=r_id,
         media_type=media_type,
+        mime_type=_guess_type_from_ext(r_id),
         start_time=start,
         end_time=end,
         loop=loop,
     ))
 
-def _parse_time(val: Optional[str]) -> Optional[float]:
+def _parse_time(val: str | None) -> float | None:
     if val is None:
         return None
     try:
         return float(val) / 1000.0
     except ValueError:
-        return None    
+        return None

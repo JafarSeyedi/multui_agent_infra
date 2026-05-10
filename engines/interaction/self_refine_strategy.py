@@ -1,11 +1,9 @@
-from typing import Any, Dict, List
+from typing import Any
 
-from .base_strategy import InteractionStrategy
 from ..agents.models import AgentOutput
-from .interaction_models import (
-    InteractionRequest,
-    InteractionResult,
-)
+from .base_strategy import InteractionStrategy
+from .interaction_models import InteractionRequest
+from .interaction_models import InteractionResult
 
 
 class SelfRefineStrategy(InteractionStrategy):
@@ -19,7 +17,7 @@ class SelfRefineStrategy(InteractionStrategy):
 
     async def execute(self, request: InteractionRequest) -> InteractionResult:
 
-        context: Dict[str, Any] = dict(request.context or {})
+        context: dict[str, Any] = dict(request.context or {})
         metadata = request.metadata or {}
 
         generator_name = metadata.get("generator_agent")
@@ -34,7 +32,7 @@ class SelfRefineStrategy(InteractionStrategy):
         max_refinements = int(metadata.get("max_refinements", 3))
         quality_threshold = float(metadata.get("quality_threshold", 0.9))
 
-        results: List[AgentOutput] = []
+        results: list[AgentOutput] = []
 
         # ---------------------------
         # Step 1: initial generation

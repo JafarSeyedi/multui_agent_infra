@@ -1,24 +1,24 @@
 # rag/research/summarization/research_summarizer.py
 from __future__ import annotations
 
-from typing import Any, Iterable, List, Optional, Dict
-from engines.rag.research.summarization.base_summarizer import BaseSummarizer
+from typing import Any
 
 from engines.rag.research.citation_manager import CitationManager
+from engines.rag.research.summarization.base_summarizer import BaseSummarizer
 
 class ResearchSummarizer(BaseSummarizer):
-    def __init__(self, llm: Optional[Any], guard=None):
+    def __init__(self, llm: Any | None, guard=None):
         self.llm = llm
         self.guard = guard
 
     async def summarize(
         self,
         query: str,
-        plan: Optional[List[Dict[str, Any]]] = None,
-        raw_evidence: Optional[List[Any]] = None,
-        hidden_edges: Optional[List[Any]] = None,
-        citation_manager: Optional[CitationManager] = None,
-        evidence_chunks: Optional[List[Any]] = None,
+        plan: list[dict[str, Any]] | None = None,
+        raw_evidence: list[Any] | None = None,
+        hidden_edges: list[Any] | None = None,
+        citation_manager: CitationManager | None = None,
+        evidence_chunks: list[Any] | None = None,
     ) -> str:
         chunks = evidence_chunks or [
             getattr(item, "chunk", item) for item in (raw_evidence or [])
@@ -54,8 +54,8 @@ class ResearchSummarizer(BaseSummarizer):
         self,
         query: str,
         plan: Any,
-        chunks: List[Any],
-        hidden_edges: List[Any],
+        chunks: list[Any],
+        hidden_edges: list[Any],
     ) -> str:
         sections = getattr(plan, "sections", plan) if plan else []
         evidence_text = "\n".join(
@@ -73,13 +73,13 @@ class ResearchSummarizer(BaseSummarizer):
     def enforce_citations(
         self,
         text: str,
-        citation_manager: Optional[CitationManager],
+        citation_manager: CitationManager | None,
     ) -> str:
         if citation_manager is None:
             return text
         return citation_manager.inject_citations(text) if hasattr(citation_manager, "inject_citations") else text
 
-    async def _fallback_summary(self, query: str, chunks: List[Any]) -> str:
+    async def _fallback_summary(self, query: str, chunks: list[Any]) -> str:
         texts = [str(getattr(c, "text", c)) for c in chunks[:3]]
         joined = "\n".join(texts)
         prompt = f"Summarize briefly for: {query}\n\n{joined}"

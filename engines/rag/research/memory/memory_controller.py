@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import time
-from typing import List, Optional
 
 from engines.rag.research.memory.memory_retriever import MemoryRetriever
-from engines.rag.research.memory.memory_store import MemoryItem, MemoryStore
+from engines.rag.research.memory.memory_store import MemoryItem
+from engines.rag.research.memory.memory_store import MemoryStore
 from engines.rag.research.memory.reasoning.event_types import ReasoningEventType
 from engines.rag.research.memory.reasoning_memory import ReasoningMemory
 
@@ -14,7 +14,7 @@ class MemoryController:
         self,
         memory_store: MemoryStore,
         memory_retriever: MemoryRetriever,
-        reasoning_memory: Optional[ReasoningMemory] = None,
+        reasoning_memory: ReasoningMemory | None = None,
     ) -> None:
         self.store = memory_store
         self.retriever = memory_retriever
@@ -24,8 +24,8 @@ class MemoryController:
         self,
         query: str,
         answer_summary: str,
-        tags: Optional[List[str]] = None,
-        timestamp: Optional[float] = None,
+        tags: list[str] | None = None,
+        timestamp: float | None = None,
     ) -> MemoryItem:
         timestamp = time.time() if timestamp is None else timestamp
         tags = tags or []
@@ -33,7 +33,7 @@ class MemoryController:
         self.reasoning.log(ReasoningEventType.MEMORY_STORE, "Research result stored", meta={"query": query})
         return item
 
-    def recall(self, query: str, limit: int = 5) -> List[MemoryItem]:
+    def recall(self, query: str, limit: int = 5) -> list[MemoryItem]:
         results = self.retriever.retrieve_similar(query, limit=limit)
         self.reasoning.log(
             ReasoningEventType.MEMORY_RECALL,

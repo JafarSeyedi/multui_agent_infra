@@ -3,84 +3,71 @@
 Main DOCX Parser - Converts DOCX files to USDM format.
 Orchestrates extraction and conversion from DOCX to USDMDocument.
 """
-
-from typing import Optional, List, Dict, Any, Union, BinaryIO, Tuple, cast
-from datetime import datetime
 import hashlib
-import uuid
-import re
 import json
-from .docx_extractor import DOCXExtractor
-from .docx_models import (
-    DOCXDocument,
-    DOCXParagraph,
-    DOCXTable,
-    DOCXSection,
-    DOCXTextRun,
-    DOCXDrawing,
-    DOCXField,
-    DOCXBreak,
-    DOCXTab,
-    DOCXMath,
-    DOCXMathElement,
-    DOCXStyle,
-    DOCXComment,
-    DOCXFootnoteEndnote,
-    DOCXHeaderFooter,
-    DOCXNumberingDefinition,
-    DOCXNumberingInstance,
-    DOCXNumberingLevel,
-    ParagraphAlignment,
-)
-from ...models.base import (
-    BaseDocument,
-    BinaryPayload,
-    BinaryEncoding,
-    CompressionMethod,
-    ElementType,
-)
-from ...models.usdm_models import (
-    USDMDocument,
-    DocumentElement,
-    LogicalElement,
-    Section,
-    Page,
-    RichTextContent,
-    RichTextSpan,
-    ParagraphContent,
-    HeadingContent,
-    MathContent,
-    ImageContent,
-    ListContent,
-    ListItemContent,
-    TableContent,
-    TableRow,
-    TableCell,
-    QuoteContent,
-    StyleSheet,
-    CharacterStyle,
-    ParagraphStyle,
-    TableStyle,
-    ListStyle,
-    DrawingContent,
-    PageBreakContent,
-    LineBreakContent,
-    ColumnBreakContent,
-    BookmarkContent,
-    FootnoteContent,
-    EndnoteContent,
-    CommentContent,
-    DataContent,
-    EmbeddedObjectContent,
-    ShapeContent,
-    ChartContent,
-    TextRun,
-    ImageObject,
-    VectorPath,
-    AnnotationObject    
-)
-from ...models.media_types import MEDIA_TYPES
+import re
+import uuid
+from datetime import datetime
+from typing import Any
+from typing import BinaryIO
+from typing import cast
+
+from ...models.base import BinaryEncoding
+from ...models.base import BinaryPayload
+from ...models.base import CompressionMethod
+from ...models.base import ElementType
 from ...models.exceptions import DocumentParseError
+from ...models.media_types import MEDIA_TYPES
+from ...models.usdm_models import AnnotationObject
+from ...models.usdm_models import BookmarkContent
+from ...models.usdm_models import CharacterStyle
+from ...models.usdm_models import ChartContent
+from ...models.usdm_models import ColumnBreakContent
+from ...models.usdm_models import CommentContent
+from ...models.usdm_models import DataContent
+from ...models.usdm_models import DocumentElement
+from ...models.usdm_models import DrawingContent
+from ...models.usdm_models import EndnoteContent
+from ...models.usdm_models import FootnoteContent
+from ...models.usdm_models import HeadingContent
+from ...models.usdm_models import ImageContent
+from ...models.usdm_models import ImageObject
+from ...models.usdm_models import LineBreakContent
+from ...models.usdm_models import ListContent
+from ...models.usdm_models import ListItemContent
+from ...models.usdm_models import ListStyle
+from ...models.usdm_models import LogicalElement
+from ...models.usdm_models import Page
+from ...models.usdm_models import PageBreakContent
+from ...models.usdm_models import ParagraphContent
+from ...models.usdm_models import ParagraphStyle
+from ...models.usdm_models import QuoteContent
+from ...models.usdm_models import RichTextContent
+from ...models.usdm_models import RichTextSpan
+from ...models.usdm_models import Section
+from ...models.usdm_models import StyleSheet
+from ...models.usdm_models import TableCell
+from ...models.usdm_models import TableContent
+from ...models.usdm_models import TableRow
+from ...models.usdm_models import TableStyle
+from ...models.usdm_models import TextRun
+from ...models.usdm_models import USDMDocument
+from ...models.usdm_models import VectorPath
+from .docx_extractor import DOCXExtractor
+from .docx_models import DOCXBreak
+from .docx_models import DOCXComment
+from .docx_models import DOCXDocument
+from .docx_models import DOCXDrawing
+from .docx_models import DOCXField
+from .docx_models import DOCXFootnoteEndnote
+from .docx_models import DOCXMath
+from .docx_models import DOCXParagraph
+from .docx_models import DOCXSection
+from .docx_models import DOCXStyle
+from .docx_models import DOCXTab
+from .docx_models import DOCXTable
+from .docx_models import DOCXTextRun
+from .docx_models import ParagraphAlignment
 
 
 class DOCXParser:
@@ -91,7 +78,7 @@ class DOCXParser:
     1. Extraction: DOCX → DOCXDocument (intermediate model)
     2. Conversion: DOCXDocument → USDMDocument (target model)
     """
-    
+
     def __init__(
         self,
         encoding: BinaryEncoding = BinaryEncoding.BASE64,
@@ -115,24 +102,24 @@ class DOCXParser:
         self.extract_track_changes = extract_track_changes
         self.extract_comments = extract_comments
         self.extract_hidden_text = extract_hidden_text
-        
-        self._extractor: Optional[DOCXExtractor] = None
-        self._docx_doc: Optional[DOCXDocument] = None
-        
+
+        self._extractor: DOCXExtractor | None = None
+        self._docx_doc: DOCXDocument | None = None
+
         # Conversion state
         self._element_counter = 0
-        self._style_sheet: Optional[StyleSheet] = None
-        self._list_numbering_stack: List[Dict[str, Any]] = []
-        
+        self._style_sheet: StyleSheet | None = None
+        self._list_numbering_stack: list[dict[str, Any]] = []
+
         # Bookmark tracking
-        self._bookmarks: Dict[str, str] = {}  # bookmark_id -> element_id
-        self._pending_bookmarks: List[Tuple[str, int]] = []  # (bookmark_id, position)
-        
+        self._bookmarks: dict[str, str] = {}  # bookmark_id -> element_id
+        self._pending_bookmarks: list[tuple[str, int]] = []  # (bookmark_id, position)
+
         # Footnote/endnote tracking
         self._footnote_counter = 0
         self._endnote_counter = 0
-        self._footnote_elements: List[LogicalElement] = []
-        self._endnote_elements: List[LogicalElement] = []
+        self._footnote_elements: list[LogicalElement] = []
+        self._endnote_elements: list[LogicalElement] = []
 
 
     def _reset(self) -> None:
@@ -148,18 +135,18 @@ class DOCXParser:
         self._endnote_counter = 0
         self._footnote_elements = []
         self._endnote_elements = []
-        
+
     def _generate_element_id(self) -> str:
         """Generate a unique element ID."""
         self._element_counter += 1
-        return f"elem_{self._element_counter}"        
-    
-    def _convert_table(self, table: DOCXTable) -> Optional[LogicalElement]:
-        rows: List[TableRow] = []
+        return f"elem_{self._element_counter}"
+
+    def _convert_table(self, table: DOCXTable) -> LogicalElement | None:
+        rows: list[TableRow] = []
         for row in table.rows:
-            cells: List[TableCell] = []
+            cells: list[TableCell] = []
             for cell in row.cells:
-                cell_elements: List[LogicalElement] = []
+                cell_elements: list[LogicalElement] = []
                 for item in cell.content:
                     if isinstance(item, DOCXParagraph):
                         para: DOCXParagraph = item
@@ -180,15 +167,15 @@ class DOCXParser:
             content=content,
             metadata={"style_id": table.properties.style_id if table.properties else None}
         )
-        
-    def _merge_consecutive_lists(self, elements: List[LogicalElement]) -> List[LogicalElement]:
-        merged: List[LogicalElement] = []
+
+    def _merge_consecutive_lists(self, elements: list[LogicalElement]) -> list[LogicalElement]:
+        merged: list[LogicalElement] = []
         i = 0
         while i < len(elements):
             elem = elements[i]
             if elem.element_type == ElementType.LIST_ITEM:
                 # Start a potential list group
-                list_items: List[ListItemContent] = []
+                list_items: list[ListItemContent] = []
                 # Determine if this is an ordered list from the first item's metadata
                 numbering = elem.metadata.get('numbering', {})
                 is_ordered = not numbering.get('format', '').startswith('bullet') if numbering else False
@@ -216,7 +203,7 @@ class DOCXParser:
     # ============================================================
     # PUBLIC API
     # ============================================================
-    
+
     def parse(self, file_path: str) -> USDMDocument:
         """
         Parse a DOCX file from a file path.
@@ -241,7 +228,7 @@ class DOCXParser:
             raise DocumentParseError(f"Failed to parse DOCX file: {e}") from e
         finally:
             self._reset()
-    
+
     def parse_bytes(self, data: bytes, filename: str = "document.docx") -> USDMDocument:
         """
         Parse a DOCX file from bytes.
@@ -267,7 +254,7 @@ class DOCXParser:
             raise DocumentParseError(f"Failed to parse DOCX bytes: {e}") from e
         finally:
             self._reset()
-    
+
     def parse_fileobj(self, file_obj: BinaryIO, filename: str = "document.docx") -> USDMDocument:
         """
         Parse a DOCX file from a file-like object.
@@ -293,53 +280,53 @@ class DOCXParser:
             raise DocumentParseError(f"Failed to parse DOCX file object: {e}") from e
         finally:
             self._reset()
-    
+
     # ============================================================
     # CONVERSION TO USDM
     # ============================================================
-    
+
     def _convert_to_usdm(self, source_name: str) -> USDMDocument:
         """Convert the intermediate DOCXDocument to USDMDocument."""
         if self._docx_doc is None:
             raise DocumentParseError("No document has been extracted")
-        
+
         # Generate document ID
         doc_id = self._generate_document_id(source_name)
-        
+
         # Build style sheet
         self._style_sheet = self._convert_styles()
-        
+
         # Build logical elements
         logical_elements = self._convert_body_to_logical_elements()
-        
+
         # Add footnotes and endnotes if extracted
         if self.extract_comments:
             footnote_elements = self._convert_footnotes()
             endnote_elements = self._convert_endnotes()
-            comment_elements = self._convert_comments()
-            
+            self._convert_comments()
+
             # Append to logical elements or store separately
             self._footnote_elements = footnote_elements
             self._endnote_elements = endnote_elements
-        
+
         # Build sections
         sections = self._convert_sections(logical_elements)
-        
+
         # Build pages (if page layout information is available)
         pages = self._build_pages(logical_elements)
-        
+
         # Build document elements (flat list for compatibility)
         elements = self._flatten_logical_elements(logical_elements)
-        
+
         # Extract raw binary content if needed
         raw_binary = self._extract_raw_binary()
-        
+
         # Extract raw text
         raw_text = self._extract_raw_text(logical_elements)
-        
+
         # Build metadata
         metadata = self._build_metadata(source_name)
-        
+
         # Create USDM document
         usdm_doc = USDMDocument(
             title=self._get_document_title(),
@@ -361,13 +348,13 @@ class DOCXParser:
             stylesheet=self._style_sheet or StyleSheet(),
             is_valid=True,
         )
-        
+
         return usdm_doc
 
-    def _convert_sections(self, logical_elements: List[LogicalElement]) -> List[Section]:
-        sections: List[Section] = []
-        current_section_elements: List[DocumentElement] = []
-        current_title: Optional[HeadingContent] = None
+    def _convert_sections(self, logical_elements: list[LogicalElement]) -> list[Section]:
+        sections: list[Section] = []
+        current_section_elements: list[DocumentElement] = []
+        current_title: HeadingContent | None = None
 
         for elem in logical_elements:
             # Start new section on certain conditions
@@ -391,9 +378,9 @@ class DOCXParser:
 
         return sections
 
-    def _build_pages(self, logical_elements: List[LogicalElement]) -> List[Page]:
-        pages: List[Page] = []
-        current_page_objects: List[Union[TextRun, ImageObject, VectorPath, AnnotationObject]] = []
+    def _build_pages(self, logical_elements: list[LogicalElement]) -> list[Page]:
+        pages: list[Page] = []
+        current_page_objects: list[TextRun | ImageObject | VectorPath | AnnotationObject] = []
         # For now, we only split by page breaks; TextRun objects could be created elsewhere.
         # This is a simple placeholder that groups elements per page.
 
@@ -413,8 +400,8 @@ class DOCXParser:
 
         return pages
 
-    def _flatten_logical_elements(self, logical_elements: List[LogicalElement]) -> List[DocumentElement]:
-        flat: List[DocumentElement] = []
+    def _flatten_logical_elements(self, logical_elements: list[LogicalElement]) -> list[DocumentElement]:
+        flat: list[DocumentElement] = []
 
         def flatten(elem: LogicalElement):
             flat.append(DocumentElement(
@@ -436,22 +423,22 @@ class DOCXParser:
             flatten(le)
 
         return flat
-    
+
     def _generate_document_id(self, source_name: str) -> str:
         """Generate a unique document ID."""
         if self._docx_doc:
             content = str(self._docx_doc.core_properties.__dict__)
             hash_val = hashlib.sha256(content.encode()).hexdigest()[:16]
             return f"docx_{hash_val}"
-        
+
         return f"docx_{uuid.uuid4().hex[:16]}"
-    
+
     def _get_document_title(self) -> str:
         """Get document title from metadata."""
         assert self._docx_doc is not None, "Document not extracted"
         if self._docx_doc.core_properties.title:
             return self._docx_doc.core_properties.title
-        
+
         # Try to extract from first heading
         for elem in self._docx_doc.body:
             if isinstance(elem, DOCXParagraph):
@@ -459,10 +446,10 @@ class DOCXParser:
                     text = self._extract_paragraph_text(elem)
                     if text:
                         return text[:100]
-        
+
         return "Untitled Document"
-    
-    def _parse_date(self, date_str: Optional[str]) -> Optional[datetime]:
+
+    def _parse_date(self, date_str: str | None) -> datetime | None:
         """Parse ISO date string to datetime."""
         if not date_str:
             return None
@@ -470,18 +457,18 @@ class DOCXParser:
             return datetime.fromisoformat(date_str.replace('Z', '+00:00'))
         except (ValueError, TypeError):
             return None
-    
 
-    def _build_metadata(self, source_name: str) -> Dict[str, Any]:
+
+    def _build_metadata(self, source_name: str) -> dict[str, Any]:
         """Build metadata dictionary for USDM document."""
         if self._docx_doc is None:
             raise DocumentParseError("No document extracted")
-        metadata: Dict[str, Any] = {
+        metadata: dict[str, Any] = {
             "source": source_name,
             "parser": "DOCXParser",
             "parser_version": "1.0",
         }
-        
+
         cp = self._docx_doc.core_properties
         if cp.creator:
             metadata["author"] = cp.creator
@@ -507,27 +494,27 @@ class DOCXParser:
             metadata["company"] = ep.company
         if ep.manager:
             metadata["manager"] = ep.manager
-        
+
         if self._docx_doc.custom_properties.properties:
             metadata["custom"] = self._docx_doc.custom_properties.properties
-        
+
         return metadata
-    
-    def _extract_raw_binary(self) -> Optional[BinaryPayload]:
+
+    def _extract_raw_binary(self) -> BinaryPayload | None:
         """Extract raw DOCX as binary payload."""
         return None
-    
-    def _extract_raw_text(self, logical_elements: List[LogicalElement]) -> str:
+
+    def _extract_raw_text(self, logical_elements: list[LogicalElement]) -> str:
         """Extract plain text from logical elements."""
         texts = []
-        
+
         for elem in logical_elements:
             text = self._extract_text_from_logical_element(elem)
             if text:
                 texts.append(text)
-        
+
         return "\n\n".join(texts)
-    
+
     def _extract_text_from_logical_element(self, elem: LogicalElement) -> str:
         """Recursively extract text from a logical element."""
         if elem.element_type == ElementType.PARAGRAPH:
@@ -560,17 +547,17 @@ class DOCXParser:
                     if text:
                         texts.append(text)
                 return " ".join(texts)
-        
+
         return ""
-    
+
     def _extract_text_from_rich_text(self, rich_text: RichTextContent) -> str:
         """Extract plain text from rich text content."""
         return "".join(span.text for span in rich_text.spans)
-    
+
     # ============================================================
     # STYLE CONVERSION
     # ============================================================
-    
+
     def _convert_styles(self) -> StyleSheet:
         """Convert DOCX styles to USDM StyleSheet."""
         style_sheet = StyleSheet()
@@ -580,24 +567,24 @@ class DOCXParser:
                 char_style = self._convert_character_style(docx_style)
                 if char_style:
                     style_sheet.character_styles[docx_style.name or style_id] = char_style
-            
+
             elif docx_style.style_type == "paragraph":
                 para_style = self._convert_paragraph_style(docx_style)
                 if para_style:
                     style_sheet.paragraph_styles[docx_style.name or style_id] = para_style
-            
+
             elif docx_style.style_type == "table":
                 table_style = self._convert_table_style(docx_style)
                 if table_style:
                     style_sheet.table_styles[docx_style.name or style_id] = table_style
-        
+
         # Convert list styles from numbering definitions
         list_styles = self._convert_list_styles()
         style_sheet.list_styles.update(list_styles)
-        
+
         return style_sheet
-    
-    def _convert_character_style(self, docx_style: DOCXStyle) -> Optional[CharacterStyle]:
+
+    def _convert_character_style(self, docx_style: DOCXStyle) -> CharacterStyle | None:
         """
         Convert DOCX character style to USDM CharacterStyle with all properties.
         
@@ -609,37 +596,37 @@ class DOCXParser:
         """
         if not docx_style.run_properties:
             return None
-        
+
         props = docx_style.run_properties.properties
         additional_properties=getattr(props, 'additional_properties', {})
         # Map theme colors if used
         color = self._resolve_theme_color(
-            props.color, 
+            props.color,
             additional_properties.get('theme_color'),
             additional_properties.get('theme_tint'),
             additional_properties.get('theme_shade')
         )
-        
+
         highlight_color = self._resolve_theme_color(
             props.highlight,
             additional_properties.get('highlight_theme_color')
         )
-        
+
         # Build comprehensive character style
         return CharacterStyle(
             name=docx_style.name or docx_style.style_id,
-            
+
             # Basic font properties
             bold=props.bold,
             italic=props.italic,
             underline=props.underline is not None,
             underline_type=props.underline if isinstance(props.underline, str) else None,
-            
+
             # Color properties
             color=color,
             highlight=highlight_color,
             background=additional_properties.get('shading_fill'),
-            
+
             # Font properties
             font=props.font_name,
             font_family=additional_properties.get('font_family'),
@@ -647,7 +634,7 @@ class DOCXParser:
             font_pitch=additional_properties.get('font_pitch'),
             size=props.font_size,
             size_cs=props.font_size_cs,  # Complex script font size
-            
+
             # Text effects
             strike=props.strike,
             double_strike=props.double_strike,
@@ -655,34 +642,34 @@ class DOCXParser:
             subscript=props.subscript,
             small_caps=props.small_caps,
             all_caps=props.all_caps,
-            
+
             # Advanced typography
             kerning=props.kerning,
             spacing=props.spacing,
             position=props.position,  # Raised/lowered text
-            
+
             # Effects
             shadow=props.shadow,
             outline=props.outline,
             emboss=props.emboss,
             imprint=props.imprint,
-            
+
             # Visibility
             vanished=props.vanished,  # Hidden text
             web_hidden=props.web_hidden,
-            
+
             # Language and proofing
             language=props.language,
             no_proof=props.no_proof,
-            
+
             # Additional metadata
             style_id=docx_style.style_id,
             based_on=docx_style.based_on,
             next_style=docx_style.next_style,
             linked_style=docx_style.linked_style_id,
         )
-    
-    def _convert_paragraph_style(self, docx_style: DOCXStyle) -> Optional[ParagraphStyle]:
+
+    def _convert_paragraph_style(self, docx_style: DOCXStyle) -> ParagraphStyle | None:
         """
         Convert DOCX paragraph style to USDM ParagraphStyle with borders and shading.
         
@@ -694,10 +681,10 @@ class DOCXParser:
         """
         if not docx_style.paragraph_properties:
             return None
-        
+
         props = docx_style.paragraph_properties.properties
         additional_properties=getattr(props, 'additional_properties', {})
-        
+
         # Alignment mapping
         alignment_map = {
             ParagraphAlignment.LEFT: "left",
@@ -706,16 +693,16 @@ class DOCXParser:
             ParagraphAlignment.BOTH: "justify",
             ParagraphAlignment.DISTRIBUTE: "justify",
         }
-        
+
         # Convert borders
-        borders: Dict[str, Dict[str, Any]] = {}
+        borders: dict[str, dict[str, Any]] = {}
         for border_pos in ['top', 'bottom', 'left', 'right']:
             border_attr = getattr(props, f'border_{border_pos}', None)
             if border_attr:
                 border_info = self._convert_border_to_style(border_attr)
                 if border_info:
                     borders[border_pos] = border_info
-        
+
         # Convert shading
         shading = None
         if props.shading_fill or props.shading_pattern:
@@ -734,7 +721,7 @@ class DOCXParser:
             }
             # Remove None values
             shading = {k: v for k, v in shading.items() if v is not None}
-        
+
         # Convert tabs
         tabs = []
         for tab_info in props.tabs:
@@ -744,53 +731,53 @@ class DOCXParser:
                 'leader': tab_info.get('leader', 'none')
             }
             tabs.append(tab_style)
-        
+
         # Build comprehensive paragraph style
         return ParagraphStyle(
             name=docx_style.name or docx_style.style_id,
-            
+
             # Alignment and spacing
             alignment=alignment_map.get(props.alignment) if props.alignment else None,
             spacing_before=props.spacing_before,
             spacing_after=props.spacing_after,
             line_spacing=props.line_spacing,
             line_spacing_rule=props.line_spacing_rule,
-            
+
             # Indentation
             indent_left=props.indent_left,
             indent_right=props.indent_right,
             first_line_indent=props.indent_first_line,
             indent_hanging=props.indent_hanging,
-            
+
             # Pagination
             keep_lines_together=props.keep_lines_together,
             keep_with_next=props.keep_with_next,
             page_break_before=props.page_break_before,
             widow_control=props.widow_control,
-            
+
             # Borders and shading
             borders=borders if borders else None,
             shading=shading if shading else None,
-            
+
             # Outline level
             outline_level=props.outline_level,
-            
+
             # Text direction
             text_direction=props.text_direction.value if props.text_direction else 'ltr',
-            
+
             # Tabs
             tabs=tabs if tabs else None,
-            
+
             # Frame properties
             frame_properties=props.frame_properties,
-            
+
             # Style inheritance
             style_id=docx_style.style_id,
             based_on=docx_style.based_on,
             next_style=docx_style.next_style,
         )
 
-    def _convert_border_to_style(self, border_info: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def _convert_border_to_style(self, border_info: dict[str, Any]) -> dict[str, Any] | None:
         """
         Convert DOCX border information to style dictionary.
         
@@ -800,11 +787,11 @@ class DOCXParser:
         Returns:
             Border style dictionary
         """
-        style: Dict[str, Any] = {}
-        
+        style: dict[str, Any] = {}
+
         if 'style' in border_info:
             style['style'] = border_info['style']
-        
+
         if 'color' in border_info:
             color = self._resolve_theme_color(
                 border_info.get('color'),
@@ -813,17 +800,17 @@ class DOCXParser:
                 border_info.get('theme_shade')
             )
             style['color'] = color
-        
+
         if 'width' in border_info:
             style['width'] = border_info['width']
-        
+
         if 'space' in border_info:
             style['space'] = border_info['space']
-        
+
         return style if style else None
-    
-    
-    def _convert_table_style(self, docx_style: DOCXStyle) -> Optional[TableStyle]:
+
+
+    def _convert_table_style(self, docx_style: DOCXStyle) -> TableStyle | None:
         """
         Convert DOCX table style to USDM TableStyle with borders and banding.
         
@@ -835,11 +822,11 @@ class DOCXParser:
         """
         if not docx_style.table_properties:
             return None
-        
+
         props = docx_style.table_properties.properties
-        
+
         # Convert borders
-        borders: Dict[str, Dict[str, Any]] = {}
+        borders: dict[str, dict[str, Any]] = {}
         border_mapping = {
             'border_top': 'top',
             'border_bottom': 'bottom',
@@ -848,20 +835,20 @@ class DOCXParser:
             'border_inside_horizontal': 'inside_horizontal',
             'border_inside_vertical': 'inside_vertical',
         }
-        
+
         for attr_name, border_name in border_mapping.items():
             border_attr = getattr(props, attr_name, None)
             if border_attr:
                 border_info = self._convert_border_to_style(border_attr)
                 if border_info:
                     borders[border_name] = border_info
-        
+
         # Convert cell margins
         cell_margins = {}
         if props.cell_margin_default:
             for margin_pos, margin_val in props.cell_margin_default.items():
                 cell_margins[margin_pos] = margin_val
-        
+
         # Convert shading
         shading = None
         additional_properties = getattr(props, 'additional_properties', {})
@@ -877,27 +864,27 @@ class DOCXParser:
                 'pattern': shading_info.get('pattern'),
             }
             shading = {k: v for k, v in shading.items() if v is not None}
-        
+
         # Build comprehensive table style
         return TableStyle(
             name=docx_style.name or docx_style.style_id,
-            
+
             # Positioning
             alignment=props.alignment.value if props.alignment else 'left',
             indent_left=props.indent_left,
             width=props.width,
             layout_type=props.layout_type,
-            
+
             # Borders
             borders=borders if borders else None,
-            
+
             # Cell properties
             cell_margins=cell_margins if cell_margins else None,
             cell_spacing=props.cell_spacing,
-            
+
             # Shading
             shading=shading if shading else None,
-            
+
             # Banding options
             header_row=props.header_row_repeat,
             banded_rows=additional_properties.get('banded_rows', True),
@@ -906,25 +893,25 @@ class DOCXParser:
             last_row=additional_properties.get('last_row_formatting'),
             first_column=additional_properties.get('first_column_formatting'),
             last_column=additional_properties.get('last_column_formatting'),
-            
+
             # Style inheritance
             style_id=docx_style.style_id,
             based_on=docx_style.based_on,
         )
-    
-    def _convert_list_styles(self) -> Dict[str, ListStyle]:
+
+    def _convert_list_styles(self) -> dict[str, ListStyle]:
         """
         Convert DOCX numbering definitions to USDM ListStyle objects.
         
         Returns:
             Dictionary mapping style name to ListStyle
         """
-        list_styles: Dict[str, ListStyle] = {}
+        list_styles: dict[str, ListStyle] = {}
         assert self._docx_doc is not None, "Document not extracted"
         for abs_id, definition in self._docx_doc.numbering_definitions.items():
             style_name = definition.name or f"ListStyle_{abs_id}"
-            
-            level_styles: Dict[int, Dict[str, Any]] = {}
+
+            level_styles: dict[int, dict[str, Any]] = {}
             for level_num, level_def in definition.levels.items():
                 level_styles[level_num] = {
                     "format": level_def.format,
@@ -938,20 +925,20 @@ class DOCXParser:
                     "bold": level_def.bold,
                     "italic": level_def.italic,
                 }
-            
+
             list_style = ListStyle(
                 name=style_name,
                 level_styles=level_styles
             )
             list_styles[style_name] = list_style
-        
+
         return list_styles
-    
+
     # ============================================================
     # BODY CONVERSION
     # ============================================================
-    
-    def _convert_body_to_logical_elements(self) -> List[LogicalElement]:
+
+    def _convert_body_to_logical_elements(self) -> list[LogicalElement]:
         """Convert document body to logical elements."""
         elements = []
         assert self._docx_doc is not None, "Document not extracted"
@@ -968,20 +955,20 @@ class DOCXParser:
                     elements.append(elem)
             elif isinstance(item, DOCXSection):
                 elements.append(self._convert_page_break())
-                
+
         # Post-process to merge consecutive lists
         elements = self._merge_consecutive_lists(elements)
-        
+
         return elements
-    
-    def _convert_paragraph(self, para: DOCXParagraph) -> Optional[LogicalElement]:
+
+    def _convert_paragraph(self, para: DOCXParagraph) -> LogicalElement | None:
         """Convert a DOCX paragraph to a USDM logical element."""
         if not para.content.items and not para.properties.numbering_id:
             return None
-        
+
         if para.is_deletion and not self.extract_track_changes:
             return None
-        
+
         # Check for breaks first
         for item in para.content.items:
             if isinstance(item, DOCXBreak):
@@ -989,28 +976,28 @@ class DOCXParser:
                     return self._convert_page_break()
                 elif item.break_type == "column":
                     return self._convert_column_break()
-        
+
         # Check for bookmark start/end
         # (Handled separately in a real implementation)
-        
+
         if para.properties.outline_level is not None:
             return self._convert_heading(para)
-        
+
         if para.properties.numbering_id:
             return self._convert_list_item(para)
-        
+
         return self._convert_regular_paragraph(para)
-    
+
     def _convert_heading(self, para: DOCXParagraph) -> LogicalElement:
         """Convert a heading paragraph."""
         level = para.properties.outline_level or 0
         rich_text = self._convert_run_content_to_rich_text(para.content)
-        
+
         content = HeadingContent(
             level=level + 1,
             text=rich_text
         )
-        
+
         return LogicalElement(
             element_id=self._generate_element_id(),
             element_type=ElementType.HEADING,
@@ -1021,16 +1008,16 @@ class DOCXParser:
                 "level": level + 1,
             }
         )
-    
+
     def _convert_regular_paragraph(self, para: DOCXParagraph) -> LogicalElement:
         """Convert a regular paragraph."""
         rich_text = self._convert_run_content_to_rich_text(para.content)
-        
+
         content = ParagraphContent(
             text=rich_text,
             style=para.properties.style_id
         )
-        
+
         return LogicalElement(
             element_id=self._generate_element_id(),
             element_type=ElementType.PARAGRAPH,
@@ -1041,26 +1028,26 @@ class DOCXParser:
                 "alignment": para.properties.alignment.value if para.properties.alignment else None,
             }
         )
-    
+
     def _convert_list_item(self, para: DOCXParagraph) -> LogicalElement:
         """Convert a list item paragraph."""
         assert self._docx_doc is not None, "Document not extracted"
         rich_text = self._convert_run_content_to_rich_text(para.content)
-        
+
         para_elem = LogicalElement(
             element_id=self._generate_element_id(),
             element_type=ElementType.PARAGRAPH,
             content=ParagraphContent(text=rich_text, style=para.properties.style_id),
             metadata={}
         )
-        
+
         content = ListItemContent(
             elements=[para_elem]
         )
-        
+
         num_id = para.properties.numbering_id
         level = para.properties.numbering_level or 0
-        
+
         numbering_info = {}
         if num_id and num_id in self._docx_doc.numbering_instances:
             instance = self._docx_doc.numbering_instances[num_id]
@@ -1075,7 +1062,7 @@ class DOCXParser:
                         "format": lvl_def.format,
                         "start": lvl_def.start,
                     }
-        
+
         return LogicalElement(
             element_id=self._generate_element_id(),
             element_type=ElementType.LIST_ITEM,
@@ -1086,16 +1073,16 @@ class DOCXParser:
                 "level": level,
             }
         )
-    
+
     def _convert_run_content_to_rich_text(self, content: Any) -> RichTextContent:
         """Convert DOCX run content to USDM RichTextContent."""
         from .docx_models import DOCXRunContent
-        
+
         if not isinstance(content, DOCXRunContent):
             return RichTextContent(spans=[])
-        
-        spans: List[RichTextSpan] = []
-        
+
+        spans: list[RichTextSpan] = []
+
         for item in content.items:
             if isinstance(item, DOCXTextRun):
                 span = self._convert_text_run_to_span(item)
@@ -1122,41 +1109,41 @@ class DOCXParser:
             elif isinstance(item, DOCXBreak):
                 if item.break_type == "line":
                     spans.append(RichTextSpan(text="\n"))
-        
+
         return RichTextContent(spans=spans)
-    
-    def _convert_text_run_to_span(self, run: DOCXTextRun) -> Optional[RichTextSpan]:
+
+    def _convert_text_run_to_span(self, run: DOCXTextRun) -> RichTextSpan | None:
         """Convert a DOCX text run to a RichTextSpan."""
         if run.is_deletion and not self.extract_track_changes:
             return None
-        
+
         if not run.text:
             return None
-        
-        style_props: List[str] = []
+
+        style_props: list[str] = []
         if run.properties.bold:
             style_props.append("bold")
         if run.properties.italic:
             style_props.append("italic")
         if run.properties.underline:
             style_props.append("underline")
-        
+
         char_style = "_".join(style_props) if style_props else None
-        
+
         # Check for math content
         math_content = None
         additional_properties=getattr(run.properties, 'additional_properties', {})
         if 'math' in additional_properties:
             math_content = additional_properties.get('math')
-        
+
         # Check for footnote/endnote reference
-        footnote_ref = additional_properties.get('footnote_ref')
-        endnote_ref = additional_properties.get('endnote_ref')
-        
+        additional_properties.get('footnote_ref')
+        additional_properties.get('endnote_ref')
+
         href = additional_properties.get('hyperlink_rel_id')
         if not href:
             href = additional_properties.get('hyperlink_anchor')
-        
+
         return RichTextSpan(
             text=run.text,
             character_style=char_style,
@@ -1165,10 +1152,10 @@ class DOCXParser:
             href=href,
             math=math_content,
         )
-    
+
     def _extract_paragraph_text(self, para: DOCXParagraph) -> str:
         """Extract plain text from a paragraph."""
-        texts: List[str] = []
+        texts: list[str] = []
         for item in para.content.items:
             if isinstance(item, DOCXTextRun):
                 if item.text:
@@ -1180,11 +1167,11 @@ class DOCXParser:
             elif isinstance(item, DOCXBreak) and item.break_type == "line":
                 texts.append("\n")
         return "".join(texts)
-    
+
     # ============================================================
     # PAGE BREAK CONVERSION
     # ============================================================
-    
+
     def _convert_page_break(self) -> LogicalElement:
         """
         Convert a page break to a PageBreakContent logical element.
@@ -1200,12 +1187,12 @@ class DOCXParser:
                 "break_type": "page"
             }
         )
-    
+
     # ============================================================
     # LINE BREAK CONVERSION
     # ============================================================
-    
-    def _convert_line_break(self, break_obj: Optional[DOCXBreak] = None) -> LogicalElement:
+
+    def _convert_line_break(self, break_obj: DOCXBreak | None = None) -> LogicalElement:
         """
         Convert a line break to a LineBreakContent logical element.
         
@@ -1216,22 +1203,22 @@ class DOCXParser:
             LogicalElement with LineBreakContent
         """
         metadata = {"break_type": "line"}
-        
+
         if break_obj:
             if break_obj.clear:
                 metadata["clear"] = break_obj.clear
-        
+
         return LogicalElement(
             element_id=self._generate_element_id(),
             element_type=ElementType.LINE_BREAK,
             content=LineBreakContent(),
             metadata=metadata
         )
-    
+
     # ============================================================
     # COLUMN BREAK CONVERSION
     # ============================================================
-    
+
     def _convert_column_break(self) -> LogicalElement:
         """
         Convert a column break to a ColumnBreakContent logical element.
@@ -1247,12 +1234,12 @@ class DOCXParser:
                 "break_type": "column"
             }
         )
-    
+
     # ============================================================
     # BOOKMARK CONVERSION
     # ============================================================
-    
-    def _convert_bookmark(self, bookmark_id: str, bookmark_name: str, 
+
+    def _convert_bookmark(self, bookmark_id: str, bookmark_name: str,
                           position: int) -> LogicalElement:
         """
         Convert a bookmark to a BookmarkContent logical element.
@@ -1268,12 +1255,12 @@ class DOCXParser:
         # Store bookmark reference for cross-references
         element_id = self._generate_element_id()
         self._bookmarks[bookmark_name] = element_id
-        
+
         content = BookmarkContent(
             name=bookmark_name,
             text=None  # Could be populated with surrounding text
         )
-        
+
         return LogicalElement(
             element_id=element_id,
             element_type=ElementType.BOOKMARK,
@@ -1284,8 +1271,8 @@ class DOCXParser:
                 "position": position
             }
         )
-    
-    def _process_bookmarks_in_paragraph(self, para: DOCXParagraph) -> List[LogicalElement]:
+
+    def _process_bookmarks_in_paragraph(self, para: DOCXParagraph) -> list[LogicalElement]:
         """
         Process bookmarks within a paragraph.
         
@@ -1295,34 +1282,34 @@ class DOCXParser:
         Returns:
             List of bookmark logical elements
         """
-        bookmarks: List[LogicalElement] = []
-        
+        bookmarks: list[LogicalElement] = []
+
         # This would require tracking bookmarkStart and bookmarkEnd
         # in the DOCXExtractor. For now, return empty list.
-        
+
         return bookmarks
-    
+
     # ============================================================
     # FOOTNOTE CONVERSION
     # ============================================================
-    
-    def _convert_footnotes(self) -> List[LogicalElement]:
+
+    def _convert_footnotes(self) -> list[LogicalElement]:
         """
         Convert all footnotes to FootnoteContent logical elements.
         
         Returns:
             List of LogicalElement with FootnoteContent
         """
-        footnotes: List[LogicalElement] = []
+        footnotes: list[LogicalElement] = []
         assert self._docx_doc is not None, "Document not extracted"
         for note_id, footnote in self._docx_doc.footnotes.items():
             footnote_elem = self._convert_single_footnote(footnote)
             if footnote_elem:
                 footnotes.append(footnote_elem)
-        
+
         return footnotes
-    
-    def _convert_single_footnote(self, footnote: DOCXFootnoteEndnote) -> Optional[LogicalElement]:
+
+    def _convert_single_footnote(self, footnote: DOCXFootnoteEndnote) -> LogicalElement | None:
         """
         Convert a single footnote to a FootnoteContent logical element.
         
@@ -1334,13 +1321,13 @@ class DOCXParser:
         """
         if not footnote.content:
             return None
-        
+
         self._footnote_counter += 1
-        
+
         # Convert footnote paragraphs to logical elements
         note_elements = []
         reference_text = None
-        
+
         for para in footnote.content:
             # Check for reference mark
             for item in para.content.items:
@@ -1348,17 +1335,17 @@ class DOCXParser:
                     if item.text and item.text.strip().isdigit():
                         reference_text = item.text.strip()
                         break
-            
+
             elem = self._convert_paragraph(para)
             if elem:
                 note_elements.append(elem)
-        
+
         content = FootnoteContent(
             note_id=footnote.note_id,
             elements=note_elements,
             reference_text=reference_text or str(self._footnote_counter)
         )
-        
+
         return LogicalElement(
             element_id=self._generate_element_id(),
             element_type=ElementType.FOOTNOTE,
@@ -1369,12 +1356,12 @@ class DOCXParser:
                 "reference": reference_text or str(self._footnote_counter)
             }
         )
-    
+
     # ============================================================
     # ENDNOTE CONVERSION
     # ============================================================
-    
-    def _convert_endnotes(self) -> List[LogicalElement]:
+
+    def _convert_endnotes(self) -> list[LogicalElement]:
         """
         Convert all endnotes to EndnoteContent logical elements.
         
@@ -1387,10 +1374,10 @@ class DOCXParser:
             endnote_elem = self._convert_single_endnote(endnote)
             if endnote_elem:
                 endnotes.append(endnote_elem)
-        
+
         return endnotes
-    
-    def _convert_single_endnote(self, endnote: DOCXFootnoteEndnote) -> Optional[LogicalElement]:
+
+    def _convert_single_endnote(self, endnote: DOCXFootnoteEndnote) -> LogicalElement | None:
         """
         Convert a single endnote to an EndnoteContent logical element.
         
@@ -1402,13 +1389,13 @@ class DOCXParser:
         """
         if not endnote.content:
             return None
-        
+
         self._endnote_counter += 1
-        
+
         # Convert endnote paragraphs to logical elements
         note_elements = []
         reference_text = None
-        
+
         for para in endnote.content:
             # Check for reference mark
             for item in para.content.items:
@@ -1416,17 +1403,17 @@ class DOCXParser:
                     if item.text and item.text.strip().isdigit():
                         reference_text = item.text.strip()
                         break
-            
+
             elem = self._convert_paragraph(para)
             if elem:
                 note_elements.append(elem)
-        
+
         content = EndnoteContent(
             note_id=endnote.note_id,
             elements=note_elements,
             reference_text=reference_text or str(self._endnote_counter)
         )
-        
+
         return LogicalElement(
             element_id=self._generate_element_id(),
             element_type=ElementType.ENDNOTE,
@@ -1437,12 +1424,12 @@ class DOCXParser:
                 "reference": reference_text or str(self._endnote_counter)
             }
         )
-    
+
     # ============================================================
     # COMMENT CONVERSION
     # ============================================================
-    
-    def _convert_comments(self) -> List[LogicalElement]:
+
+    def _convert_comments(self) -> list[LogicalElement]:
         """
         Convert all comments to CommentContent logical elements.
         
@@ -1451,17 +1438,17 @@ class DOCXParser:
         """
         if not self.extract_comments:
             return []
-        
+
         comments = []
         assert self._docx_doc is not None, "Document not extracted"
         for comment_id, comment in self._docx_doc.comments.items():
             comment_elem = self._convert_single_comment(comment)
             if comment_elem:
                 comments.append(comment_elem)
-        
+
         return comments
-    
-    def _convert_single_comment(self, comment: DOCXComment) -> Optional[LogicalElement]:
+
+    def _convert_single_comment(self, comment: DOCXComment) -> LogicalElement | None:
         """
         Convert a single comment to a CommentContent logical element.
         
@@ -1473,11 +1460,11 @@ class DOCXParser:
         """
         if not comment.content:
             return None
-        
+
         # Convert comment paragraphs to logical elements
-        comment_elements: List[LogicalElement] = []
-        comment_text_parts: List[str] = []
-        
+        comment_elements: list[LogicalElement] = []
+        comment_text_parts: list[str] = []
+
         for para in comment.content:
             elem = self._convert_paragraph(para)
             if elem:
@@ -1485,9 +1472,9 @@ class DOCXParser:
                 text = self._extract_paragraph_text(para)
                 if text:
                     comment_text_parts.append(text)
-        
+
         comment_text = "\n".join(comment_text_parts)
-        
+
         content = CommentContent(
             comment_id=comment.comment_id,
             author=comment.author,
@@ -1497,7 +1484,7 @@ class DOCXParser:
             parent_id=None,
             resolved=False
         )
-        
+
         return LogicalElement(
             element_id=self._generate_element_id(),
             element_type=ElementType.COMMENT,
@@ -1509,12 +1496,12 @@ class DOCXParser:
                 "initials": comment.initials
             }
         )
-    
+
     # ============================================================
     # FIELD CONVERSION
     # ============================================================
-    
-    def _convert_field(self, field: DOCXField) -> Optional[Union[DataContent, LogicalElement]]:
+
+    def _convert_field(self, field: DOCXField) -> DataContent | LogicalElement | None:
         """
         Convert a DOCX field to DataContent or a logical element.
         
@@ -1525,7 +1512,7 @@ class DOCXParser:
             DataContent, LogicalElement, or None
         """
         if self._docx_doc is None:
-            return None        
+            return None
         field_type = field.field_type.upper() if field.field_type else ""
         field_value = field.result
         if isinstance(field_value, DOCXMath):
@@ -1540,37 +1527,37 @@ class DOCXParser:
                 value=str(field_value),
                 format=field.instruction
             )
-        
+
         elif field_type == "DATE":
             return DataContent(
                 field_type="DATE",
                 value=str(field_value),
                 format=field.instruction
             )
-        
+
         elif field_type == "TIME":
             return DataContent(
                 field_type="TIME",
                 value=str(field_value),
                 format=field.instruction
             )
-        
+
         elif field_type == "AUTHOR":
             return DataContent(
                 field_type="AUTHOR",
                 value=str(field_value or self._docx_doc.core_properties.creator or ""),
                 format=None
             )
-        
+
         elif field_type == "TITLE":
             return DataContent(
                 field_type="TITLE",
                 value=str(field_value or (self._docx_doc.core_properties.title if self._docx_doc else None) or "")
             )
         return None
-                
-                
-    def _convert_drawing(self, drawing: DOCXDrawing) -> Optional[LogicalElement]:
+
+
+    def _convert_drawing(self, drawing: DOCXDrawing) -> LogicalElement | None:
         """
         Convert a DOCX drawing to appropriate USDM logical element.
         Handles images, charts, shapes, and diagrams.
@@ -1594,7 +1581,7 @@ class DOCXParser:
             return self._convert_image_drawing(drawing)
 
 
-    def _convert_image_drawing(self, drawing: DOCXDrawing) -> Optional[LogicalElement]:
+    def _convert_image_drawing(self, drawing: DOCXDrawing) -> LogicalElement | None:
         """
         Convert an image drawing to ImageContent.
         
@@ -1609,7 +1596,7 @@ class DOCXParser:
         assert self._docx_doc is not None, "Document not extracted"
         if drawing.relationship_id in self._docx_doc.binary_parts:
             image_data = self._docx_doc.binary_parts[drawing.relationship_id]
-        
+
         # Get image dimensions
         width = None
         height = None
@@ -1617,14 +1604,14 @@ class DOCXParser:
             width = self._convert_emu_to_pixels(drawing.width)
         if drawing.height:
             height = self._convert_emu_to_pixels(drawing.height)
-        
+
         content = ImageContent(
             src=f"rel:{drawing.relationship_id}",  # Reference to binary part
-            width=int(width) if width else None,
-            height=int(height) if height else None,
+            width=width,
+            height=height,
             alt=drawing.alt_text or drawing.description or drawing.name
         )
-        
+
         return LogicalElement(
             element_id=self._generate_element_id(),
             element_type=ElementType.IMAGE,
@@ -1640,7 +1627,7 @@ class DOCXParser:
             }
         )
 
-    def _convert_chart_drawing(self, drawing: DOCXDrawing) -> Optional[LogicalElement]:
+    def _convert_chart_drawing(self, drawing: DOCXDrawing) -> LogicalElement | None:
         chart_content = drawing.chart
         if chart_content is None:
             # Fallback if no chart data was resolved (should not happen after extraction)
@@ -1666,16 +1653,16 @@ class DOCXParser:
             metadata=metadata
         )
 
-    def _convert_shape_drawing(self, drawing: DOCXDrawing) -> Optional[LogicalElement]:
+    def _convert_shape_drawing(self, drawing: DOCXDrawing) -> LogicalElement | None:
         # Extract shape data
         content = drawing.shape
         if content is None: return None
 
         if drawing.width:
-            content.width = self._convert_emu_to_pixels(drawing.width)
+            content.width = int(self._convert_emu_to_pixels(drawing.width))
         if drawing.height:
-            content.height = self._convert_emu_to_pixels(drawing.height)
-        
+            content.height = int(self._convert_emu_to_pixels(drawing.height))
+
         return LogicalElement(
             element_id=self._generate_element_id(),
             element_type=ElementType.SHAPE,
@@ -1689,7 +1676,7 @@ class DOCXParser:
             }
         )
 
-    def _convert_diagram_drawing(self, drawing: DOCXDrawing) -> Optional[LogicalElement]:
+    def _convert_diagram_drawing(self, drawing: DOCXDrawing) -> LogicalElement | None:
         """
         Convert a diagram drawing (SmartArt) to DrawingContent.
         
@@ -1726,7 +1713,6 @@ class DOCXParser:
             "root": tree_dict
         }, ensure_ascii=False)
 
-        from ...models.usdm_models import DrawingContent
         content = DrawingContent(vector_data=vector_data, width=width, height=height)
         metadata = {
             "relationship_id": drawing.relationship_id,
@@ -1774,12 +1760,12 @@ class DOCXParser:
         )
 
     def _resolve_theme_color(
-        self, 
-        color_value: Optional[str],
-        theme_color: Optional[str] = None,
-        theme_tint: Optional[float] = None,
-        theme_shade: Optional[float] = None
-    ) -> Optional[str]:
+        self,
+        color_value: str | None,
+        theme_color: str | None = None,
+        theme_tint: float | None = None,
+        theme_shade: float | None = None
+    ) -> str | None:
         """
         Resolve a color value using theme information.
         
@@ -1796,32 +1782,32 @@ class DOCXParser:
         # If direct color value is provided and not 'auto'
         if color_value and color_value.lower() != 'auto':
             return self._normalize_color_value(color_value)
-        
+
         # If theme color is provided
         if theme_color and self._docx_doc.theme:
             theme_colors = self._docx_doc.theme.get('colors', {})
-            
+
             if theme_color in theme_colors:
                 color_info = theme_colors[theme_color]
-                
+
                 if color_info.get('type') == 'srgb':
                     base_color = color_info.get('value', '')
                 elif color_info.get('type') == 'system':
                     base_color = self._get_system_color(color_info.get('value', ''))
                 else:
                     base_color = color_info.get('value', '')
-                
+
                 if base_color:
                     # Apply tint (lighten)
                     if theme_tint is not None and theme_tint > 0:
                         base_color = self._apply_tint(base_color, theme_tint)
-                    
+
                     # Apply shade (darken)
                     if theme_shade is not None and theme_shade > 0:
                         base_color = self._apply_shade(base_color, theme_shade)
-                    
+
                     return self._normalize_color_value(base_color)
-        
+
         # Default fallback
         return None
 
@@ -1838,22 +1824,22 @@ class DOCXParser:
         """
         if not color:
             return "#000000"
-        
+
         color = color.strip()
-        
+
         # Already hex
         if color.startswith('#'):
             if len(color) == 4:  # #RGB
                 return f"#{color[1]*2}{color[2]*2}{color[3]*2}"
             return color
-        
+
         # Hex without #
         if re.match(r'^[0-9A-Fa-f]{6}$', color):
             return f"#{color.upper()}"
-        
+
         if re.match(r'^[0-9A-Fa-f]{3}$', color):
             return f"#{color[0]*2}{color[1]*2}{color[2]*2}".upper()
-        
+
         # Named colors
         named_colors = {
             'black': '#000000',
@@ -1870,10 +1856,10 @@ class DOCXParser:
             'window': '#000000',
             'windowtext': '#000000',
         }
-        
+
         if color.lower() in named_colors:
             return named_colors[color.lower()]
-        
+
         # Default
         return "#000000"
 
@@ -1901,7 +1887,7 @@ class DOCXParser:
             'inactiveCaption': '#D3D3D3',
             'activeCaption': '#3399FF',
         }
-        
+
         return system_colors.get(system_color, '#000000')
 
 
@@ -1917,17 +1903,17 @@ class DOCXParser:
             Lightened hex color string
         """
         hex_color = self._normalize_color_value(hex_color)
-        
+
         # Parse RGB
         r = int(hex_color[1:3], 16)
         g = int(hex_color[3:5], 16)
         b = int(hex_color[5:7], 16)
-        
+
         # Apply tint: new = color + (255 - color) * tint
         r = int(r + (255 - r) * tint)
         g = int(g + (255 - g) * tint)
         b = int(b + (255 - b) * tint)
-        
+
         return f"#{r:02X}{g:02X}{b:02X}"
 
 
@@ -1943,38 +1929,38 @@ class DOCXParser:
             Darkened hex color string
         """
         hex_color = self._normalize_color_value(hex_color)
-        
+
         # Parse RGB
         r = int(hex_color[1:3], 16)
         g = int(hex_color[3:5], 16)
         b = int(hex_color[5:7], 16)
-        
+
         # Apply shade: new = color * (1 - shade)
         r = int(r * (1 - shade))
         g = int(g * (1 - shade))
         b = int(b * (1 - shade))
-        
+
         return f"#{r:02X}{g:02X}{b:02X}"
 
 
-    def _extract_theme_colors_from_document(self) -> Dict[str, Dict[str, str]]:
+    def _extract_theme_colors_from_document(self) -> dict[str, dict[str, str]]:
         """
         Extract theme colors from the document theme.
         
         Returns:
             Dictionary mapping theme color names to their values
         """
-        theme_colors: Dict[str, Dict[str, str]] = {}
+        theme_colors: dict[str, dict[str, str]] = {}
         assert self._docx_doc is not None, "Document not extracted"
         if not self._docx_doc.theme:
             return theme_colors
-        
+
         colors = self._docx_doc.theme.get('colors', {})
-        
+
         for color_name, color_info in colors.items():
             theme_colors[color_name] = {
                 'type': color_info.get('type', 'srgb'),
                 'value': color_info.get('value', ''),
             }
-        
+
         return theme_colors

@@ -3,9 +3,8 @@
 Parses image references from DrawingML (a:blip) and resolves them to ImageContent.
 Shared between XLSX and PPTX parsers.
 """
-
 from __future__ import annotations
-from typing import Optional, Dict, Callable, Tuple
+
 from xml.etree.ElementTree import Element
 from zipfile import ZipFile
 
@@ -21,7 +20,7 @@ NS = {
 }
 
 
-def parse_image(blip_element: Element) -> Optional[ImageContent]:
+def parse_image(blip_element: Element) -> ImageContent | None:
     """
     Extract image metadata from an <a:blip> element.
 
@@ -40,7 +39,7 @@ def parse_image(blip_element: Element) -> Optional[ImageContent]:
     return ImageContent(src=embed)
 
 
-def parse_image_from_pic(pic_element: Element) -> Optional[ImageContent]:
+def parse_image_from_pic(pic_element: Element) -> ImageContent | None:
     """
     Extract a complete ImageContent from a <p:pic> (PPTX) or <xdr:pic> (XLSX) element.
     This includes sizing from the shape properties.
@@ -55,7 +54,7 @@ def parse_image_from_pic(pic_element: Element) -> Optional[ImageContent]:
             blip = elem
             break
 
-    img = parse_image(blip)
+    img = parse_image(blip) if blip is not None else None
     if img is None:
         return None
 
@@ -85,7 +84,7 @@ def parse_image_from_pic(pic_element: Element) -> Optional[ImageContent]:
 
 def resolve_image(
     img: ImageContent,
-    image_rels: Dict[str, str],
+    image_rels: dict[str, str],
     zip_file: ZipFile,
     base_path: str = "",
 ) -> ImageContent:

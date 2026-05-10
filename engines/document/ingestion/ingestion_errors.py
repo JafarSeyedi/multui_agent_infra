@@ -1,9 +1,8 @@
 # engines/document/ingestion/ingestion_errors.py
-
 from __future__ import annotations
 
-from typing import Optional, Any
 from datetime import datetime
+from typing import Any
 
 
 class IngestionError(Exception):
@@ -16,8 +15,8 @@ class IngestionError(Exception):
         self,
         message: str,
         *,
-        step: Optional[str] = None,
-        details: Optional[Any] = None,
+        step: str | None = None,
+        details: Any | None = None,
     ):
         super().__init__(message)
         self.step = step
@@ -39,13 +38,12 @@ class IngestionError(Exception):
 
 class InvalidDocumentError(IngestionError):
     """Raised when the document is empty, corrupted, or invalid."""
-    pass
 
 
 class UnsupportedMediaTypeError(IngestionError):
     """Raised when no parser is registered for the media type."""
 
-    def __init__(self, media_type: str, *, step: Optional[str] = None):
+    def __init__(self, media_type: str, *, step: str | None = None):
         super().__init__(
             message=f"Unsupported media type: {media_type}",
             step=step or "parse",
@@ -55,32 +53,26 @@ class UnsupportedMediaTypeError(IngestionError):
 
 class ExtractionFailed(IngestionError):
     """Raised when extraction step fails."""
-    pass
 
 
 class ParseFailed(IngestionError):
     """Raised when parser fails to convert bytes to BaseDocument."""
-    pass
 
 
 class ChunkingFailed(IngestionError):
     """Raised when chunker fails."""
-    pass
 
 
 class EmbeddingFailed(IngestionError):
     """Raised when embedding service fails."""
-    pass
 
 
 class StorageFailed(IngestionError):
     """Raised when document/chunk/meta storage fails."""
-    pass
 
 
 class FinalizationFailed(IngestionError):
     """Raised when final metadata update or cleanup fails."""
-    pass
 
 
 # -------------------------------------------------------------

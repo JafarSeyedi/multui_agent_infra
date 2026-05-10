@@ -1,4 +1,6 @@
-from typing import Protocol, AsyncIterator, runtime_checkable
+from collections.abc import AsyncIterator
+from typing import Protocol
+from typing import runtime_checkable
 
 
 @runtime_checkable

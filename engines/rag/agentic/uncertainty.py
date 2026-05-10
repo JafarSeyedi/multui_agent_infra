@@ -1,11 +1,9 @@
-from typing import List
-
 class UncertaintyEstimator:
 
     def __init__(self, llm):
         self.llm = llm
 
-    async def score(self, query: str, evidence: List) -> float:
+    async def score(self, query: str, evidence: list) -> float:
         text = "\n".join(e.chunk.text for e in evidence[:5])
 
         prompt = f"""

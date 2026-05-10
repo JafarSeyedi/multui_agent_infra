@@ -1,7 +1,8 @@
 # tests/agents/orchestration/interaction/interaction_performance/conftest_performance.py
-from tests.agents.interaction.interaction_unit.conftest import DummyMessageBus1, TestRegistry
-
 import pytest
+
+from tests.agents.interaction.interaction_unit.conftest import DummyMessageBus1
+from tests.agents.interaction.interaction_unit.conftest import TestRegistry
 
 
 @pytest.fixture

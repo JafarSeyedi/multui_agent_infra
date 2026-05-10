@@ -1,13 +1,13 @@
-from typing import Dict, List
-from .graph_models import GraphNode, GraphEdge
+from .graph_models import GraphEdge
+from .graph_models import GraphNode
 
 
 class MemoryGraphStore:
 
     def __init__(self) -> None:
 
-        self.nodes: Dict[str, GraphNode] = {}
-        self.edges: List[GraphEdge] = []
+        self.nodes: dict[str, GraphNode] = {}
+        self.edges: list[GraphEdge] = []
 
     async def add_node(self, node: GraphNode):
 

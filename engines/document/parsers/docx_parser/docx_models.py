@@ -5,10 +5,16 @@ These models represent DOCX-specific structures extracted from the underlying XM
 They will be transformed into USDM models in the final step.
 """
 from __future__ import annotations
-from dataclasses import dataclass, field
-from typing import List, Optional, Dict, Any, Literal, Union
+
+from dataclasses import dataclass
+from dataclasses import field
 from enum import Enum
-from ...models.usdm_models import ChartContent, ShapeContent, ChartContent 
+from typing import Any
+from typing import Literal
+
+from ...models.usdm_models import ChartContent
+from ...models.usdm_models import ShapeContent
+from ..drawingml.diagram_parser import DiagramNode
 
 # ============================================================
 # ENUMS
@@ -115,34 +121,34 @@ class TextDirection(str, Enum):
 @dataclass
 class DOCXRunProperties:
     """Properties applied to a run of text."""
-    bold: Optional[bool] = None
-    italic: Optional[bool] = None
-    underline: Optional[str] = None  # "single", "double", "dotted", "dash", etc.
-    strike: Optional[bool] = None
-    double_strike: Optional[bool] = None
-    superscript: Optional[bool] = None
-    subscript: Optional[bool] = None
-    small_caps: Optional[bool] = None
-    all_caps: Optional[bool] = None
-    highlight: Optional[str] = None  # color value (e.g., "yellow", "green")
-    color: Optional[str] = None  # hex or auto
-    font_name: Optional[str] = None
-    font_size: Optional[float] = None  # in half-points
-    font_size_cs: Optional[float] = None  # complex script size in half-points
-    kerning: Optional[float] = None
-    spacing: Optional[float] = None
-    position: Optional[float] = None
-    language: Optional[str] = None  # w:lang value
-    no_proof: Optional[bool] = None
-    web_hidden: Optional[bool] = None
-    shadow: Optional[bool] = None
-    outline: Optional[bool] = None
-    emboss: Optional[bool] = None
-    imprint: Optional[bool] = None
-    vanished: Optional[bool] = None
+    bold: bool | None = None
+    italic: bool | None = None
+    underline: str | None = None  # "single", "double", "dotted", "dash", etc.
+    strike: bool | None = None
+    double_strike: bool | None = None
+    superscript: bool | None = None
+    subscript: bool | None = None
+    small_caps: bool | None = None
+    all_caps: bool | None = None
+    highlight: str | None = None  # color value (e.g., "yellow", "green")
+    color: str | None = None  # hex or auto
+    font_name: str | None = None
+    font_size: float | None = None  # in half-points
+    font_size_cs: float | None = None  # complex script size in half-points
+    kerning: float | None = None
+    spacing: float | None = None
+    position: float | None = None
+    language: str | None = None  # w:lang value
+    no_proof: bool | None = None
+    web_hidden: bool | None = None
+    shadow: bool | None = None
+    outline: bool | None = None
+    emboss: bool | None = None
+    imprint: bool | None = None
+    vanished: bool | None = None
 
     # Raw XML for properties that don't map cleanly
-    additional_properties: Dict[str, Any] = field(default_factory=dict)
+    additional_properties: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -150,56 +156,55 @@ class DOCXTextRun:
     """A single run of text with uniform formatting."""
     text: str
     properties: DOCXRunProperties = field(default_factory=DOCXRunProperties)
-    
+
     # For fields, hyperlinks, etc.
-    field_code: Optional[str] = None
-    field_result: Optional[str] = None
-    
+    field_code: str | None = None
+    field_result: str | None = None
+
     # Revision tracking
     is_insertion: bool = False
     is_deletion: bool = False
-    revision_author: Optional[str] = None
-    revision_date: Optional[str] = None
-    revision_id: Optional[int] = None
+    revision_author: str | None = None
+    revision_date: str | None = None
+    revision_id: int | None = None
 
-@dataclass
 class DOCXDiagram:
     """Intermediate model for a Diagram (SmartArt)."""
-    name: Optional[str] = None
-    description: Optional[str] = None
-    # Flat list of all text runs found in the diagram
-    texts: List[str] = field(default_factory=list)
-    # Hierarchical structure could be added later (list of nodes)
-    # For now, a list of text lines is sufficient.
+    def __init__(self, name=None, description=None) -> None:
+        self.name = name
+        self.description = description
+        self.texts: list[str] = []
+        self.layout_type: str | None = None
+        self.root: DiagramNode | None = None
 
 @dataclass
 class DOCXDrawing:
     """Inline drawing (image, shape, chart)."""
     relationship_id: str
-    name: Optional[str] = None
-    description: Optional[str] = None
-        
+    name: str | None = None
+    description: str | None = None
+
     # Positioning
-    width: Optional[float] = None  # in EMUs
-    height: Optional[float] = None
-    
+    width: float | None = None  # in EMUs
+    height: float | None = None
+
     # Alternative text
-    alt_text: Optional[str] = None
-    
+    alt_text: str | None = None
+
     # For charts and diagrams
     drawing_type: Literal["image", "chart", "diagram", "shape"] = "image"
     # For charts – fully parsed, typed chart model
-    chart: Optional[ChartContent] = None   
-    shape: Optional[ShapeContent] = None
-    diagram: Optional[DOCXDiagram] = None
-    
-    
+    chart: ChartContent | None = None
+    shape: ShapeContent | None = None
+    diagram: DOCXDiagram | None = None
+
+
 @dataclass
 class DOCXField:
     """A Word field (e.g., PAGE, DATE, HYPERLINK)."""
     field_type: str  # e.g., "PAGE", "DATE", "NUMPAGES", "REF", "HYPERLINK"
-    instruction: Optional[str] = None
-    result: Optional[Union[str, 'DOCXMath', Any]] = None
+    instruction: str | None = None
+    result: str | DOCXMath | Any | None = None
     is_locked: bool = False
     is_dirty: bool = False
 
@@ -208,14 +213,14 @@ class DOCXField:
 class DOCXSymbol:
     """A special symbol or character."""
     char: str
-    font: Optional[str] = None
+    font: str | None = None
 
 
 @dataclass
 class DOCXBreak:
     """A line, page, or column break."""
     break_type: Literal["line", "page", "column", "text_wrapping"]
-    clear: Optional[str] = None  # Literal["none", "left", "right", "all"]
+    clear: str | None = None  # Literal["none", "left", "right", "all"]
 
 
 @dataclass
@@ -227,7 +232,7 @@ class DOCXTab:
 @dataclass
 class DOCXRunContent:
     """Union type for all possible run-level content items."""
-    items: List[Union[DOCXTextRun, DOCXDrawing, DOCXField, DOCXSymbol, DOCXBreak, DOCXTab]] = field(default_factory=list)
+    items: list[DOCXTextRun | DOCXDrawing | DOCXField | DOCXSymbol | DOCXBreak | DOCXTab] = field(default_factory=list)
 
 
 # ============================================================
@@ -237,75 +242,75 @@ class DOCXRunContent:
 @dataclass
 class DOCXParagraphProperties:
     """Properties applied to an entire paragraph."""
-    style_id: Optional[str] = None
-    style_name: Optional[str] = None
-    
+    style_id: str | None = None
+    style_name: str | None = None
+
     # Alignment
-    alignment: Optional[ParagraphAlignment] = None
-    
+    alignment: ParagraphAlignment | None = None
+
     # Indentation
-    indent_left: Optional[float] = None  # in DXA (twentieths of a point)
-    indent_right: Optional[float] = None
-    indent_first_line: Optional[float] = None
-    indent_hanging: Optional[float] = None
-    
+    indent_left: float | None = None  # in DXA (twentieths of a point)
+    indent_right: float | None = None
+    indent_first_line: float | None = None
+    indent_hanging: float | None = None
+
     # Spacing
-    spacing_before: Optional[float] = None  # in DXA
-    spacing_after: Optional[float] = None
-    line_spacing: Optional[float] = None
-    line_spacing_rule: Optional[Literal["auto", "exact", "at_least"]] = None
-    
+    spacing_before: float | None = None  # in DXA
+    spacing_after: float | None = None
+    line_spacing: float | None = None
+    line_spacing_rule: Literal["auto", "exact", "at_least"] | None = None
+
     # Pagination
     keep_lines_together: bool = False
     keep_with_next: bool = False
     page_break_before: bool = False
     widow_control: bool = True
-    
+
     # Borders
-    border_top: Optional[Dict[str, Any]] = None
-    border_bottom: Optional[Dict[str, Any]] = None
-    border_left: Optional[Dict[str, Any]] = None
-    border_right: Optional[Dict[str, Any]] = None
-    
+    border_top: dict[str, Any] | None = None
+    border_bottom: dict[str, Any] | None = None
+    border_left: dict[str, Any] | None = None
+    border_right: dict[str, Any] | None = None
+
     # Shading
-    shading_fill: Optional[str] = None
-    shading_pattern: Optional[str] = None
-    
+    shading_fill: str | None = None
+    shading_pattern: str | None = None
+
     # Outline level (for heading levels, 0-9)
-    outline_level: Optional[int] = None
-    
+    outline_level: int | None = None
+
     # Text direction
     text_direction: TextDirection = TextDirection.LTR
-    
+
     # Numbering
-    numbering_id: Optional[str] = None
-    numbering_level: Optional[int] = None
-    
+    numbering_id: str | None = None
+    numbering_level: int | None = None
+
     # Tabs
-    tabs: List[Dict[str, Any]] = field(default_factory=list)
-    
+    tabs: list[dict[str, Any]] = field(default_factory=list)
+
     # Frame properties
-    frame_properties: Optional[Dict[str, Any]] = None
-    
+    frame_properties: dict[str, Any] | None = None
+
     # Raw XML for unhandled properties
-    additional_properties: Dict[str, Any] = field(default_factory=dict)
+    additional_properties: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class DOCXParagraph:
     """A complete paragraph with runs and properties."""
-    paragraph_id: Optional[str] = None
+    paragraph_id: str | None = None
     properties: DOCXParagraphProperties = field(default_factory=DOCXParagraphProperties)
     content: DOCXRunContent = field(default_factory=DOCXRunContent)
-    
+
     # Revision tracking
     is_insertion: bool = False
     is_deletion: bool = False
-    revision_author: Optional[str] = None
-    revision_date: Optional[str] = None
-    
+    revision_author: str | None = None
+    revision_date: str | None = None
+
     # For comments
-    comment_reference: Optional[str] = None
+    comment_reference: str | None = None
 
 
 # ============================================================
@@ -315,30 +320,30 @@ class DOCXParagraph:
 @dataclass
 class DOCXTableCellProperties:
     """Properties of a table cell."""
-    width: Optional[float] = None  # in DXA
+    width: float | None = None  # in DXA
     vertical_alignment: VerticalAlignment = VerticalAlignment.TOP
-    
+
     # Merging
     grid_span: int = 1  # column span
     vertical_span: int = 1  # row span (vMerge)
     is_vertically_merged: bool = False
     is_vertically_merged_restart: bool = False
-    
+
     # Borders
-    border_top: Optional[Dict[str, Any]] = None
-    border_bottom: Optional[Dict[str, Any]] = None
-    border_left: Optional[Dict[str, Any]] = None
-    border_right: Optional[Dict[str, Any]] = None
-    
+    border_top: dict[str, Any] | None = None
+    border_bottom: dict[str, Any] | None = None
+    border_left: dict[str, Any] | None = None
+    border_right: dict[str, Any] | None = None
+
     # Shading
-    shading_fill: Optional[str] = None
-    
+    shading_fill: str | None = None
+
     # Margins
-    margin_top: Optional[float] = None
-    margin_bottom: Optional[float] = None
-    margin_left: Optional[float] = None
-    margin_right: Optional[float] = None
-    
+    margin_top: float | None = None
+    margin_bottom: float | None = None
+    margin_left: float | None = None
+    margin_right: float | None = None
+
     # Text direction
     text_direction: TextDirection = TextDirection.LTR
 
@@ -347,44 +352,44 @@ class DOCXTableCellProperties:
 class DOCXTableCell:
     """A single cell in a table."""
     properties: DOCXTableCellProperties = field(default_factory=DOCXTableCellProperties)
-    content: List[Union[DOCXParagraph, 'DOCXTable']] = field(default_factory=list)
+    content: list[DOCXParagraph | DOCXTable] = field(default_factory=list)
 
 
 @dataclass
 class DOCXTableRow:
     """A row in a table."""
     row_index: int
-    cells: List[DOCXTableCell] = field(default_factory=list)
+    cells: list[DOCXTableCell] = field(default_factory=list)
     is_header: bool = False
-    height: Optional[float] = None
+    height: float | None = None
 
 
 @dataclass
 class DOCXTableProperties:
     """Properties of a table."""
-    style_id: Optional[str] = None
-    style_name: Optional[str] = None
-    
+    style_id: str | None = None
+    style_name: str | None = None
+
     # Positioning
-    alignment: Optional[ParagraphAlignment] = None
-    indent_left: Optional[float] = None
-    
+    alignment: ParagraphAlignment | None = None
+    indent_left: float | None = None
+
     # Borders
-    border_top: Optional[Dict[str, Any]] = None
-    border_bottom: Optional[Dict[str, Any]] = None
-    border_left: Optional[Dict[str, Any]] = None
-    border_right: Optional[Dict[str, Any]] = None
-    border_inside_horizontal: Optional[Dict[str, Any]] = None
-    border_inside_vertical: Optional[Dict[str, Any]] = None
-    
+    border_top: dict[str, Any] | None = None
+    border_bottom: dict[str, Any] | None = None
+    border_left: dict[str, Any] | None = None
+    border_right: dict[str, Any] | None = None
+    border_inside_horizontal: dict[str, Any] | None = None
+    border_inside_vertical: dict[str, Any] | None = None
+
     # Cell defaults
-    cell_margin_default: Optional[Dict[str, float]] = None
-    cell_spacing: Optional[float] = None
-    
+    cell_margin_default: dict[str, float] | None = None
+    cell_spacing: float | None = None
+
     # Layout
     layout_type: Literal["fixed", "auto"] = "auto"
-    width: Optional[float] = None
-    
+    width: float | None = None
+
     # Header row repeat
     header_row_repeat: bool = False
 
@@ -392,7 +397,7 @@ class DOCXTableProperties:
 @dataclass
 class DOCXTableGrid:
     """Grid column definitions for a table."""
-    column_widths: List[float] = field(default_factory=list)  # in DXA
+    column_widths: list[float] = field(default_factory=list)  # in DXA
 
 
 @dataclass
@@ -400,7 +405,7 @@ class DOCXTable:
     """A complete table."""
     properties: DOCXTableProperties = field(default_factory=DOCXTableProperties)
     grid: DOCXTableGrid = field(default_factory=DOCXTableGrid)
-    rows: List[DOCXTableRow] = field(default_factory=list)
+    rows: list[DOCXTableRow] = field(default_factory=list)
 
 
 # ============================================================
@@ -411,8 +416,8 @@ class DOCXTable:
 class DOCXStyleRunProperties:
     """Run properties defined in a style."""
     properties: DOCXRunProperties = field(default_factory=DOCXRunProperties)
-    based_on: Optional[str] = None
-    next_style: Optional[str] = None
+    based_on: str | None = None
+    next_style: str | None = None
 
 
 @dataclass
@@ -433,24 +438,24 @@ class DOCXStyle:
     style_id: str
     name: str
     style_type: Literal["paragraph", "character", "table", "numbering"]
-    
+
     # Inheritance
-    based_on: Optional[str] = None
-    next_style: Optional[str] = None
-    
+    based_on: str | None = None
+    next_style: str | None = None
+
     # Properties by type
-    run_properties: Optional[DOCXStyleRunProperties] = None
-    paragraph_properties: Optional[DOCXStyleParagraphProperties] = None
-    table_properties: Optional[DOCXStyleTableProperties] = None
-    
+    run_properties: DOCXStyleRunProperties | None = None
+    paragraph_properties: DOCXStyleParagraphProperties | None = None
+    table_properties: DOCXStyleTableProperties | None = None
+
     # UI properties
     is_default: bool = False
     is_custom: bool = False
     is_latent: bool = False
-    priority: Optional[int] = None
-    
+    priority: int | None = None
+
     # Linked style (for character styles linked to paragraph styles)
-    linked_style_id: Optional[str] = None
+    linked_style_id: str | None = None
 
 
 # ============================================================
@@ -466,14 +471,14 @@ class DOCXNumberingLevel:
     text_template: str = "%1."  # e.g., "%1.", "(%1)", "%1)"
     alignment: ParagraphAlignment = ParagraphAlignment.LEFT
     suffix: NumberingLevelSuffix = NumberingLevelSuffix.TAB
-    
+
     # Indentation
-    indent_left: Optional[float] = None
-    indent_hanging: Optional[float] = None
-    
+    indent_left: float | None = None
+    indent_hanging: float | None = None
+
     # Font for the number
-    font_name: Optional[str] = None
-    font_size: Optional[float] = None
+    font_name: str | None = None
+    font_size: float | None = None
     bold: bool = False
     italic: bool = False
 
@@ -482,12 +487,12 @@ class DOCXNumberingLevel:
 class DOCXNumberingDefinition:
     """A numbering definition (abstract numbering)."""
     abstract_id: str
-    name: Optional[str] = None
-    levels: Dict[int, DOCXNumberingLevel] = field(default_factory=dict)
-    
+    name: str | None = None
+    levels: dict[int, DOCXNumberingLevel] = field(default_factory=dict)
+
     # Style link
-    style_link: Optional[str] = None
-    
+    style_link: str | None = None
+
     # Multi-level type
     is_multi_level: bool = True
 
@@ -496,8 +501,8 @@ class DOCXNumberingDefinition:
 class DOCXNumberingInstance:
     """A concrete instance of a numbering definition."""
     instance_id: str
-    abstract_definition_id: Optional[str] = None
-    levels_overrides: Dict[int, DOCXNumberingLevel] = field(default_factory=dict)
+    abstract_definition_id: str | None = None
+    levels_overrides: dict[int, DOCXNumberingLevel] = field(default_factory=dict)
 
 
 # ============================================================
@@ -509,10 +514,10 @@ class DOCXHeaderFooter:
     """A header or footer definition."""
     header_footer_id: str
     header_footer_type: Literal["default", "first", "even"]
-    content: List[Union[DOCXParagraph, DOCXTable, DOCXSection]] = field(default_factory=list)
-    
+    content: list[DOCXParagraph | DOCXTable | DOCXSection] = field(default_factory=list)
+
     # References to images
-    relationships: Dict[str, str] = field(default_factory=dict)
+    relationships: dict[str, str] = field(default_factory=dict)
 
 
 # ============================================================
@@ -534,9 +539,9 @@ class DOCXPageMargins:
     bottom: float
     left: float
     right: float
-    header: Optional[float] = None
-    footer: Optional[float] = None
-    gutter: Optional[float] = None
+    header: float | None = None
+    footer: float | None = None
+    gutter: float | None = None
 
 
 @dataclass
@@ -544,35 +549,35 @@ class DOCXColumns:
     """Column layout definition."""
     count: int = 1
     equal_width: bool = True
-    widths: List[float] = field(default_factory=list)
-    space_between: Optional[float] = None
+    widths: list[float] = field(default_factory=list)
+    space_between: float | None = None
     separator: bool = False  # line between columns
 
 
 @dataclass
 class DOCXSection:
     """A document section with page layout properties."""
-    section_id: Optional[str] = None
+    section_id: str | None = None
     break_type: SectionType = SectionType.CONTINUOUS
-    
+
     page_size: DOCXPageSize = field(default_factory=lambda: DOCXPageSize(width=12240, height=15840))
     margins: DOCXPageMargins = field(default_factory=lambda: DOCXPageMargins(top=1440, bottom=1440, left=1440, right=1440))
     columns: DOCXColumns = field(default_factory=DOCXColumns)
-    
+
     # Header/footer references
-    header_default_id: Optional[str] = None
-    header_first_id: Optional[str] = None
-    header_even_id: Optional[str] = None
-    footer_default_id: Optional[str] = None
-    footer_first_id: Optional[str] = None
-    footer_even_id: Optional[str] = None
-    
+    header_default_id: str | None = None
+    header_first_id: str | None = None
+    header_even_id: str | None = None
+    footer_default_id: str | None = None
+    footer_first_id: str | None = None
+    footer_even_id: str | None = None
+
     # Page numbering
-    page_number_start: Optional[int] = None
-    page_number_format: Optional[str] = None
-    
+    page_number_start: int | None = None
+    page_number_format: str | None = None
+
     # Line numbering
-    line_numbering: Optional[Dict[str, Any]] = None
+    line_numbering: dict[str, Any] | None = None
 
 
 # ============================================================
@@ -585,8 +590,8 @@ class DOCXComment:
     comment_id: str
     author: str
     date: str
-    initials: Optional[str] = None
-    content: List[DOCXParagraph] = field(default_factory=list)
+    initials: str | None = None
+    content: list[DOCXParagraph] = field(default_factory=list)
 
 
 @dataclass
@@ -594,7 +599,7 @@ class DOCXFootnoteEndnote:
     """A footnote or endnote."""
     note_id: str
     note_type: Literal["footnote", "endnote"]
-    content: List[DOCXParagraph] = field(default_factory=list)
+    content: list[DOCXParagraph] = field(default_factory=list)
 
 
 # ============================================================
@@ -605,38 +610,38 @@ class DOCXFootnoteEndnote:
 class DOCXMathElement:
     """A math element (Office Math Markup Language - OMML)."""
     element_type: str  # e.g., "acc", "bar", "box", "d", "eqArr", "f", "func", "groupChr", "limLow", "limUpp", "m", "nary", "ph", "r", "rad", "sPre", "sSub", "sSubSup", "sSup"
-    
+
     # For run elements (text)
-    text: Optional[str] = None
-    text_properties: Optional[DOCXRunProperties] = None
-    
+    text: str | None = None
+    text_properties: DOCXRunProperties | None = None
+
     # For fraction
-    numerator: Optional[DOCXMathElement] = None
-    denominator: Optional[DOCXMathElement] = None
-    
+    numerator: DOCXMathElement | None = None
+    denominator: DOCXMathElement | None = None
+
     # For radicals
-    degree: Optional[DOCXMathElement] = None
-    base: Optional[DOCXMathElement] = None
-    
+    degree: DOCXMathElement | None = None
+    base: DOCXMathElement | None = None
+
     # For n-ary operators (sum, product, integral)
-    sub: Optional[DOCXMathElement] = None
-    sup: Optional[DOCXMathElement] = None
-    
+    sub: DOCXMathElement | None = None
+    sup: DOCXMathElement | None = None
+
     # For matrices
-    rows: List[List[DOCXMathElement]] = field(default_factory=list)
-    
+    rows: list[list[DOCXMathElement]] = field(default_factory=list)
+
     # For general containers
-    children: List[DOCXMathElement] = field(default_factory=list)
-    
+    children: list[DOCXMathElement] = field(default_factory=list)
+
     # Properties
-    properties: Dict[str, Any] = field(default_factory=dict)
+    properties: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class DOCXMath:
     """A complete math equation (display or inline)."""
     is_display: bool = True
-    root: Optional[DOCXMathElement] = None
+    root: DOCXMathElement | None = None
 
 
 # ============================================================
@@ -646,35 +651,35 @@ class DOCXMath:
 @dataclass
 class DOCXCoreProperties:
     """Core document properties (Dublin Core)."""
-    title: Optional[str] = None
-    subject: Optional[str] = None
-    creator: Optional[str] = None
-    keywords: List[str] = field(default_factory=list)
-    description: Optional[str] = None
-    last_modified_by: Optional[str] = None
-    revision: Optional[int] = None
-    created: Optional[str] = None  # ISO 8601
-    modified: Optional[str] = None  # ISO 8601
-    category: Optional[str] = None
-    content_status: Optional[str] = None
+    title: str | None = None
+    subject: str | None = None
+    creator: str | None = None
+    keywords: list[str] = field(default_factory=list)
+    description: str | None = None
+    last_modified_by: str | None = None
+    revision: int | None = None
+    created: str | None = None  # ISO 8601
+    modified: str | None = None  # ISO 8601
+    category: str | None = None
+    content_status: str | None = None
 
 
 @dataclass
 class DOCXExtendedProperties:
     """Extended document properties."""
-    template: Optional[str] = None
-    manager: Optional[str] = None
-    company: Optional[str] = None
-    presentation_format: Optional[str] = None
-    pages: Optional[int] = None
-    words: Optional[int] = None
-    characters: Optional[int] = None
-    characters_with_spaces: Optional[int] = None
-    lines: Optional[int] = None
-    paragraphs: Optional[int] = None
-    total_time: Optional[int] = None  # in minutes
-    application: Optional[str] = None
-    app_version: Optional[str] = None
+    template: str | None = None
+    manager: str | None = None
+    company: str | None = None
+    presentation_format: str | None = None
+    pages: int | None = None
+    words: int | None = None
+    characters: int | None = None
+    characters_with_spaces: int | None = None
+    lines: int | None = None
+    paragraphs: int | None = None
+    total_time: int | None = None  # in minutes
+    application: str | None = None
+    app_version: str | None = None
     scale_crop: bool = False
     links_up_to_date: bool = False
     shared_doc: bool = False
@@ -684,7 +689,7 @@ class DOCXExtendedProperties:
 @dataclass
 class DOCXCustomProperties:
     """User-defined custom properties."""
-    properties: Dict[str, Any] = field(default_factory=dict)
+    properties: dict[str, Any] = field(default_factory=dict)
 
 
 # ============================================================
@@ -694,49 +699,49 @@ class DOCXCustomProperties:
 @dataclass
 class DOCXDocument:
     """Complete intermediate representation of a DOCX document."""
-    
+
     # Metadata
     core_properties: DOCXCoreProperties = field(default_factory=DOCXCoreProperties)
     extended_properties: DOCXExtendedProperties = field(default_factory=DOCXExtendedProperties)
     custom_properties: DOCXCustomProperties = field(default_factory=DOCXCustomProperties)
-    
+
     # Styles
-    styles: Dict[str, DOCXStyle] = field(default_factory=dict)
-    default_paragraph_style_id: Optional[str] = None
-    default_character_style_id: Optional[str] = None
-    default_table_style_id: Optional[str] = None
-    
+    styles: dict[str, DOCXStyle] = field(default_factory=dict)
+    default_paragraph_style_id: str | None = None
+    default_character_style_id: str | None = None
+    default_table_style_id: str | None = None
+
     # Numbering
-    numbering_definitions: Dict[str, DOCXNumberingDefinition] = field(default_factory=dict)
-    numbering_instances: Dict[str, DOCXNumberingInstance] = field(default_factory=dict)
-    
+    numbering_definitions: dict[str, DOCXNumberingDefinition] = field(default_factory=dict)
+    numbering_instances: dict[str, DOCXNumberingInstance] = field(default_factory=dict)
+
     # Headers and footers
-    headers: Dict[str, DOCXHeaderFooter] = field(default_factory=dict)
-    footers: Dict[str, DOCXHeaderFooter] = field(default_factory=dict)
-    
+    headers: dict[str, DOCXHeaderFooter] = field(default_factory=dict)
+    footers: dict[str, DOCXHeaderFooter] = field(default_factory=dict)
+
     # Comments and annotations
-    comments: Dict[str, DOCXComment] = field(default_factory=dict)
-    footnotes: Dict[str, DOCXFootnoteEndnote] = field(default_factory=dict)
-    endnotes: Dict[str, DOCXFootnoteEndnote] = field(default_factory=dict)
-    
+    comments: dict[str, DOCXComment] = field(default_factory=dict)
+    footnotes: dict[str, DOCXFootnoteEndnote] = field(default_factory=dict)
+    endnotes: dict[str, DOCXFootnoteEndnote] = field(default_factory=dict)
+
     # Document body
-    body: List[Union[DOCXParagraph, DOCXTable, DOCXSection]] = field(default_factory=list)
-    
+    body: list[DOCXParagraph | DOCXTable | DOCXSection] = field(default_factory=list)
+
     # Sections (in order of appearance)
-    sections: List[DOCXSection] = field(default_factory=list)
-    
+    sections: list[DOCXSection] = field(default_factory=list)
+
     # Relationships (for images, hyperlinks, embedded objects)
-    relationships: Dict[str, Dict[str, str]] = field(default_factory=dict)
-    
+    relationships: dict[str, dict[str, str]] = field(default_factory=dict)
+
     # Embedded binary data (by relationship ID)
-    binary_parts: Dict[str, bytes] = field(default_factory=dict)
-    
+    binary_parts: dict[str, bytes] = field(default_factory=dict)
+
     # Settings
-    settings: Dict[str, Any] = field(default_factory=dict)
-    
+    settings: dict[str, Any] = field(default_factory=dict)
+
     # Themes, fonts, etc.
-    theme: Optional[Dict[str, Any]] = None
-    font_table: Dict[str, Dict[str, Any]] = field(default_factory=dict)
-    
+    theme: dict[str, Any] | None = None
+    font_table: dict[str, dict[str, Any]] = field(default_factory=dict)
+
     # Web settings
-    web_settings: Dict[str, Any] = field(default_factory=dict)
+    web_settings: dict[str, Any] = field(default_factory=dict)

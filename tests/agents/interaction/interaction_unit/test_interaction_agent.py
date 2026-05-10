@@ -3,8 +3,9 @@ import pytest
 from pydantic import ValidationError
 
 from engines.agents.base_agents.interaction_agent import InteractionAgent
-from engines.interaction.interaction_models import InteractionRequest, InteractionResult
 from engines.interaction.backends.base_backend import BaseOrchestrationBackend
+from engines.interaction.interaction_models import InteractionRequest
+from engines.interaction.interaction_models import InteractionResult
 
 
 class DummyBackend(BaseOrchestrationBackend):

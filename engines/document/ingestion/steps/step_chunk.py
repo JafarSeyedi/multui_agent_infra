@@ -1,5 +1,4 @@
 # engines/document/ingestion/steps/step_chunk.py
-
 from __future__ import annotations
 
 from ..ingestion_context import IngestionContext

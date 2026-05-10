@@ -4,7 +4,7 @@ SCXML (State Chart XML) Writer – serialises OSDM StateMachineModel to W3C SCXM
 
 Uses only typed model fields – no annotations:
 - State.parallel         → <parallel> element
-- State.initial          → initial attribute (State reference)
+- State.initial          → initial attribute (State or PseudoState)
 - State.invoke           → <invoke> element
 - State.is_final         → <final> element
 - State.entry_actions    → <onentry> scripts
@@ -16,26 +16,26 @@ Uses only typed model fields – no annotations:
 - PseudoState (kind=DEEP_HISTORY or SHALLOW_HISTORY) → <history> element
 - PseudoState.parent_state → places pseudo‑state inside the correct parent state
 """
-
 from __future__ import annotations
-from pathlib import Path
-from typing import Optional, List, Dict, cast
-from xml.etree.ElementTree import Element, SubElement, tostring
 
-from .base_osdm_writer import BaseOSDMWriter, OSDMWriteOptions
-from ...models.osdm_models import (
-    BaseOSDMDocument,
-    StateMachineDocument,
-    StateMachineModel,
-    StateMachineRegion,
-    State,
-    StateTransition,
-    PseudoState,
-    PseudoStateKind,
-    StateInvoke,
-    Script,
-)
-from ...models.base import BaseDocument
+from typing import cast
+from xml.etree.ElementTree import Element
+from xml.etree.ElementTree import SubElement
+from xml.etree.ElementTree import tostring
+
+from ...models.osdm_models import BaseOSDMDocument
+from ...models.osdm_models import PseudoState
+from ...models.osdm_models import PseudoStateKind
+from ...models.osdm_models import Script
+from ...models.osdm_models import State
+from ...models.osdm_models import StateInvoke
+from ...models.osdm_models import StateMachineDocument
+from ...models.osdm_models import StateMachineModel
+from ...models.osdm_models import StateMachineRegion
+from ...models.osdm_models import StateTransition
+from ...models.osdm_models import Transition
+from .base_osdm_writer import BaseOSDMWriter
+from .base_osdm_writer import OSDMWriteOptions
 
 
 SCXML_NS = "http://www.w3.org/2005/07/scxml"
@@ -47,7 +47,7 @@ class SCXMLWriter(BaseOSDMWriter):
     name = "scxml"
     supported_extensions = (".scxml",)
 
-    def __init__(self, options: Optional[OSDMWriteOptions] = None):
+    def __init__(self, options: OSDMWriteOptions | None = None):
         super().__init__(options)
 
     async def _write_design(self, base_document: BaseOSDMDocument) -> bytes:
@@ -63,7 +63,7 @@ class SCXMLWriter(BaseOSDMWriter):
             self._write_scxml_body(root, sm)
 
         xml_bytes = tostring(root, encoding="unicode", method="xml")
-        return xml_bytes.encode(self.options.encoding or "utf-8")
+        return xml_bytes.encode(getattr(self.options, "encoding", "utf-8") or "utf-8")
 
     def get_supported_media_types(self) -> list[str]:
         return ["application/xml"]
@@ -85,7 +85,7 @@ class SCXMLWriter(BaseOSDMWriter):
         # during the recursive tree walk, so we just pass the list along)
         self._write_region(root, sm.top_region, sm.pseudo_states)
 
-    def _resolve_initial_state(self, sm: StateMachineModel) -> Optional[str]:
+    def _resolve_initial_state(self, sm: StateMachineModel) -> str | None:
         if sm.top_region.initial_state:
             return sm.top_region.initial_state.id
         # Look for an initial pseudo‑state and follow its outgoing transition
@@ -101,7 +101,7 @@ class SCXMLWriter(BaseOSDMWriter):
 
     # ── Write a region ────────────────────────────────────────────
     def _write_region(self, parent: Element, region: StateMachineRegion,
-                      pseudo_states: List[PseudoState]) -> None:
+                      pseudo_states: list[PseudoState]) -> None:
         # If the region has multiple top‑level states, wrap them in a <state>, otherwise
         # write the single state directly.
         if len(region.states) == 1 and not region.states[0].parallel:
@@ -118,7 +118,7 @@ class SCXMLWriter(BaseOSDMWriter):
 
     # ── Write a single state (or parallel) ─────────────────────────
     def _write_state(self, parent: Element, state: State,
-                     pseudo_states: List[PseudoState], is_parallel: bool = False) -> None:
+                     pseudo_states: list[PseudoState], is_parallel: bool = False) -> None:
         tag = "parallel" if (is_parallel or state.parallel) else "state"
         elem = SubElement(parent, f"{{{SCXML_NS}}}{tag}", {"id": state.id})
         if state.name:
@@ -137,12 +137,15 @@ class SCXMLWriter(BaseOSDMWriter):
             if pseudo.parent_state is state:
                 self._write_pseudo_state(elem, pseudo)
 
-        # Initial attribute (points to a child state or pseudo‑state id)
+        # Initial attribute (points to a child state or pseudo‑state)
         if state.initial:
             if isinstance(state.initial, State):
                 elem.set("initial", state.initial.id)
+            elif isinstance(state.initial, PseudoState):
+                elem.set("initial", state.initial.id)
             else:
-                elem.set("initial", str(state.initial))  # fallback
+                # Should not happen, but fallback to string
+                elem.set("initial", str(state.initial))
 
         # Invoke
         if state.invoke:
@@ -165,7 +168,7 @@ class SCXMLWriter(BaseOSDMWriter):
             self._write_transitions(elem, sub_region)
 
     def _write_parallel(self, parent: Element, state: State,
-                        pseudo_states: List[PseudoState]) -> None:
+                        pseudo_states: list[PseudoState]) -> None:
         self._write_state(parent, state, pseudo_states, is_parallel=True)
 
     # ── Pseudo‑state ──────────────────────────────────────────────
@@ -174,9 +177,6 @@ class SCXMLWriter(BaseOSDMWriter):
             tag = "initial"
         elif pseudo.kind in (PseudoStateKind.DEEP_HISTORY, PseudoStateKind.SHALLOW_HISTORY):
             tag = "history"
-            if pseudo.kind == PseudoStateKind.DEEP_HISTORY:
-                # In SCXML, <history type="deep">
-                pass  # we'll set the type attribute below
         else:
             return  # others not mapped
         elem = SubElement(parent, f"{{{SCXML_NS}}}{tag}", {"id": pseudo.id})
@@ -224,7 +224,13 @@ class SCXMLWriter(BaseOSDMWriter):
             inv.set("id", invoke.id)
 
     # ── Transition ────────────────────────────────────────────────
-    def _write_transition(self, parent: Element, trans: StateTransition) -> None:
+    def _write_transition(self, parent: Element, trans: Transition) -> None:
+        """
+        Write a transition. The parameter type is `Transition` (base class),
+        but we know that in state machines it is always a `StateTransition`.
+        """
+        if not isinstance(trans, StateTransition):
+            return
         if not trans.target:
             return
         elem = SubElement(parent, f"{{{SCXML_NS}}}transition")

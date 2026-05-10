@@ -7,15 +7,15 @@ Writers for:
 - Hyperlinks + relationships
 - Placeholder for drawings/charts
 """
-
 from __future__ import annotations
+
 import xml.etree.ElementTree as ET
-from typing import TYPE_CHECKING, List, Tuple, Optional, Dict, Any
+from typing import TYPE_CHECKING
 
 from .const import XML_NAMESPACES
 
 if TYPE_CHECKING:
-    from ....models.esdm_models import Workbook, Hyperlink, Comment, ThreadedComment, CommentText
+    from ....models.esdm_models import Workbook, Hyperlink, Comment, ThreadedComment
     from ..base import ESDMBaseWriter
 
 
@@ -71,30 +71,30 @@ class RelationshipsWriter:
     def write_root_rels(self, workbook: Workbook) -> str:
         """_rels/.rels"""
         root = ET.Element('Relationships', xmlns='http://schemas.openxmlformats.org/package/2006/relationships')
-        ET.SubElement(root, 'Relationship', {
+        ET.SubElement(root, 'ExcelRelationship', {
             'Id': 'rId1',
             'Type': 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument',
             'Target': 'xl/workbook.xml'
         })
-        ET.SubElement(root, 'Relationship', {
+        ET.SubElement(root, 'ExcelRelationship', {
             'Id': 'rId2',
             'Type': 'http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties',
             'Target': 'docProps/core.xml'
         })
         # Optional: add VBA relationship
         if workbook.vba_project and self._parent._esdm_options.write_macros:
-            ET.SubElement(root, 'Relationship', {
+            ET.SubElement(root, 'ExcelRelationship', {
                 'Id': 'rId3',
                 'Type': 'http://schemas.microsoft.com/office/2006/relationships/vbaProject',
                 'Target': 'xl/vbaProject.bin'
             })
         return ET.tostring(root, encoding='unicode', xml_declaration=True)
 
-    def write_worksheet_rels(self, rels: List[Tuple[str, str, str]]) -> str:
+    def write_worksheet_rels(self, rels: list[tuple[str, str, str]]) -> str:
         """xl/worksheets/_rels/sheetX.xml.rels"""
         root = ET.Element('Relationships', xmlns='http://schemas.openxmlformats.org/package/2006/relationships')
         for rel_id, target, rel_type in rels:
-            ET.SubElement(root, 'Relationship', {
+            ET.SubElement(root, 'ExcelRelationship', {
                 'Id': rel_id,
                 'Type': rel_type,
                 'Target': target
@@ -108,7 +108,7 @@ class CommentWriter:
     def __init__(self, parent_writer: ESDMBaseWriter):
         self._parent = parent_writer
 
-    def write_legacy_comments_vml(self, comments: List[Comment], sheet_index: int) -> Optional[str]:
+    def write_legacy_comments_vml(self, comments: list[Comment], sheet_index: int) -> str | None:
         """
         Generate vmlDrawing1.vml for legacy comments (Excel 2007 style).
         Returns None if no comments.
@@ -138,7 +138,7 @@ class CommentWriter:
             ET.SubElement(shape, 'x:ClientData', {'ObjectType': 'Note'})
         return ET.tostring(root, encoding='unicode', xml_declaration=True)
 
-    def write_threaded_comments_xml(self, threaded_comments: List[ThreadedComment], sheet_index: int) -> Optional[str]:
+    def write_threaded_comments_xml(self, threaded_comments: list[ThreadedComment], sheet_index: int) -> str | None:
         """
         Generate threadedComment1.xml for modern Excel comments.
         """
@@ -164,8 +164,8 @@ class HyperlinkWriter:
     def __init__(self, parent_writer: ESDMBaseWriter):
         self._parent = parent_writer
 
-    def write_hyperlinks_and_rels(self, hyperlinks: List[Hyperlink],
-                                   sheet_index: int) -> Tuple[List[ET.Element], List[Tuple[str, str, str]]]:
+    def write_hyperlinks_and_rels(self, hyperlinks: list[Hyperlink],
+                                   sheet_index: int) -> tuple[list[ET.Element], list[tuple[str, str, str]]]:
         """
         Returns:
         - list of hyperlink XML elements (to be appended to worksheet)
@@ -185,5 +185,3 @@ class HyperlinkWriter:
             rels.append((rel_id, hl.target,
                          'http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink'))
         return hyperlink_elems, rels
-
-

@@ -1,33 +1,34 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel
 
-from engines.rag.rag_models import Document, DocumentChunk
-from engines.rag.services.chunking import Chunker
-from engines.rag.services.embedding import EmbeddingModel
-from engines.rag.graph.graph_retriever import GraphRetriever
-from engines.rag.planner.adaptive_planner import AdaptiveRetrievalPlanner
-from engines.rag.services.query_rewriter import QueryRewriter
-from engines.rag.reranking import Reranker
-from engines.rag.retrieval.bm25_retriever import BM25KeywordRetriever
-from engines.rag.retrieval.retrieval_feedback_buffer import RetrievalFeedbackBuffer
-from engines.rag.trainer.fusion_trainer import FusionTrainer
-from engines.rag.retrieval.hybrid_retriever_super import HybridRetrieverSuper
-from engines.rag.retrieval.topk_optimizer import TopKOptimizer
-from engines.rag.retrieval.vector_retriever import VectorRetriever
-from engines.rag.retrieval.weight_manager import WeightManager
 from ..document.storage.document_store import DocumentStore
-from engines.storage.vector.base import VectorDBAdapter
+from .graph.graph_retriever import GraphRetriever
+from .planner.adaptive_planner import AdaptiveRetrievalPlanner
+from .rag_models import Document
+from .rag_models import DocumentChunk
+from .reranking.reranker import Reranker
+from .retrieval.bm25_retriever import BM25KeywordRetriever
+from .retrieval.hybrid_retriever_super import HybridRetrieverSuper
+from .retrieval.retrieval_feedback_buffer import RetrievalFeedbackBuffer
+from .retrieval.topk_optimizer import TopKOptimizer
+from .retrieval.vector_retriever import VectorRetriever
+from .retrieval.weight_manager import WeightManager
+from .services.chunking import Chunker
+from .services.embedding import EmbeddingModel
+from .services.query_rewriter import QueryRewriter
+from .trainer.fusion_trainer import FusionTrainer
+from ..storage.vector.base import VectorDBAdapter
 
 
 class QueryResult(BaseModel):
     chunk: DocumentChunk
     score: float
     source: str = "vector"
-    rerank_score: Optional[float] = None
+    rerank_score: float | None = None
 
 
 class VectorService:
@@ -37,9 +38,9 @@ class VectorService:
         vector_db: VectorDBAdapter,
         embedding_model: EmbeddingModel,
         chunker: Chunker,
-        llm: Optional[Any] = None,
-        query_rewriter: Optional[QueryRewriter] = None,
-        reranker: Optional[Reranker] = None,
+        llm: Any | None = None,
+        query_rewriter: QueryRewriter | None = None,
+        reranker: Reranker | None = None,
     ):
         self.document_store = document_store
         self.vector_db = vector_db
@@ -50,14 +51,14 @@ class VectorService:
         self.reranker = reranker
 
         self.compressor = None
-        self.planner: Optional[AdaptiveRetrievalPlanner] = None
+        self.planner: AdaptiveRetrievalPlanner | None = None
         self.reflection_loop = None
-        self.graph_retriever: Optional[GraphRetriever] = None
+        self.graph_retriever: GraphRetriever | None = None
         self.topk_optimizer = TopKOptimizer()
         self.weight_manager = WeightManager()
         self.feedback_buffer = RetrievalFeedbackBuffer(capacity=5000)
         self.fusion_trainer = FusionTrainer(fusion_mlp=None, lr=1e-4, batch_size=32)
-        self._retriever: Optional[HybridRetrieverSuper] = None
+        self._retriever: HybridRetrieverSuper | None = None
 
     @property
     def retriever(self) -> HybridRetrieverSuper:
@@ -81,7 +82,7 @@ class VectorService:
         self,
         query: str,
         evidences,
-        results: List[QueryResult],
+        results: list[QueryResult],
         chosen_chunk_id: str,
         positive_chunks, negative_chunks
     ) -> None:
@@ -93,19 +94,19 @@ class VectorService:
         self,
         query: str,
         top_k: int,
-        filters: Optional[Dict[str, Any]],
+        filters: dict[str, Any] | None,
     ):
         return await self.retriever.search(query=query, top_k=top_k, filters=filters)
 
-    async def _retrieve_one(self, query: str, top_k: int, filters: Optional[Dict[str, Any]]):
+    async def _retrieve_one(self, query: str, top_k: int, filters: dict[str, Any] | None):
         return await self.retriever.search(query=query, top_k=top_k, filters=filters)
 
     async def query(
         self,
         query: str,
         top_k: int = 5,
-        filters: Optional[Dict[str, Any]] = None,
-    ) -> List[QueryResult]:
+        filters: dict[str, Any] | None = None,
+    ) -> list[QueryResult]:
         plan = await self.planner.plan(query) if self.planner else None
         if plan is not None:
             top_k = plan.top_k
@@ -120,7 +121,7 @@ class VectorService:
         results_lists = await asyncio.gather(
             *(self._retrieve_one(item, top_k, filters) for item in queries)
         )
-        merged: Dict[str, QueryResult] = {}
+        merged: dict[str, QueryResult] = {}
         for result in [item for group in results_lists for item in group]:
             chunk_id = result.chunk.chunk_id
             weighted_score = result.score * self.weight_manager.get(result.source)
@@ -149,7 +150,7 @@ class VectorService:
 
         return results
 
-    async def _graph_expand(self, results: List[QueryResult], hops: int = 1) -> List[QueryResult]:
+    async def _graph_expand(self, results: list[QueryResult], hops: int = 1) -> list[QueryResult]:
         if not self.graph_retriever:
             return results
 
@@ -174,7 +175,7 @@ class VectorService:
         document: Document,
         auto_chunk: bool = True,
         store_chunks: bool = True,
-    ) -> List[DocumentChunk]:
+    ) -> list[DocumentChunk]:
         await self.document_store.add_document(document)
         chunks = await self.chunker.create_chunks(document) if auto_chunk else []
         if store_chunks and chunks:

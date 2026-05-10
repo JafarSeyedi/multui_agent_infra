@@ -7,32 +7,23 @@ cases, decisions, event processing, and multi‑agent interactions.
 Every reference is a typed object; no raw string IDs are used for
 navigation within the loaded model.
 """
-
 from __future__ import annotations
+
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Optional, Dict, Any, Union
-from .models.base import BaseDocument
-from .media_types import DocumentStandard, DocumentFormat
-from .msdm_models import MSDMDocument
-from .ssdm_models import SSDM_DOCUMENT
-from .tsdm_models import TSDMDocument   # added missing import
+from typing import Any, Optional, List, Dict
+
+from .media_types import DocumentFormat
+from .media_types import DocumentStandard
+from .base import BaseDocument
+from .msdm_models import MSDMDocument, Entity
+from .ssdm_models import SSDMDocument, ServiceOperation, ServiceBinding
+from .tsdm_models import TSDMDocument
 
 # ═══════════════════════════════════════════════════════════════
 # New Enums for previously untyped fields
 # ═══════════════════════════════════════════════════════════════
-class YAWLJoinType(str, Enum):
-    XOR = "xor"
-    AND = "and"
-    OR = "or"
-    NONE = "none"
 
-class YAWLSplitType(str, Enum):
-    XOR = "xor"
-    AND = "and"
-    OR = "or"
-    NONE = "none"
-       
 class ParticipantBandKind(str, Enum):
     TOP_INITIATING = "top_initiating"
     MIDDLE_INITIATING = "middle_initiating"
@@ -78,7 +69,7 @@ class DurationResolution(str, Enum):
     DAY = "Day"
 
 class EscapeType(str, Enum):
-    pass   # placeholder if needed
+    pass
 
 class CorrelationPropertyType(str, Enum):
     KEY = "key"
@@ -101,20 +92,6 @@ class EventListenerType(str, Enum):
     COMPENSATION = "compensation"
     CONDITIONAL = "conditional"
     LINK = "link"
-
-class SentryExpression(BaseElement):
-    """Formal expression for an onPart or ifPart of a Sentry."""
-    language: Optional[ScriptLanguage] = None
-    body: str = ""
-
-class DecisionTable(BaseElement):
-    """Structured decision table with rows (maps of input/output columns)."""
-    columns: List[str] = field(default_factory=list)
-    rows: List[Dict[str, str]] = field(default_factory=list)
-
-class ActionList(BaseElement):
-    """List of action identifiers, each potentially a reference to a TSDM tool or script."""
-    actions: List[Union[str, Script]] = field(default_factory=list)
 
 # ── Original Enums (unchanged, included for completeness) ────────
 class ActivityType(str, Enum):
@@ -315,8 +292,8 @@ class InteractionStrategy(str, Enum):
 @dataclass
 class BaseElement:
     id: str
-    name: Optional[str] = None
-    documentation: Optional[str] = None
+    name: str | None = None
+    documentation: str | None = None
 
 @dataclass
 class RootElement(BaseElement):
@@ -324,15 +301,15 @@ class RootElement(BaseElement):
 
 @dataclass
 class StateNode(BaseElement):
-    incoming_transitions: List[Transition] = field(default_factory=list)
-    outgoing_transitions: List[Transition] = field(default_factory=list)
+    incoming_transitions: list[Transition] = field(default_factory=list)
+    outgoing_transitions: list[Transition] = field(default_factory=list)
 
 @dataclass
 class Transition(BaseElement):
-    source: Optional[StateNode] = None
-    target: Optional[StateNode] = None
-    condition: Optional[FormalExpression] = None
-    action: Optional[Script] = None           # was str
+    source: StateNode | None = None
+    target: StateNode | None = None
+    condition: FormalExpression | None = None
+    action: Script | None = None
 
 # ── Extension definitions ────────────────────────────────────────
 @dataclass
@@ -344,17 +321,17 @@ class ExtensionAttributeDefinition:
 @dataclass
 class ExtensionDefinition:
     name: str
-    extension_attribute_definitions: List[ExtensionAttributeDefinition] = field(default_factory=list)
+    extension_attribute_definitions: list[ExtensionAttributeDefinition] = field(default_factory=list)
 
 @dataclass
 class ExtensionAttributeValue:
-    extension_attribute_definition: Optional[ExtensionAttributeDefinition] = None
-    value: Optional[str] = None
-    value_ref: Optional[str] = None
+    extension_attribute_definition: ExtensionAttributeDefinition | None = None
+    value: str | None = None
+    value_ref: str | None = None
 
 @dataclass
 class Extension:
-    definition: Optional[ExtensionDefinition] = None
+    definition: ExtensionDefinition | None = None
     must_understand: bool = False
 
 # ── Diagram interchange ──────────────────────────────────────────
@@ -366,14 +343,20 @@ class Bounds:
     height: float = 0
 
 @dataclass
+class Locator(BaseElement):
+    x: float = 0.0
+    y: float = 0.0
+
+@dataclass
 class DiagramElement(BaseElement):
-    owning_element: Optional[DiagramElement] = None
-    model_element: Optional[BaseElement] = None
+    owning_element: DiagramElement | None = None
+    model_element: BaseElement | None = None
+    model_element_id: str | None = None  # temporary ID for resolution
 
 @dataclass
 class Edge(DiagramElement):
-    source: Optional[DiagramElement] = None
-    target: Optional[DiagramElement] = None
+    source: DiagramElement | None = None
+    target: DiagramElement | None = None
 
 @dataclass
 class Shape(DiagramElement):
@@ -382,35 +365,35 @@ class Shape(DiagramElement):
 @dataclass
 class BPMNDiagram:
     id: str
-    name: Optional[str] = None
+    name: str | None = None
     bounds: Bounds = field(default_factory=Bounds)
-    model_element: Optional[RootElement] = None
-    owned_elements: List[DiagramElement] = field(default_factory=list)
+    model_element: RootElement | None = None
+    model_element_id: str | None = None   # temporary ID
+    owned_elements: list[DiagramElement] = field(default_factory=list)
 
 @dataclass
 class BPMNPlane(DiagramElement):
-    bpmn_element: Optional[BaseElement] = None
+    bpmn_element: BaseElement | None = None
 
 @dataclass
 class BPMNShape(Shape):
-    label: Optional[BPMNLabel] = None
+    label: BPMNLabel | None = None
     is_horizontal: bool = True
     is_expanded: bool = False
     is_marker_visible: bool = False
     is_message_visible: bool = False
-    participant_band_kind: ParticipantBandKind = ParticipantBandKind.TOP_INITIATING   # enum, not str
-    choreography_activity_shape: Optional[BPMNShape] = None
+    participant_band_kind: ParticipantBandKind = ParticipantBandKind.TOP_INITIATING
 
 @dataclass
 class BPMNEdge(Edge):
-    label: Optional[BPMNLabel] = None
-    message_visible_kind: MessageVisibleKind = MessageVisibleKind.NON_INITIATING   # enum
+    label: BPMNLabel | None = None
+    message_visible_kind: MessageVisibleKind = MessageVisibleKind.NON_INITIATING
 
 @dataclass
 class BPMNLabel:
     text: str
     bounds: Bounds = field(default_factory=Bounds)
-    alignment: AlignmentKind = AlignmentKind.LEFT    # enum
+    alignment: AlignmentKind = AlignmentKind.LEFT
 
 # ═══════════════════════════════════════════════════════════════
 # Expressions
@@ -421,22 +404,22 @@ class BpmnExpression(BaseElement):
 
 @dataclass
 class FormalExpression(BpmnExpression):
-    language: Optional[ScriptLanguage] = None
-    body: Optional[str] = None
-    evaluates_to_type_ref: Optional[ItemDefinition] = None
+    language: ScriptLanguage | None = None
+    body: str | None = None
+    evaluates_to_type_ref: ItemDefinition | None = None
 
 # ── Item Definition ──────────────────────────────────────────────
 @dataclass
 class ItemDefinition(RootElement):
     item_kind: ItemKind = ItemKind.INFORMATION
-    structure_ref: Optional[MSDMDocument] = None
-    import_ref: Optional[str] = None
+    structure_ref: Entity | None = None
+    import_ref: str | None = None
     is_collection: bool = False
 
 # ── Resources ────────────────────────────────────────────────────
 @dataclass
 class Resource(RootElement):
-    resource_parameters: List[ResourceParameter] = field(default_factory=list)
+    resource_parameters: list[ResourceParameter] = field(default_factory=list)
 
 @dataclass
 class ResourceParameter(BaseElement):
@@ -445,19 +428,20 @@ class ResourceParameter(BaseElement):
 
 @dataclass
 class ResourceAssignmentExpression(BaseElement):
-    expression: Optional[FormalExpression] = None
+    expression: FormalExpression | None = None
 
 @dataclass
 class ResourceParameterBinding(BaseElement):
-    parameter_ref: Optional[ResourceParameter] = None
-    expression: Optional[FormalExpression] = None
+    parameter_ref: ResourceParameter | None = None
+    expression: FormalExpression | None = None
 
 @dataclass
 class ResourceRole(BaseElement):
     type: ResourceRoleType = ResourceRoleType.NONE
-    resource_ref: Optional[Resource] = None
-    resource_assignment_expression: Optional[ResourceAssignmentExpression] = None
-    resource_parameter_bindings: List[ResourceParameterBinding] = field(default_factory=list)
+    resource_ref: Resource | None = None
+    resource_ref_id: str | None = None  # temporary ID
+    resource_assignment_expression: ResourceAssignmentExpression | None = None
+    resource_parameter_bindings: list[ResourceParameterBinding] = field(default_factory=list)
 
 @dataclass
 class HumanPerformer(ResourceRole):
@@ -474,54 +458,64 @@ class PotentialOwner(HumanPerformer):
 # ── Flow Elements ────────────────────────────────────────────────
 @dataclass
 class FlowElement(BaseElement):
-    category_values: List[CategoryValue] = field(default_factory=list)
-    auditing: Optional[Auditing] = None
-    monitoring: Optional[Monitoring] = None
+    category_values: list[CategoryValue] = field(default_factory=list)
+    auditing: Auditing | None = None
+    monitoring: Monitoring | None = None
 
 @dataclass
 class FlowNode(FlowElement):
-    incoming: List[SequenceFlow] = field(default_factory=list)
-    outgoing: List[SequenceFlow] = field(default_factory=list)
-    input_state_id: Optional[int] = None
-    output_state_id: Optional[int] = None
+    incoming: list[SequenceFlow] = field(default_factory=list)
+    outgoing: list[SequenceFlow] = field(default_factory=list)
+    input_state_id: int | None = None
+    output_state_id: int | None = None
 
 @dataclass
 class Activity(FlowNode):
     activity_type: ActivityType = ActivityType.TASK
-    loop_characteristics: Optional[LoopCharacteristics] = None
-    io_specification: Optional[InputOutputSpecification] = None
-    resources: List[ResourceRole] = field(default_factory=list)
-    properties: List[Property] = field(default_factory=list)
+    loop_characteristics: LoopCharacteristics | None = None
+    io_specification: InputOutputSpecification | None = None
+    resources: list[ResourceRole] = field(default_factory=list)
+    properties: list[Property] = field(default_factory=list)
+    # For storing DataInput/DataOutput/DataAssociation during parsing:
+    data_inputs: list[DataInput] = field(default_factory=list)
+    data_outputs: list[DataOutput] = field(default_factory=list)
+    data_associations: list[DataAssociation] = field(default_factory=list)
 
 @dataclass
 class Task(Activity):
     task_type: TaskType = TaskType.NONE
-    priority_level: Optional[float] = None
-    priority_level_property: Optional[Property] = None    # was str
+    priority_level: float | None = None
+    priority_level_property: Property | None = None
 
 @dataclass
 class ServiceTask(Task):
-    implementation: Optional[SSDM_DOCUMENT] = None        # ssdm reference
-    operation_ref: Optional[Operation] = None
+    implementation: ServiceOperation  | None = None
+    operation_ref: Operation | None = None
 
 @dataclass
 class SendTask(Task):
-    implementation: Optional[SSDM_DOCUMENT] = None
-    message_ref: Optional[Message] = None
-    operation_ref: Optional[Operation] = None
+    implementation: ServiceOperation  | None = None
+    message_ref: Message | None = None
+    operation_ref: Operation | None = None
+    # Temporary fields
+    message_ref_id: str | None = None
+    operation_ref_id: str | None = None
 
 @dataclass
 class ReceiveTask(Task):
-    implementation: Optional[SSDM_DOCUMENT] = None
-    message_ref: Optional[Message] = None
-    operation_ref: Optional[Operation] = None
+    implementation: ServiceOperation  | None = None
+    message_ref: Message | None = None
+    operation_ref: Operation | None = None
     instantiate: bool = False
+    # Temporary fields
+    message_ref_id: str | None = None
+    operation_ref_id: str | None = None
 
 @dataclass
 class UserTask(Task):
-    implementation: str = "##unspecified"   # placeholder for UISDMDocument
-    rendering: List[Rendering] = field(default_factory=list)
-    work_distribution_policy: Optional[Any] = None
+    implementation: str = "##unspecified"
+    rendering: list[Rendering] = field(default_factory=list)
+    work_distribution_policy: Any | None = None
 
 @dataclass
 class ManualTask(Task):
@@ -529,58 +523,58 @@ class ManualTask(Task):
 
 @dataclass
 class Script(BaseElement):
-    script_body: str
+    script_body: str = ""
     script_language: ScriptLanguage = ScriptLanguage.PYTHON
 
 @dataclass
 class ScriptTask(Task):
-    script: Optional[Script] = None
+    script: Script | None = None
 
 @dataclass
 class BusinessRuleTask(Task):
-    implementation: DecisionService         # reference to decision service
+    implementation: Optional[DecisionService] = None
 
 @dataclass
 class CallActivity(Activity):
-    called_element: Optional[Union[Process, GlobalTask]] = None
+    called_element: Process | GlobalTask | None = None
     call_activity_type: CallActivityType = CallActivityType.PROCESS
-    io_binding: List[InputOutputBinding] = field(default_factory=list)
+    io_binding: list[InputOutputBinding] = field(default_factory=list)
 
 @dataclass
 class SubProcess(Activity):
     sub_process_type: SubProcessType = SubProcessType.EMBEDDED
-    flow_elements: Dict[str, FlowElement] = field(default_factory=dict)
-    lane_sets: List[LaneSet] = field(default_factory=list)
-    artifacts: List[Artifact] = field(default_factory=list)
+    flow_elements: dict[str, FlowElement] = field(default_factory=dict)
+    lane_sets: list[LaneSet] = field(default_factory=list)
+    artifacts: list[Artifact] = field(default_factory=list)
     triggered_by_event: bool = False
 
 @dataclass
 class TransactionSubProcess(SubProcess):
-    method: TransactionMethod = TransactionMethod.COMPENSATE   # enum
+    method: TransactionMethod = TransactionMethod.COMPENSATE
 
 @dataclass
 class AdHocSubProcess(SubProcess):
     ordering: AdHocOrdering = AdHocOrdering.PARALLEL
-    completion_condition: Optional[FormalExpression] = None
+    completion_condition: FormalExpression | None = None
     cancel_remaining_instances: bool = True
 
 @dataclass
 class GlobalTask(RootElement):
     task_type: TaskType = TaskType.NONE
-    resources: List[ResourceRole] = field(default_factory=list)
-    io_specification: Optional[InputOutputSpecification] = None
-    io_binding: List[InputOutputBinding] = field(default_factory=list)
-    supported_interface_refs: List[Interface] = field(default_factory=list)
+    resources: list[ResourceRole] = field(default_factory=list)
+    io_specification: InputOutputSpecification | None = None
+    io_binding: list[InputOutputBinding] = field(default_factory=list)
+    supported_interface_refs: list[Interface] = field(default_factory=list)
 
 @dataclass
 class GlobalUserTask(GlobalTask):
     implementation: str = "##unspecified"
-    rendering: List[Rendering] = field(default_factory=list)
-    work_distribution_policy: Optional[Any] = None
+    rendering: list[Rendering] = field(default_factory=list)
+    work_distribution_policy: Any | None = None
 
 @dataclass
 class GlobalScriptTask(GlobalTask):
-    script: Optional[Script] = None
+    script: Script | None = None
 
 @dataclass
 class GlobalManualTask(GlobalTask):
@@ -588,7 +582,7 @@ class GlobalManualTask(GlobalTask):
 
 @dataclass
 class GlobalBusinessRuleTask(GlobalTask):
-    implementation: DecisionService
+    implementation: DecisionService = field(default_factory=lambda: DecisionService(id="", decisions=[]))
 
 @dataclass
 class Rendering(BaseElement):
@@ -596,9 +590,9 @@ class Rendering(BaseElement):
 
 @dataclass
 class RenderingForm(Rendering):
-    form_id: Optional[str] = None
-    index_form_id: Optional[str] = None
-    association_field_id: Optional[str] = None
+    form_id: str | None = None
+    index_form_id: str | None = None
+    association_field_id: str | None = None
 
 # ── Loop Characteristics ─────────────────────────────────────────
 @dataclass
@@ -609,95 +603,102 @@ class LoopCharacteristics(BaseElement):
 class StandardLoopCharacteristics(LoopCharacteristics):
     test_before: bool = False
     loop_maximum: int = 0
-    loop_condition: Optional[FormalExpression] = None
+    loop_condition: FormalExpression | None = None
 
 @dataclass
 class MultiInstanceLoopCharacteristics(LoopCharacteristics):
     is_sequential: bool = False
-    completion_condition: Optional[FormalExpression] = None
-    loop_cardinality: Optional[FormalExpression] = None
-    loop_data_input_ref: Optional[DataInput] = None
-    loop_data_output_ref: Optional[DataOutput] = None
-    input_data_item: Optional[DataInput] = None
-    output_data_item: Optional[DataOutput] = None
+    completion_condition: FormalExpression | None = None
+    loop_cardinality: FormalExpression | None = None
+    loop_data_input_ref: DataInput | None = None
+    loop_data_output_ref: DataOutput | None = None
+    input_data_item: DataInput | None = None
+    output_data_item: DataOutput | None = None
     behavior: MultiInstanceBehavior = MultiInstanceBehavior.ALL
-    complex_behavior_definition: List[ComplexBehaviorDefinition] = field(default_factory=list)
-    one_behavior_event_ref: Optional[EventDefinition] = None
-    none_behavior_event_ref: Optional[EventDefinition] = None
+    complex_behavior_definition: list[ComplexBehaviorDefinition] = field(default_factory=list)
+    one_behavior_event_ref: EventDefinition | None = None
+    none_behavior_event_ref: EventDefinition | None = None
+    # Temporary fields
+    loop_data_input_ref_id: str | None = None
+    loop_data_output_ref_id: str | None = None
 
 @dataclass
 class ComplexBehaviorDefinition(BaseElement):
-    condition: Optional[FormalExpression] = None
-    implicit_event: Optional[ImplicitThrowEvent] = None
+    condition: FormalExpression | None = None
+    implicit_event: ImplicitThrowEvent | None = None
 
 # ── Input/Output ─────────────────────────────────────────────────
 @dataclass
 class InputOutputSpecification(BaseElement):
-    data_inputs: List[DataInput] = field(default_factory=list)
-    data_outputs: List[DataOutput] = field(default_factory=list)
-    input_sets: List[InputSet] = field(default_factory=list)
-    output_sets: List[OutputSet] = field(default_factory=list)
+    data_inputs: list[DataInput] = field(default_factory=list)
+    data_outputs: list[DataOutput] = field(default_factory=list)
+    input_sets: list[InputSet] = field(default_factory=list)
+    output_sets: list[OutputSet] = field(default_factory=list)
 
 @dataclass
 class DataInput:
     id: str
-    name: str
-    item_subject_ref: Optional[ItemDefinition] = None
+    name: str | None = None  # name might be None in XML, but our model expects str; we'll handle in parser
+    item_subject_ref: ItemDefinition | None = None
     is_collection: bool = False
+    # Temporary field
+    item_subject_ref_id: str | None = None
 
 @dataclass
 class DataOutput:
     id: str
-    name: str
-    item_subject_ref: Optional[ItemDefinition] = None
+    name: str | None = None
+    item_subject_ref: ItemDefinition | None = None
     is_collection: bool = False
+    # Temporary field
+    item_subject_ref_id: str | None = None
 
 @dataclass
 class InputSet(BaseElement):
-    data_input_refs: List[DataInputRef] = field(default_factory=list)
-    output_set_refs: List[OutputSet] = field(default_factory=list)
+    data_input_refs: list[DataInputRef] = field(default_factory=list)
+    output_set_refs: list[OutputSet] = field(default_factory=list)
 
 @dataclass
 class OutputSet(BaseElement):
-    data_output_refs: List[DataOutputRef] = field(default_factory=list)
+    data_output_refs: list[DataOutputRef] = field(default_factory=list)
 
 @dataclass
 class DataInputRef:
-    data_input: Optional[DataInput] = None
+    data_input: DataInput | None = None
     is_optional: bool = False
     available_while_executing: bool = False
 
 @dataclass
 class DataOutputRef:
-    data_output: Optional[DataOutput] = None
+    data_output: DataOutput | None = None
     is_optional: bool = False
     can_be_produced_while_executing: bool = False
 
 @dataclass
 class InputOutputBinding:
-    input_data_ref: Optional[DataInput] = None
-    output_data_ref: Optional[DataOutput] = None
-    operation_ref: Optional[Operation] = None
+    input_data_ref: DataInput | None = None
+    output_data_ref: DataOutput | None = None
+    operation_ref: Operation | None = None
 
 # ── Events and Event Definitions ─────────────────────────────────
 @dataclass
 class Event(FlowNode):
     event_type: EventType = EventType.START
-    event_definitions: List[EventDefinition] = field(default_factory=list)
-    properties: List[Property] = field(default_factory=list)
+    event_definitions: list[EventDefinition] = field(default_factory=list)
+    properties: list[Property] = field(default_factory=list)
 
 @dataclass
 class CatchEvent(Event):
-    data_outputs: List[DataOutput] = field(default_factory=list)
-    output_sets: List[OutputSet] = field(default_factory=list)
-    data_output_associations: List[DataOutputAssociation] = field(default_factory=list)
+    data_outputs: list[DataOutput] = field(default_factory=list)
+    output_sets: list[OutputSet] = field(default_factory=list)
+    data_output_associations: list[DataOutputAssociation] = field(default_factory=list)
     parallel_multiple: bool = False
 
 @dataclass
 class ThrowEvent(Event):
-    data_inputs: List[DataInput] = field(default_factory=list)
-    input_sets: List[InputSet] = field(default_factory=list)
-    data_input_associations: List[DataInputAssociation] = field(default_factory=list)
+    data_inputs: list[DataInput] = field(default_factory=list)
+    input_sets: list[InputSet] = field(default_factory=list)
+    data_input_associations: list[DataInputAssociation] = field(default_factory=list)
 
 @dataclass
 class StartEvent(CatchEvent):
@@ -718,7 +719,8 @@ class IntermediateThrowEvent(ThrowEvent):
 @dataclass
 class BoundaryEvent(CatchEvent):
     cancel_activity: bool = True
-    attached_to_ref: Optional[Activity] = None
+    attached_to_ref: Activity | None = None
+    attached_to_ref_id: str | None = None   # temporary ID
 
 @dataclass
 class ImplicitThrowEvent(ThrowEvent):
@@ -730,42 +732,51 @@ class EventDefinition(RootElement):
 
 @dataclass
 class MessageEventDefinition(EventDefinition):
-    message_ref: Optional[Message] = None
-    operation_ref: Optional[Operation] = None
+    message_ref: Message | None = None
+    operation_ref: Operation | None = None
+    # Temporary fields
+    message_ref_id: str | None = None
+    operation_ref_id: str | None = None
 
 @dataclass
 class TimerEventDefinition(EventDefinition):
     timer_type: TimerEventType = TimerEventType.DURATION
-    time_date: Optional[FormalExpression] = None
-    time_cycle: Optional[FormalExpression] = None
-    time_duration: Optional[FormalExpression] = None
-    due_duration: Optional[DueTimeDuration] = None
+    time_date: FormalExpression | None = None
+    time_cycle: FormalExpression | None = None
+    time_duration: FormalExpression | None = None
+    due_duration: DueTimeDuration | None = None
 
 @dataclass
 class SignalEventDefinition(EventDefinition):
-    signal_ref: Optional[Signal] = None
+    signal_ref: Signal | None = None
+    signal_ref_id: str | None = None   # temporary ID
 
 @dataclass
 class ErrorEventDefinition(EventDefinition):
-    error_ref: Optional[Error] = None
+    error_ref: Error | None = None
+    error_ref_id: str | None = None    # temporary ID
 
 @dataclass
 class EscalationEventDefinition(EventDefinition):
-    escalation_ref: Optional[Escalation] = None
+    escalation_ref: Escalation | None = None
+    escalation_ref_id: str | None = None  # temporary ID
 
 @dataclass
 class CompensateEventDefinition(EventDefinition):
-    activity_ref: Optional[Activity] = None
+    activity_ref: Activity | None = None
     wait_for_completion: bool = True
+    activity_ref_id: str | None = None   # temporary ID
 
 @dataclass
 class ConditionalEventDefinition(EventDefinition):
-    condition: Optional[FormalExpression] = None
+    condition: FormalExpression | None = None
 
 @dataclass
 class LinkEventDefinition(EventDefinition):
-    sources: List[LinkEventDefinition] = field(default_factory=list)   # typed references
-    target: Optional[LinkEventDefinition] = None
+    sources: list[LinkEventDefinition] = field(default_factory=list)
+    target: LinkEventDefinition | None = None
+    source_ids: list[str] = field(default_factory=list)   # temporary list of IDs
+    target_id: str | None = None                         # temporary ID
 
 @dataclass
 class CancelEventDefinition(EventDefinition):
@@ -777,37 +788,43 @@ class TerminateEventDefinition(EventDefinition):
 
 @dataclass
 class DueTimeDuration:
-    calculation_type: TimerCalculationType = TimerCalculationType.ISO8601   # enum
-    formula: Optional[FormalExpression] = None
-    time_reference: TimeReference = TimeReference.PROPERTY                # enum
-    reference_property: Optional[Property] = None
-    resolution: DurationResolution = DurationResolution.SECOND             # enum
-    # cron_expression: Optional[str] = None
-    
+    calculation_type: TimerCalculationType = TimerCalculationType.ISO8601
+    formula: FormalExpression | None = None
+    time_reference: TimeReference = TimeReference.PROPERTY
+    reference_property: Property | None = None
+    resolution: DurationResolution = DurationResolution.SECOND
+
 # ── Data Flow ────────────────────────────────────────────────────
 @dataclass
 class DataFlowElement(FlowElement):
-    item_subject_ref: Optional[ItemDefinition] = None
-    data_state: Optional[DataState] = None
+    item_subject_ref: ItemDefinition | None = None
+    data_state: DataState | None = None
+    # Temporary field
+    item_subject_ref_id: str | None = None
 
 @dataclass
 class DataObject(DataFlowElement):
     is_collection: bool = False
+    item_subject_ref: ItemDefinition | None = None
+    item_subject_ref_id: str | None = None   # temporary ID
 
 @dataclass
 class DataObjectReference(DataFlowElement):
-    data_object: Optional[DataObject] = None
+    data_object: DataObject | None = None
+    data_object_id: str | None = None        # temporary ID
 
 @dataclass
 class DataStore(RootElement):
     is_unlimited: bool = True
     capacity: int = 0
-    item_subject_ref: Optional[ItemDefinition] = None
-    data_state: Optional[DataState] = None
+    item_subject_ref: ItemDefinition | None = None
+    data_state: DataState | None = None
+    item_subject_ref_id: str | None = None   # temporary ID
 
 @dataclass
 class DataStoreReference(DataFlowElement):
-    data_store: Optional[DataStore] = None
+    data_store: DataStore | None = None
+    data_store_id: str | None = None         # temporary ID
 
 @dataclass
 class DataState(BaseElement):
@@ -815,19 +832,24 @@ class DataState(BaseElement):
 
 @dataclass
 class DataElement(BaseElement):
-    item_subject_ref: Optional[ItemDefinition] = None
-    data_state: Optional[DataState] = None
+    item_subject_ref: ItemDefinition | None = None
+    data_state: DataState | None = None
+    item_subject_ref_id: str | None = None   # temporary ID
 
 @dataclass
 class Property(DataElement):
-    pass
+    item_subject_ref: ItemDefinition | None = None
+    item_subject_ref_id: str | None = None   # temporary ID
 
 @dataclass
 class DataAssociation(BaseElement):
-    source_refs: List[BaseElement] = field(default_factory=list)
-    target_ref: Optional[BaseElement] = None
-    transformation: Optional[FormalExpression] = None
-    assignments: List[Assignment] = field(default_factory=list)
+    source_refs: list[BaseElement] = field(default_factory=list)
+    target_ref: BaseElement | None = None
+    transformation: FormalExpression | None = None
+    assignments: list[Assignment] = field(default_factory=list)
+    # Temporary fields
+    source_ref_ids: list[str] = field(default_factory=list)
+    target_ref_id: str | None = None
 
 @dataclass
 class DataInputAssociation(DataAssociation):
@@ -839,25 +861,31 @@ class DataOutputAssociation(DataAssociation):
 
 @dataclass
 class Assignment(BaseElement):
-    from_expr: Optional[FormalExpression] = None
-    to_expr: Optional[FormalExpression] = None
+    from_expr: FormalExpression | None = None
+    to_expr: FormalExpression | None = None
 
 # ═══════════════════════════════════════════════════════════════
 # Sequence & Message Flows
 # ═══════════════════════════════════════════════════════════════
 @dataclass
 class SequenceFlow(FlowElement):
-    source_ref: Optional[FlowNode] = None
-    target_ref: Optional[FlowNode] = None
-    condition_expression: Optional[FormalExpression] = None
+    source_ref: FlowNode | None = None
+    target_ref: FlowNode | None = None
+    condition_expression: FormalExpression | None = None
     is_immediate: bool = True
-    state_id: Optional[int] = None
+    state_id: int | None = None
+    source_ref_id: str | None = None   # temporary ID
+    target_ref_id: str | None = None   # temporary ID
 
 @dataclass
 class MessageFlow(BaseElement):
-    source_ref: Optional[InteractionNode] = None
-    target_ref: Optional[InteractionNode] = None
-    message_ref: Optional[Message] = None
+    source_ref: InteractionNode | None = None
+    target_ref: InteractionNode | None = None
+    message_ref: Message | None = None
+    # Temporary fields
+    source_ref_id: str | None = None
+    target_ref_id: str | None = None
+    message_ref_id: str | None = None
 
 # ── Gateways ─────────────────────────────────────────────────────
 @dataclass
@@ -867,11 +895,13 @@ class Gateway(FlowNode):
 
 @dataclass
 class ExclusiveGateway(Gateway):
-    default_sequence_flow: Optional[SequenceFlow] = None
+    default_sequence_flow: SequenceFlow | None = None
+    default_sequence_flow_id: str | None = None   # temporary ID
 
 @dataclass
 class InclusiveGateway(Gateway):
-    default_sequence_flow: Optional[SequenceFlow] = None
+    default_sequence_flow: SequenceFlow | None = None
+    default_sequence_flow_id: str | None = None   # temporary ID
 
 @dataclass
 class ParallelGateway(Gateway):
@@ -883,21 +913,25 @@ class EventBasedGateway(Gateway):
 
 @dataclass
 class ComplexGateway(Gateway):
-    default_sequence_flow: Optional[SequenceFlow] = None
-    activation_condition: Optional[FormalExpression] = None
+    default_sequence_flow: SequenceFlow | None = None
+    activation_condition: FormalExpression | None = None
+    default_sequence_flow_id: str | None = None   # temporary ID
 
 # ── Lanes & Pools ────────────────────────────────────────────────
 @dataclass
 class Lane(BaseElement):
-    child_lane_set: Optional[LaneSet] = None
-    partition_element_ref: Optional[BaseElement] = None
-    flow_node_refs: List[FlowNode] = field(default_factory=list)
-    resources: List[ResourceRole] = field(default_factory=list)
+    child_lane_set: LaneSet | None = None
+    partition_element_ref: BaseElement | None = None
+    flow_node_refs: list[FlowNode] = field(default_factory=list)
+    resources: list[ResourceRole] = field(default_factory=list)
+    # Temporary fields
+    partition_element_ref_id: str | None = None
+    flow_node_ref_ids: list[str] = field(default_factory=list)
 
 @dataclass
 class LaneSet(BaseElement):
-    lanes: List[Lane] = field(default_factory=list)
-    parent_lane: Optional[Lane] = None
+    lanes: list[Lane] = field(default_factory=list)
+    parent_lane: Lane | None = None
 
 # ── Process & Collaboration ──────────────────────────────────────
 @dataclass
@@ -905,33 +939,38 @@ class Process(RootElement):
     process_type: ProcessType = ProcessType.NONE
     is_executable: bool = False
     is_closed: bool = False
-    auditing: Optional[Auditing] = None
-    monitoring: Optional[Monitoring] = None
-    flow_elements: Dict[str, FlowElement] = field(default_factory=dict)
-    lane_sets: List[LaneSet] = field(default_factory=list)
-    artifacts: List[Artifact] = field(default_factory=list)
-    resources: List[ResourceRole] = field(default_factory=list)
-    properties: List[Property] = field(default_factory=list)
-    correlation_subscriptions: List[CorrelationSubscription] = field(default_factory=list)
-    definitional_collaboration_ref: Optional[Collaboration] = None
-    io_specification: Optional[InputOutputSpecification] = None
-    io_binding: List[InputOutputBinding] = field(default_factory=list)
-    supported_interface_refs: List[Interface] = field(default_factory=list)
-    supports: List[Process] = field(default_factory=list)
+    auditing: Auditing | None = None
+    monitoring: Monitoring | None = None
+    flow_elements: dict[str, FlowElement] = field(default_factory=dict)
+    lane_sets: list[LaneSet] = field(default_factory=list)
+    artifacts: list[Artifact] = field(default_factory=list)
+    resources: list[ResourceRole] = field(default_factory=list)
+    properties: list[Property] = field(default_factory=list)
+    correlation_subscriptions: list[CorrelationSubscription] = field(default_factory=list)
+    definitional_collaboration_ref: Collaboration | None = None
+    io_specification: InputOutputSpecification | None = None
+    io_binding: list[InputOutputBinding] = field(default_factory=list)
+    supported_interface_refs: list[Interface] = field(default_factory=list)
+    supports: list[Process] = field(default_factory=list)
+
+    data_inputs: list[DataInput] = field(default_factory=list)
+    data_outputs: list[DataOutput] = field(default_factory=list)
+    data_associations: list[DataAssociation] = field(default_factory=list)
+    message_flows: list[MessageFlow] = field(default_factory=list)
 
 @dataclass
 class Collaboration(RootElement):
-    name: Optional[str] = None
-    participants: List[Participant] = field(default_factory=list)
-    message_flows: List[MessageFlow] = field(default_factory=list)
-    artifacts: List[Artifact] = field(default_factory=list)
-    correlation_keys: List[CorrelationKey] = field(default_factory=list)
-    choreography_refs: List[Choreography] = field(default_factory=list)
-    conversation_associations: List[ConversationAssociation] = field(default_factory=list)
-    conversations: List[ConversationNode] = field(default_factory=list)
-    conversation_links: List[ConversationLink] = field(default_factory=list)
-    message_flow_associations: List[MessageFlowAssociation] = field(default_factory=list)
-    participant_associations: List[ParticipantAssociation] = field(default_factory=list)
+    name: str | None = None
+    participants: list[Participant] = field(default_factory=list)
+    message_flows: list[MessageFlow] = field(default_factory=list)
+    artifacts: list[Artifact] = field(default_factory=list)
+    correlation_keys: list[CorrelationKey] = field(default_factory=list)
+    choreography_refs: list[Choreography] = field(default_factory=list)
+    conversation_associations: list[ConversationAssociation] = field(default_factory=list)
+    conversations: list[ConversationNode] = field(default_factory=list)
+    conversation_links: list[ConversationLink] = field(default_factory=list)
+    message_flow_associations: list[MessageFlowAssociation] = field(default_factory=list)
+    participant_associations: list[ParticipantAssociation] = field(default_factory=list)
     is_closed: bool = False
 
 # ── Artifacts ────────────────────────────────────────────────────
@@ -942,13 +981,15 @@ class Artifact(BaseElement):
 @dataclass
 class Association(Artifact):
     direction: AssociationDirection = AssociationDirection.NONE
-    source_ref: Optional[BaseElement] = None
-    target_ref: Optional[BaseElement] = None
+    source_ref: BaseElement | None = None
+    target_ref: BaseElement | None = None
+    source_ref_id: str | None = None   # temporary ID
+    target_ref_id: str | None = None   # temporary ID
 
 @dataclass
 class Group(Artifact):
-    category_value: Optional[CategoryValue] = None
-    categorized_flow_elements: List[FlowElement] = field(default_factory=list)
+    category_value: CategoryValue | None = None
+    categorized_flow_elements: list[FlowElement] = field(default_factory=list)
 
 @dataclass
 class TextAnnotation(Artifact):
@@ -960,8 +1001,8 @@ class TextAnnotation(Artifact):
 class Auditing(BaseElement):
     save_instances: bool = False
     generate_trace_log: bool = False
-    log_condition: Optional[FormalExpression] = None   # was str
-    break_point_condition: Optional[FormalExpression] = None
+    log_condition: FormalExpression | None = None
+    break_point_condition: FormalExpression | None = None
 
 @dataclass
 class Monitoring(BaseElement):
@@ -970,15 +1011,19 @@ class Monitoring(BaseElement):
 # ── Services ─────────────────────────────────────────────────────
 @dataclass
 class Interface(RootElement):
-    implementation_ref: Optional[SSDM_DOCUMENT] = None
-    operations: Dict[str, Operation] = field(default_factory=dict)
+    implementation_ref: ServiceBinding  | None = None
+    operations: dict[str, Operation] = field(default_factory=dict)
 
 @dataclass
 class Operation(BaseElement):
-    in_message_ref: Optional[Message] = None
-    out_message_ref: Optional[Message] = None
-    error_refs: List[Error] = field(default_factory=list)
-    implementation_ref: Optional[SSDM_DOCUMENT] = None
+    in_message_ref: Message | None = None
+    out_message_ref: Message | None = None
+    error_refs: list[Error] = field(default_factory=list)
+    implementation_ref: ServiceOperation  | None = None
+    # Temporary fields
+    in_message_ref_id: str | None = None
+    out_message_ref_id: str | None = None
+    error_ref_ids: list[str] = field(default_factory=list)
 
 @dataclass
 class EndPoint(RootElement):
@@ -987,51 +1032,54 @@ class EndPoint(RootElement):
 # ── Messages, Signals, Errors, Escalations ──────────────────────
 @dataclass
 class Message(RootElement):
-    item_ref: Optional[ItemDefinition] = None
+    item_ref: ItemDefinition | None = None
+    item_ref_id: str | None = None   # temporary ID
 
 @dataclass
 class Signal(RootElement):
-    structure_ref: Optional[MSDMDocument] = None
+    structure_ref: Entity | None = None
 
 @dataclass
 class Error(RootElement):
-    error_code: Optional[str] = None      # errorCode is a string identifier in BPMN
-    structure_ref: Optional[MSDMDocument] = None
+    error_code: str | None = None
+    structure_ref: Entity | None = None
 
 @dataclass
 class Escalation(RootElement):
-    escalation_code: Optional[str] = None
-    structure_ref: Optional[MSDMDocument] = None
+    escalation_code: str | None = None
+    structure_ref: Entity | None = None
 
 # ── Correlation ──────────────────────────────────────────────────
 @dataclass
 class CorrelationKey(BaseElement):
-    property_refs: List[CorrelationProperty] = field(default_factory=list)
+    property_refs: list[CorrelationProperty] = field(default_factory=list)
+    property_ref_ids: list[str] = field(default_factory=list)   # temporary IDs
 
 @dataclass
 class CorrelationProperty(RootElement):
-    property_type: CorrelationPropertyType = CorrelationPropertyType.KEY   # enum
-    retrieval_expressions: List[CorrelationPropertyRetrievalExpression] = field(default_factory=list)
+    property_type: CorrelationPropertyType = CorrelationPropertyType.KEY
+    retrieval_expressions: list[CorrelationPropertyRetrievalExpression] = field(default_factory=list)
 
 @dataclass
 class CorrelationPropertyRetrievalExpression(BaseElement):
-    message_path: Optional[FormalExpression] = None
-    message_ref: Optional[Message] = None
+    message_path: FormalExpression | None = None
+    message_ref: Message | None = None
 
 @dataclass
 class CorrelationSubscription(BaseElement):
-    correlation_key_ref: Optional[CorrelationKey] = None
-    property_bindings: List[CorrelationPropertyBinding] = field(default_factory=list)
+    correlation_key_ref: CorrelationKey | None = None
+    property_bindings: list[CorrelationPropertyBinding] = field(default_factory=list)
+    correlation_key_ref_id: str | None = None   # temporary ID
 
 @dataclass
 class CorrelationPropertyBinding(BaseElement):
-    data_path: Optional[FormalExpression] = None
-    property_ref: Optional[CorrelationProperty] = None
+    data_path: FormalExpression | None = None
+    property_ref: CorrelationProperty | None = None
 
 # ── Categories ───────────────────────────────────────────────────
 @dataclass
 class Category(RootElement):
-    values: List[CategoryValue] = field(default_factory=list)
+    values: list[CategoryValue] = field(default_factory=list)
 
 @dataclass
 class CategoryValue(BaseElement):
@@ -1041,23 +1089,26 @@ class CategoryValue(BaseElement):
 @dataclass
 class InteractionNode:
     node_type: InteractionNodeType = InteractionNodeType.UNDEFINED
-    event: Optional[Event] = None
-    task: Optional[Task] = None
-    participant: Optional[Participant] = None
+    event: Event | None = None
+    task: Task | None = None
+    participant: Participant | None = None
 
 @dataclass
 class MessageFlowAssociation(BaseElement):
-    inner_message_flow_ref: Optional[MessageFlow] = None
-    outer_message_flow_ref: Optional[MessageFlow] = None
+    inner_message_flow_ref: MessageFlow | None = None
+    outer_message_flow_ref: MessageFlow | None = None
+    inner_message_flow_ref_id: str | None = None   # temporary ID
+    outer_message_flow_ref_id: str | None = None   # temporary ID
 
 @dataclass
 class Participant(BaseElement):
-    process_ref: Optional[Process] = None
-    partner_role_refs: List[PartnerRole] = field(default_factory=list)
-    partner_entity_refs: List[PartnerEntity] = field(default_factory=list)
-    interface_refs: List[Interface] = field(default_factory=list)
-    participant_multiplicity: Optional[ParticipantMultiplicity] = None
-    endpoint_refs: List[EndPoint] = field(default_factory=list)
+    process_ref: Process | None = None
+    partner_role_refs: list[PartnerRole] = field(default_factory=list)
+    partner_entity_refs: list[PartnerEntity] = field(default_factory=list)
+    interface_refs: list[Interface] = field(default_factory=list)
+    participant_multiplicity: ParticipantMultiplicity | None = None
+    endpoint_refs: list[EndPoint] = field(default_factory=list)
+    process_ref_id: str | None = None   # temporary ID
 
 @dataclass
 class ParticipantMultiplicity:
@@ -1066,22 +1117,26 @@ class ParticipantMultiplicity:
 
 @dataclass
 class ParticipantAssociation(BaseElement):
-    inner_participant_ref: Optional[Participant] = None
-    outer_participant_ref: Optional[Participant] = None
+    inner_participant_ref: Participant | None = None
+    outer_participant_ref: Participant | None = None
+    inner_participant_ref_id: str | None = None   # temporary ID
+    outer_participant_ref_id: str | None = None   # temporary ID
 
 @dataclass
 class PartnerEntity(RootElement):
-    participant_refs: List[Participant] = field(default_factory=list)
+    participant_refs: list[Participant] = field(default_factory=list)
 
 @dataclass
 class PartnerRole(RootElement):
-    participant_refs: List[Participant] = field(default_factory=list)
+    participant_refs: list[Participant] = field(default_factory=list)
 
 @dataclass
 class ConversationNode(BaseElement):
-    participant_refs: List[Participant] = field(default_factory=list)
-    message_flow_refs: List[MessageFlow] = field(default_factory=list)
-    correlation_keys: List[CorrelationKey] = field(default_factory=list)
+    participant_refs: list[Participant] = field(default_factory=list)
+    message_flow_refs: list[MessageFlow] = field(default_factory=list)
+    correlation_keys: list[CorrelationKey] = field(default_factory=list)
+    participant_ref_ids: list[str] = field(default_factory=list)   # temporary IDs
+    message_flow_ref_ids: list[str] = field(default_factory=list) # temporary IDs
 
 @dataclass
 class Conversation(ConversationNode):
@@ -1089,8 +1144,8 @@ class Conversation(ConversationNode):
 
 @dataclass
 class CallConversation(ConversationNode):
-    called_collaboration_ref: Optional[Collaboration] = None
-    participant_associations: List[ParticipantAssociation] = field(default_factory=list)
+    called_collaboration_ref: Collaboration | None = None
+    participant_associations: list[ParticipantAssociation] = field(default_factory=list)
 
 @dataclass
 class GlobalConversation(ConversationNode):
@@ -1098,93 +1153,108 @@ class GlobalConversation(ConversationNode):
 
 @dataclass
 class SubConversation(ConversationNode):
-    conversation_nodes: List[ConversationNode] = field(default_factory=list)
+    conversation_nodes: list[ConversationNode] = field(default_factory=list)
 
 @dataclass
 class ConversationAssociation(BaseElement):
-    inner_conversation_node_ref: Optional[ConversationNode] = None
-    outer_conversation_node_refs: List[ConversationNode] = field(default_factory=list)
+    inner_conversation_node_ref: ConversationNode | None = None
+    outer_conversation_node_refs: list[ConversationNode] = field(default_factory=list)
+    inner_conversation_node_ref_id: str | None = None          # temporary ID
+    outer_conversation_node_ref_ids: list[str] = field(default_factory=list)  # temporary IDs
 
 @dataclass
 class ConversationLink(BaseElement):
-    source_ref: Optional[InteractionNode] = None
-    target_ref: Optional[InteractionNode] = None
+    source_ref: InteractionNode | None = None
+    target_ref: InteractionNode | None = None
+    source_ref_id: str | None = None   # temporary ID
+    target_ref_id: str | None = None   # temporary ID
 
 @dataclass
 class ChoreographyActivity(FlowNode):
-    participant_refs: List[Participant] = field(default_factory=list)
-    initiating_participant_ref: Optional[Participant] = None
+    participant_refs: list[Participant] = field(default_factory=list)
+    initiating_participant_ref: Participant | None = None
     loop_type: ChoreographyLoopType = ChoreographyLoopType.NONE
-    correlation_keys: List[CorrelationKey] = field(default_factory=list)
+    correlation_keys: list[CorrelationKey] = field(default_factory=list)
+    # Temporary fields
+    participant_ref_ids: list[str] = field(default_factory=list)
+    initiating_participant_ref_id: str | None = None
 
 @dataclass
 class ChoreographyTask(ChoreographyActivity):
-    message_flow_refs: List[MessageFlow] = field(default_factory=list)
+    message_flow_refs: list[MessageFlow] = field(default_factory=list)
 
 @dataclass
 class CallChoreography(ChoreographyActivity):
-    called_choreography_ref: Optional[Choreography] = None
-    participant_associations: List[ParticipantAssociation] = field(default_factory=list)
+    called_choreography_ref: Choreography | None = None
+    participant_associations: list[ParticipantAssociation] = field(default_factory=list)
 
 @dataclass
 class SubChoreography(ChoreographyActivity):
-    artifacts: List[Artifact] = field(default_factory=list)
+    artifacts: list[Artifact] = field(default_factory=list)
 
 @dataclass
 class Choreography(Collaboration):
-    flow_elements: Dict[str, FlowElement] = field(default_factory=dict)
-    lane_sets: List[LaneSet] = field(default_factory=list)
+    flow_elements: dict[str, FlowElement] = field(default_factory=dict)
+    lane_sets: list[LaneSet] = field(default_factory=list)
 
 @dataclass
 class GlobalChoreographyTask(Choreography):
-    initiating_participant_ref: Optional[Participant] = None
+    initiating_participant_ref: Participant | None = None
 
 # ── CMMN ────────────────────────────────────────────────────────
 @dataclass
 class PlanItem(BaseElement):
-    definition_ref: Optional[Union[Stage, Milestone, EventListener]] = None
-    entry_criteria: List[EntryCriterion] = field(default_factory=list)
-    exit_criteria: List[ExitCriterion] = field(default_factory=list)
+    definition_ref: Stage | Milestone | EventListener | None = None
+    entry_criteria: list[EntryCriterion] = field(default_factory=list)
+    exit_criteria: list[ExitCriterion] = field(default_factory=list)
     repetition_count: int = 1
     is_blocking: bool = True
-
+    # Temporary field for parsing
+    _definition_ref_id: str | None = None
+    
 @dataclass
 class DiscretionaryItem(PlanItem):
-    applicability_rule: Optional[ApplicabilityRule] = None
+    applicability_rule: ApplicabilityRule | None = None
 
 @dataclass
 class CaseFileItem(BaseElement):
-    item_definition_ref: Optional[ItemDefinition] = None
-    multiplicity: CaseFileMultiplicity = CaseFileMultiplicity.EXACTLY_ONE   # enum
-
+    item_definition_ref: ItemDefinition | None = None
+    multiplicity: CaseFileMultiplicity = CaseFileMultiplicity.EXACTLY_ONE
+    _item_definition_ref_id: str | None = None
+    
 @dataclass
 class CaseTask(Activity):
-    case_ref: Optional[CMMNDefinition] = None
+    case_ref: CMMNDefinition | None = None
+    _case_ref_id: str | None = None
 
 @dataclass
 class ProcessTask(Activity):
-    process_ref: Optional[Process] = None
+    process_ref: Process | None = None
+    _process_ref_id: str | None = None
 
 @dataclass
 class HumanTask(Activity):
-    role_ref: Optional[ResourceRole] = None
+    role_ref: ResourceRole | None = None
+    _role_ref_id: str | None = None
 
 @dataclass
 class ApplicabilityRule(BaseElement):
-    condition: Optional[FormalExpression] = None
+    condition: FormalExpression | None = None
 
 @dataclass
 class EntryCriterion(BaseElement):
-    sentry_ref: Optional[Sentry] = None
+    sentry_ref: Sentry | None = None
+    _sentry_ref_id: str | None = None
 
 @dataclass
 class ExitCriterion(BaseElement):
-    sentry_ref: Optional[Sentry] = None
+    sentry_ref: Sentry | None = None
+    _sentry_ref_id: str | None = None
 
 @dataclass
 class Stage(FlowNode):
-    flow_elements: Dict[str, FlowElement] = field(default_factory=dict)
-    sentries: List[Sentry] = field(default_factory=list)
+    flow_elements: dict[str, FlowElement] = field(default_factory=dict)
+    sentries: list[Sentry] = field(default_factory=list)
 
 @dataclass
 class Milestone(FlowNode):
@@ -1192,59 +1262,64 @@ class Milestone(FlowNode):
 
 @dataclass
 class EventListener(FlowNode):
-    event_type: EventListenerType = EventListenerType.USER   # enum
+    event_type: EventListenerType = EventListenerType.USER
 
 @dataclass
 class Sentry(BaseElement):
-    on_part: Optional[FormalExpression] = None   # was str
-    if_part: Optional[FormalExpression] = None   # was str
+    on_part: FormalExpression | None = None
+    if_part: FormalExpression | None = None
 
 @dataclass
 class CMMNDefinition:
     id: str
     name: str
     case: Stage
-    plan_items: List[PlanItem] = field(default_factory=list)
-    discretionary_items: List[DiscretionaryItem] = field(default_factory=list)
-    case_file_items: List[CaseFileItem] = field(default_factory=list)
+    plan_items: list[PlanItem] = field(default_factory=list)
+    discretionary_items: list[DiscretionaryItem] = field(default_factory=list)
+    case_file_items: list[CaseFileItem] = field(default_factory=list)
 
 # ── DMN ──────────────────────────────────────────────────────────
 @dataclass
 class InformationRequirement(BaseElement):
-    required_decision: Optional[Decision] = None
-    required_input: Optional[InputData] = None
-
+    required_decision: Decision | None = None
+    required_input: InputData | None = None
+    # Temporary fields for parsing (not serialized)
+    _required_decision_id: str | None = None
+    _required_input_id: str | None = None
+    
 @dataclass
 class KnowledgeRequirement(BaseElement):
-    required_knowledge: Optional[BusinessKnowledgeModel] = None
+    required_knowledge: BusinessKnowledgeModel | None = None
+    _required_knowledge_id: str | None = None    
 
 @dataclass
 class AuthorityRequirement(BaseElement):
-    required_authority: Optional[KnowledgeSource] = None
-
+    required_authority: KnowledgeSource | None = None
+    _required_authority_id: str | None = None
+    
 @dataclass
 class DecisionService(BaseElement):
-    decisions: List[Decision] = field(default_factory=list)
-    output_decisions: List[Decision] = field(default_factory=list)
-    input_data: List[InputData] = field(default_factory=list)
+    decisions: list[Decision] = field(default_factory=list)
+    output_decisions: list[Decision] = field(default_factory=list)
+    input_data: list[InputData] = field(default_factory=list)
 
 @dataclass
 class Decision(FlowNode):
     logic: DecisionLogicType = DecisionLogicType.DECISION_TABLE
-    expression: Optional[Script] = None
-    table_data: Optional[DecisionTable] = None   # replaced List[Dict[str,str]]
-    information_requirements: List[InformationRequirement] = field(default_factory=list)
-    knowledge_requirements: List[KnowledgeRequirement] = field(default_factory=list)
-    authority_requirements: List[AuthorityRequirement] = field(default_factory=list)
+    expression: Script | None = None
+    table_data: DecisionTable | None = None
+    information_requirements: list[InformationRequirement] = field(default_factory=list)
+    knowledge_requirements: list[KnowledgeRequirement] = field(default_factory=list)
+    authority_requirements: list[AuthorityRequirement] = field(default_factory=list)
 
 @dataclass
 class BusinessKnowledgeModel(FlowNode):
     logic: DecisionLogicType = DecisionLogicType.LITERAL_EXPRESSION
-    expression: Optional[FormalExpression] = None
+    expression: FormalExpression | None = None
 
 @dataclass
 class InputData(FlowNode):
-    entity_ref: Optional[MSDMDocument] = None
+    entity_ref: Entity | None = None
 
 @dataclass
 class KnowledgeSource(FlowNode):
@@ -1254,14 +1329,12 @@ class KnowledgeSource(FlowNode):
 class DMNDefinition:
     id: str
     name: str
-    decisions: List[Decision] = field(default_factory=list)
-    bkms: List[BusinessKnowledgeModel] = field(default_factory=list)
-    input_data: List[InputData] = field(default_factory=list)
-
-
+    decisions: list[Decision] = field(default_factory=list)
+    bkms: list[BusinessKnowledgeModel] = field(default_factory=list)
+    input_data: list[InputData] = field(default_factory=list)
+    knowledge_sources: list[KnowledgeSource] = field(default_factory=list)
 
 # ── Cloud‑native extensions for AWS Step Functions / Azure Logic Apps ─
-
 class ErrorHandlingOperator(str, Enum):
     EQUALS = "Equals"
     NOT_EQUALS = "NotEquals"
@@ -1273,83 +1346,90 @@ class RetryBackoffRate(float, Enum):
 
 @dataclass
 class CloudResourceBinding:
-    """Binds a state to a specific cloud resource (e.g., Lambda ARN)."""
-    resource_arn: Optional[str] = None           # AWS Lambda / ECS task ARN
-    azure_function_id: Optional[str] = None      # Azure Function resource ID
-    parameters: Dict[str, Any] = field(default_factory=dict)  # additional parameters
+    resource_arn: str | None = None
+    azure_function_id: str | None = None
+    parameters: dict[str, Any] = field(default_factory=dict)
 
 @dataclass
 class ErrorHandlingConfig:
-    """Catch / fail configuration for a state."""
-    error_equals: List[str] = field(default_factory=list)
-    next_state: Optional[State] = None           # reference to the next state on error
-    result_path: Optional[str] = None
+    error_equals: list[str] = field(default_factory=list)
+    next_state: State | None = None
+    result_path: str | None = None
 
 @dataclass
 class RetryConfig:
-    """Retry policy for a state."""
-    error_equals: List[str] = field(default_factory=list)
+    error_equals: list[str] = field(default_factory=list)
     interval_seconds: int = 1
     max_attempts: int = 3
     backoff_rate: float = 2.0
 
 @dataclass
 class TimeoutConfig:
-    """Timeout configuration for a state."""
     timeout_seconds: int = 300
-    heartbeat_seconds: Optional[int] = None
+    heartbeat_seconds: int | None = None
+
 # ── State Machines (unified) ─────────────────────────────────────
 @dataclass
 class State(StateNode):
-    entry_actions: List[Script] = field(default_factory=list)     # was List[str]
-    exit_actions: List[Script] = field(default_factory=list)
-    do_actions: List[Script] = field(default_factory=list)
+    entry_actions: list[Script] = field(default_factory=list)
+    exit_actions: list[Script] = field(default_factory=list)
+    do_actions: list[Script] = field(default_factory=list)
     is_composite: bool = False
     is_orthogonal: bool = False
-    regions: List[StateMachineRegion] = field(default_factory=list)
-    # Cloud‑native extensions for AWS Step Functions / Azure Logic Apps:
-    cloud_resource: Optional[CloudResourceBinding] = None
-    error_handling: Optional[ErrorHandlingConfig] = None
-    retry: Optional[RetryConfig] = None
-    timeout: Optional[TimeoutConfig] = None
-    workflow_state_type: Optional[WorkflowStateType] = None
+    regions: list[StateMachineRegion] = field(default_factory=list)
+    cloud_resource: CloudResourceBinding | None = None
+    error_handling: ErrorHandlingConfig | None = None
+    retry: RetryConfig | None = None
+    timeout: TimeoutConfig | None = None
+    workflow_state_type: WorkflowStateType | None = None
     is_final: bool = False
+    parallel: bool = False                     # SCXML <parallel>
+    initial_state_id: str | None = None        # Temporary reference to child state ID
+    invoke: StateInvoke | None = None          # SCXML <invoke>
+    initial: State | PseudoState | None = None
+    # graphml fields:
+    node_type: str | None = None
+    locators: list[Locator] = field(default_factory=list)
 
 @dataclass
 class StateTransition(Transition):
-    trigger: Optional[FormalExpression] = None   # was str
-    guard: Optional[FormalExpression] = None     # was str
-    effect: Optional[FormalExpression] = None    # was str
-    # SCXML extensions
-    parallel: bool = False
-    initial: Optional[State] = None              # reference to initial state
-    invoke: Optional[StateInvoke] = None
-
+    trigger: FormalExpression | None = None
+    guard: FormalExpression | None = None
+    effect: FormalExpression | None = None
+    # Temporary field for target ID during parsing
+    _target_id: str | None = None
+    # graphml fields:
+    edge_type: str | None = None
+    locators: list[Locator] = field(default_factory=list)
+    directed: bool = True    
+    
 @dataclass
 class StateInvoke:
-    invoke_type: str              # external protocol type (scxml, http, etc.)
-    src: Optional[Union[str, SSDM_DOCUMENT]] = None   # reference to service or URL
-    id: Optional[str] = None
+    invoke_type: str
+    src: str | ServiceOperation  | None = None
+    id: str | None = None
 
 @dataclass
 class StateMachineRegion(BaseElement):
-    states: List[State] = field(default_factory=list)
-    transitions: List[StateTransition] = field(default_factory=list)
-    initial_state: Optional[State] = None        # typed reference (replaces initial_state_id)
-    references: List[Union[Place, PnTransition]] = field(default_factory=list)    
-
+    states: list[State] = field(default_factory=list)
+    transitions: list[StateTransition] = field(default_factory=list)
+    initial_state: State | None = None
+    places: list[Place] = field(default_factory=list)               # Petri net places
+    pn_transitions: list[PnTransition] = field(default_factory=list) # Petri net transitions    
+    arcs: list[Arc] = field(default_factory=list)                   # Petri net arcs
+    
 @dataclass
 class StateMachineModel:
     id: str
     name: str
-    top_region: StateMachineRegion = field(default_factory=StateMachineRegion)
-    pseudo_states: List[PseudoState] = field(default_factory=list)
-    timer_trigger: Optional[TimerEventDefinition] = None
-    
+    top_region: StateMachineRegion = field(default_factory=lambda: StateMachineRegion(id=""))
+    pseudo_states: list[PseudoState] = field(default_factory=list)
+    timer_trigger: TimerEventDefinition | None = None
+
 @dataclass
 class PseudoState(StateNode):
     kind: PseudoStateKind = PseudoStateKind.INITIAL
-    parent_state: Optional[State] = None   # id of the parent State (so the writer can place it correctly)
+    parent_state: State | None = None
 
 # ── Petri net elements (extend unified state) ────────────────────
 @dataclass
@@ -1358,56 +1438,52 @@ class Place(State):
     capacity: int = 0
 
 @dataclass
-class YAWLTaskDecorator(BaseElement):
-    join_type: YAWLJoinType = YAWLJoinType.NONE
-    split_type: YAWLSplitType = YAWLSplitType.NONE
-    # custom_form: Optional[str] = None
-    # documentation: Optional[str] = None    
-
-@dataclass
 class PnTransition(Transition):
-    timing_expression: Optional[FormalExpression] = None
-    yawl_decorator: Optional[YAWLTaskDecorator] = None
+    timing_expression: FormalExpression | None = None
 
 @dataclass
 class Arc(Transition):
     weight: int = 1
     inhibitor: bool = False
     reset: bool = False
-
+    arc_source: Place | PnTransition | None = None
+    arc_target: Place | PnTransition | None = None
+    
 # ── CEP ──────────────────────────────────────────────────────────
 @dataclass
 class EventStream:
     name: str
-    attributes: Dict[str, str] = field(default_factory=dict)   # attribute name -> type string (acceptable)
+    attributes: dict[str, str] = field(default_factory=dict)
 
 @dataclass
 class CEPRule:
     name: str
-    pattern: str                        # pattern expression (kept as str)
+    pattern: str
     operator: CEPOperator = CEPOperator.AND
-    window_duration: Optional[str] = None   # duration string
-    filter_expression: Optional[str] = None
-    actions: ActionList = field(default_factory=ActionList)   # now typed ActionList
+    window_duration: str | None = None
+    filter_expression: str | None = None
+    actions: ActionList = field(default_factory=lambda: ActionList(id="", actions=[]))
 
 @dataclass
 class CEPDefinition:
-    streams: List[EventStream] = field(default_factory=list)
-    rules: List[CEPRule] = field(default_factory=list)
+    id: str
+    name: str
+    streams: list[EventStream] = field(default_factory=list)
+    rules: list[CEPRule] = field(default_factory=list)
 
 # ── Multi‑agent Interaction ──────────────────────────────────────
 @dataclass
 class InteractionProtocol(BaseElement):
     strategy: InteractionStrategy = InteractionStrategy.BROADCAST
-    participants: List[Participant] = field(default_factory=list)
-    message_pattern: Optional[str] = None   # still a string pattern, but could be improved later
-    coordinator_ref: Optional[Participant] = None
+    participants: list[Participant] = field(default_factory=list)
+    message_pattern: str | None = None
+    coordinator_ref: Participant | None = None
 
 @dataclass
 class InteractionModel:
     id: str
     name: str
-    protocols: List[InteractionProtocol] = field(default_factory=list)
+    protocols: list[InteractionProtocol] = field(default_factory=list)
 
 # ═══════════════════════════════════════════════════════════════
 # Top‑level OSDM Document
@@ -1415,57 +1491,70 @@ class InteractionModel:
 @dataclass
 class BaseOSDMDocument(BaseDocument):
     kind: DocumentStandard = DocumentStandard.OSDM
-    source_format: Optional[DocumentFormat] = None
-    source_file: Optional[str] = None
+    source_format: DocumentFormat | None = None
+    source_file: str | None = None
     version: str = "1.0.0"
-    version_description: Optional[str] = None
+    version_description: str | None = None
 
-    root_elements: Dict[str, RootElement] = field(default_factory=dict)
-    diagrams: List[BPMNDiagram] = field(default_factory=list)
-    imports: List[Import] = field(default_factory=list)
-    extensions: List[Extension] = field(default_factory=list)
-    relationships: List[Relationship] = field(default_factory=list)
-    
-   
+    root_elements: dict[str, RootElement] = field(default_factory=dict)
+    diagrams: list[BPMNDiagram] = field(default_factory=list)
+    extensions: list[Extension] = field(default_factory=list)
+
+
 class BPMNDocument(BaseOSDMDocument):
-    processes: List[Process] = field(default_factory=list)
-    collaborations: List[Collaboration] = field(default_factory=list)
-    choreographies: List[Choreography] = field(default_factory=list)
-    global_tasks: List[GlobalTask] = field(default_factory=list)
+    processes: list[Process] = field(default_factory=list)
+    collaborations: list[Collaboration] = field(default_factory=list)
+    choreographies: list[Choreography] = field(default_factory=list)
+    global_tasks: list[GlobalTask] = field(default_factory=list)
 
 @dataclass
 class CMMNDocument(BaseOSDMDocument):
-    cmmn_definitions: List[CMMNDefinition] = field(default_factory=list)
+    cmmn_definitions: list[CMMNDefinition] = field(default_factory=list)
 
 @dataclass
 class StateMachineDocument(BaseOSDMDocument):
-    state_machines: List[StateMachineModel] = field(default_factory=list)
+    state_machines: list[StateMachineModel] = field(default_factory=list)
 
 @dataclass
 class DMNDocument(BaseOSDMDocument):
-    dmn_definitions: List[DMNDefinition] = field(default_factory=list)
+    dmn_definitions: list[DMNDefinition] = field(default_factory=list)
 
 @dataclass
 class CEPDocument(BaseOSDMDocument):
-    cep_definitions: List[CEPDefinition] = field(default_factory=list)
+    cep_definitions: list[CEPDefinition] = field(default_factory=list)
 
 @dataclass
 class MultiAgentInteractionDocument(BaseOSDMDocument):
-    interaction_models: List[InteractionModel] = field(default_factory=list)
+    interaction_models: list[InteractionModel] = field(default_factory=list)
 
 
 @dataclass
 class OSDMModel:
-    processes: List[BPMNDocument] = field(default_factory=list)
-    collaborations: List[BPMNDocument] = field(default_factory=list)
-    choreographies: List[BPMNDocument] = field(default_factory=list)
-    global_tasks: List[BPMNDocument] = field(default_factory=list)
-    cmmn_definitions: List[CMMNDocument] = field(default_factory=list)
-    state_machines: List[CMMNDocument] = field(default_factory=list)
-    dmn_definitions: List[DMNDocument] = field(default_factory=list)
-    cep_definitions: List[CEPDocument] = field(default_factory=list)
-    interaction_models: List[MultiAgentInteractionDocument] = field(default_factory=list)
+    processes: list[BPMNDocument] = field(default_factory=list)
+    collaborations: list[BPMNDocument] = field(default_factory=list)
+    choreographies: list[BPMNDocument] = field(default_factory=list)
+    global_tasks: list[BPMNDocument] = field(default_factory=list)
+    cmmn_definitions: list[CMMNDocument] = field(default_factory=list)
+    state_machines: list[CMMNDocument] = field(default_factory=list)
+    dmn_definitions: list[DMNDocument] = field(default_factory=list)
+    cep_definitions: list[CEPDocument] = field(default_factory=list)
+    interaction_models: list[MultiAgentInteractionDocument] = field(default_factory=list)
 
-    msdm_refs: Dict[str, MSDMDocument] = field(default_factory=dict)
-    ssdm_refs: Dict[str, SSDM_DOCUMENT] = field(default_factory=dict)
-    tsdm_refs: Dict[str, TSDMDocument] = field(default_factory=dict)
+    msdm_refs: dict[str, MSDMDocument] = field(default_factory=dict)
+    ssdm_refs: dict[str, SSDMDocument ] = field(default_factory=dict)
+    tsdm_refs: dict[str, TSDMDocument] = field(default_factory=dict)
+
+
+# Helper dataclasses that need to be defined after the main ones
+@dataclass
+class SentryExpression(FormalExpression):
+    pass
+
+@dataclass
+class DecisionTable(BaseElement):
+    columns: list[str] = field(default_factory=list)
+    rows: list[dict[str, str]] = field(default_factory=list)
+
+@dataclass
+class ActionList(BaseElement):
+    actions: list[str | Script] = field(default_factory=list)

@@ -3,13 +3,16 @@
 Write the complete theme1.xml from a Theme object.
 All colour, font, format scheme data restored, including unknown children.
 """
-
 from __future__ import annotations
-from xml.etree.ElementTree import Element, SubElement
+
+from xml.etree.ElementTree import Element
+from xml.etree.ElementTree import SubElement
 
 from ...models.psdm_models import Theme
+from ..drawingml_helpers import set_color
+from ..drawingml_helpers import write_fill
+from ..drawingml_helpers import write_line
 from .constants import NAMESPACES
-from ..drawingml_helpers import set_color, write_fill, write_line, write_effects
 from .utils import dict_to_element
 
 A = f"{{{NAMESPACES['a']}}}"

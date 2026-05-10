@@ -4,29 +4,22 @@ EPC (Event‑driven Process Chain) Writer – maps an OSDM Process to EPML forma
 BPMN tasks become EPC functions, events become EPC events, gateways become
 connectors (AND/OR/XOR), and sequence flows become arcs.
 """
-
 from __future__ import annotations
-from pathlib import Path
-from typing import Optional, Dict, Any, List, cast
-from xml.etree.ElementTree import Element, SubElement, tostring
 
-from .base_osdm_writer import BaseOSDMWriter, OSDMWriteOptions
-from ...models.osdm_models import (
-    BaseOSDMDocument, BPMNDocument,
-    Process,
-    FlowElement,
-    FlowNode,
-    Task,
-    Event,
-    Gateway,
-    GatewayType,
-    SequenceFlow,
-    Lane,
-    LaneSet,
-    ResourceRole,
-    BaseElement,
-)
-from ...models.base import BaseDocument
+from typing import cast
+from xml.etree.ElementTree import Element
+from xml.etree.ElementTree import SubElement
+from xml.etree.ElementTree import tostring
+
+from ...models.osdm_models import BaseOSDMDocument
+from ...models.osdm_models import BPMNDocument
+from ...models.osdm_models import Event
+from ...models.osdm_models import Gateway
+from ...models.osdm_models import Process
+from ...models.osdm_models import SequenceFlow
+from ...models.osdm_models import Task
+from .base_osdm_writer import BaseOSDMWriter
+from .base_osdm_writer import OSDMWriteOptions
 
 
 # ── Namespaces ────────────────────────────────────────────────────
@@ -40,7 +33,7 @@ class EPCWriter(BaseOSDMWriter):
     name = "epc"
     supported_extensions = (".epc", ".epml")
 
-    def __init__(self, options: Optional[OSDMWriteOptions] = None):
+    def __init__(self, options: OSDMWriteOptions | None = None):
         super().__init__(options)
 
     async def _write_design(self, base_document: BaseOSDMDocument) -> bytes:
@@ -55,7 +48,7 @@ class EPCWriter(BaseOSDMWriter):
                 self._write_process(root, process)
 
         xml_bytes = tostring(root, encoding="unicode", method="xml")
-        return xml_bytes.encode(self.options.encoding or "utf-8")
+        return xml_bytes.encode(getattr(self.options, "encoding", "utf-8") or "utf-8")
 
     def get_supported_media_types(self) -> list[str]:
         return ["application/xml"]

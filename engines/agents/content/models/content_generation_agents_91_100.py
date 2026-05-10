@@ -1,7 +1,9 @@
-from typing import List, Optional
-from .common import ConfidenceScore, Recommendation
-from .learning_objects import Lesson, LearningObjective
-from ...models import AgentInput, AgentOutput
+from ...models import AgentInput
+from ...models import AgentOutput
+from .common import ConfidenceScore
+from .common import Recommendation
+from .learning_objects import LearningObjective
+from .learning_objects import Lesson
 
 # -------------------------------------------------
 # Agent 91 — Example Generator
@@ -9,12 +11,12 @@ from ...models import AgentInput, AgentOutput
 
 class ExampleGeneratorInput(AgentInput):
     concept: str
-    difficulty_level: Optional[str]
+    difficulty_level: str | None
 
 
 class ExampleGeneratorOutput(AgentOutput):
-    examples: List[str]
-    confidence: Optional[ConfidenceScore]
+    examples: list[str]
+    confidence: ConfidenceScore | None
 
 
 # -------------------------------------------------
@@ -23,13 +25,13 @@ class ExampleGeneratorOutput(AgentOutput):
 
 class ExerciseCreatorInput(AgentInput):
     concept: str
-    learning_objective: Optional[LearningObjective]
-    difficulty: Optional[str]
+    learning_objective: LearningObjective | None
+    difficulty: str | None
 
 
 class ExerciseCreatorOutput(AgentOutput):
-    exercises: List[str]
-    recommendations: Optional[List[Recommendation]]
+    exercises: list[str]
+    recommendations: list[Recommendation] | None
 
 
 # -------------------------------------------------
@@ -43,7 +45,7 @@ class StoryLessonCreatorInput(AgentInput):
 
 class StoryLessonCreatorOutput(AgentOutput):
     story_text: str
-    moral_message: Optional[str]
+    moral_message: str | None
 
 
 # -------------------------------------------------
@@ -52,12 +54,12 @@ class StoryLessonCreatorOutput(AgentOutput):
 
 class ConceptExplanationInput(AgentInput):
     concept: str
-    student_level: Optional[str]
+    student_level: str | None
 
 
 class ConceptExplanationOutput(AgentOutput):
     explanation: str
-    confidence: Optional[ConfidenceScore]
+    confidence: ConfidenceScore | None
 
 
 # -------------------------------------------------
@@ -70,7 +72,7 @@ class PracticeQuestionGeneratorInput(AgentInput):
 
 
 class PracticeQuestionGeneratorOutput(AgentOutput):
-    questions: List[str]
+    questions: list[str]
 
 
 # -------------------------------------------------
@@ -83,7 +85,7 @@ class AdaptiveQuestionGeneratorInput(AgentInput):
 
 
 class AdaptiveQuestionGeneratorOutput(AgentOutput):
-    generated_questions: List[str]
+    generated_questions: list[str]
     difficulty_level: str
 
 
@@ -130,10 +132,10 @@ class ContentSimplifierOutput(AgentOutput):
 # -------------------------------------------------
 
 class AssessmentQuestionGeneratorInput(AgentInput):
-    learning_objectives: List[LearningObjective]
-    question_types: Optional[List[str]]
+    learning_objectives: list[LearningObjective]
+    question_types: list[str] | None
 
 
 class AssessmentQuestionGeneratorOutput(AgentOutput):
-    generated_questions: List[str]
-    confidence: Optional[ConfidenceScore]
+    generated_questions: list[str]
+    confidence: ConfidenceScore | None

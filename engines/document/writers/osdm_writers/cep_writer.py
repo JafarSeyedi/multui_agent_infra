@@ -4,21 +4,18 @@ Complex Event Processing (CEP) Writer – converts OSDM CEPDefinition objects in
 a generic JSON representation suitable for CEP engines (Esper, Flink, etc.).
 Multiple definitions are written as a JSON array.
 """
-
 from __future__ import annotations
-import json
-from pathlib import Path
-from typing import Optional, Dict, Any, List, cast
 
+import json
+from typing import cast, Union
+
+from ...models.osdm_models import ActionList
+from ...models.osdm_models import BaseOSDMDocument
+from ...models.osdm_models import CEPDefinition
+from ...models.osdm_models import CEPDocument
+from ...models.osdm_models import CEPRule
+from ...models.osdm_models import EventStream
 from .base_osdm_writer import BaseOSDMWriter, OSDMWriteOptions
-from ...models.osdm_models import (
-    BaseOSDMDocument, CEPDocument,
-    CEPDefinition,
-    CEPRule,
-    EventStream,
-    ActionList,
-)
-from ...models.base import BaseDocument
 
 
 class CEPWriter(BaseOSDMWriter):
@@ -27,22 +24,16 @@ class CEPWriter(BaseOSDMWriter):
     name = "cep"
     supported_extensions = (".cep.json",)
 
-    def __init__(self, options: Optional[OSDMWriteOptions] = None):
+    def __init__(self, options: OSDMWriteOptions | None = None):
         super().__init__(options)
 
     async def _write_design(self, base_document: BaseOSDMDocument) -> bytes:
         document = cast(CEPDocument, base_document)
-        definitions = None
-        if document:
-            definitions = document.cep_definitions
-        if not definitions:
-            output = {"message": "No CEP definitions found."}
-        elif len(definitions) == 1:
-            output = self._definition_to_dict(definitions[0])
-        else:
-            output = [self._definition_to_dict(d) for d in definitions]
+        definitions = document.cep_definitions if document else []
+        # Always output a list for consistency
+        output = [self._definition_to_dict(d) for d in definitions]
         json_str = json.dumps(output, indent=2, ensure_ascii=False)
-        return json_str.encode(self.options.encoding or "utf-8")
+        return json_str.encode(getattr(self.options, "encoding", "utf-8") or "utf-8")
 
     def get_supported_media_types(self) -> list[str]:
         return ["application/json"]
@@ -74,8 +65,9 @@ class CEPWriter(BaseOSDMWriter):
             "actions": self._actions_to_list(rule.actions),
         }
 
-    def _actions_to_list(self, actions: ActionList) -> list:
-        result = []
+    def _actions_to_list(self, actions: ActionList) -> list[Union[str, dict]]:
+        """Convert ActionList to a list of strings or script dictionaries."""
+        result: list[Union[str, dict]] = []
         for act in actions.actions:
             if isinstance(act, str):
                 result.append(act)

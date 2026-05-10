@@ -3,8 +3,8 @@
 Shared strings table writer for XLSX.
 Serialises the shared strings collection into sharedStrings.xml.
 """
-
 from __future__ import annotations
+
 import xml.etree.ElementTree as ET
 from typing import TYPE_CHECKING
 

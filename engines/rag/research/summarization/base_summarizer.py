@@ -1,6 +1,8 @@
 # rag/research/summarization/base_summarizer.py
-from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Optional
+from abc import ABC
+from abc import abstractmethod
+from typing import Any
+
 from engines.rag.research.citation_manager import CitationManager
 
 class BaseSummarizer(ABC):
@@ -10,10 +12,10 @@ class BaseSummarizer(ABC):
     async def summarize(
         self,
         query: str,
-        plan: Optional[List[Dict[str, Any]]] = None,
-        raw_evidence: Optional[List[Any]] = None,
-        hidden_edges: Optional[List[Any]] = None,
-        citation_manager: Optional[CitationManager] = None,
+        plan: list[dict[str, Any]] | None = None,
+        raw_evidence: list[Any] | None = None,
+        hidden_edges: list[Any] | None = None,
+        citation_manager: CitationManager | None = None,
     ) -> str:
         """تولید خلاصه از متن ورودی"""
         ...

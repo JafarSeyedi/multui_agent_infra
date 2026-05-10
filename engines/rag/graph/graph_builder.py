@@ -1,4 +1,5 @@
-from .graph_models import GraphNode, GraphEdge
+from .graph_models import GraphEdge
+from .graph_models import GraphNode
 
 class GraphBuilder:
 

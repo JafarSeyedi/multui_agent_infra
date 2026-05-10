@@ -1,27 +1,20 @@
 # # engines/document/parsers/cad_parser/oda_bridge.py
-
 # from __future__ import annotations
-
 # import io
 # import traceback
 # from dataclasses import dataclass
 # from typing import Any, Dict, Iterable, List, Optional
-
 # # مهم: API اصلی ODA
 # # اگر در سیستم نام دیگری داشته باشد، فقط این import را تغییر دهید.
 # import odapython as oda # type: ignore
-
-
 # # -------------------------------------------------------------
 # # Handle Wrapper
 # # -------------------------------------------------------------
 # @dataclass(frozen=True)
 # class ODAHandle:
 #     raw: str
-
 #     def __str__(self) -> str:
 #         return self.raw
-
 #     @staticmethod
 #     def from_obj(obj: Any) -> "ODAHandle":
 #         try:
@@ -29,56 +22,46 @@
 #             return ODAHandle(h)
 #         except Exception:
 #             return ODAHandle("0")
-
-
 # # -------------------------------------------------------------
 # # Object Proxy - یک wrapper عمومی برای هر ODA DbObject
 # # -------------------------------------------------------------
 # class ODAObjectProxy:
 #     def __init__(self, obj: Any):
 #         self._obj = obj
-
 #     @property
 #     def handle(self) -> ODAHandle:
 #         return ODAHandle.from_obj(self._obj)
-
 #     @property
 #     def object_id(self) -> Any:
 #         try:
 #             return self._obj.objectId()
 #         except Exception:
 #             return None
-
 #     @property
 #     def object_class(self) -> str:
 #         try:
 #             return self._obj.isA().name()
 #         except Exception:
 #             return "Unknown"
-
 #     @property
 #     def owner_id(self) -> Optional[str]:
 #         try:
 #             return self._obj.ownerId().getHandle().ascii()
 #         except Exception:
 #             return None
-
 #     def has_xdata(self) -> bool:
 #         try:
 #             return self._obj.hasXData()
 #         except Exception:
 #             return False
-
 #     def read_xdata(self) -> Dict[str, Any]:
 #         if not self.has_xdata():
 #             return {}
-
 #         out: Dict[str, Any] = {}
 #         try:
 #             xdata_dict = self._obj.xDataDictionary()
 #             if xdata_dict is None:
 #                 return {}
-
 #             it = xdata_dict.newIterator()
 #             while not it.done():
 #                 key = it.key()
@@ -88,23 +71,17 @@
 #                 except Exception:
 #                     out[key] = "UNKNOWN"
 #                 it.next()
-
 #         except Exception:
 #             pass
-
 #         return out
-
 #     def __repr__(self):
 #         return f"<ODAObjectProxy {self.object_class} {self.handle}>"
-
-
 # # -------------------------------------------------------------
 # # ODADocumentHandle - wrapper برای دیتابیس DWG/DCF
 # # -------------------------------------------------------------
 # class ODADocumentHandle:
 #     def __init__(self, db: Any):
 #         self.db = db
-
 #     # ------------------------------ #
 #     #  Table Extractors
 #     # ------------------------------ #
@@ -120,7 +97,6 @@
 #             "block_records": self._extract_table(oda.OdDbBlockTable),
 #             "appids": self._extract_table(oda.OdDbRegAppTable),
 #         }
-
 #     def _extract_table(self, table_type: Any) -> List[ODAObjectProxy]:
 #         out: List[ODAObjectProxy] = []
 #         try:
@@ -134,7 +110,6 @@
 #         except Exception:
 #             pass
 #         return out
-
 #     # ------------------------------ #
 #     #  Block Records & Entities
 #     # ------------------------------ #
@@ -144,7 +119,6 @@
 #             blk = blk_id.safeOpenObject()
 #         except Exception:
 #             return []
-
 #         results: List[ODAObjectProxy] = []
 #         it = blk.newIterator()
 #         while not it.done():
@@ -155,7 +129,6 @@
 #                 pass
 #             it.step()
 #         return results
-
 #     def list_entities_in_block(self, block_record: ODAObjectProxy) -> List[ODAObjectProxy]:
 #         out: List[ODAObjectProxy] = []
 #         try:
@@ -171,7 +144,6 @@
 #         except Exception:
 #             pass
 #         return out
-
 #     # ------------------------------ #
 #     #  Object Dictionary
 #     # ------------------------------ #
@@ -189,7 +161,6 @@
 #         except Exception:
 #             pass
 #         return out
-
 #     # ------------------------------ #
 #     #  XREFs
 #     # ------------------------------ #
@@ -207,7 +178,6 @@
 #         except Exception:
 #             pass
 #         return out
-
 #     # ------------------------------ #
 #     #  ACIS / Geometry Extraction
 #     # ------------------------------ #
@@ -224,7 +194,6 @@
 #         except Exception:
 #             pass
 #         return {}
-
 #     # ------------------------------ #
 #     #  Reactors
 #     # ------------------------------ #
@@ -241,15 +210,12 @@
 #         except Exception:
 #             pass
 #         return out
-
-
 # # -------------------------------------------------------------
 # # ODABridge - لایه اصلی مدیریت دیتابیس ODA
 # # -------------------------------------------------------------
 # class ODABridge:
 #     def __init__(self):
 #         self.services = oda.OdRxServices()
-
 #     # ------------------------------ #
 #     #  Loaders
 #     # ------------------------------ #
@@ -263,7 +229,6 @@
 #         except Exception as e:
 #             traceback.print_exc()
 #             raise RuntimeError(f"Failed to load DWG data from bytes: {e}")
-
 #     def load_file(self, path: str) -> ODADocumentHandle:
 #         try:
 #             db = oda.OdDbDatabase.readFile(path)

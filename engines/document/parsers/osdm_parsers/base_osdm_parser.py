@@ -4,24 +4,15 @@ Base class for all OSDM format parsers.
 Handles common OSDM infrastructure: version detection, source tracking,
 and shared helper methods for XML/JSON parsing.
 """
-
 from __future__ import annotations
-from abc import abstractmethod
-from pathlib import Path
-from typing import Optional, Dict, Any, Union, AsyncIterator
 
+from abc import abstractmethod
+from collections.abc import AsyncIterator
+from pathlib import Path
+from typing import Any
+
+from ...models.osdm_models import BaseOSDMDocument
 from ..base import BaseDocumentParser, ParseOptions
-from ...models.osdm_models import (
-    BaseOSDMDocument,
-    BPMNDocument,
-    CMMNDocument,
-    DMNDocument,
-    StateMachineDocument,
-    CEPDocument,
-    MultiAgentInteractionDocument,
-    BaseElement,
-)
-from ...models.base import BaseDocument
 
 
 class BaseOSDMParser(BaseDocumentParser):
@@ -36,7 +27,7 @@ class BaseOSDMParser(BaseDocumentParser):
     name: str = "osdm"
     supported_extensions: tuple[str, ...] = ()
 
-    def __init__(self, options: Optional[ParseOptions] = None):
+    def __init__(self, options: ParseOptions | None = None):
         self.options = options or ParseOptions()
 
     # ── Core parse methods ──────────────────────────────────────
@@ -45,8 +36,8 @@ class BaseOSDMParser(BaseDocumentParser):
         data: bytes,
         document_id: str,
         source_name: str,
-        metadata: Optional[Dict[str, Any]] = None,
-        options: Optional[ParseOptions] = None,
+        metadata: dict[str, Any] | None = None,
+        options: ParseOptions | None = None,
     ) -> BaseOSDMDocument:
         opts = options or self.options
         doc = await self._parse_to_document(data, source_name, opts)
@@ -59,10 +50,10 @@ class BaseOSDMParser(BaseDocumentParser):
 
     async def parse_path(
         self,
-        path: Union[str, Path],
+        path: str | Path,
         document_id: str,
-        metadata: Optional[Dict[str, Any]] = None,
-        options: Optional[ParseOptions] = None,
+        metadata: dict[str, Any] | None = None,
+        options: ParseOptions | None = None,
     ) -> BaseOSDMDocument:
         file_path = Path(path)
         data = file_path.read_bytes()
@@ -73,8 +64,8 @@ class BaseOSDMParser(BaseDocumentParser):
         stream: AsyncIterator[bytes],
         document_id: str,
         source_name: str,
-        metadata: Optional[Dict[str, Any]] = None,
-        options: Optional[ParseOptions] = None,
+        metadata: dict[str, Any] | None = None,
+        options: ParseOptions | None = None,
     ) -> BaseOSDMDocument:
         chunks = []
         async for chunk in stream:
@@ -98,9 +89,3 @@ class BaseOSDMParser(BaseDocumentParser):
         import re
         match = re.search(r"_v(\d+\.\d+\.\d+)", source_name)
         return match.group(1) if match else "1.0.0"
-
-    def _create_base_document(self, source_name: str, options: ParseOptions) -> BaseOSDMDocument:
-        """Create a new BaseOSDMDocument with default metadata."""
-        doc = BaseOSDMDocument()
-        doc.version = self._detect_version(source_name)
-        return doc

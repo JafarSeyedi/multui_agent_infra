@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from typing import List, Sequence
+from collections.abc import Sequence
 
 from engines.rag.rag_models import DocumentChunk
 from engines.rag.reranking.base_reranker import BaseReranker
@@ -14,10 +14,10 @@ class Reranker(BaseReranker):
     recall so the pipeline works even without a heavy cross-encoder dependency.
     """
 
-    async def rerank(self, query: str, chunks: Sequence[DocumentChunk]) -> List[float]:
+    async def rerank(self, query: str, chunks: Sequence[DocumentChunk]) -> list[float]:
         query_tokens = self._tokenize(query)
         query_set = set(query_tokens)
-        scores: List[float] = []
+        scores: list[float] = []
         for chunk in chunks:
             chunk_tokens = self._tokenize(chunk.text)
             chunk_set = set(chunk_tokens)
@@ -30,5 +30,5 @@ class Reranker(BaseReranker):
             scores.append(round(score, 6))
         return scores
 
-    def _tokenize(self, text: str) -> List[str]:
+    def _tokenize(self, text: str) -> list[str]:
         return [token.casefold() for token in text.split() if token.strip()]

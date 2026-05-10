@@ -1,8 +1,6 @@
-from typing import List
-
 from ...document.storage.document_store import DocumentStore
-from .retriever_result import RetrievalResult
 from .base_retriever import BaseRetriever
+from .retriever_result import RetrievalResult
 
 # ---------------------------------------------------------
 # Keyword Retriever (Simple BM25-style scoring)
@@ -13,7 +11,7 @@ class KeywordRetriever(BaseRetriever):
     def __init__(self, document_store: DocumentStore):
         self.document_store = document_store
 
-    async def search(self, query: str, top_k: int = 5) -> List[RetrievalResult]:
+    async def search(self, query: str, top_k: int = 5) -> list[RetrievalResult]:
 
         tokens = query.lower().split()
 
@@ -35,5 +33,3 @@ class KeywordRetriever(BaseRetriever):
         scores.sort(key=lambda x: x.score, reverse=True)
 
         return scores[:top_k]
-
-

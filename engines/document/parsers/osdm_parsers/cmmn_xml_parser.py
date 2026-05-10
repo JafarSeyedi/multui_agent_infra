@@ -2,63 +2,37 @@
 """
 CMMN 1.1 XML Parser – converts a .cmmn file into a CMMNDocument (unified OSDM).
 
-Mapping rules:
-- <definitions> → root container
-- <case> → CMMNDefinition (with id, name)
-- <casePlanModel> → Stage (root stage of the case)
-- <stage> → Stage (recursive: contains flow elements, sentries)
-- <milestone> → Milestone
-- <eventListener> → EventListener (eventType attribute preserved via enum)
-- <sentry> → Sentry (onPart, ifPart as FormalExpression)
-- <planItem> → PlanItem (definitionRef, entry/exit criteria)
-- <discretionaryItem> → DiscretionaryItem (extends PlanItem, plus applicabilityRule)
-- <caseFileItem> → CaseFileItem
-- <caseTask> → CaseTask
-- <processTask> → ProcessTask
-- <humanTask> → HumanTask
-- <entryCriterion>, <exitCriterion> → EntryCriterion / ExitCriterion (sentryRef)
-- <applicabilityRule> → ApplicabilityRule
+Uses temporary ID fields for cross‑references that cannot be resolved inside
+the same document. All references that point to elements within the same
+CMMN model (sentries, definitions of plan items, case references) are resolved.
+External references (processRef, performerRef, definitionRef for case file items)
+are left as None, but their original IDs are stored in temporary attributes.
 """
-
 from __future__ import annotations
-from pathlib import Path
-from typing import Optional, Any, List, Dict
+
+import uuid
+import logging
+from typing import Dict, Optional
 from xml.etree import ElementTree as ET
 
-from .base_osdm_parser import BaseOSDMParser
-from ..base import ParseOptions
+from ...models.media_types import MEDIA_TYPES
 from ...models.osdm_models import (
-    BaseOSDMDocument,
-    CMMNDocument,
-    CMMNDefinition,
-    Stage,
-    Milestone,
-    EventListener,
-    Sentry,
-    PlanItem,
-    DiscretionaryItem,
-    CaseFileItem,
-    CaseTask,
-    ProcessTask,
-    HumanTask,
-    ApplicabilityRule,
-    EntryCriterion,
-    ExitCriterion,
-    EventListenerType,
-    CaseFileMultiplicity,
-    FormalExpression,
-    ScriptLanguage,
+    ApplicabilityRule, BaseOSDMDocument, CaseFileItem, CaseFileMultiplicity,
+    CaseTask, CMMNDefinition, CMMNDocument, DiscretionaryItem, EntryCriterion,
+    EventListener, EventListenerType, ExitCriterion, FormalExpression,
+    HumanTask, ItemDefinition, Milestone, PlanItem, Process, ProcessTask,
+    ResourceRole, Sentry, Stage
 )
-from ...models.base import BaseDocument
-
+from ..base import ParseOptions
+from .base_osdm_parser import BaseOSDMParser
 
 CMMN_NS = "http://www.omg.org/spec/CMMN/20151109/MODEL"
 NS = {"cmmn": CMMN_NS}
 
+logger = logging.getLogger(__name__)
+
 
 class CMMNXMLParser(BaseOSDMParser):
-    """Parser for CMMN 1.1 XML files (.cmmn)."""
-
     name = "cmmn_xml"
     supported_extensions = (".cmmn",)
 
@@ -69,11 +43,22 @@ class CMMNXMLParser(BaseOSDMParser):
         text = data.decode(encoding)
         root = ET.fromstring(text)
 
-        doc = CMMNDocument()
-        # The root is <definitions> containing one or more <case> elements
+        doc = CMMNDocument(
+            document_id=root.get("id", source_name),
+            title=root.get("name", source_name),
+            media_type=MEDIA_TYPES.get("cmmn_xml", MEDIA_TYPES["xml"])
+        )
+        doc.source_file = source_name
+
+        # First pass: parse all definitions
+        definitions = []
         for case_elem in root.findall("cmmn:case", NS):
             cmmn_def = self._parse_case(case_elem)
-            doc.cmmn_definitions.append(cmmn_def)
+            definitions.append(cmmn_def)
+        doc.cmmn_definitions = definitions
+
+        # Second pass: resolve internal references
+        self._resolve_references(doc)
 
         return doc
 
@@ -81,16 +66,13 @@ class CMMNXMLParser(BaseOSDMParser):
         case_id = case_elem.get("id", "")
         case_name = case_elem.get("name", "")
 
-        # The case plan model is the first child (usually <casePlanModel>)
         case_plan = case_elem.find("cmmn:casePlanModel", NS)
         root_stage = self._parse_stage(case_plan) if case_plan is not None else Stage(id="", name="")
 
-        # Collect plan items, discretionary items, case file items
         plan_items = []
         disc_items = []
         case_file_items = []
 
-        # These elements can appear directly under the case element
         for child in case_elem:
             tag = child.tag.split("}")[-1] if "}" in child.tag else child.tag
             if tag == "planItem":
@@ -100,12 +82,6 @@ class CMMNXMLParser(BaseOSDMParser):
             elif tag == "caseFileItem":
                 case_file_items.append(self._parse_case_file_item(child))
 
-        # Also, plan items may be inside the case plan model (stage)
-        # We already parsed the stage recursively, but plan items might be at the case level.
-        # We'll also scan the stage for any plan items? Actually, in CMMN plan items are usually direct children of the case.
-        # We'll collect them from both places: case element and casePlanModel.
-
-        # For completeness, we also scan the case plan model for plan items (some tools put them inside)
         if case_plan is not None:
             for pi in case_plan.findall("cmmn:planItem", NS):
                 plan_items.append(self._parse_plan_item(pi))
@@ -126,20 +102,16 @@ class CMMNXMLParser(BaseOSDMParser):
             id=elem.get("id", ""),
             name=elem.get("name", ""),
         )
-        # Parse child elements: flow elements (stage, milestone, eventListener, caseTask, processTask, humanTask)
-        # and sentries, plan items (though plan items are usually not nested inside a stage? Actually they can be.)
         for child in elem:
             tag = child.tag.split("}")[-1] if "}" in child.tag else child.tag
             flow = self._parse_flow_element(child)
             if flow is not None:
                 stage.flow_elements[flow.id] = flow
             elif tag == "sentry":
-                sentry = self._parse_sentry(child)
-                stage.sentries.append(sentry)
-            # Other elements like planItem can appear; skip or handle as needed.
+                stage.sentries.append(self._parse_sentry(child))
         return stage
 
-    def _parse_flow_element(self, elem: ET.Element) -> Optional[Any]:
+    def _parse_flow_element(self, elem: ET.Element):
         tag = elem.tag.split("}")[-1] if "}" in elem.tag else elem.tag
         if tag == "stage":
             return self._parse_stage(elem)
@@ -178,7 +150,6 @@ class CMMNXMLParser(BaseOSDMParser):
         if_part = None
         on_part_elem = elem.find("cmmn:onPart", NS)
         if on_part_elem is not None:
-            # Could be a simple text or a FormalExpression
             on_part = self._parse_child_expression(on_part_elem)
         if_part_elem = elem.find("cmmn:ifPart", NS)
         if if_part_elem is not None:
@@ -190,16 +161,17 @@ class CMMNXMLParser(BaseOSDMParser):
             if_part=if_part,
         )
 
-    def _parse_child_expression(self, elem: ET.Element) -> Optional[FormalExpression]:
-        # The child element might contain a <condition> or just text; we wrap it as FormalExpression
+    def _parse_child_expression(self, elem: ET.Element) -> FormalExpression | None:
         body = elem.text or ""
-        # If there's a child <condition> element, take its text
         cond = elem.find("cmmn:condition", NS)
         if cond is not None:
             body = cond.text or ""
         if not body:
             return None
-        return FormalExpression(id=elem.get("id", ""), body=body)
+        return FormalExpression(
+            id=elem.get("id", str(uuid.uuid4().hex)),
+            body=body
+        )
 
     def _parse_case_task(self, elem: ET.Element) -> CaseTask:
         task = CaseTask(
@@ -208,8 +180,7 @@ class CMMNXMLParser(BaseOSDMParser):
         )
         case_ref_id = elem.get("caseRef")
         if case_ref_id:
-            # Reference to a case definition; we'll store as string for now, to be resolved later (if needed)
-            task.case_ref = case_ref_id
+            task._case_ref_id = case_ref_id
         return task
 
     def _parse_process_task(self, elem: ET.Element) -> ProcessTask:
@@ -219,7 +190,7 @@ class CMMNXMLParser(BaseOSDMParser):
         )
         proc_ref = elem.get("processRef")
         if proc_ref:
-            task.process_ref = proc_ref
+            task._process_ref_id = proc_ref
         return task
 
     def _parse_human_task(self, elem: ET.Element) -> HumanTask:
@@ -227,15 +198,16 @@ class CMMNXMLParser(BaseOSDMParser):
             id=elem.get("id", ""),
             name=elem.get("name", ""),
         )
-        role_ref = elem.get("performerRef")  # CMMN uses performerRef for the role
-        task.role_ref = role_ref
+        role_ref = elem.get("performerRef")
+        if role_ref:
+            task._role_ref_id = role_ref
         return task
 
     def _parse_plan_item(self, elem: ET.Element) -> PlanItem:
         pi = PlanItem(
             id=elem.get("id", ""),
             name=elem.get("name", ""),
-            definition_ref=elem.get("definitionRef"),
+            _definition_ref_id=elem.get("definitionRef"),
             repetition_count=int(elem.get("repetitionCount", "1")),
             is_blocking=elem.get("isBlocking", "true") == "true",
         )
@@ -249,7 +221,7 @@ class CMMNXMLParser(BaseOSDMParser):
         di = DiscretionaryItem(
             id=elem.get("id", ""),
             name=elem.get("name", ""),
-            definition_ref=elem.get("definitionRef"),
+            _definition_ref_id=elem.get("definitionRef"),
             repetition_count=int(elem.get("repetitionCount", "1")),
             is_blocking=elem.get("isBlocking", "true") == "true",
         )
@@ -263,20 +235,18 @@ class CMMNXMLParser(BaseOSDMParser):
         return di
 
     def _parse_entry_criterion(self, elem: ET.Element) -> EntryCriterion:
-        ec = EntryCriterion(
+        return EntryCriterion(
             id=elem.get("id", ""),
             name=elem.get("name", ""),
-            sentry_ref=elem.get("sentryRef"),
+            _sentry_ref_id=elem.get("sentryRef"),
         )
-        return ec
 
     def _parse_exit_criterion(self, elem: ET.Element) -> ExitCriterion:
-        xc = ExitCriterion(
+        return ExitCriterion(
             id=elem.get("id", ""),
             name=elem.get("name", ""),
-            sentry_ref=elem.get("sentryRef"),
+            _sentry_ref_id=elem.get("sentryRef"),
         )
-        return xc
 
     def _parse_applicability_rule(self, elem: ET.Element) -> ApplicabilityRule:
         rule = ApplicabilityRule(
@@ -289,14 +259,136 @@ class CMMNXMLParser(BaseOSDMParser):
         return rule
 
     def _parse_case_file_item(self, elem: ET.Element) -> CaseFileItem:
-        cfi = CaseFileItem(
-            id=elem.get("id", ""),
-            name=elem.get("name", ""),
-            item_definition_ref=elem.get("definitionRef"),
-        )
         mult_str = elem.get("multiplicity", "1")
         try:
-            cfi.multiplicity = CaseFileMultiplicity(mult_str)
+            multiplicity = CaseFileMultiplicity(mult_str)
         except ValueError:
-            cfi.multiplicity = CaseFileMultiplicity.EXACTLY_ONE
-        return cfi
+            multiplicity = CaseFileMultiplicity.EXACTLY_ONE
+
+        return CaseFileItem(
+            id=elem.get("id", ""),
+            name=elem.get("name", ""),
+            _item_definition_ref_id=elem.get("definitionRef"),
+            multiplicity=multiplicity,
+        )
+
+    # ── Second‑pass resolution ─────────────────────────────────────
+    def _resolve_references(self, doc: CMMNDocument) -> None:
+        """Resolve all internal references. External references are left as None."""
+        # Collect all element maps
+        all_cmmn_defs: Dict[str, CMMNDefinition] = {}
+        all_sentries: Dict[str, Sentry] = {}
+        all_stages: Dict[str, Stage] = {}
+        all_milestones: Dict[str, Milestone] = {}
+        all_event_listeners: Dict[str, EventListener] = {}
+        all_case_tasks: Dict[str, CaseTask] = {}
+        all_process_tasks: Dict[str, ProcessTask] = {}
+        all_human_tasks: Dict[str, HumanTask] = {}
+        all_plan_items: Dict[str, PlanItem] = {}
+        all_discretionary_items: Dict[str, DiscretionaryItem] = {}
+        all_case_file_items: Dict[str, CaseFileItem] = {}
+        all_item_definitions: Dict[str, ItemDefinition] = {}   # may come from an external registry; empty here
+
+        def collect_from_stage(stage: Stage):
+            all_stages[stage.id] = stage
+            for flow in stage.flow_elements.values():
+                if isinstance(flow, Stage):
+                    collect_from_stage(flow)
+                elif isinstance(flow, Milestone):
+                    all_milestones[flow.id] = flow
+                elif isinstance(flow, EventListener):
+                    all_event_listeners[flow.id] = flow
+                elif isinstance(flow, CaseTask):
+                    all_case_tasks[flow.id] = flow
+                elif isinstance(flow, ProcessTask):
+                    all_process_tasks[flow.id] = flow
+                elif isinstance(flow, HumanTask):
+                    all_human_tasks[flow.id] = flow
+            for sentry in stage.sentries:
+                all_sentries[sentry.id] = sentry
+
+        for cmmn_def in doc.cmmn_definitions:
+            all_cmmn_defs[cmmn_def.id] = cmmn_def
+            collect_from_stage(cmmn_def.case)
+            for pi in cmmn_def.plan_items:
+                all_plan_items[pi.id] = pi
+            for di in cmmn_def.discretionary_items:
+                all_discretionary_items[di.id] = di
+            for cfi in cmmn_def.case_file_items:
+                all_case_file_items[cfi.id] = cfi
+
+        # Resolve PlanItem.definition_ref
+        for pi in all_plan_items.values():
+            if pi._definition_ref_id:
+                ref = pi._definition_ref_id
+                if ref in all_stages:
+                    pi.definition_ref = all_stages[ref]
+                elif ref in all_milestones:
+                    pi.definition_ref = all_milestones[ref]
+                elif ref in all_event_listeners:
+                    pi.definition_ref = all_event_listeners[ref]
+                else:
+                    logger.warning(f"PlanItem {pi.id}: definitionRef '{ref}' not found")
+        for di in all_discretionary_items.values():
+            if di._definition_ref_id:
+                ref = di._definition_ref_id
+                if ref in all_stages:
+                    di.definition_ref = all_stages[ref]
+                elif ref in all_milestones:
+                    di.definition_ref = all_milestones[ref]
+                elif ref in all_event_listeners:
+                    di.definition_ref = all_event_listeners[ref]
+                else:
+                    logger.warning(f"DiscretionaryItem {di.id}: definitionRef '{ref}' not found")
+
+        # Resolve EntryCriterion.sentry_ref and ExitCriterion.sentry_ref
+        for pi in all_plan_items.values():
+            for ec in pi.entry_criteria:
+                if ec._sentry_ref_id and ec._sentry_ref_id in all_sentries:
+                    ec.sentry_ref = all_sentries[ec._sentry_ref_id]
+                elif ec._sentry_ref_id:
+                    logger.warning(f"EntryCriterion {ec.id}: sentryRef '{ec._sentry_ref_id}' not found")
+            for xc in pi.exit_criteria:
+                if xc._sentry_ref_id and xc._sentry_ref_id in all_sentries:
+                    xc.sentry_ref = all_sentries[xc._sentry_ref_id]
+                elif xc._sentry_ref_id:
+                    logger.warning(f"ExitCriterion {xc.id}: sentryRef '{xc._sentry_ref_id}' not found")
+        for di in all_discretionary_items.values():
+            for ec in di.entry_criteria:
+                if ec._sentry_ref_id and ec._sentry_ref_id in all_sentries:
+                    ec.sentry_ref = all_sentries[ec._sentry_ref_id]
+                elif ec._sentry_ref_id:
+                    logger.warning(f"EntryCriterion {ec.id}: sentryRef '{ec._sentry_ref_id}' not found")
+            for xc in di.exit_criteria:
+                if xc._sentry_ref_id and xc._sentry_ref_id in all_sentries:
+                    xc.sentry_ref = all_sentries[xc._sentry_ref_id]
+                elif xc._sentry_ref_id:
+                    logger.warning(f"ExitCriterion {xc.id}: sentryRef '{xc._sentry_ref_id}' not found")
+
+        # Resolve CaseTask.case_ref (internal)
+        for ct in all_case_tasks.values():
+            if ct._case_ref_id and ct._case_ref_id in all_cmmn_defs:
+                ct.case_ref = all_cmmn_defs[ct._case_ref_id]
+            elif ct._case_ref_id:
+                logger.warning(f"CaseTask {ct.id}: caseRef '{ct._case_ref_id}' not found (may be external)")
+
+        # Resolve ProcessTask.process_ref – external by nature; keep None, but store ID
+        for pt in all_process_tasks.values():
+            if pt._process_ref_id:
+                # Could be resolved from an external registry; here we only log.
+                logger.debug(f"ProcessTask {pt.id} references external process '{pt._process_ref_id}'")
+                pt.process_ref = None   # external; caller can resolve later
+
+        # Resolve HumanTask.role_ref – external
+        for ht in all_human_tasks.values():
+            if ht._role_ref_id:
+                logger.debug(f"HumanTask {ht.id} references role '{ht._role_ref_id}'")
+                ht.role_ref = None
+
+        # Resolve CaseFileItem.item_definition_ref – could be internal if ItemDefinition is defined in same file
+        # CMMN allows inline item definitions? Not typical. We'll search in the document for <itemDefinition> elements
+        # Since we have not parsed them, we assume external.
+        for cfi in all_case_file_items.values():
+            if cfi._item_definition_ref_id:
+                logger.debug(f"CaseFileItem {cfi.id} references definition '{cfi._item_definition_ref_id}'")
+                cfi.item_definition_ref = None

@@ -1,7 +1,7 @@
-from typing import List, Optional, Dict
-
-from ...models import AgentInput, AgentOutput
-from .common import ConfidenceScore, Evidence
+from ...models import AgentInput
+from ...models import AgentOutput
+from .common import ConfidenceScore
+from .common import Evidence
 
 
 # -------------------------------------------------
@@ -10,16 +10,16 @@ from .common import ConfidenceScore, Evidence
 
 class KnowledgeIngestionInput(AgentInput):
 
-    source_documents: List[str]
+    source_documents: list[str]
 
-    source_type: Optional[str]
+    source_type: str | None
 
 
 class KnowledgeIngestionOutput(AgentOutput):
 
-    ingested_documents: List[str]
+    ingested_documents: list[str]
 
-    knowledge_metadata: Optional[Dict]
+    knowledge_metadata: dict | None
 
 
 # -------------------------------------------------
@@ -30,12 +30,12 @@ class DocumentChunkingInput(AgentInput):
 
     document_text: str
 
-    chunk_size: Optional[int]
+    chunk_size: int | None
 
 
 class DocumentChunkingOutput(AgentOutput):
 
-    chunks: List[str]
+    chunks: list[str]
 
 
 # -------------------------------------------------
@@ -44,7 +44,7 @@ class DocumentChunkingOutput(AgentOutput):
 
 class EmbeddingGeneratorInput(AgentInput):
 
-    texts: List[str]
+    texts: list[str]
 
 
 class EmbeddingGeneratorOutput(AgentOutput):
@@ -60,7 +60,7 @@ class SemanticIndexerInput(AgentInput):
 
     embeddings_reference: str
 
-    semantic_metadata: Optional[Dict]
+    semantic_metadata: dict | None
 
 
 class SemanticIndexerOutput(AgentOutput):
@@ -78,14 +78,14 @@ class VectorSearchInput(AgentInput):
 
     query: str
 
-    top_k: Optional[int]
+    top_k: int | None
 
 
 class VectorSearchOutput(AgentOutput):
 
-    retrieved_chunks: List[str]
+    retrieved_chunks: list[str]
 
-    scores: Optional[List[float]]
+    scores: list[float] | None
 
 
 # -------------------------------------------------
@@ -96,14 +96,14 @@ class HybridRetrievalInput(AgentInput):
 
     query: str
 
-    vector_results: List[str]
+    vector_results: list[str]
 
-    keyword_results: List[str]
+    keyword_results: list[str]
 
 
 class HybridRetrievalOutput(AgentOutput):
 
-    merged_results: List[str]
+    merged_results: list[str]
 
 
 # -------------------------------------------------
@@ -112,9 +112,9 @@ class HybridRetrievalOutput(AgentOutput):
 
 class ContextBuilderInput(AgentInput):
 
-    retrieved_chunks: List[str]
+    retrieved_chunks: list[str]
 
-    max_context_length: Optional[int]
+    max_context_length: int | None
 
 
 class ContextBuilderOutput(AgentOutput):
@@ -128,7 +128,7 @@ class ContextBuilderOutput(AgentOutput):
 
 class MemoryConsolidationInput(AgentInput):
 
-    recent_memories: List[str]
+    recent_memories: list[str]
 
 
 class MemoryConsolidationOutput(AgentOutput):
@@ -144,14 +144,14 @@ class EpisodicMemoryInput(AgentInput):
 
     student_id: str
 
-    session_events: List[str]
+    session_events: list[str]
 
 
 class EpisodicMemoryOutput(AgentOutput):
 
     stored: bool
 
-    episode_id: Optional[str]
+    episode_id: str | None
 
 
 # -------------------------------------------------
@@ -162,14 +162,14 @@ class StudentKnowledgeMemoryInput(AgentInput):
 
     student_id: str
 
-    concept_updates: Dict
+    concept_updates: dict
 
 
 class StudentKnowledgeMemoryOutput(AgentOutput):
 
-    updated_concepts: List[str]
+    updated_concepts: list[str]
 
-    confidence: Optional[ConfidenceScore]
+    confidence: ConfidenceScore | None
 
 
 # -------------------------------------------------
@@ -194,14 +194,14 @@ class KnowledgeUpdaterOutput(AgentOutput):
 
 class KnowledgeConflictResolverInput(AgentInput):
 
-    conflicting_entries: List[str]
+    conflicting_entries: list[str]
 
 
 class KnowledgeConflictResolverOutput(AgentOutput):
 
     resolved_entry: str
 
-    evidence: Optional[List[Evidence]]
+    evidence: list[Evidence] | None
 
 
 # -------------------------------------------------
@@ -212,12 +212,12 @@ class RetrievalRankerInput(AgentInput):
 
     query: str
 
-    retrieved_items: List[str]
+    retrieved_items: list[str]
 
 
 class RetrievalRankerOutput(AgentOutput):
 
-    ranked_items: List[str]
+    ranked_items: list[str]
 
 
 # -------------------------------------------------
@@ -228,12 +228,12 @@ class ContextRelevanceEvaluatorInput(AgentInput):
 
     query: str
 
-    context_chunks: List[str]
+    context_chunks: list[str]
 
 
 class ContextRelevanceEvaluatorOutput(AgentOutput):
 
-    relevance_scores: List[float]
+    relevance_scores: list[float]
 
 
 # -------------------------------------------------
@@ -242,11 +242,11 @@ class ContextRelevanceEvaluatorOutput(AgentOutput):
 
 class KnowledgeSummarizerInput(AgentInput):
 
-    knowledge_chunks: List[str]
+    knowledge_chunks: list[str]
 
 
 class KnowledgeSummarizerOutput(AgentOutput):
 
     summary: str
 
-    confidence: Optional[ConfidenceScore]
+    confidence: ConfidenceScore | None

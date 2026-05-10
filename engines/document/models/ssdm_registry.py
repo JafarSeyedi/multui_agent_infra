@@ -1,16 +1,17 @@
 # engines/document/models/ssdm_registry.py
-
 # Registry populated at module level
-from typing import Dict
 from .media_types import DocumentFormat
-from .ssdm_capabilities import SchemaKind, FormatCapability, SecurityFeature, BodyMediaType, ParameterNesting, OperationModel, TransportBinding
-    
-from .msdm_capabilities import NestingDepth,  ConstraintCapability, InheritanceSupport, ConstraintCapability, InheritanceSupport
-from .msdm_capabilities import AnnotationSupport, AnnotationSupport, TimeSeriesSupport, NamespaceSupport, EnumCapability
-from .msdm_capabilities import RelationshipModel, IndexCapability
+from .ssdm_capabilities import BodyMediaType
+from .ssdm_capabilities import FormatCapability
+from .ssdm_capabilities import OperationModel
+from .ssdm_capabilities import ParameterNesting
+from .ssdm_capabilities import SchemaKind
+from .ssdm_capabilities import SecurityFeature
+from .ssdm_capabilities import TransportBinding
 
 
-FORMAT_CAPABILITY_REGISTRY: Dict[DocumentFormat, FormatCapability] = {}
+
+FORMAT_CAPABILITY_REGISTRY: dict[DocumentFormat, FormatCapability] = {}
 
 
 def _reg(cap: FormatCapability):
@@ -115,29 +116,6 @@ _reg(FormatCapability(
     supports_streaming=False,
 ))
 
-# ── MIB ─────────────────────────────────────────────────────────
-_reg(FormatCapability(
-    format=DocumentFormat.MIB,
-    description="SNMP MIB",
-    operation_model=OperationModel.EXPLICIT,
-    supports_crud=False,
-    supports_explicit_operations=True,      # SNMP GET/SET operations
-    parameter_nesting=ParameterNesting.SCALAR_ONLY,
-    supports_query_params=False,
-    supports_path_params=False,
-    supports_header_params=False,
-    supports_cookie_params=False,
-    request_body_supported=False,
-    response_body_supported=False,
-    request_media_types=[],
-    response_media_types=[],
-    security_features=[],
-    transport_bindings=[TransportBinding.SNMP],
-    schema_kind=SchemaKind.NONE,
-    references_msdm=False,
-    supports_streaming=False,
-))
-
 # ── AsyncAPI ────────────────────────────────────────────────────
 _reg(FormatCapability(
     format=DocumentFormat.ASYNCAPI,
@@ -159,121 +137,6 @@ _reg(FormatCapability(
     schema_kind=SchemaKind.REFERENCE,
     references_msdm=True,
     supports_streaming=True,
-))
-
-# ── RAML ────────────────────────────────────────────────────────
-_reg(FormatCapability(
-    format=DocumentFormat.RAML,
-    description="RAML RESTful API Modeling Language",
-    operation_model=OperationModel.EXPLICIT,
-    supports_crud=True,
-    supports_explicit_operations=True,
-    parameter_nesting=ParameterNesting.FLAT_OBJECT,
-    supports_query_params=True,
-    supports_path_params=True,
-    supports_header_params=True,
-    supports_cookie_params=False,
-    request_body_supported=True,
-    response_body_supported=True,
-    request_media_types=[BodyMediaType.JSON, BodyMediaType.XML, BodyMediaType.FORM],
-    response_media_types=[BodyMediaType.JSON, BodyMediaType.XML],
-    security_features=[],
-    transport_bindings=[TransportBinding.HTTP, TransportBinding.HTTPS],
-    schema_kind=SchemaKind.REFERENCE,
-    references_msdm=True,
-    supports_streaming=False,
-))
-
-# ── API Blueprint ───────────────────────────────────────────────
-_reg(FormatCapability(
-    format=DocumentFormat.API_BLUEPRINT,
-    description="API Blueprint",
-    operation_model=OperationModel.EXPLICIT,
-    supports_crud=True,
-    supports_explicit_operations=True,
-    parameter_nesting=ParameterNesting.FLAT_OBJECT,
-    supports_query_params=True,
-    supports_path_params=True,
-    supports_header_params=True,
-    supports_cookie_params=False,
-    request_body_supported=True,
-    response_body_supported=True,
-    request_media_types=[BodyMediaType.JSON, BodyMediaType.XML],
-    response_media_types=[BodyMediaType.JSON, BodyMediaType.XML],
-    security_features=[],
-    transport_bindings=[TransportBinding.HTTP, TransportBinding.HTTPS],
-    schema_kind=SchemaKind.NONE,
-    references_msdm=True,
-    supports_streaming=False,
-))
-
-# ── Web IDL ─────────────────────────────────────────────────────
-_reg(FormatCapability(
-    format=DocumentFormat.WEB_IDL,
-    description="Web IDL (Browser API definitions)",
-    operation_model=OperationModel.EXPLICIT,
-    supports_crud=False,
-    supports_explicit_operations=True,
-    parameter_nesting=ParameterNesting.DEEP_NESTED,
-    supports_query_params=False,
-    supports_path_params=False,
-    supports_header_params=False,
-    supports_cookie_params=False,
-    request_body_supported=False,
-    response_body_supported=False,
-    request_media_types=[],
-    response_media_types=[],
-    security_features=[],
-    transport_bindings=[TransportBinding.HTTPS],
-    schema_kind=SchemaKind.REFERENCE,
-    references_msdm=True,
-    supports_streaming=False,
-))
-
-# ── Postman Collection ──────────────────────────────────────────
-_reg(FormatCapability(
-    format=DocumentFormat.POSTMAN_COLLECTION,
-    description="Postman Collection",
-    operation_model=OperationModel.EXPLICIT,
-    supports_crud=True,
-    supports_explicit_operations=True,
-    parameter_nesting=ParameterNesting.FLAT_OBJECT,
-    supports_query_params=True,
-    supports_path_params=True,
-    supports_header_params=True,
-    supports_cookie_params=False,
-    request_body_supported=True,
-    response_body_supported=False,      # captures example responses, not schema
-    request_media_types=[BodyMediaType.JSON, BodyMediaType.FORM, BodyMediaType.MULTIPART],
-    response_media_types=[],
-    security_features=[],
-    transport_bindings=[TransportBinding.HTTP, TransportBinding.HTTPS],
-    schema_kind=SchemaKind.NONE,
-    references_msdm=False,
-    supports_streaming=False,
-))
-
-# ── CDDL ────────────────────────────────────────────────────────
-_reg(FormatCapability(
-    format=DocumentFormat.CDDL,
-    description="CBOR Data Definition Language (CDDL)",
-    operation_model=OperationModel.EXPLICIT,
-    supports_crud=False,
-    supports_explicit_operations=False,
-    parameter_nesting=ParameterNesting.SCALAR_ONLY,
-    supports_query_params=False,
-    supports_path_params=False,
-    supports_header_params=False,
-    supports_cookie_params=False,
-    request_body_supported=False,
-    response_body_supported=False,
-    request_media_types=[],
-    response_media_types=[],
-    security_features=[],
-    transport_bindings=[],
-    schema_kind=SchemaKind.EMBEDDED_ONLY,
-    references_msdm=False,
-    supports_streaming=False,
 ))
 
 # ── GraphQL Schema ──────────────────────────────────────────────

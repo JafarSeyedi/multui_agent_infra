@@ -1,21 +1,19 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 pdf_objects.py - کلاس‌های اشیاء PDF برای پارسر
 پیاده‌سازی کامل مدل اشیاء PDF مطابق با استاندارد PDF 1.7
 """
-
-import hashlib
-import json
-import zlib
-import struct
-from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from datetime import datetime
-from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple, Union, BinaryIO, Iterator, Sequence, cast
-from decimal import Decimal, getcontext
 import re
+import zlib
+from abc import ABC
+from abc import abstractmethod
+from dataclasses import dataclass
+from dataclasses import field
+from datetime import datetime
+from decimal import getcontext
+from enum import Enum
+from typing import Any
+from typing import cast
 
 # تنظیم دقت اعشار برای محاسبات PDF
 getcontext().prec = 10
@@ -79,38 +77,32 @@ class PDFTextRenderingMode(Enum):
 
 class PDFError(Exception):
     """خطای پایه برای PDF"""
-    pass
 
 
 class PDFParseError(PDFError):
     """خطای پارس PDF"""
-    pass
 
 
 class PDFValidationError(PDFError):
     """خطای اعتبارسنجی PDF"""
-    pass
 
 
 @dataclass
 class PDFObject(ABC):
     """کلاس پایه برای تمام اشیاء PDF"""
-    
+
     @abstractmethod
     def to_pdf(self) -> bytes:
         """تبدیل به فرمت PDF"""
-        pass
-    
+
     @abstractmethod
     def get_type(self) -> PDFObjectType:
         """دریافت نوع شیء"""
-        pass
-    
+
     @abstractmethod
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """تبدیل به دیکشنری"""
-        pass
-    
+
     def __str__(self) -> str:
         return f"PDFObject(type={self.get_type().value})"
 
@@ -119,16 +111,16 @@ class PDFObject(ABC):
 class PDFBoolean(PDFObject):
     """شیء boolean در PDF"""
     value: bool
-    
+
     def to_pdf(self) -> bytes:
         return b"true" if self.value else b"false"
-    
+
     def get_type(self) -> PDFObjectType:
         return PDFObjectType.BOOLEAN
-    
-    def to_dict(self) -> Dict[str, Any]:
+
+    def to_dict(self) -> dict[str, Any]:
         return {"type": "boolean", "value": self.value}
-    
+
     def __str__(self) -> str:
         return f"PDFBoolean({self.value})"
 
@@ -137,16 +129,16 @@ class PDFBoolean(PDFObject):
 class PDFInteger(PDFObject):
     """شیء integer در PDF"""
     value: int
-    
+
     def to_pdf(self) -> bytes:
         return str(self.value).encode('ascii')
-    
+
     def get_type(self) -> PDFObjectType:
         return PDFObjectType.INTEGER
-    
-    def to_dict(self) -> Dict[str, Any]:
+
+    def to_dict(self) -> dict[str, Any]:
         return {"type": "integer", "value": self.value}
-    
+
     def __str__(self) -> str:
         return f"PDFInteger({self.value})"
 
@@ -155,20 +147,20 @@ class PDFInteger(PDFObject):
 class PDFReal(PDFObject):
     """شیء real (اعشاری) در PDF"""
     value: float
-    
+
     def to_pdf(self) -> bytes:
         # فرمت اعشاری با حداکثر 4 رقم اعشار
         formatted = f"{self.value:.4f}".rstrip('0').rstrip('.')
         if formatted == '':
             formatted = '0'
         return formatted.encode('ascii')
-    
+
     def get_type(self) -> PDFObjectType:
         return PDFObjectType.REAL
-    
-    def to_dict(self) -> Dict[str, Any]:
+
+    def to_dict(self) -> dict[str, Any]:
         return {"type": "real", "value": self.value}
-    
+
     def __str__(self) -> str:
         return f"PDFReal({self.value})"
 
@@ -179,7 +171,7 @@ class PDFString(PDFObject):
     value: str
     is_hex: bool = False
     is_literal: bool = True
-    
+
     def to_pdf(self) -> bytes:
         if self.is_hex:
             # رشته هگزادسیمال
@@ -197,19 +189,19 @@ class PDFString(PDFObject):
             escaped = escaped.replace('\t', '\\t')
             escaped = escaped.replace('\b', '\\b')
             escaped = escaped.replace('\f', '\\f')
-            return f"({escaped})".encode('utf-8')
-    
+            return f"({escaped})".encode()
+
     def get_type(self) -> PDFObjectType:
         return PDFObjectType.STRING
-    
-    def to_dict(self) -> Dict[str, Any]:
+
+    def to_dict(self) -> dict[str, Any]:
         return {
             "type": "string",
             "value": self.value,
             "is_hex": self.is_hex,
             "is_literal": self.is_literal
         }
-    
+
     def __str__(self) -> str:
         if len(self.value) > 50:
             preview = self.value[:50] + "..."
@@ -222,7 +214,7 @@ class PDFString(PDFObject):
 class PDFName(PDFObject):
     """شیء name در PDF"""
     value: str
-    
+
     def to_pdf(self) -> bytes:
         # فرار کردن کاراکترهای خاص در نام‌ها
         escaped = self.value
@@ -241,7 +233,7 @@ class PDFName(PDFObject):
             '%': '#25',
             '#': '#23'
         }
-        
+
         result = []
         for char in escaped:
             if char in special_chars:
@@ -251,15 +243,15 @@ class PDFName(PDFObject):
                 result.append(f"#{ord(char):02X}")
             else:
                 result.append(char)
-        
+
         return f"/{''.join(result)}".encode('ascii')
-    
+
     def get_type(self) -> PDFObjectType:
         return PDFObjectType.NAME
-    
-    def to_dict(self) -> Dict[str, Any]:
+
+    def to_dict(self) -> dict[str, Any]:
         return {"type": "name", "value": self.value}
-    
+
     def __str__(self) -> str:
         return f"PDFName({self.value})"
 
@@ -267,45 +259,45 @@ class PDFName(PDFObject):
 @dataclass
 class PDFArray(PDFObject):
     """شیء array در PDF"""
-    elements: List[PDFObject] = field(default_factory=list)
-    
+    elements: list[PDFObject] = field(default_factory=list)
+
     def to_pdf(self) -> bytes:
         if not self.elements:
             return b"[]"
-        
+
         result = [b"["]
         for i, element in enumerate(self.elements):
             if i > 0:
                 result.append(b" ")
             result.append(element.to_pdf())
         result.append(b"]")
-        
+
         return b"".join(result)
-    
+
     def get_type(self) -> PDFObjectType:
         return PDFObjectType.ARRAY
-    
-    def to_dict(self) -> Dict[str, Any]:
+
+    def to_dict(self) -> dict[str, Any]:
         return {
             "type": "array",
             "elements": [elem.to_dict() for elem in self.elements],
             "count": len(self.elements)
         }
-    
+
     def append(self, element: PDFObject):
         """اضافه کردن عنصر به آرایه"""
         self.elements.append(element)
-    
-    def extend(self, elements: List[PDFObject]):
+
+    def extend(self, elements: list[PDFObject]):
         """اضافه کردن چند عنصر به آرایه"""
         self.elements.extend(elements)
-    
+
     def __getitem__(self, index: int) -> PDFObject:
         return self.elements[index]
-    
+
     def __len__(self) -> int:
         return len(self.elements)
-    
+
     def __str__(self) -> str:
         return f"PDFArray({len(self.elements)} elements)"
 
@@ -313,12 +305,12 @@ class PDFArray(PDFObject):
 @dataclass
 class PDFDictionary(PDFObject):
     """شیء dictionary در PDF"""
-    entries: Dict[PDFName, PDFObject] = field(default_factory=dict)
-    
+    entries: dict[PDFName, PDFObject] = field(default_factory=dict)
+
     def to_pdf(self) -> bytes:
         if not self.entries:
             return b"<<>>"
-        
+
         result = [b"<<"]
         for key, value in self.entries.items():
             result.append(b"\n")
@@ -326,60 +318,60 @@ class PDFDictionary(PDFObject):
             result.append(b" ")
             result.append(value.to_pdf())
         result.append(b"\n>>")
-        
+
         return b"".join(result)
-    
+
     def get_type(self) -> PDFObjectType:
         return PDFObjectType.DICTIONARY
-    
-    def to_dict(self) -> Dict[str, Any]:
+
+    def to_dict(self) -> dict[str, Any]:
         return {
             "type": "dictionary",
             "entries": {key.value: value.to_dict() for key, value in self.entries.items()},
             "count": len(self.entries)
         }
-    
-    def get(self, key: str, default: Any = None) -> Optional[PDFObject]:
+
+    def get(self, key: str, default: Any = None) -> PDFObject | None:
         """دریافت مقدار با کلید"""
         name_key = PDFName(key)
         return self.entries.get(name_key, default)
-    
+
     def set(self, key: str, value: PDFObject):
         """تنظیم مقدار با کلید"""
         name_key = PDFName(key)
         self.entries[name_key] = value
-    
+
     def has_key(self, key: str) -> bool:
         """بررسی وجود کلید"""
         name_key = PDFName(key)
         return name_key in self.entries
-    
-    def keys(self) -> List[str]:
+
+    def keys(self) -> list[str]:
         """دریافت کلیدها"""
         return [key.value for key in self.entries.keys()]
-    
-    def values(self) -> List[PDFObject]:
+
+    def values(self) -> list[PDFObject]:
         """دریافت مقادیر"""
         return list(self.entries.values())
-    
-    def items(self) -> List[Tuple[str, PDFObject]]:
+
+    def items(self) -> list[tuple[str, PDFObject]]:
         """دریافت جفت‌های کلید-مقدار"""
         return [(key.value, value) for key, value in self.entries.items()]
-    
+
     def __contains__(self, key: str) -> bool:
         return self.has_key(key)
-    
+
     def __getitem__(self, key: str) -> PDFObject:
         name_key = PDFName(key)
         return self.entries[name_key]
-    
+
     def __setitem__(self, key: str, value: PDFObject):
         name_key = PDFName(key)
         self.entries[name_key] = value
-    
+
     def __len__(self) -> int:
         return len(self.entries)
-    
+
     def __str__(self) -> str:
         return f"PDFDictionary({len(self.entries)} entries)"
 
@@ -388,26 +380,26 @@ class PDFDictionary(PDFObject):
 class PDFStream(PDFObject):
     """شیء stream در PDF"""
     data: bytes
-    filters: List[str] = field(default_factory=list)
-    decode_params: Optional[Dict[str, Any]] = None
-    length: Optional[int] = None
-    
+    filters: list[str] = field(default_factory=list)
+    decode_params: dict[str, Any] | None = None
+    length: int | None = None
+
     def to_pdf(self) -> bytes:
         # محاسبه طول اگر داده‌شده نباشد
         if self.length is None:
             self.length = len(self.data)
-        
+
         # ایجاد دیکشنری stream
         dict_obj = PDFDictionary()
         dict_obj.set("Length", PDFInteger(self.length))
-        
+
         if self.filters:
             if len(self.filters) == 1:
                 dict_obj.set("Filter", PDFName(self.filters[0]))
             else:
                 filter_array = PDFArray([PDFName(f) for f in self.filters])
                 dict_obj.set("Filter", filter_array)
-        
+
         if self.decode_params:
             params_dict = PDFDictionary()
             for key, value in self.decode_params.items():
@@ -420,20 +412,20 @@ class PDFStream(PDFObject):
                 elif isinstance(value, bool):
                     params_dict.set(key, PDFBoolean(value))
             dict_obj.set("DecodeParms", params_dict)
-        
+
         # ترکیب دیکشنری و داده‌ها
         result = []
         result.append(dict_obj.to_pdf())
         result.append(b"\nstream\n")
         result.append(self.data)
         result.append(b"\nendstream")
-        
+
         return b"".join(result)
-    
+
     def get_type(self) -> PDFObjectType:
         return PDFObjectType.STREAM
-    
-    def to_dict(self) -> Dict[str, Any]:
+
+    def to_dict(self) -> dict[str, Any]:
         return {
             "type": "stream",
             "length": len(self.data),
@@ -442,11 +434,11 @@ class PDFStream(PDFObject):
             "data_preview": self.data[:100] if self.data else b"",
             "data_size": len(self.data)
         }
-    
+
     def get_decoded_data(self) -> bytes:
         """دریافت داده‌های decode شده"""
         data = self.data
-        
+
         # اعمال فیلترها به ترتیب معکوس (برای decode)
         for filter_name in reversed(self.filters):
             if filter_name == "FlateDecode":
@@ -477,41 +469,41 @@ class PDFStream(PDFObject):
             elif filter_name == "Crypt":
                 # رمزگذاری - نیاز به کلید
                 pass
-        
+
         return data
-    
+
     def _decode_ascii_hex(self, data: bytes) -> bytes:
         """Decode ASCIIHex"""
         hex_str = data.decode('ascii', errors='ignore').strip()
         hex_str = hex_str.replace(' ', '').replace('\n', '').replace('\r', '').replace('\t', '')
-        
+
         # حذف کاراکتر >
         if hex_str.endswith('>'):
             hex_str = hex_str[:-1]
-        
+
         # اطمینان از طول زوج
         if len(hex_str) % 2 != 0:
             hex_str += '0'
-        
+
         try:
             return bytes.fromhex(hex_str)
         except ValueError:
             raise PDFParseError("خطا در decode ASCIIHex")
-    
+
     def _decode_ascii85(self, data: bytes) -> bytes:
         """Decode ASCII85"""
         import base64
         ascii85_str = data.decode('ascii', errors='ignore').strip()
-        
+
         # حذف کاراکترهای ~>
         ascii85_str = ascii85_str.replace('~>', '')
-        
+
         try:
             # اضافه کردن padding اگر نیاز باشد
             padding = 4 - (len(ascii85_str) % 4)
             if padding != 4:
                 ascii85_str += 'u' * padding
-            
+
             return base64.a85decode(ascii85_str, adobe=True)
         except Exception:
             raise PDFParseError("خطا در decode ASCII85")
@@ -520,7 +512,7 @@ class PDFStream(PDFObject):
         """Decode LZW (simple fallback implementation)"""
         # The external 'lzw' library is deprecated and unavailable; always use the fallback.
         return self._simple_lzw_decode(data)
-    
+
     def _simple_lzw_decode(self, data: bytes) -> bytes:
         """
         Full LZW decoder for PDF streams (EarlyChange=1).
@@ -552,7 +544,7 @@ class PDFStream(PDFObject):
             return value
 
         # Initialize the string table with single-character entries 0..255
-        table: Dict[int, bytes] = {i: bytes([i]) for i in range(256)}
+        table: dict[int, bytes] = {i: bytes([i]) for i in range(256)}
         table[CLEAR_TABLE] = b''   # placeholder
         table[EOD] = b''           # placeholder
         next_code = EOD + 1
@@ -614,16 +606,16 @@ class PDFStream(PDFObject):
             old_code = code
 
         return bytes(result)
-    
+
     def _decode_run_length(self, data: bytes) -> bytes:
         """Decode RunLength"""
         result = bytearray()
         i = 0
-        
+
         while i < len(data):
             byte = data[i]
             i += 1
-            
+
             if byte == 128:  # EOD marker
                 break
             elif byte < 128:
@@ -641,9 +633,9 @@ class PDFStream(PDFObject):
                 repeat_byte = data[i]
                 i += 1
                 result.extend([repeat_byte] * count)
-        
+
         return bytes(result)
-    
+
     def __str__(self) -> str:
         return f"PDFStream({len(self.data)} bytes, filters={self.filters})"
 
@@ -651,16 +643,16 @@ class PDFStream(PDFObject):
 @dataclass
 class PDFNull(PDFObject):
     """شیء null در PDF"""
-    
+
     def to_pdf(self) -> bytes:
         return b"null"
-    
+
     def get_type(self) -> PDFObjectType:
         return PDFObjectType.NULL
-    
-    def to_dict(self) -> Dict[str, Any]:
+
+    def to_dict(self) -> dict[str, Any]:
         return {"type": "null"}
-    
+
     def __str__(self) -> str:
         return "PDFNull()"
 
@@ -670,20 +662,20 @@ class PDFReference(PDFObject):
     """ارجاع به شیء PDF"""
     obj_id: int
     gen_num: int = 0
-    
+
     def to_pdf(self) -> bytes:
         return f"{self.obj_id} {self.gen_num} R".encode('ascii')
-    
+
     def get_type(self) -> PDFObjectType:
         return PDFObjectType.REFERENCE
-    
-    def to_dict(self) -> Dict[str, Any]:
+
+    def to_dict(self) -> dict[str, Any]:
         return {
             "type": "reference",
             "obj_id": self.obj_id,
             "gen_num": self.gen_num
         }
-    
+
     def __str__(self) -> str:
         return f"PDFReference({self.obj_id} {self.gen_num} R)"
 
@@ -694,21 +686,21 @@ class PDFIndirectObject:
     obj_id: int
     gen_num: int = 0
     value: PDFObject = field(default_factory=PDFNull)
-    
+
     def to_pdf(self) -> bytes:
         result = []
         result.append(f"{self.obj_id} {self.gen_num} obj\n".encode('ascii'))
         result.append(self.value.to_pdf())
         result.append(b"\nendobj\n")
         return b"".join(result)
-    
-    def to_dict(self) -> Dict[str, Any]:
+
+    def to_dict(self) -> dict[str, Any]:
         return {
             "obj_id": self.obj_id,
             "gen_num": self.gen_num,
             "value": self.value.to_dict()
         }
-    
+
     def __str__(self) -> str:
         return f"PDFIndirectObject({self.obj_id} {self.gen_num} obj)"
 
@@ -719,13 +711,13 @@ class PDFXRefEntry:
     offset: int
     gen_num: int
     in_use: bool
-    
+
     def to_pdf(self) -> bytes:
         offset_str = f"{self.offset:010d}"
         gen_str = f"{self.gen_num:05d}"
         flag = "n" if self.in_use else "f"
         return f"{offset_str} {gen_str} {flag}".encode('ascii')
-    
+
     def __str__(self) -> str:
         status = "in-use" if self.in_use else "free"
         return f"XRefEntry(offset={self.offset}, gen={self.gen_num}, {status})"
@@ -734,21 +726,21 @@ class PDFXRefEntry:
 @dataclass
 class PDFXRefTable:
     """جدول XRef"""
-    entries: List[PDFXRefEntry] = field(default_factory=list)
-    subsections: List[Tuple[int, int]] = field(default_factory=list)
-    
+    entries: list[PDFXRefEntry] = field(default_factory=list)
+    subsections: list[tuple[int, int]] = field(default_factory=list)
+
     def add_entry(self, entry: PDFXRefEntry):
         """اضافه کردن ورودی به جدول"""
         self.entries.append(entry)
-    
+
     def to_pdf(self) -> bytes:
         result = [b"xref\n"]
-        
+
         # گروه‌بندی ورودی‌ها بر اساس subsections
         if not self.subsections:
             # ایجاد subsections خودکار
             self._generate_subsections()
-        
+
         for start, count in self.subsections:
             result.append(f"{start} {count}\n".encode('ascii'))
             for i in range(start, start + count):
@@ -758,17 +750,17 @@ class PDFXRefTable:
                 else:
                     # ورودی آزاد
                     result.append(f"{0:010d} {65535:05d} f\n".encode('ascii'))
-        
+
         return b"".join(result)
-    
+
     def _generate_subsections(self):
         """تولید subsections خودکار"""
         if not self.entries:
             return
-        
+
         # فرض می‌کنیم ورودی‌ها به ترتیب هستند
         self.subsections = [(0, len(self.entries))]
-    
+
     def __str__(self) -> str:
         return f"PDFXRefTable({len(self.entries)} entries)"
 
@@ -778,23 +770,23 @@ class PDFTrailer:
     """تریلی PDF"""
     size: int
     root: PDFReference
-    info: Optional[PDFReference] = None
-    id: Optional[List[bytes]] = None
-    encrypt: Optional[Dict[str, Any]] = None
-    prev: Optional[int] = None
-    
+    info: PDFReference | None = None
+    id: list[bytes] | None = None
+    encrypt: dict[str, Any] | None = None
+    prev: int | None = None
+
     def to_pdf(self) -> bytes:
         dict_obj = PDFDictionary()
         dict_obj.set("Size", PDFInteger(self.size))
         dict_obj.set("Root", self.root)
-        
+
         if self.info:
             dict_obj.set("Info", self.info)
-        
+
         if self.id:
             id_array = PDFArray([PDFString(id_bytes.hex(), is_hex=True) for id_bytes in self.id])
             dict_obj.set("ID", id_array)
-        
+
         if self.encrypt:
             encrypt_dict = PDFDictionary()
             for key, value in self.encrypt.items():
@@ -803,19 +795,19 @@ class PDFTrailer:
                 elif isinstance(value, str):
                     encrypt_dict.set(key, PDFName(value))
             dict_obj.set("Encrypt", encrypt_dict)
-        
+
         if self.prev:
             dict_obj.set("Prev", PDFInteger(self.prev))
-        
+
         result = []
         result.append(b"trailer\n")
         result.append(dict_obj.to_pdf())
         result.append(b"\nstartxref\n")
         # offset باید از بیرون تنظیم شود
         result.append(b"%%EOF\n")
-        
+
         return b"".join(result)
-    
+
     def __str__(self) -> str:
         return f"PDFTrailer(size={self.size}, root={self.root})"
 
@@ -823,97 +815,97 @@ class PDFTrailer:
 @dataclass
 class PDFPage(PDFObject):
     """صفحه PDF"""
-    media_box: List[float]  # [x0, y0, x1, y1]
-    contents: Optional[Union[PDFReference, List[PDFReference]]] = None
-    resources: Optional[PDFDictionary] = None
-    parent: Optional[PDFReference] = None
-    annotations: Optional[List[PDFReference]] = None
-    crop_box: Optional[List[float]] = None
-    bleed_box: Optional[List[float]] = None
-    trim_box: Optional[List[float]] = None
-    art_box: Optional[List[float]] = None
-    rotate: Optional[int] = None
-    
+    media_box: list[float]  # [x0, y0, x1, y1]
+    contents: PDFReference | list[PDFReference] | None = None
+    resources: PDFDictionary | None = None
+    parent: PDFReference | None = None
+    annotations: list[PDFReference] | None = None
+    crop_box: list[float] | None = None
+    bleed_box: list[float] | None = None
+    trim_box: list[float] | None = None
+    art_box: list[float] | None = None
+    rotate: int | None = None
+
     def to_pdf(self) -> bytes:
         dict_obj = PDFDictionary()
         dict_obj.set("Type", PDFName("Page"))
-        
+
         # MediaBox
         media_array = PDFArray([PDFReal(x) for x in self.media_box])
         dict_obj.set("MediaBox", media_array)
-        
+
         # Contents
         if self.contents:
             if isinstance(self.contents, list):
                 if len(self.contents) == 1:
                     dict_obj.set("Contents", self.contents[0])
                 else:
-                    contents_array = PDFArray(cast(List[PDFObject], self.contents))
+                    contents_array = PDFArray(cast(list[PDFObject], self.contents))
                     dict_obj.set("Contents", contents_array)
             else:
                 dict_obj.set("Contents", self.contents)
-        
+
         # Resources
         if self.resources:
             dict_obj.set("Resources", self.resources)
-        
+
         # Parent
         if self.parent:
             dict_obj.set("Parent", self.parent)
-        
+
         # Annotations
         if self.annotations:
-            annotations_array = PDFArray(cast(List[PDFObject], self.annotations))
+            annotations_array = PDFArray(cast(list[PDFObject], self.annotations))
             dict_obj.set("Annots", annotations_array)
-        
+
         # Boxes
         if self.crop_box:
             crop_array = PDFArray([PDFReal(x) for x in self.crop_box])
             dict_obj.set("CropBox", crop_array)
-        
+
         if self.bleed_box:
             bleed_array = PDFArray([PDFReal(x) for x in self.bleed_box])
             dict_obj.set("BleedBox", bleed_array)
-        
+
         if self.trim_box:
             trim_array = PDFArray([PDFReal(x) for x in self.trim_box])
             dict_obj.set("TrimBox", trim_array)
-        
+
         if self.art_box:
             art_array = PDFArray([PDFReal(x) for x in self.art_box])
             dict_obj.set("ArtBox", art_array)
-        
+
         # Rotate
         if self.rotate:
             dict_obj.set("Rotate", PDFInteger(self.rotate))
-        
+
         return dict_obj.to_pdf()
-    
+
     def get_type(self) -> PDFObjectType:
         return PDFObjectType.DICTIONARY
-    
-    def to_dict(self) -> Dict[str, Any]:
+
+    def to_dict(self) -> dict[str, Any]:
         result = {
             "type": "page",
             "media_box": self.media_box,
             "width": self.media_box[2] - self.media_box[0],
             "height": self.media_box[3] - self.media_box[1]
         }
-        
+
         if self.crop_box:
             result["crop_box"] = self.crop_box
-        
+
         if self.rotate:
             result["rotate"] = self.rotate
-        
+
         if self.resources:
             result["has_resources"] = True
-        
+
         if self.contents:
             result["has_contents"] = True
-        
+
         return result
-    
+
     def __str__(self) -> str:
         width = self.media_box[2] - self.media_box[0]
         height = self.media_box[3] - self.media_box[1]
@@ -924,51 +916,51 @@ class PDFPage(PDFObject):
 class PDFCatalog(PDFObject):
     """کاتالوگ PDF (ریشه سند)"""
     pages: PDFReference
-    page_layout: Optional[str] = None
-    page_mode: Optional[str] = None
-    outlines: Optional[PDFReference] = None
-    metadata: Optional[PDFReference] = None
-    viewer_preferences: Optional[PDFDictionary] = None
-    
+    page_layout: str | None = None
+    page_mode: str | None = None
+    outlines: PDFReference | None = None
+    metadata: PDFReference | None = None
+    viewer_preferences: PDFDictionary | None = None
+
     def to_pdf(self) -> bytes:
         dict_obj = PDFDictionary()
         dict_obj.set("Type", PDFName("Catalog"))
         dict_obj.set("Pages", self.pages)
-        
+
         if self.page_layout:
             dict_obj.set("PageLayout", PDFName(self.page_layout))
-        
+
         if self.page_mode:
             dict_obj.set("PageMode", PDFName(self.page_mode))
-        
+
         if self.outlines:
             dict_obj.set("Outlines", self.outlines)
-        
+
         if self.metadata:
             dict_obj.set("Metadata", self.metadata)
-        
+
         if self.viewer_preferences:
             dict_obj.set("ViewerPreferences", self.viewer_preferences)
-        
+
         return dict_obj.to_pdf()
-    
+
     def get_type(self) -> PDFObjectType:
         return PDFObjectType.DICTIONARY
-    
-    def to_dict(self) -> Dict[str, Any]:
+
+    def to_dict(self) -> dict[str, Any]:
         result = {
             "type": "catalog",
             "pages_ref": f"{self.pages.obj_id} {self.pages.gen_num} R"
         }
-        
+
         if self.page_layout:
             result["page_layout"] = self.page_layout
-        
+
         if self.page_mode:
             result["page_mode"] = self.page_mode
-        
+
         return result
-    
+
     def __str__(self) -> str:
         return f"PDFCatalog(pages={self.pages})"
 
@@ -976,87 +968,87 @@ class PDFCatalog(PDFObject):
 @dataclass
 class PDFInfo(PDFObject):
     """اطلاعات سند PDF"""
-    title: Optional[str] = None
-    author: Optional[str] = None
-    subject: Optional[str] = None
-    keywords: Optional[str] = None
-    creator: Optional[str] = None
-    producer: Optional[str] = None
-    creation_date: Optional[datetime] = None
-    mod_date: Optional[datetime] = None
-    
+    title: str | None = None
+    author: str | None = None
+    subject: str | None = None
+    keywords: str | None = None
+    creator: str | None = None
+    producer: str | None = None
+    creation_date: datetime | None = None
+    mod_date: datetime | None = None
+
     def to_pdf(self) -> bytes:
         dict_obj = PDFDictionary()
-        
+
         if self.title:
             dict_obj.set("Title", PDFString(self.title))
-        
+
         if self.author:
             dict_obj.set("Author", PDFString(self.author))
-        
+
         if self.subject:
             dict_obj.set("Subject", PDFString(self.subject))
-        
+
         if self.keywords:
             dict_obj.set("Keywords", PDFString(self.keywords))
-        
+
         if self.creator:
             dict_obj.set("Creator", PDFString(self.creator))
-        
+
         if self.producer:
             dict_obj.set("Producer", PDFString(self.producer))
-        
+
         if self.creation_date:
             dict_obj.set("CreationDate", PDFString(self._format_pdf_date(self.creation_date)))
-        
+
         if self.mod_date:
             dict_obj.set("ModDate", PDFString(self._format_pdf_date(self.mod_date)))
-        
+
         return dict_obj.to_pdf()
-    
+
     def get_type(self) -> PDFObjectType:
         return PDFObjectType.DICTIONARY
-    
-    def to_dict(self) -> Dict[str, Any]:
+
+    def to_dict(self) -> dict[str, Any]:
         result = {"type": "info"}
-        
+
         if self.title:
             result["title"] = self.title
-        
+
         if self.author:
             result["author"] = self.author
-        
+
         if self.subject:
             result["subject"] = self.subject
-        
+
         if self.keywords:
             result["keywords"] = self.keywords
-        
+
         if self.creator:
             result["creator"] = self.creator
-        
+
         if self.producer:
             result["producer"] = self.producer
-        
+
         if self.creation_date:
             result["creation_date"] = self.creation_date.isoformat()
-        
+
         if self.mod_date:
             result["mod_date"] = self.mod_date.isoformat()
-        
+
         return result
-    
+
     def _format_pdf_date(self, dt: datetime) -> str:
         """فرمت‌بندی تاریخ به فرمت PDF"""
         return dt.strftime("D:%Y%m%d%H%M%S")
-    
+
     def __str__(self) -> str:
         return f"PDFInfo(title={self.title}, author={self.author})"
 
 
 class PDFObjectFactory:
     """کارخانه تولید اشیاء PDF"""
-    
+
     @staticmethod
     def create_from_value(value: Any) -> PDFObject:
         """ایجاد شیء PDF از مقدار پایتون"""
@@ -1086,7 +1078,7 @@ class PDFObjectFactory:
             return value
         else:
             raise PDFParseError(f"نوع نامعتبر برای تبدیل به PDFObject: {type(value)}")
-    
+
     @staticmethod
     def parse_pdf_string(pdf_str: str) -> PDFString:
         """پارس رشته PDF"""
@@ -1118,12 +1110,12 @@ class PDFObjectFactory:
 
 class PDFObjectSerializer:
     """سریالایزر اشیاء PDF"""
-    
+
     @staticmethod
     def serialize(obj: PDFObject) -> bytes:
         """سریالایز شیء PDF"""
         return obj.to_pdf()
-    
+
     @staticmethod
     def deserialize(data: bytes) -> PDFObject:
         """دسی‌ریالایز داده‌های PDF"""
@@ -1131,7 +1123,7 @@ class PDFObjectSerializer:
         # برای نسخه کامل نیاز به پارسر کامل داریم
         try:
             text = data.decode('ascii', errors='ignore').strip()
-            
+
             if text == 'null':
                 return PDFNull()
             elif text == 'true':
@@ -1169,7 +1161,7 @@ class PDFObjectSerializer:
                 return PDFReference(int(parts[0]), int(parts[1]))
             else:
                 raise PDFParseError(f"نوع داده ناشناخته: {text}")
-                
+
         except Exception as e:
             raise PDFParseError(f"خطا در deserialize: {str(e)}")
 
@@ -1177,51 +1169,51 @@ class PDFObjectSerializer:
 # # تست کلاس‌ها
 # if __name__ == "__main__":
 #     print("🧪 تست کلاس‌های PDF Objects")
-    
+
 #     # تست Boolean
 #     bool_obj = PDFBoolean(True)
 #     print(f"Boolean: {bool_obj.to_pdf()}")
-    
+
 #     # تست Integer
 #     int_obj = PDFInteger(42)
 #     print(f"Integer: {int_obj.to_pdf()}")
-    
+
 #     # تست Real
 #     real_obj = PDFReal(3.14159)
 #     print(f"Real: {real_obj.to_pdf()}")
-    
+
 #     # تست String
 #     str_obj = PDFString("Hello PDF!")
 #     print(f"String: {str_obj.to_pdf()}")
-    
+
 #     # تست Name
 #     name_obj = PDFName("Font")
 #     print(f"Name: {name_obj.to_pdf()}")
-    
+
 #     # تست Array
 #     array_obj = PDFArray([PDFInteger(1), PDFInteger(2), PDFInteger(3)])
 #     print(f"Array: {array_obj.to_pdf()}")
-    
+
 #     # تست Dictionary
 #     dict_obj = PDFDictionary()
 #     dict_obj.set("Type", PDFName("Page"))
 #     dict_obj.set("MediaBox", PDFArray([PDFReal(0), PDFReal(0), PDFReal(612), PDFReal(792)]))
 #     print(f"Dictionary:\n{dict_obj.to_pdf().decode('ascii')}")
-    
+
 #     # تست Stream
 #     stream_data = b"Hello World!"
 #     stream_obj = PDFStream(stream_data, filters=["FlateDecode"])
 #     print(f"Stream length: {len(stream_obj.to_pdf())} bytes")
-    
+
 #     # تست Reference
 #     ref_obj = PDFReference(1, 0)
 #     print(f"Reference: {ref_obj.to_pdf()}")
-    
+
 #     # تست Page
 #     page_obj = PDFPage(
 #         media_box=[0, 0, 612, 792],
 #         resources=PDFDictionary()
 #     )
 #     print(f"Page:\n{page_obj.to_pdf().decode('ascii')}")
-    
+
 #     print("\n✅ تست کلاس‌های PDF Objects با موفقیت انجام شد")

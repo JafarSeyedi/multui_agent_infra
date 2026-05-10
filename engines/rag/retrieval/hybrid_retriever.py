@@ -1,9 +1,9 @@
-from typing import List, Dict, Any, Optional
+from typing import Any
 
+from .base_retriever import BaseRetriever
+from .bm25_retriever import BM25KeywordRetriever
 from .retriever_result import RetrievalResult
 from .vector_retriever import VectorRetriever
-from .bm25_retriever import BM25KeywordRetriever
-from .base_retriever import BaseRetriever
 
 class HybridRetriever(BaseRetriever):
     """
@@ -32,13 +32,13 @@ class HybridRetriever(BaseRetriever):
     # ---------------------------------------------------------
     def _rrf_merge(
         self,
-        vec_results: List[RetrievalResult],
-        kw_results: List[RetrievalResult],
+        vec_results: list[RetrievalResult],
+        kw_results: list[RetrievalResult],
         top_k: int,
-    ) -> List[RetrievalResult]:
+    ) -> list[RetrievalResult]:
 
-        scores: Dict[str, float] = {}
-        chunks: Dict[str, RetrievalResult] = {}
+        scores: dict[str, float] = {}
+        chunks: dict[str, RetrievalResult] = {}
 
         # -----------------------------
         # Vector results
@@ -82,8 +82,8 @@ class HybridRetriever(BaseRetriever):
         self,
         query: str,
         top_k: int = 5,
-        filters: Optional[Dict[str, Any]] = None,
-    ) -> List[RetrievalResult]:
+        filters: dict[str, Any] | None = None,
+    ) -> list[RetrievalResult]:
 
         # Parallel retrieval (async)
         vec_task = self.vector_retriever.search(

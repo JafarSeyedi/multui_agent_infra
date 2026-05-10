@@ -3,10 +3,11 @@
 Shared DrawingML writer primitives – colour, fill, line, effects, 3D, text.
 All functions are complete and cover every case stored by the parser.
 """
-
 from __future__ import annotations
-from typing import Optional, List, Dict, Any
-from xml.etree.ElementTree import Element, SubElement
+
+from typing import Any
+from xml.etree.ElementTree import Element
+from xml.etree.ElementTree import SubElement
 
 from .pptx_writer.constants import NAMESPACES
 
@@ -15,7 +16,7 @@ R = f"{{{NAMESPACES['r']}}}"
 
 
 # ── Colour helpers ──────────────────────────────────────────────────
-def set_solid_color(parent: Element, color_str: Optional[str]) -> None:
+def set_solid_color(parent: Element, color_str: str | None) -> None:
     """Write <a:solidFill> with the appropriate colour child."""
     if not color_str:
         return
@@ -45,7 +46,7 @@ def _set_color_child(parent: Element, color_str: str) -> None:
 
 
 # ── Fill helpers ─────────────────────────────────────────────────────
-def write_fill(parent: Element, fill_info: Optional[Dict[str, Any]]) -> None:
+def write_fill(parent: Element, fill_info: dict[str, Any] | None) -> None:
     """Reconstruct fill from the parser's structured dict."""
     if not fill_info:
         return
@@ -75,7 +76,7 @@ def write_fill(parent: Element, fill_info: Optional[Dict[str, Any]]) -> None:
 
 
 # ── Line helpers ─────────────────────────────────────────────────────
-def write_line(ln: Element, line_info: Optional[Dict[str, Any]]) -> None:
+def write_line(ln: Element, line_info: dict[str, Any] | None) -> None:
     """Fill an <a:ln> element with all properties."""
     if not line_info:
         return
@@ -113,7 +114,7 @@ def write_line(ln: Element, line_info: Optional[Dict[str, Any]]) -> None:
 
 
 # ── Effects helpers ──────────────────────────────────────────────────
-def write_effects(effectLst: Element, effects: Dict[str, Any]) -> None:
+def write_effects(effectLst: Element, effects: dict[str, Any]) -> None:
     """Write shadow, glow, reflection."""
     outer = effects.get("outer_shadow")
     if outer:
@@ -127,7 +128,7 @@ def write_effects(effectLst: Element, effects: Dict[str, Any]) -> None:
 
 
 # ── 3D helpers ───────────────────────────────────────────────────────
-def write_scene3d(parent: Element, scene3d: Dict[str, Any]) -> None:
+def write_scene3d(parent: Element, scene3d: dict[str, Any]) -> None:
     elem = SubElement(parent, f"{A}scene3d")
     cam = scene3d.get("camera")
     if cam:
@@ -137,7 +138,7 @@ def write_scene3d(parent: Element, scene3d: Dict[str, Any]) -> None:
         SubElement(elem, f"{A}lightRig", {k: str(v) for k, v in lr.items()})
 
 
-def write_sp3d(parent: Element, sp3d: Dict[str, Any]) -> None:
+def write_sp3d(parent: Element, sp3d: dict[str, Any]) -> None:
     elem = SubElement(parent, f"{A}sp3d")
     for key, tag in [("bevel_top", f"{A}bevelT"), ("bevel_bottom", f"{A}bevelB")]:
         val = sp3d.get(key)

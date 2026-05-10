@@ -5,28 +5,25 @@ InfluxDB Schema Writer – converts an MSDMDocument into InfluxQL DDL statements
 CREATE MEASUREMENT syntax for time‑series entities.  Raw statements (e.g.,
 CONTINUOUS QUERY) preserved from the parser are written verbatim for round‑trip.
 """
-
 from __future__ import annotations
-from typing import Optional, Dict, Any, List, Tuple
 
-from .base_msdm_writer import BaseMSDMWriter, WriteTarget, SoftDeleteStrategy
+from ...models.msdm_models import Attribute
+from ...models.msdm_models import DataType
+from ...models.msdm_models import Entity
+from ...models.msdm_models import EntityKind
+from ...models.msdm_models import MSDMDocument
+from ...models.msdm_models import ScalarType
 from ..base import WriteOptions
-from ...models.msdm_models import (
-    MSDMDocument,
-    Entity,
-    Attribute,
-    DataType,
-    ScalarType,
-    Annotation,
-    EntityKind,
-)
+from .base_msdm_writer import BaseMSDMWriter, ConnectionConfig
+from .base_msdm_writer import SoftDeleteStrategy
+from .base_msdm_writer import WriteTarget
+
 try:
     from influxdb_client import InfluxDBClient
-    from influxdb_client.client.organizations_api import OrganizationsApi
-    from influxdb_client.client.buckets_api import BucketsApi
     INFLUX_AVAILABLE = True
 except ImportError:
     INFLUX_AVAILABLE = False
+
 
 class InfluxDBSchemaWriter(BaseMSDMWriter):
     """Writer for InfluxDB schema files (.influxql)."""
@@ -35,7 +32,7 @@ class InfluxDBSchemaWriter(BaseMSDMWriter):
 
     def __init__(
         self,
-        options: Optional[WriteOptions] = None,
+        options: WriteOptions | None = None,
         target_mode: WriteTarget = WriteTarget.DESIGN_FILE,
         soft_delete_strategy: SoftDeleteStrategy = SoftDeleteStrategy.NONE,
     ):
@@ -75,13 +72,13 @@ class InfluxDBSchemaWriter(BaseMSDMWriter):
 
         # Join statements with semicolons
         script = ";\n".join(line for line in lines if line) + ";\n"
-        return script.encode(self.options.encoding or "utf-8")
+        return script.encode(getattr(self.options, "encoding", "utf-8") or "utf-8")
 
-    async def get_supported_media_types(self) -> list[str]:
+    def get_supported_media_types(self) -> list[str]:
         return ["text/plain"]
 
-    async def get_supported_extensions(self) -> list[str]:
-        return self.supported_extensions
+    def get_supported_extensions(self) -> list[str]:
+        return list(self.supported_extensions)
 
     # ── CREATE MEASUREMENT ─────────────────────────────────────────
     def _write_measurement(self, entity: Entity) -> str:
@@ -97,10 +94,10 @@ class InfluxDBSchemaWriter(BaseMSDMWriter):
         """
         name = self._quote(entity.name)
         # Collect fields and tags
-        fields: List[str] = []
-        tags: List[str] = []
+        fields: list[str] = []
+        tags: list[str] = []
 
-        # The timestamp attribute is implicit; we'll skip it if it's marked with annotation "influxdb_implicit"
+        # The timestamp attribute is implicit; skip if marked with annotation "influxdb_implicit"
         for attr in entity.attributes:
             if self._is_implicit_timestamp(attr):
                 continue
@@ -172,15 +169,15 @@ class InfluxDBSchemaWriter(BaseMSDMWriter):
         return ", ".join(opts)
 
     # ── Global options extraction ──────────────────────────────────
-    def _get_doc_annotation(self, doc: MSDMDocument, key: str) -> Optional[str]:
+    def _get_doc_annotation(self, doc: MSDMDocument, key: str) -> str | None:
         return next((a.value for a in doc.annotations if a.key == key), None)
 
-    def _collect_retention_policies(self, doc: MSDMDocument) -> Dict[str, Tuple[str, str, str, Optional[str], bool]]:
+    def _collect_retention_policies(self, doc: MSDMDocument) -> dict[str, tuple[str, str, str, str | None, bool]]:
         """
         Parse retention policy annotations and return a dict:
         policy_name → (database, duration, replication, shard_duration, is_default)
         """
-        policies: Dict[str, Dict[str, str]] = {}
+        policies: dict[str, dict[str, str]] = {}
         for ann in doc.annotations:
             if ann.key.startswith("retention_policy_"):
                 # e.g., retention_policy_myrp_duration → myrp, duration
@@ -231,10 +228,13 @@ class InfluxDBSchemaWriter(BaseMSDMWriter):
         if dt.base == ScalarType.STRING:
             return f"'{default_str}'"
         return default_str
-    
-    
-    
-    async def apply_to_database(self, document: MSDMDocument, connection: ConnectionConfig = None):
+
+    # ── Database application ───────────────────────────────────────
+    async def apply_to_database(
+        self,
+        document: MSDMDocument,
+        connection: ConnectionConfig | None = None,
+    ) -> None:
         if not INFLUX_AVAILABLE:
             raise ImportError("influxdb-client is required. pip install influxdb-client")
         if connection is None:
@@ -247,24 +247,18 @@ class InfluxDBSchemaWriter(BaseMSDMWriter):
         try:
             buckets_api = client.buckets_api()
             existing_buckets = {b.name for b in buckets_api.find_buckets().buckets}
-            # Buckets correspond to database names; the MSDM document may store a database name in annotations
             db_name = next((a.value for a in document.annotations if a.key == "database"), None)
             if db_name and db_name not in existing_buckets:
-                # create bucket with default retention
                 buckets_api.create_bucket(bucket_name=db_name)
-            # Measurements are not first-class in InfluxDB; we can write a schema comment or create a dummy data point.
-            # For soft-delete, we can rename buckets or drop them.
-            # Example: remove buckets not in model
             model_buckets = {db_name} if db_name else set()
             for bucket_name in existing_buckets - model_buckets:
                 self._handle_bucket_deletion(buckets_api, bucket_name)
         finally:
             client.close()
 
-    def _handle_bucket_deletion(self, api, bucket_name: str):
+    def _handle_bucket_deletion(self, api, bucket_name: str) -> None:
         if self.soft_delete_strategy == SoftDeleteStrategy.NONE:
             api.delete_bucket(api.find_bucket_by_name(bucket_name).id)
         elif self.soft_delete_strategy == SoftDeleteStrategy.PREFIX:
             new_name = f"_deleted_{bucket_name}"
             api.update_bucket(bucket=api.find_bucket_by_name(bucket_name).id, bucket_name=new_name)
-        # (similar for SUFFIX)

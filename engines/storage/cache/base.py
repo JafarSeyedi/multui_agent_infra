@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
-from typing import Any, List, Optional
+from abc import ABC
+from abc import abstractmethod
+from typing import Any
 
 from engines.storage.base_storage import BaseStorage
 
@@ -10,11 +11,11 @@ class CacheStorage(BaseStorage, ABC):
     """Cache abstraction for temporary values with optional TTL support."""
 
     @abstractmethod
-    async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
+    async def set(self, key: str, value: Any, ttl: int | None = None) -> None:
         ...
 
     @abstractmethod
-    async def get(self, key: str) -> Optional[Any]:
+    async def get(self, key: str) -> Any | None:
         ...
 
     @abstractmethod
@@ -26,7 +27,7 @@ class CacheStorage(BaseStorage, ABC):
         ...
 
     @abstractmethod
-    async def list_keys(self, prefix: Optional[str] = None) -> List[str]:
+    async def list_keys(self, prefix: str | None = None) -> list[str]:
         ...
 
     async def invalidate(self, key: str) -> None:

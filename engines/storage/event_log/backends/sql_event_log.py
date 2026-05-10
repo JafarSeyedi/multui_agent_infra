@@ -1,11 +1,9 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Dict, List, Optional
-
-from engines.storage.relational.base import SQLStorage
 
 from ..base import LogStorage
+from engines.storage.relational.base import SQLStorage
 
 
 class SqlLogStorage(LogStorage):
@@ -26,24 +24,24 @@ class SqlLogStorage(LogStorage):
     async def health(self) -> bool:
         return await self.sql.health()
 
-    async def log_agent_execution(self, agent_name: str, record: Dict) -> None:
+    async def log_agent_execution(self, agent_name: str, record: dict) -> None:
         timestamp = record.get("timestamp", datetime.utcnow().isoformat())
         key = f"exec:{agent_name}:{timestamp}"
         await self.sql.save(key, record)
 
-    async def list_agent_logs(self, agent_name: str) -> List[str]:
+    async def list_agent_logs(self, agent_name: str) -> list[str]:
         return await self.sql.list_keys(prefix=f"exec:{agent_name}:")
 
-    async def get_agent_log(self, key: str) -> Optional[Dict]:
+    async def get_agent_log(self, key: str) -> dict | None:
         return await self.sql.load(key)
 
-    async def log_event(self, event_type: str, payload: Dict) -> None:
+    async def log_event(self, event_type: str, payload: dict) -> None:
         key = f"event:{event_type}:{datetime.utcnow().isoformat()}"
         await self.sql.save(key, payload)
 
-    async def list_events(self, event_type: Optional[str] = None) -> List[str]:
+    async def list_events(self, event_type: str | None = None) -> list[str]:
         prefix = f"event:{event_type}:" if event_type else "event:"
         return await self.sql.list_keys(prefix=prefix)
 
-    async def get_event(self, key: str) -> Optional[Dict]:
+    async def get_event(self, key: str) -> dict | None:
         return await self.sql.load(key)

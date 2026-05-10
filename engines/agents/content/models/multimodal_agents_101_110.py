@@ -1,5 +1,5 @@
-from typing import List, Optional, Dict
-from ...models import AgentInput, AgentOutput
+from ...models import AgentInput
+from ...models import AgentOutput
 from .common import ConfidenceScore
 
 
@@ -9,7 +9,7 @@ from .common import ConfidenceScore
 
 class TextToSpeechInput(AgentInput):
     text: str
-    voice_style: Optional[str]
+    voice_style: str | None
 
 
 class TextToSpeechOutput(AgentOutput):
@@ -22,12 +22,12 @@ class TextToSpeechOutput(AgentOutput):
 
 class SpeechToTextInput(AgentInput):
     audio_file_url: str
-    language: Optional[str]
+    language: str | None
 
 
 class SpeechToTextOutput(AgentOutput):
     transcript: str
-    confidence: Optional[ConfidenceScore]
+    confidence: ConfidenceScore | None
 
 
 # -------------------------------------------------
@@ -36,12 +36,12 @@ class SpeechToTextOutput(AgentOutput):
 
 class VisualIllustrationInput(AgentInput):
     concept: str
-    style: Optional[str]
+    style: str | None
 
 
 class VisualIllustrationOutput(AgentOutput):
     image_url: str
-    caption: Optional[str]
+    caption: str | None
 
 
 # -------------------------------------------------
@@ -61,12 +61,12 @@ class BoardDrawingOutput(AgentOutput):
 # -------------------------------------------------
 
 class EmotionAnalysisInput(AgentInput):
-    video_frame_urls: List[str]
+    video_frame_urls: list[str]
 
 
 class EmotionAnalysisOutput(AgentOutput):
-    detected_emotions: Dict[str, float]  # e.g., {"bored":0.1, "focused":0.8}
-    dominant_emotion: Optional[str]
+    detected_emotions: dict[str, float]  # e.g., {"bored":0.1, "focused":0.8}
+    dominant_emotion: str | None
 
 
 # -------------------------------------------------
@@ -74,7 +74,7 @@ class EmotionAnalysisOutput(AgentOutput):
 # -------------------------------------------------
 
 class EngagementDetectorInput(AgentInput):
-    student_behavior_events: List[str]
+    student_behavior_events: list[str]
 
 
 class EngagementDetectorOutput(AgentOutput):
@@ -103,7 +103,7 @@ class GestureRecognitionInput(AgentInput):
 
 
 class GestureRecognitionOutput(AgentOutput):
-    recognized_gestures: List[str]
+    recognized_gestures: list[str]
 
 
 # -------------------------------------------------
@@ -112,7 +112,7 @@ class GestureRecognitionOutput(AgentOutput):
 
 class AudioFeedbackInput(AgentInput):
     detected_emotion: str
-    student_id: Optional[str]
+    student_id: str | None
 
 
 class AudioFeedbackOutput(AgentOutput):
@@ -124,9 +124,9 @@ class AudioFeedbackOutput(AgentOutput):
 # -------------------------------------------------
 
 class InteractiveLessonOrchestratorInput(AgentInput):
-    multimodal_context: Dict  # combination of audio, visual, and text state
+    multimodal_context: dict  # combination of audio, visual, and text state
 
 
 class InteractiveLessonOrchestratorOutput(AgentOutput):
-    orchestrated_actions: List[str]
-    confidence: Optional[ConfidenceScore]
+    orchestrated_actions: list[str]
+    confidence: ConfidenceScore | None

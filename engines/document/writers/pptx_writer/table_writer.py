@@ -3,13 +3,15 @@
 Write <p:tbl> from TableContent.
 Full round‑trip: grid, row/cell properties, rich text with all formatting.
 """
-
 from __future__ import annotations
-from xml.etree.ElementTree import Element, SubElement
 
-from ...models.usdm_models import TableContent, ParagraphContent
-from .constants import NAMESPACES
+from xml.etree.ElementTree import Element
+from xml.etree.ElementTree import SubElement
+
+from ...models.usdm_models import ParagraphContent
+from ...models.usdm_models import TableContent
 from ..drawingml_helpers import write_rich_text_body
+from .constants import NAMESPACES
 
 P = f"{{{NAMESPACES['p']}}}"
 A = f"{{{NAMESPACES['a']}}}"
@@ -20,7 +22,7 @@ def write_table(table: TableContent) -> Element:
     tbl = Element(f"{P}tbl")
 
     # Table properties
-    tblPr = SubElement(tbl, f"{P}tblPr")
+    SubElement(tbl, f"{P}tblPr")
     # (additional tblPr like borders, shading would go here – not yet captured by parser)
 
     # Grid

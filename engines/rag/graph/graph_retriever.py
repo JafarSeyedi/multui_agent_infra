@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, List
+from typing import Any
 
 from engines.rag.research.memory.reasoning.event_types import ReasoningEventType
 from engines.rag.research.memory.reasoning_memory import ReasoningMemory
@@ -15,7 +15,7 @@ class GraphRetriever:
     async def retrieve(self, entity_id: str, hops: int = 2):
         visited = set()
         frontier = [entity_id]
-        results: List[Any] = []
+        results: list[Any] = []
 
         for hop in range(hops):
             new_frontier = []

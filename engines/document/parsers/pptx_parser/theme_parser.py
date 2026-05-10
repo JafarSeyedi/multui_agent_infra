@@ -4,9 +4,9 @@ Parses the PPTX theme (theme1.xml) into a Theme dataclass.
 Captures the complete colour scheme, font scheme, format scheme,
 and any additional theme properties for round‑trip.
 """
-
 from __future__ import annotations
-from typing import Dict, Optional, Any
+
+from typing import Any
 from xml.etree.ElementTree import Element
 
 from ...models.psdm_models import Theme
@@ -30,7 +30,7 @@ def parse_theme(theme_xml: Element) -> Theme:
     if clr_scheme is not None:
         scheme_name = clr_scheme.get("name")
         theme._meta["color_scheme_name"] = scheme_name
-        color_map: Dict[str, str] = {}
+        color_map: dict[str, str] = {}
         for elem in clr_scheme:
             tag = elem.tag.split("}")[-1] if "}" in elem.tag else elem.tag
             color_str = _extract_color_full(elem)
@@ -55,7 +55,7 @@ def parse_theme(theme_xml: Element) -> Theme:
     if fmt_scheme is not None:
         fmt_name = fmt_scheme.get("name")
         theme._meta["format_scheme_name"] = fmt_name
-        # We'll store the entire format scheme as a structured dict (no XML)
+        # Store the entire format scheme as a structured dict
         theme._meta["format_scheme"] = _serialize_format_scheme(fmt_scheme)
 
     # ---------- Extra elements (e.g., extLst) ----------
@@ -66,7 +66,7 @@ def parse_theme(theme_xml: Element) -> Theme:
     return theme
 
 
-def _extract_color_full(elem: Element) -> Optional[str]:
+def _extract_color_full(elem: Element) -> str | None:
     """Convert any color element to a string preserving its type."""
     for child in elem:
         tag = child.tag.split("}")[-1] if "}" in child.tag else child.tag
@@ -104,49 +104,60 @@ def _extract_font(elem: Element) -> str:
     return ""
 
 
-def _serialize_format_scheme(fmt_scheme: Element) -> Dict[str, Any]:
+def _serialize_format_scheme(fmt_scheme: Element) -> dict[str, Any]:
     """Convert <a:fmtScheme> children into a dict."""
-    data = {}
+    data: dict[str, Any] = {}
     for child in fmt_scheme:
         tag = child.tag.split("}")[-1]
         if tag == "fillStyleLst":
-            data["fill_styles"] = [_serialize_fill(f) for f in child]
+            fill_list = []
+            for f in child:
+                fill_list.append(_serialize_fill(f))
+            data["fill_styles"] = fill_list
         elif tag == "lnStyleLst":
-            data["line_styles"] = [_serialize_line(l) for l in child]
+            line_list = []
+            for l in child:
+                line_list.append(_serialize_line(l))
+            data["line_styles"] = line_list
         elif tag == "effectStyleLst":
-            data["effect_styles"] = [_serialize_effect_style(e) for e in child]
+            effect_list = []
+            for e in child:
+                effect_list.append(_serialize_effect_style(e))
+            data["effect_styles"] = effect_list
         elif tag == "bgFillStyleLst":
-            data["bg_fill_styles"] = [_serialize_fill(f) for f in child]
+            bg_fill_list = []
+            for f in child:
+                bg_fill_list.append(_serialize_fill(f))
+            data["bg_fill_styles"] = bg_fill_list
         else:
             # preserve other children as raw dict (attributes + text)
             data[tag] = _element_to_dict(child)
     return data
 
 
-def _serialize_fill(elem: Element) -> Dict[str, Any]:
-    # delegate to the shape parser's fill serialization
+def _serialize_fill(elem: Element) -> dict[str, Any]:
     from ..drawingml.shape_parser import _parse_fill
     return _parse_fill(elem, NS)
 
 
-def _serialize_line(elem: Element) -> Dict[str, Any]:
+def _serialize_line(elem: Element) -> dict[str, Any]:
     from ..drawingml.shape_parser import _parse_line
     return _parse_line(elem, NS)
 
 
-def _serialize_effect_style(elem: Element) -> Dict[str, Any]:
+def _serialize_effect_style(elem: Element) -> dict[str, Any]:
     from ..drawingml.shape_parser import _serialize_effect_list
     return _serialize_effect_list(elem.find("a:effectLst", NS) or elem, NS)
 
 
-def _serialize_ext_list(ext_lst: Element) -> Dict[str, Any]:
+def _serialize_ext_list(ext_lst: Element) -> dict[str, Any]:
     return _element_to_dict(ext_lst)
 
 
-def _element_to_dict(el: Element) -> Dict[str, Any]:
+def _element_to_dict(el: Element) -> dict[str, Any]:
     """Convert an XML element to a nested dict (attributes + children)."""
-    d = dict(el.attrib)
-    children = {}
+    d: dict[str, Any] = dict(el.attrib)
+    children: dict[str, list[dict[str, Any]]] = {}
     for child in el:
         tag = child.tag.split("}")[-1]
         if tag not in children:

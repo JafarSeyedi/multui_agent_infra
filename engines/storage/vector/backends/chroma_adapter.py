@@ -1,12 +1,12 @@
 # storage/vector/backends/chroma_adapter.py
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import chromadb
 from chromadb.api.models.Collection import Collection
-from chromadb.config import Settings
 from chromadb.api.types import Metadata
+from chromadb.config import Settings
 
 from ..base import VectorDBAdapter
 from ..embedding_utils import normalize_embedding
@@ -21,12 +21,12 @@ class ChromaAdapter(VectorDBAdapter):
             settings=Settings(allow_reset=True),
         )
         self.collection_name = collection_name
-        self._collection: Optional[Collection] = None  # ← fix: نوع صریح
-        self._dimension: Optional[int] = None
+        self._collection: Collection | None = None  # ← fix: نوع صریح
+        self._dimension: int | None = None
 
-    def _sanitize_metadata(self, meta: Dict[str, Any]) -> Metadata:
+    def _sanitize_metadata(self, meta: dict[str, Any]) -> Metadata:
         """Convert metadata values to chromadb-compatible primitives."""
-        result: Dict[str, str | int | float | bool] = {}
+        result: dict[str, str | int | float | bool] = {}
         for k, v in meta.items():
             if isinstance(v, bool):
                 result[k] = v
@@ -54,16 +54,16 @@ class ChromaAdapter(VectorDBAdapter):
         self,
         name: str,
         dimension: int,
-        config: Optional[Dict[str, Any]] = None,
+        config: dict[str, Any] | None = None,
     ) -> None:
         self.collection_name = name
         await self._get_or_create_collection(dimension=dimension)
 
     async def upsert(
         self,
-        ids: List[str],
-        vectors: List[List[float]],
-        metadata: List[Dict[str, Any]],
+        ids: list[str],
+        vectors: list[list[float]],
+        metadata: list[dict[str, Any]],
     ) -> None:
         if not ids:
             return
@@ -75,7 +75,7 @@ class ChromaAdapter(VectorDBAdapter):
         sanitized = [self._sanitize_metadata(m) for m in metadata]
         collection.upsert(ids=ids, embeddings=normalized_vectors, metadatas=sanitized)
 
-    async def batch_upsert(self, items: List[Dict[str, Any]]) -> None:
+    async def batch_upsert(self, items: list[dict[str, Any]]) -> None:
         if not items:
             return
         await self.upsert(
@@ -86,10 +86,10 @@ class ChromaAdapter(VectorDBAdapter):
 
     async def query(
         self,
-        vector: List[float],
+        vector: list[float],
         top_k: int = 5,
-        filters: Optional[Dict[str, Any]] = None,
-    ) -> List[Dict[str, Any]]:
+        filters: dict[str, Any] | None = None,
+    ) -> list[dict[str, Any]]:
         if self._collection is None:
             raise RuntimeError("Collection not initialized. Call create_index or upsert first.")
 
@@ -100,7 +100,7 @@ class ChromaAdapter(VectorDBAdapter):
             include=["metadatas", "distances"],
         )
 
-        formatted_results: List[Dict[str, Any]] = []
+        formatted_results: list[dict[str, Any]] = []
         ids = results.get("ids", [[]])
         metadatas = results.get("metadatas", [[]])
         distances = results.get("distances", [[]])
@@ -119,7 +119,7 @@ class ChromaAdapter(VectorDBAdapter):
             )
         return formatted_results
 
-    async def delete(self, ids: List[str]) -> None:
+    async def delete(self, ids: list[str]) -> None:
         if self._collection is None or not ids:
             return
         self._collection.delete(ids=ids)

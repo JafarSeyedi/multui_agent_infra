@@ -1,14 +1,12 @@
 # engines/document/ingestion/services/batch_ingest_service.py
-
 from __future__ import annotations
 
-from typing import List, Dict, Any, Optional
 import asyncio
+from typing import Any
 
-from .upload_service import UploadService
 from ..ingestion_context import IngestionContext
-from ...models.media_types import MediaType
 from ..ingestion_models import DocumentIngestionResult
+from .upload_service import UploadService
 
 
 class BatchIngestService:
@@ -22,8 +20,8 @@ class BatchIngestService:
     # ------------------------------------------------------------------
     async def ingest_sequential(
         self,
-        items: List[Dict[str, Any]],
-    ) -> List[DocumentIngestionResult]:
+        items: list[dict[str, Any]],
+    ) -> list[DocumentIngestionResult]:
 
         results = []
         for item in items:
@@ -43,9 +41,9 @@ class BatchIngestService:
     # ------------------------------------------------------------------
     async def ingest_parallel(
         self,
-        items: List[Dict[str, Any]],
+        items: list[dict[str, Any]],
         limit: int = 5,
-    ) -> List[DocumentIngestionResult]:
+    ) -> list[DocumentIngestionResult]:
 
         semaphore = asyncio.Semaphore(limit)
 

@@ -1,10 +1,8 @@
 # engines/document/ingestion/utils/timing.py
-
 from __future__ import annotations
 
 import time
 from contextlib import contextmanager
-from typing import Optional
 
 
 @contextmanager
@@ -29,7 +27,7 @@ class Stopwatch:
     """
 
     def __init__(self) -> None:
-        self.start_time: Optional[float] = None
+        self.start_time: float | None = None
         self.elapsed_ms: float = 0.0
 
     def start(self):

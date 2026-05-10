@@ -1,14 +1,13 @@
 # engines/storage/timeseries/base.py
-
 # metrics
 # observability
 # events timeline
-
 # engines/storage/timeseries/base.py
-
-from abc import ABC, abstractmethod
-from typing import Dict, List, Any
+from abc import ABC
+from abc import abstractmethod
 from datetime import datetime
+from typing import Any
+
 from engines.storage.base_storage import BaseStorage
 
 
@@ -22,8 +21,8 @@ class TimeSeriesStorage(BaseStorage, ABC):
         self,
         measurement: str,
         timestamp: datetime,
-        fields: Dict[str, Any],
-        tags: Dict[str, str] | None = None,
+        fields: dict[str, Any],
+        tags: dict[str, str] | None = None,
     ) -> None:
         pass
 
@@ -33,5 +32,5 @@ class TimeSeriesStorage(BaseStorage, ABC):
         measurement: str,
         start: datetime,
         end: datetime,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         pass

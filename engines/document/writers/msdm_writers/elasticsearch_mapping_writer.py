@@ -9,27 +9,27 @@ The writer outputs a JSON object representing the mapping.  If the document
 contains multiple DOCUMENT‑kind entities they are written as an array.
 Soft‑delete is not ddl‑based; deleted attributes are omitted from the output.
 """
-
 from __future__ import annotations
-import json
-from typing import Optional, Dict, Any, List, Union
 
-from .base_msdm_writer import BaseMSDMWriter, WriteTarget, SoftDeleteStrategy
+import json
+from typing import Any, Union
+
+from ...models.msdm_models import Annotation
+from ...models.msdm_models import Attribute
+from ...models.msdm_models import Entity
+from ...models.msdm_models import EntityKind
+from ...models.msdm_models import MSDMDocument
+from ...models.msdm_models import ScalarType
 from ..base import WriteOptions
-from ...models.msdm_models import (
-    MSDMDocument,
-    Entity,
-    Attribute,
-    DataType,
-    ScalarType,
-    Annotation,
-)
+from .base_msdm_writer import BaseMSDMWriter, ConnectionConfig
+from .base_msdm_writer import SoftDeleteStrategy
+from .base_msdm_writer import WriteTarget
+
 try:
     from elasticsearch import AsyncElasticsearch
     ES_AVAILABLE = True
 except ImportError:
     ES_AVAILABLE = False
-
 
 
 # ── ScalarType → default Elasticsearch field type ─────────────────
@@ -67,7 +67,7 @@ class ElasticsearchMappingWriter(BaseMSDMWriter):
 
     def __init__(
         self,
-        options: Optional[WriteOptions] = None,
+        options: WriteOptions | None = None,
         target_mode: WriteTarget = WriteTarget.DESIGN_FILE,
         soft_delete_strategy: SoftDeleteStrategy = SoftDeleteStrategy.NONE,
     ):
@@ -85,25 +85,21 @@ class ElasticsearchMappingWriter(BaseMSDMWriter):
             index_def = self._build_index_definition(entity, document)
             results.append(index_def)
 
-        if len(results) == 1:
-            output = results[0]
-        else:
-            output = results
-
+        output: Union[dict, list] = results[0] if len(results) == 1 else results
         json_bytes = json.dumps(output, indent=2, ensure_ascii=False).encode(
-            self.options.encoding or "utf-8"
+            getattr(self.options, "encoding", "utf-8") or "utf-8"
         )
         return json_bytes
 
-    async def get_supported_media_types(self) -> list[str]:
+    def get_supported_media_types(self) -> list[str]:
         return ["application/json"]
 
-    async def get_supported_extensions(self) -> list[str]:
-        return self.supported_extensions
+    def get_supported_extensions(self) -> list[str]:
+        return list(self.supported_extensions)
 
     # ── Index definition (settings + mappings) ────────────────────
     def _build_index_definition(self, entity: Entity, doc: MSDMDocument) -> dict:
-        index_def: Dict[str, Any] = {}
+        index_def: dict[str, Any] = {}
 
         # Settings from document‑level annotations (key starts with "setting:")
         settings = self._extract_settings(doc.annotations)
@@ -111,7 +107,7 @@ class ElasticsearchMappingWriter(BaseMSDMWriter):
             index_def["settings"] = settings
 
         # Mappings
-        mapping = {}
+        mapping: dict[str, Any] = {}
         # Dynamic, date_detection, etc. stored as entity annotations
         for ann in entity.annotations:
             if ann.key in ("dynamic", "date_detection", "numeric_detection",
@@ -142,7 +138,7 @@ class ElasticsearchMappingWriter(BaseMSDMWriter):
 
     # ── Attribute → ES field definition ────────────────────────────
     def _attribute_to_es_field(self, attr: Attribute) -> dict:
-        field = {}
+        field: dict[str, Any] = {}
 
         # Determine ES type
         es_type = self._get_es_type(attr)
@@ -155,7 +151,6 @@ class ElasticsearchMappingWriter(BaseMSDMWriter):
 
         # Nested object or nested type
         if es_type in ("object", "nested") and attr.nested_attributes:
-            # If explicit nested type, keep type
             # Build properties from nested attributes (those not marked as parent_field)
             nested_props = {}
             for na in attr.nested_attributes:
@@ -185,9 +180,7 @@ class ElasticsearchMappingWriter(BaseMSDMWriter):
             elif ann.key in ("multi_field", "parent_field"):
                 continue   # handled separately
             # Other annotations are stored in _meta if we want round‑trip
-            # but mapping doesn't have arbitrary keys; we'll put in _meta
             if ann.key not in ("description", "comment", "static", "visibility"):
-                # Add to _meta if not already a recognized es option
                 if "_meta" not in field:
                     field["_meta"] = {}
                 field["_meta"][ann.key] = ann.value
@@ -210,59 +203,46 @@ class ElasticsearchMappingWriter(BaseMSDMWriter):
         base = dt.base
 
         if base == ScalarType.ARRAY:
-            # ES doesn't have array type; arrays are just multi‑valued fields.
-            # Return the type of the element
             if dt.element_type:
-                # Create a temporary attr to get type
                 tmp_attr = Attribute(name="tmp", data_type=dt.element_type)
                 return self._get_es_type(tmp_attr)
-            return "keyword"   # fallback
+            return "keyword"
 
         if base == ScalarType.STRUCT:
-            # Check if there is an annotation that explicitly marks nested
             if any(a.key == "es_type" and a.value == "nested" for a in attr.annotations):
                 return "nested"
             return "object"
 
         if base == ScalarType.MAP:
-            # Typically mapped as object with dynamic mapping
             return "object"
 
         if base == ScalarType.REF:
-            # Reference to another entity – treat as object? It depends; we could use join type.
-            # Simpler: return "keyword" for the id
             return "keyword"
 
-        if base in SCALAR_TO_ES_TYPE:
-            return SCALAR_TO_ES_TYPE[base]
-
-        return "keyword"   # ultimate fallback
+        return SCALAR_TO_ES_TYPE.get(base, "keyword")
 
     # ── Multi‑fields extraction ────────────────────────────────────
-    def _extract_multi_fields(self, nested_attrs: List[Attribute]) -> dict:
+    def _extract_multi_fields(self, nested_attrs: list[Attribute]) -> dict:
         """Extract multi‑fields from nested attributes that have annotation 'parent_field'."""
-        fields = {}
+        fields: dict[str, Any] = {}
         for na in nested_attrs:
             parent_name = next((a.value for a in na.annotations if a.key == "parent_field"), None)
             if parent_name:
-                # This is a sub‑field
                 sub_def = self._attribute_to_es_field(na)
                 fields[na.name] = sub_def
-        return fields if fields else {}
+        return fields
 
     # ── Soft‑delete detection ──────────────────────────────────────
     def _is_soft_deleted(self, attr: Attribute) -> bool:
-        """Return True if the attribute is marked as deleted via annotation."""
         return any(a.key == "deleted" for a in attr.annotations)
 
     # ── Document‑level settings extraction ─────────────────────────
-    def _extract_settings(self, annotations: List[Annotation]) -> dict:
-        settings = {}
+    def _extract_settings(self, annotations: list[Annotation]) -> dict:
+        settings: dict[str, Any] = {}
         for ann in annotations:
             if ann.key.startswith("setting:"):
                 key = ann.key[8:]   # remove "setting:"
                 val = ann.value
-                # Convert dots to nested dict
                 self._set_dot_path(settings, key, val)
         return settings
 
@@ -270,11 +250,14 @@ class ElasticsearchMappingWriter(BaseMSDMWriter):
     def _set_dot_path(d: dict, key: str, value: str) -> None:
         """Set a nested dict value using a dot‑separated path."""
         parts = key.split(".")
+        current = d
         for part in parts[:-1]:
-            d = d.setdefault(part, {})
-        d[parts[-1]] = value
+            if part not in current:
+                current[part] = {}
+            current = current[part]
+        current[parts[-1]] = value
 
-    def _extract_dynamic_templates(self, annotations: List[Annotation]) -> list:
+    def _extract_dynamic_templates(self, annotations: list[Annotation]) -> list:
         templates = []
         for ann in annotations:
             if ann.key == "dynamic_template":
@@ -285,7 +268,7 @@ class ElasticsearchMappingWriter(BaseMSDMWriter):
                     pass
         return templates
 
-    def _extract_runtime_fields(self, annotations: List[Annotation]) -> dict:
+    def _extract_runtime_fields(self, annotations: list[Annotation]) -> dict:
         runtime = {}
         for ann in annotations:
             if ann.key.startswith("runtime_field:"):
@@ -296,7 +279,12 @@ class ElasticsearchMappingWriter(BaseMSDMWriter):
                     pass
         return runtime
 
-    async def apply_to_database(self, document: MSDMDocument, connection: ConnectionConfig = None):
+    # ── Database application ───────────────────────────────────────
+    async def apply_to_database(
+        self,
+        document: MSDMDocument,
+        connection: ConnectionConfig | None = None,
+    ) -> None:
         if not ES_AVAILABLE:
             raise ImportError("elasticsearch is required. pip install elasticsearch")
         if connection is None:
@@ -305,14 +293,12 @@ class ElasticsearchMappingWriter(BaseMSDMWriter):
         hosts = [f"{connection.host or 'localhost'}:{connection.port or 9200}"]
         es = AsyncElasticsearch(hosts=hosts)
         try:
-            # For each entity representing an index, create/update its mapping
             for entity in document.entities:
                 if entity.kind != EntityKind.DOCUMENT:
                     continue
                 index_name = entity.name
                 exists = await es.indices.exists(index=index_name)
                 if not exists:
-                    # Create index with mapping
                     mapping_body = self._build_index_definition(entity, document)
                     await es.indices.create(index=index_name, body=mapping_body)
                 else:
@@ -321,7 +307,6 @@ class ElasticsearchMappingWriter(BaseMSDMWriter):
                     # If soft-delete requires removing fields, we can't remove mapping fields; we'd need reindex.
                     # We'll skip heavy migration for now.
                     pass
-            # Remove indices not in the document
             model_indices = {e.name for e in document.entities if e.kind == EntityKind.DOCUMENT}
             existing_indices = set((await es.indices.get(index="*")).keys())
             for idx in existing_indices - model_indices:
@@ -329,10 +314,9 @@ class ElasticsearchMappingWriter(BaseMSDMWriter):
         finally:
             await es.close()
 
-    async def _handle_index_deletion(self, es, index_name: str):
+    async def _handle_index_deletion(self, es, index_name: str) -> None:
         if self.soft_delete_strategy == SoftDeleteStrategy.NONE:
             await es.indices.delete(index=index_name)
         elif self.soft_delete_strategy == SoftDeleteStrategy.PREFIX:
-            new_name = f"_deleted_{index_name}"
-            # reindex into new name? Not directly; we could create alias? Simpler: rename es indices is not native; we'll skip.
-            pass        
+            # Renaming ES indices is not native; we'll simply note it.
+            pass

@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 from collections import Counter
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from ..buses.base_message_bus import MessageBus
 from ..agents.models import AgentOutput
-from .interaction_models import AgentMessage, InteractionRequest, InteractionResult
+from ..buses.base_message_bus import MessageBus
 from .base_strategy import InteractionStrategy
+from .interaction_models import AgentMessage
+from .interaction_models import InteractionRequest
+from .interaction_models import InteractionResult
 
 
 class EnsembleStrategy(InteractionStrategy):
@@ -21,7 +23,7 @@ class EnsembleStrategy(InteractionStrategy):
     def __init__(
         self,
         agent_registry,
-        message_bus: Optional[MessageBus] = None,
+        message_bus: MessageBus | None = None,
         storage=None,
         vote_key: str = "final_answer",
         aggregator_agent: str | None = None,
@@ -31,9 +33,9 @@ class EnsembleStrategy(InteractionStrategy):
         self.aggregator_agent = aggregator_agent
 
     async def execute(self, request: InteractionRequest) -> InteractionResult:
-        shared_context: Dict[str, Any] = dict(request.context or {})
-        votes: List[Any] = []
-        results: List[AgentOutput] = []
+        shared_context: dict[str, Any] = dict(request.context or {})
+        votes: list[Any] = []
+        results: list[AgentOutput] = []
 
         for agent_meta in request.agents:
             agent_name = agent_meta.agent_name
@@ -98,8 +100,8 @@ class EnsembleStrategy(InteractionStrategy):
 
     async def _aggregate_votes(
         self,
-        votes: List[Any],
-        shared_context: Dict[str, Any],
+        votes: list[Any],
+        shared_context: dict[str, Any],
     ) -> Any:
 
         if self.aggregator_agent:

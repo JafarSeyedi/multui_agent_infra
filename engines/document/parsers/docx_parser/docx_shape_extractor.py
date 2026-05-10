@@ -3,9 +3,13 @@
 Extracts a ShapeContent from a wps:wsp element.
 """
 from xml.etree.ElementTree import Element
-from typing import Optional
-from ...models.usdm_models import ShapeContent, RichTextContent, RichTextSpan
-from .docx_utils import safe_find, safe_findall, parse_emu_to_pixels, NS
+
+from ...models.usdm_models import RichTextContent
+from ...models.usdm_models import RichTextSpan
+from ...models.usdm_models import ShapeContent
+from .docx_utils import NS
+from .docx_utils import safe_find
+from .docx_utils import safe_findall
 
 def parse_inline_shape(shape_elem: Element) -> ShapeContent:
     """
@@ -85,7 +89,7 @@ def parse_inline_shape(shape_elem: Element) -> ShapeContent:
         hidden=False,
     )
 
-def _parse_drawing_rich_text(tx_body, ns_map) -> Optional[RichTextContent]:
+def _parse_drawing_rich_text(tx_body, ns_map) -> RichTextContent | None:
     spans = []
     for p in safe_findall(tx_body, './/a:p', ns_map):
         for r in safe_findall(p, './/a:r', ns_map):

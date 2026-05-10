@@ -3,13 +3,13 @@
 Table (ListObject) writer for XLSX.
 Generates tableX.xml files for each table in a worksheet.
 """
-
 from __future__ import annotations
+
 import xml.etree.ElementTree as ET
-from typing import TYPE_CHECKING, Tuple, Optional, List
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ....models.esdm_models import Table, TableColumn, ExcelTableRow
+    from ....models.esdm_models import Table
     from ..base import ESDMBaseWriter
 
 from .const import XML_NAMESPACES
@@ -24,7 +24,7 @@ class TableWriter:
     def __init__(self, parent_writer: ESDMBaseWriter):
         self._parent = parent_writer
 
-    def write(self, table: Table, table_id: int) -> Tuple[str, Tuple[str, str, str]]:
+    def write(self, table: Table, table_id: int) -> tuple[str, tuple[str, str, str]]:
         """
         Generate tableX.xml content and the relationship needed by the worksheet.
         Returns (table_xml_str, (rel_id, target, rel_type)).

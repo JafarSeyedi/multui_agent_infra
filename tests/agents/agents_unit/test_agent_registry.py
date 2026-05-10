@@ -3,7 +3,8 @@ import pytest
 
 from engines.agents.agent_registry import AgentRegistry
 from engines.agents.base_agents.base_agent import BaseAgent
-from engines.agents.models import AgentInput, AgentOutput
+from engines.agents.models import AgentInput
+from engines.agents.models import AgentOutput
 
 
 class SimpleInput(AgentInput):

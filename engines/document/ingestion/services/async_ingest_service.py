@@ -1,13 +1,13 @@
 # engines/document/ingestion/services/async_ingest_service.py
-
 from __future__ import annotations
 
-from typing import Dict, Any
+from typing import Any
 
-from .upload_service import UploadService
-from ..ingestion_context import IngestionContext
-from ...models.media_types import MediaType, MEDIA_TYPES
 from ...models.media_detection import detect_media_type
+from ...models.media_types import MEDIA_TYPES
+from ...models.media_types import MediaType
+from ..ingestion_context import IngestionContext
+from .upload_service import UploadService
 
 
 class AsyncIngestService:
@@ -29,7 +29,7 @@ class AsyncIngestService:
         self.upload_service = upload_service
 
     # ---------------------------------------------------------
-    async def process_message(self, message: Dict[str, Any]):
+    async def process_message(self, message: dict[str, Any]):
         context: IngestionContext = message["context"]
 
         # Step 1: determine media-type
@@ -45,7 +45,7 @@ class AsyncIngestService:
         )
 
     # ---------------------------------------------------------
-    def _resolve_media_type(self, msg: Dict[str, Any]) -> MediaType:
+    def _resolve_media_type(self, msg: dict[str, Any]) -> MediaType:
         """
         Priority:
             1) explicit media_type key-name  (e.g. "pdf", "json")

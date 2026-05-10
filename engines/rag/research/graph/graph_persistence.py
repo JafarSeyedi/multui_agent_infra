@@ -61,4 +61,3 @@ class GraphPersistence:
         )
 
         self.conn.commit()
-

@@ -1,10 +1,14 @@
 # agents/interaction/interaction_models.py
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Literal
-from datetime import datetime
-from pydantic import BaseModel, Field
 import uuid
+from datetime import datetime
+from typing import Any
+from typing import Literal
+
+from pydantic import BaseModel
+from pydantic import Field
+
 from ..agents.base_agents.base_agent import BaseAgent
 from ..agents.models import AgentOutput
 
@@ -12,41 +16,41 @@ class InteractionRequest(BaseModel):
     """ورودی اصلی به InteractionAgent"""
     workflow_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     scenario: str = "pipeline"
-    agents: List[BaseAgent]
+    agents: list[BaseAgent]
 
     # context مشترک برای همه استراتژی‌ها
-    context: Dict[str, Any] = Field(default_factory=dict)
+    context: dict[str, Any] = Field(default_factory=dict)
 
     # متادیتای تکمیلی
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 class InteractionResult(BaseModel):
     """خروجی کامل orchestration"""
-    workflow_id: Optional[str] = None
-    scenario: Optional[str] = None
-    
-    results: List[AgentOutput]
+    workflow_id: str | None = None
+    scenario: str | None = None
+
+    results: list[AgentOutput]
     success: bool = True
 
     # context نهایی که توسط استراتژی ها آپدیت شده
-    final_context: Dict[str, Any] = Field(default_factory=dict)
+    final_context: dict[str, Any] = Field(default_factory=dict)
 
     # tracking اجرا
     backend_used: str = "native"
     status: Literal["success", "partial", "failed"] = "success"
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
-    
-    # یادداشت‌ها و لاگ‌ها
-    notes: List[str] = Field(default_factory=list)
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
 
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    # یادداشت‌ها و لاگ‌ها
+    notes: list[str] = Field(default_factory=list)
+
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 class AgentMessage(BaseModel):
     message_id: str
     sender: str
     recipient: str
     message_type: str
-    payload: Dict[str, Any] = Field(default_factory=dict)
-    correlation_id: Optional[str] = None
+    payload: dict[str, Any] = Field(default_factory=dict)
+    correlation_id: str | None = None
     timestamp: datetime = Field(default_factory=datetime.utcnow)

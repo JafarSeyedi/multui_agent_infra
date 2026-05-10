@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-from typing import Any, Iterable, List
+from collections.abc import Iterable
+from typing import Any
 
 
 class FollowUpQueryGenerator:
     def __init__(self, llm: Any = None):
         self.llm = llm
 
-    async def generate(self, gaps: Iterable[str]) -> List[str]:
+    async def generate(self, gaps: Iterable[str]) -> list[str]:
         gap_list = [str(gap).strip() for gap in gaps if str(gap).strip()]
         if not gap_list:
             return []

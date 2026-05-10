@@ -3,21 +3,19 @@
 Parses a <p:tbl> element (PPTX table) into a USDM TableContent.
 Handles cell merging, text runs, and cell properties.
 """
-
 from __future__ import annotations
-from typing import List, Optional, Dict, Any
+
+from typing import Any
 from xml.etree.ElementTree import Element
 
-from ...models.usdm_models import (
-    TableContent,
-    TableRow,
-    TableCell,
-    LogicalElement,
-    ElementType,
-    ParagraphContent,
-    RichTextContent,
-    RichTextSpan,
-)
+from ...models.usdm_models import ElementType
+from ...models.usdm_models import LogicalElement
+from ...models.usdm_models import ParagraphContent
+from ...models.usdm_models import RichTextContent
+from ...models.usdm_models import RichTextSpan
+from ...models.usdm_models import TableCell
+from ...models.usdm_models import TableContent
+from ...models.usdm_models import TableRow
 from .constants import NAMESPACES
 
 NS = NAMESPACES
@@ -27,7 +25,7 @@ def parse_table(tbl_elem: Element) -> TableContent:
     """
     Parse a <p:tbl> element into a TableContent model.
     """
-    rows: List[TableRow] = []
+    rows: list[TableRow] = []
     tr_elements = tbl_elem.findall("p:tr", NS)
     for tr_elem in tr_elements:
         row = parse_table_row(tr_elem)
@@ -35,7 +33,7 @@ def parse_table(tbl_elem: Element) -> TableContent:
 
     # Table‑wide properties (like grid) can be stored in metadata
     tbl_pr = tbl_elem.find("p:tblPr", NS)
-    metadata: Dict[str, Any] = {}
+    metadata: dict[str, Any] = {}
     if tbl_pr is not None:
         # store grid column widths if present
         tbl_grid = tbl_elem.find("p:tblGrid", NS)
@@ -50,7 +48,7 @@ def parse_table(tbl_elem: Element) -> TableContent:
 
 
 def parse_table_row(tr_elem: Element) -> TableRow:
-    cells: List[TableCell] = []
+    cells: list[TableCell] = []
     for tc_elem in tr_elem.findall("p:tc", NS):
         cell = parse_table_cell(tc_elem)
         cells.append(cell)
@@ -71,7 +69,7 @@ def parse_table_row(tr_elem: Element) -> TableRow:
 
 
 def parse_table_cell(tc_elem: Element) -> TableCell:
-    content: List[LogicalElement] = []
+    content: list[LogicalElement] = []
     tx_body = tc_elem.find("p:txBody", NS)
     if tx_body is not None:
         # Parse text paragraphs
@@ -122,11 +120,11 @@ def parse_table_cell(tc_elem: Element) -> TableCell:
 
 def parse_paragraph(p_elem: Element) -> ParagraphContent:
     """Parse an <a:p> element into ParagraphContent with rich text."""
-    spans: List[RichTextSpan] = []
+    spans: list[RichTextSpan] = []
     for r_elem in p_elem.findall("a:r", NS):
         t_elem = r_elem.find("a:t", NS)
         text = t_elem.text if t_elem is not None and t_elem.text is not None else ""
-        
+
         span = RichTextSpan(text=text)
         r_pr = r_elem.find("a:rPr", NS)
         if r_pr is not None:

@@ -2,28 +2,32 @@
 """
 XLSX/XLSM writer – modular implementation.
 """
-
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Optional, Dict, Any, AsyncIterator, Union, cast
-from datetime import datetime
 import xml.etree.ElementTree as ET
+from collections.abc import AsyncIterator
+from pathlib import Path
+from typing import Any
+from typing import cast
 
 from ....models.base import BaseDocument
-from ....models.esdm_models import ESDMDocument, Workbook
-from ..base import ESDMBaseWriter, ESDMWriteOptions
-
-from .workbook_writer import WorkbookWriter
-from .worksheet_writer import WorksheetWriter
-from .styles_writer import StylesWriter
-from .shared_strings_writer import SharedStringsWriter
-from .table_writer import TableWriter
+from ....models.esdm_models import ESDMDocument
+from ....models.esdm_models import Workbook
+from ..base import ESDMBaseWriter
+from ..base import ESDMWriteOptions
 from .conditional_formatting_writer import ConditionalFormattingWriter
 from .data_validation_writer import DataValidationWriter
-from .extra_writers import HyperlinkWriter, CommentWriter, RelationshipsWriter, ContentTypesWriter
+from .extra_writers import CommentWriter
+from .extra_writers import ContentTypesWriter
+from .extra_writers import HyperlinkWriter
+from .extra_writers import RelationshipsWriter
 from .pivot_writer import PivotWriter
+from .shared_strings_writer import SharedStringsWriter
+from .styles_writer import StylesWriter
+from .table_writer import TableWriter
 from .vba_writer import VBAWriter
+from .workbook_writer import WorkbookWriter
+from .worksheet_writer import WorksheetWriter
 from .zip_packager import ZipPackager
 
 
@@ -33,7 +37,7 @@ class XLSXWriter(ESDMBaseWriter):
     Delegates each part of the Excel package to a dedicated sub‑writer.
     """
 
-    def __init__(self, options: Optional[ESDMWriteOptions] = None):
+    def __init__(self, options: ESDMWriteOptions | None = None):
         super().__init__(options)
 
         self._workbook_writer = WorkbookWriter(self)
@@ -57,6 +61,8 @@ class XLSXWriter(ESDMBaseWriter):
     async def write_stream(self, document: BaseDocument) -> AsyncIterator[bytes]:
         doc = cast(ESDMDocument, document)
         workbook = doc.workbook
+        if workbook is None:
+            raise ValueError("Document has no workbook data")
         data = await self._build_xlsx(workbook)
         chunk_size = 64 * 1024
         for i in range(0, len(data), chunk_size):
@@ -65,16 +71,20 @@ class XLSXWriter(ESDMBaseWriter):
     async def write(self, document: BaseDocument) -> bytes:
         doc = cast(ESDMDocument, document)
         workbook = doc.workbook
+        if workbook is None:
+            raise ValueError("Document has no workbook data")
         return await self._build_xlsx(workbook)
 
     async def write_to_file(
         self,
         document: BaseDocument,
         target: Path,
-        options: Optional[Dict[str, Any]] = None
+        options: dict[str, Any] | None = None
     ) -> None:
         doc = cast(ESDMDocument, document)
         workbook = doc.workbook
+        if workbook is None:
+            raise ValueError("Document has no workbook data")
         data = await self._build_xlsx(workbook)
         target.write_bytes(data)
 
@@ -96,7 +106,7 @@ class XLSXWriter(ESDMBaseWriter):
         self._border_cache = {}
         self._numfmt_cache = {}
 
-        parts: Dict[str, Union[str, bytes]] = {}
+        parts: dict[str, str | bytes] = {}
 
         # Core parts
         parts['xl/workbook.xml'] = self._workbook_writer.write(workbook)

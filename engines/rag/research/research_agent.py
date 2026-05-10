@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import time
-from typing import Any, List, Optional
+from typing import Any
 
+from engines.rag.research.base_research_agent import BaseResearchAgent
 from engines.rag.research.citation_manager import CitationManager
 from engines.rag.research.evaluation.evaluation_controller import EvaluationController
 from engines.rag.research.evaluation.improvement_engine import ImprovementEngine
-from engines.rag.research.evaluation.schema import Evidence, ResearchAnswer
+from engines.rag.research.evaluation.schema import Evidence
+from engines.rag.research.evaluation.schema import ResearchAnswer
 from engines.rag.research.graph.entity_extractor import EntityExtractor
 from engines.rag.research.graph.graph_index import GraphIndex
 from engines.rag.research.graph.graph_traverser import GraphTraverser
@@ -18,7 +20,6 @@ from engines.rag.research.memory.reasoning.event_types import ReasoningEventType
 from engines.rag.research.memory.reasoning_memory import ReasoningMemory
 from engines.rag.research.observability.observability_controller import ObservabilityController
 from engines.rag.research.summarization.research_summarizer import ResearchSummarizer
-from engines.rag.research.base_research_agent import BaseResearchAgent
 
 class ResearchAgent(BaseResearchAgent):
     def __init__(
@@ -35,7 +36,7 @@ class ResearchAgent(BaseResearchAgent):
         graph_traverser: GraphTraverser,
         memory_controller: MemoryController,
         llm,
-        observability: Optional[ObservabilityController] = None,
+        observability: ObservabilityController | None = None,
     ) -> None:
         self.planner = planner
         self.research_loop = research_loop
@@ -69,7 +70,7 @@ class ResearchAgent(BaseResearchAgent):
         self.reasoning.start_group("research_session")
         self.reasoning.log(ReasoningEventType.PLANNING, "Research started", meta={"query": query, "past_memories": len(past_memories)})
 
-        raw_evidence: List[Any] = await self.research_loop.run(query)
+        raw_evidence: list[Any] = await self.research_loop.run(query)
         self.reasoning.log(ReasoningEventType.EVIDENCE_FUSION, "Evidence retrieved", meta={"chunks": len(raw_evidence)})
 
         for result in raw_evidence:
@@ -125,7 +126,7 @@ class ResearchAgent(BaseResearchAgent):
             "reasoning": self.reasoning.summary(),
         }
 
-    async def _compose_report(self, query: str, plan, raw_evidence: List[Any], hidden_edges: List[Any]) -> str:
+    async def _compose_report(self, query: str, plan, raw_evidence: list[Any], hidden_edges: list[Any]) -> str:
         if hasattr(self.summarizer, "summarize"):
             try:
                 return await self.summarizer.summarize(

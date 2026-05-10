@@ -5,11 +5,10 @@
 # images
 # audio
 # video
-
 # engines/storage/object/base.py
+from abc import ABC
+from abc import abstractmethod
 
-from abc import ABC, abstractmethod
-from typing import BinaryIO, Optional
 from engines.storage.base_storage import BaseStorage
 
 
@@ -23,7 +22,7 @@ class ObjectStorage(BaseStorage, ABC):
         self,
         key: str,
         data: bytes,
-        content_type: Optional[str] = None,
+        content_type: str | None = None,
     ) -> None:
         pass
 
@@ -40,7 +39,5 @@ class ObjectStorage(BaseStorage, ABC):
         pass
 
     @abstractmethod
-    async def generate_url(self, key: str) -> Optional[str]:
+    async def generate_url(self, key: str) -> str | None:
         """Optional signed URL"""
-        pass
-
