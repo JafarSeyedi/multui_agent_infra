@@ -1,18 +1,18 @@
 # 📐 Architecture Report
 
 > تولید شده توسط `tools/analyze_architecture.py`  
-> تاریخ: 2026-04-30 21:57:16  
+> تاریخ: 2026-05-12 20:37:50  
 ---
 
 ## 📊 آمار کلی
 
 | معیار | مقدار |
 |-------|-------|
-| فایل‌های Python | 717 |
-| کلاس‌ها | 1682 |
-| توابع سطح بالا | 369 |
-| فایل‌های با خطا | 2 |
-| مجموع خطوط کد | 106363 |
+| فایل‌های Python | 848 |
+| کلاس‌ها | 1723 |
+| توابع سطح بالا | 396 |
+| فایل‌های با خطا | 0 |
+| مجموع خطوط کد | 105085 |
 
 ---
 
@@ -54,6 +54,7 @@
   │   │   │   ├── 📁 cad_parser/
   │   │   │   ├── 📁 docx_parser/
   │   │   │   ├── 📁 drawingml/
+  │   │   │   ├── 📁 dsdm_parsers/
   │   │   │   ├── 📁 msdm_parsers/
   │   │   │   ├── 📁 osdm_parsers/
   │   │   │   ├── 📁 pdf_parser/
@@ -67,6 +68,7 @@
   │   │   └── 📁 writers/
   │   │       ├── 📁 cad_writer/
   │   │       ├── 📁 docx_writer/
+  │   │       ├── 📁 dsdm_writers/
   │   │       ├── 📁 msdm_writers/
   │   │       ├── 📁 osdm_writers/
   │   │       ├── 📁 pdf_writer/
@@ -78,6 +80,30 @@
   │   ├── 📁 interaction/
   │   │   └── 📁 backends/
   │   ├── 📁 orchestration/
+  │   │   ├── 📁 api/
+  │   │   ├── 📁 bpmn/
+  │   │   ├── 📁 cep/
+  │   │   ├── 📁 cmmn/
+  │   │   ├── 📁 core/
+  │   │   ├── 📁 deployment/
+  │   │   ├── 📁 dmn/
+  │   │   ├── 📁 expression/
+  │   │   ├── 📁 integration/
+  │   │   ├── 📁 monitoring/
+  │   │   ├── 📁 multi_agent/
+  │   │   ├── 📁 persistence/
+  │   │   ├── 📁 runtime/
+  │   │   ├── 📁 state_machine/
+  │   │   ├── 📁 tests/
+  │   │   │   ├── 📁 test_bpmn/
+  │   │   │   ├── 📁 test_cep/
+  │   │   │   ├── 📁 test_cmmn/
+  │   │   │   ├── 📁 test_core/
+  │   │   │   ├── 📁 test_dmn/
+  │   │   │   ├── 📁 test_multi_agent/
+  │   │   │   └── 📁 test_state_machine/
+  │   │   ├── 📁 utils/
+  │   │   └── 📁 validation/
   │   ├── 📁 rag/
   │   │   ├── 📁 agentic/
   │   │   ├── 📁 compression/
@@ -141,7 +167,8 @@
 ```
 📦 project/
   ├── 📁 config/
-  │   └── 📄 settings.py [22 lines]
+  │   ├── 📄 __init__.py [13 lines]
+  │   └── 📄 settings.py [21 lines]
   ├── 📁 engines/
   │   ├── 📁 agents/
   │   │   ├── 📁 base_agents/
@@ -149,40 +176,40 @@
   │   │   │   │   ├── 📄 metadata.py [0 lines]
   │   │   │   │   ├── 📄 prompts.py [0 lines]
   │   │   │   │   └── 📄 rag_config.py [0 lines]
-  │   │   │   ├── 📄 __init__.py [2 lines]
-  │   │   │   ├── 📄 base_agent.py [117 lines]
-  │   │   │   └── 📄 interaction_agent.py [30 lines]
+  │   │   │   ├── 📄 __init__.py [8 lines]
+  │   │   │   ├── 📄 base_agent.py [121 lines]
+  │   │   │   └── 📄 interaction_agent.py [32 lines]
   │   │   ├── 📁 content/
   │   │   │   ├── 📁 models/
-  │   │   │   │   ├── 📄 __init__.py [13 lines]
-  │   │   │   │   ├── 📄 analytics_agents_31_40.py [284 lines]
-  │   │   │   │   ├── 📄 assessment_agents_21_30.py [327 lines]
+  │   │   │   │   ├── 📄 __init__.py [306 lines]
+  │   │   │   │   ├── 📄 analytics_agents_31_40.py [283 lines]
+  │   │   │   │   ├── 📄 assessment_agents_21_30.py [331 lines]
   │   │   │   │   ├── 📄 common.py [159 lines]
-  │   │   │   │   ├── 📄 content_agents_1_8.py [236 lines]
-  │   │   │   │   ├── 📄 content_generation_agents_91_100.py [139 lines]
-  │   │   │   │   ├── 📄 curriculum_agents_46_60.py [270 lines]
-  │   │   │   │   ├── 📄 evaluation_agents_41_45.py [186 lines]
-  │   │   │   │   ├── 📄 learning_objects.py [244 lines]
+  │   │   │   │   ├── 📄 content_agents_1_8.py [238 lines]
+  │   │   │   │   ├── 📄 content_generation_agents_91_100.py [141 lines]
+  │   │   │   │   ├── 📄 curriculum_agents_46_60.py [269 lines]
+  │   │   │   │   ├── 📄 evaluation_agents_41_45.py [187 lines]
+  │   │   │   │   ├── 📄 learning_objects.py [245 lines]
   │   │   │   │   ├── 📄 memory_agents_76_90.py [252 lines]
   │   │   │   │   ├── 📄 multimodal_agents_101_110.py [132 lines]
   │   │   │   │   ├── 📄 orchestration_agents_61_75.py [270 lines]
-  │   │   │   │   ├── 📄 personalization_agents_15_20.py [97 lines]
-  │   │   │   │   └── 📄 teaching_agents_9_14.py [82 lines]
-  │   │   │   ├── 📄 __init__.py [1 lines]
-  │   │   │   └── 📄 text_rewriter.py [76 lines]
-  │   │   ├── 📄 __init__.py [2 lines]
-  │   │   ├── 📄 agent_registry.py [35 lines]
-  │   │   └── 📄 models.py [62 lines]
+  │   │   │   │   ├── 📄 personalization_agents_15_20.py [100 lines]
+  │   │   │   │   └── 📄 teaching_agents_9_14.py [83 lines]
+  │   │   │   ├── 📄 __init__.py [5 lines]
+  │   │   │   └── 📄 text_rewriter.py [78 lines]
+  │   │   ├── 📄 __init__.py [10 lines]
+  │   │   ├── 📄 agent_registry.py [34 lines]
+  │   │   └── 📄 models.py [64 lines]
   │   ├── 📁 buses/
-  │   │   ├── 📄 __init__.py [9 lines]
-  │   │   ├── 📄 base_message_bus.py [36 lines]
-  │   │   ├── 📄 durable_message_bus.py [55 lines]
+  │   │   ├── 📄 __init__.py [31 lines]
+  │   │   ├── 📄 base_message_bus.py [39 lines]
+  │   │   ├── 📄 durable_message_bus.py [54 lines]
   │   │   ├── 📄 in_memory_message_bus.py [46 lines]
-  │   │   ├── 📄 kafka_bus.py [70 lines]
-  │   │   ├── 📄 priority_message_bus.py [70 lines]
-  │   │   ├── 📄 rabbitmq_bus.py [65 lines]
-  │   │   ├── 📄 redis_pub_sub_bus.py [67 lines]
-  │   │   ├── 📄 request_reply_bus.py [40 lines]
+  │   │   ├── 📄 kafka_bus.py [72 lines]
+  │   │   ├── 📄 priority_message_bus.py [72 lines]
+  │   │   ├── 📄 rabbitmq_bus.py [71 lines]
+  │   │   ├── 📄 redis_pub_sub_bus.py [68 lines]
+  │   │   ├── 📄 request_reply_bus.py [39 lines]
   │   │   └── 📄 topic_message_bus.py [40 lines]
   │   ├── 📁 communication/
   │   │   ├── 📁 bindings/
@@ -240,44 +267,44 @@
   │   │   └── 📄 __init__.py [0 lines]
   │   ├── 📁 document/
   │   │   ├── 📁 chunking/
-  │   │   │   ├── 📄 __init__.py [3 lines]
-  │   │   │   ├── 📄 base.py [21 lines]
-  │   │   │   ├── 📄 models.py [20 lines]
-  │   │   │   └── 📄 recursive_chunker.py [106 lines]
+  │   │   │   ├── 📄 __init__.py [12 lines]
+  │   │   │   ├── 📄 base.py [20 lines]
+  │   │   │   ├── 📄 models.py [19 lines]
+  │   │   │   └── 📄 recursive_chunker.py [105 lines]
   │   │   ├── 📁 embedding/
-  │   │   │   ├── 📄 __init__.py [2 lines]
-  │   │   │   ├── 📄 base.py [16 lines]
+  │   │   │   ├── 📄 __init__.py [9 lines]
+  │   │   │   ├── 📄 base.py [17 lines]
   │   │   │   └── 📄 service.py [53 lines]
   │   │   ├── 📁 ingestion/
   │   │   │   ├── 📁 services/
-  │   │   │   │   ├── 📄 __init__.py [4 lines]
+  │   │   │   │   ├── 📄 __init__.py [14 lines]
   │   │   │   │   ├── 📄 async_ingest_service.py [70 lines]
-  │   │   │   │   ├── 📄 batch_ingest_service.py [62 lines]
-  │   │   │   │   ├── 📄 ingestion_scheduler.py [70 lines]
-  │   │   │   │   └── 📄 upload_service.py [49 lines]
+  │   │   │   │   ├── 📄 batch_ingest_service.py [60 lines]
+  │   │   │   │   ├── 📄 ingestion_scheduler.py [68 lines]
+  │   │   │   │   └── 📄 upload_service.py [50 lines]
   │   │   │   ├── 📁 steps/
-  │   │   │   │   ├── 📄 __init__.py [5 lines]
-  │   │   │   │   ├── 📄 step_chunk.py [30 lines]
+  │   │   │   │   ├── 📄 __init__.py [17 lines]
+  │   │   │   │   ├── 📄 step_chunk.py [29 lines]
   │   │   │   │   ├── 📄 step_embed.py [50 lines]
-  │   │   │   │   ├── 📄 step_extract.py [38 lines]
-  │   │   │   │   ├── 📄 step_parse.py [36 lines]
+  │   │   │   │   ├── 📄 step_extract.py [37 lines]
+  │   │   │   │   ├── 📄 step_parse.py [33 lines]
   │   │   │   │   └── 📄 step_store.py [46 lines]
   │   │   │   ├── 📁 utils/
-  │   │   │   │   ├── 📄 __init__.py [4 lines]
-  │   │   │   │   ├── 📄 file_signature.py [30 lines]
-  │   │   │   │   ├── 📄 hashing.py [34 lines]
-  │   │   │   │   ├── 📄 retry_policy.py [47 lines]
-  │   │   │   │   └── 📄 timing.py [48 lines]
-  │   │   │   ├── 📄 __init__.py [9 lines]
-  │   │   │   ├── 📄 ingestion_context.py [175 lines]
-  │   │   │   ├── 📄 ingestion_errors.py [104 lines]
-  │   │   │   ├── 📄 ingestion_models.py [163 lines]
-  │   │   │   ├── 📄 ingestion_pipeline.py [75 lines]
-  │   │   │   ├── 📄 ingestion_runner.py [170 lines]
-  │   │   │   ├── 📄 ingestion_service.py [172 lines]
-  │   │   │   ├── 📄 ingestion_utils.py [28 lines]
-  │   │   │   ├── 📄 ingestion_validator.py [52 lines]
-  │   │   │   └── 📄 workflow_registry.py [29 lines]
+  │   │   │   │   ├── 📄 __init__.py [17 lines]
+  │   │   │   │   ├── 📄 file_signature.py [28 lines]
+  │   │   │   │   ├── 📄 hashing.py [32 lines]
+  │   │   │   │   ├── 📄 retry_policy.py [46 lines]
+  │   │   │   │   └── 📄 timing.py [46 lines]
+  │   │   │   ├── 📄 __init__.py [46 lines]
+  │   │   │   ├── 📄 ingestion_context.py [172 lines]
+  │   │   │   ├── 📄 ingestion_errors.py [96 lines]
+  │   │   │   ├── 📄 ingestion_models.py [164 lines]
+  │   │   │   ├── 📄 ingestion_pipeline.py [73 lines]
+  │   │   │   ├── 📄 ingestion_runner.py [161 lines]
+  │   │   │   ├── 📄 ingestion_service.py [163 lines]
+  │   │   │   ├── 📄 ingestion_utils.py [26 lines]
+  │   │   │   ├── 📄 ingestion_validator.py [50 lines]
+  │   │   │   └── 📄 workflow_registry.py [27 lines]
   │   │   ├── 📁 model_tools/
   │   │   │   ├── 📁 format_converters/
   │   │   │   │   ├── 📄 __init__.py [0 lines]
@@ -322,202 +349,201 @@
   │   │   │   ├── 📄 diff_engine.py [0 lines]
   │   │   │   └── 📄 diff_sql_writer.py [0 lines]
   │   │   ├── 📁 models/
-  │   │   │   ├── 📄 __init__.py [20 lines]
-  │   │   │   ├── 📄 base.py [171 lines]
-  │   │   │   ├── 📄 chunked_binary_payload.py [23 lines]
-  │   │   │   ├── 📄 csdm_core.py [700 lines]
-  │   │   │   ├── 📄 csdm_entities.py [654 lines]
-  │   │   │   ├── 📄 csdm_tables.py [661 lines]
-  │   │   │   ├── 📄 document_registry.py [267 lines]
-  │   │   │   ├── 📄 dsdm_models.py [524 lines]
-  │   │   │   ├── 📄 esdm_models.py [996 lines]
-  │   │   │   ├── 📄 exceptions.py [65 lines]
-  │   │   │   ├── 📄 media_detection.py [545 lines]
-  │   │   │   ├── 📄 media_types.py [978 lines]
-  │   │   │   ├── 📄 msdm_capabilities.py [144 lines]
-  │   │   │   ├── 📄 msdm_models.py [356 lines]
-  │   │   │   ├── 📄 msdm_registry.py [483 lines]
-  │   │   │   ├── 📄 osdm_models.py [1471 lines]
-  │   │   │   ├── 📄 psdm_models.py [289 lines]
-  │   │   │   ├── 📄 ssdm_capabilities.py [98 lines]
-  │   │   │   ├── 📄 ssdm_models.py [855 lines]
-  │   │   │   ├── 📄 ssdm_registry.py [323 lines]
-  │   │   │   ├── 📄 standard.py [151 lines]
-  │   │   │   ├── 📄 tsdm_models.py [259 lines]
-  │   │   │   └── 📄 usdm_models.py [700 lines]
+  │   │   │   ├── 📄 __init__.py [783 lines]
+  │   │   │   ├── 📄 base.py [174 lines]
+  │   │   │   ├── 📄 chunked_binary_payload.py [24 lines]
+  │   │   │   ├── 📄 csdm_core.py [698 lines]
+  │   │   │   ├── 📄 csdm_entities.py [649 lines]
+  │   │   │   ├── 📄 csdm_tables.py [658 lines]
+  │   │   │   ├── 📄 document_registry.py [263 lines]
+  │   │   │   ├── 📄 dsdm_models.py [208 lines]
+  │   │   │   ├── 📄 esdm_models.py [990 lines]
+  │   │   │   ├── 📄 exceptions.py [54 lines]
+  │   │   │   ├── 📄 media_detection.py [508 lines]
+  │   │   │   ├── 📄 media_types.py [880 lines]
+  │   │   │   ├── 📄 msdm_capabilities.py [147 lines]
+  │   │   │   ├── 📄 msdm_models.py [360 lines]
+  │   │   │   ├── 📄 msdm_registry.py [455 lines]
+  │   │   │   ├── 📄 osdm_models.py [1560 lines]
+  │   │   │   ├── 📄 psdm_models.py [282 lines]
+  │   │   │   ├── 📄 ssdm_capabilities.py [99 lines]
+  │   │   │   ├── 📄 ssdm_models.py [747 lines]
+  │   │   │   ├── 📄 ssdm_registry.py [186 lines]
+  │   │   │   ├── 📄 standard.py [148 lines]
+  │   │   │   ├── 📄 tsdm_models.py [252 lines]
+  │   │   │   └── 📄 usdm_models.py [716 lines]
   │   │   ├── 📁 parsers/
   │   │   │   ├── 📁 cad_parser/
   │   │   │   │   ├── 📄 __init__.py [0 lines]
-  │   │   │   │   ├── 📄 csdm_loader.py [641 lines]
-  │   │   │   │   ├── 📄 csdm_parser.py [74 lines]
-  │   │   │   │   ├── 📄 csdm_relationships.py [281 lines]
-  │   │   │   │   └── 📄 oda_bridge.py [273 lines]
+  │   │   │   │   ├── 📄 csdm_loader.py [580 lines]
+  │   │   │   │   ├── 📄 csdm_parser.py [60 lines]
+  │   │   │   │   ├── 📄 csdm_relationships.py [240 lines]
+  │   │   │   │   └── 📄 oda_bridge.py [238 lines]
   │   │   │   ├── 📁 docx_parser/
-  │   │   │   │   ├── 📄 __init__.py [11 lines]
-  │   │   │   │   ├── 📄 docx_chart_extractor.py [126 lines]
-  │   │   │   │   ├── 📄 docx_diagram_extractor.py [110 lines]
-  │   │   │   │   ├── 📄 docx_extractor.py [2285 lines]
-  │   │   │   │   ├── 📄 docx_image_extractor.py [532 lines]
-  │   │   │   │   ├── 📄 docx_math_parser.py [922 lines]
-  │   │   │   │   ├── 📄 docx_models.py [742 lines]
-  │   │   │   │   ├── 📄 docx_parser.py [1980 lines]
-  │   │   │   │   ├── 📄 docx_shape_extractor.py [102 lines]
-  │   │   │   │   ├── 📄 docx_style_parser.py [130 lines]
-  │   │   │   │   ├── 📄 docx_table_parser.py [44 lines]
-  │   │   │   │   └── 📄 docx_utils.py [3593 lines]
+  │   │   │   │   ├── 📄 __init__.py [88 lines]
+  │   │   │   │   ├── 📄 docx_chart_extractor.py [122 lines]
+  │   │   │   │   ├── 📄 docx_diagram_extractor.py [114 lines]
+  │   │   │   │   ├── 📄 docx_extractor.py [2275 lines]
+  │   │   │   │   ├── 📄 docx_image_extractor.py [531 lines]
+  │   │   │   │   ├── 📄 docx_math_parser.py [915 lines]
+  │   │   │   │   ├── 📄 docx_models.py [747 lines]
+  │   │   │   │   ├── 📄 docx_parser.py [1966 lines]
+  │   │   │   │   ├── 📄 docx_shape_extractor.py [106 lines]
+  │   │   │   │   ├── 📄 docx_style_parser.py [128 lines]
+  │   │   │   │   ├── 📄 docx_table_parser.py [35 lines]
+  │   │   │   │   └── 📄 docx_utils.py [3588 lines]
   │   │   │   ├── 📁 drawingml/
-  │   │   │   │   ├── 📄 __init__.py [4 lines]
-  │   │   │   │   ├── 📄 chart_ref_parser.py [105 lines]
-  │   │   │   │   ├── 📄 diagram_parser.py [126 lines]
-  │   │   │   │   ├── 📄 image_parser.py [123 lines]
-  │   │   │   │   └── 📄 shape_parser.py [333 lines]
+  │   │   │   │   ├── 📄 __init__.py [15 lines]
+  │   │   │   │   ├── 📄 chart_ref_parser.py [109 lines]
+  │   │   │   │   ├── 📄 diagram_parser.py [132 lines]
+  │   │   │   │   ├── 📄 image_parser.py [122 lines]
+  │   │   │   │   └── 📄 shape_parser.py [331 lines]
+  │   │   │   ├── 📁 dsdm_parsers/
+  │   │   │   │   ├── 📄 __init__.py [54 lines]
+  │   │   │   │   ├── 📄 base_dsdm_parser.py [205 lines]
+  │   │   │   │   ├── 📄 binary_parser.py [22 lines]
+  │   │   │   │   ├── 📄 bson_parser.py [24 lines]
+  │   │   │   │   ├── 📄 cassandra_parser.py [78 lines]
+  │   │   │   │   ├── 📄 cbor_parser.py [18 lines]
+  │   │   │   │   ├── 📄 csv_tsv_parser.py [132 lines]
+  │   │   │   │   ├── 📄 dsdm_utils.py [314 lines]
+  │   │   │   │   ├── 📄 json_parser.py [18 lines]
+  │   │   │   │   ├── 📄 mongodb_parser.py [141 lines]
+  │   │   │   │   ├── 📄 msgpack_parser.py [18 lines]
+  │   │   │   │   ├── 📄 pickle_parser.py [20 lines]
+  │   │   │   │   ├── 📄 protobuf_parser.py [35 lines]
+  │   │   │   │   ├── 📄 redis_parser.py [82 lines]
+  │   │   │   │   ├── 📄 sql_parser.py [165 lines]
+  │   │   │   │   ├── 📄 xml_parser.py [50 lines]
+  │   │   │   │   └── 📄 yaml_parser.py [16 lines]
   │   │   │   ├── 📁 msdm_parsers/
-  │   │   │   │   ├── 📄 __init__.py [20 lines]
-  │   │   │   │   ├── 📄 avro_schema_parser.py [353 lines]
-  │   │   │   │   ├── 📄 base_msdm_parser.py [71 lines]
-  │   │   │   │   ├── 📄 cql_parser.py [544 lines]
-  │   │   │   │   ├── 📄 cue_parser.py [378 lines]
+  │   │   │   │   ├── 📄 __init__.py [120 lines]
+  │   │   │   │   ├── 📄 base_msdm_parser.py [137 lines]
+  │   │   │   │   ├── 📄 cql_parser.py [551 lines]
   │   │   │   │   ├── 📄 elasticsearch_mapping_parser.py [252 lines]
-  │   │   │   │   ├── 📄 erd_parser.py [307 lines]
-  │   │   │   │   ├── 📄 graphql_schema_parser.py [566 lines]
-  │   │   │   │   ├── 📄 influxdb_schema_parser.py [319 lines]
-  │   │   │   │   ├── 📄 json_schema_parser.py [404 lines]
-  │   │   │   │   ├── 📄 mongodb_schema_parser.py [472 lines]
-  │   │   │   │   ├── 📄 neo4j_schema_parser.py [266 lines]
-  │   │   │   │   ├── 📄 owl_parser.py [310 lines]
-  │   │   │   │   ├── 📄 plantuml_parser.py [382 lines]
-  │   │   │   │   ├── 📄 proto_msdm_parser.py [463 lines]
-  │   │   │   │   ├── 📄 python_model_parser.py [354 lines]
-  │   │   │   │   ├── 📄 sql_ddl_parser.py [519 lines]
-  │   │   │   │   ├── 📄 thrift_idl_parser.py [277 lines]
-  │   │   │   │   ├── 📄 typescript_interface_parser.py [586 lines]
-  │   │   │   │   ├── 📄 uml_xmi_parser.py [453 lines]
-  │   │   │   │   └── 📄 xsd_parser.py [409 lines]
+  │   │   │   │   ├── 📄 erd_parser.py [298 lines]
+  │   │   │   │   ├── 📄 graphql_schema_parser.py [602 lines]
+  │   │   │   │   ├── 📄 influxdb_schema_parser.py [318 lines]
+  │   │   │   │   ├── 📄 json_schema_parser.py [405 lines]
+  │   │   │   │   ├── 📄 mongodb_schema_parser.py [478 lines]
+  │   │   │   │   ├── 📄 neo4j_schema_parser.py [220 lines]
+  │   │   │   │   ├── 📄 owl_parser.py [268 lines]
+  │   │   │   │   ├── 📄 plantuml_parser.py [383 lines]
+  │   │   │   │   ├── 📄 proto_msdm_parser.py [402 lines]
+  │   │   │   │   ├── 📄 python_model_parser.py [296 lines]
+  │   │   │   │   ├── 📄 sql_ddl_parser.py [524 lines]
+  │   │   │   │   ├── 📄 thrift_idl_parser.py [278 lines]
+  │   │   │   │   ├── 📄 typescript_interface_parser.py [639 lines]
+  │   │   │   │   ├── 📄 uml_xmi_parser.py [372 lines]
+  │   │   │   │   └── 📄 xsd_parser.py [343 lines]
   │   │   │   ├── 📁 osdm_parsers/
-  │   │   │   │   ├── 📄 __init__.py [17 lines]
-  │   │   │   │   ├── 📄 airflow_dag_parser.py [319 lines]
-  │   │   │   │   ├── 📄 aws_step_functions_parser.py [228 lines]
-  │   │   │   │   ├── 📄 azure_logic_apps_parser.py [225 lines]
-  │   │   │   │   ├── 📄 base_osdm_parser.py [106 lines]
-  │   │   │   │   ├── 📄 bpmn_xml_parser.py [910 lines]
-  │   │   │   │   ├── 📄 cep_parser.py [125 lines]
-  │   │   │   │   ├── 📄 cmmn_xml_parser.py [302 lines]
-  │   │   │   │   ├── 📄 cncf_serverless_workflow_parser.py [254 lines]
-  │   │   │   │   ├── 📄 dmn_xml_parser.py [249 lines]
-  │   │   │   │   ├── 📄 epc_parser.py [206 lines]
-  │   │   │   │   ├── 📄 graphml_xml_parser.py [162 lines]
-  │   │   │   │   ├── 📄 pnml_xml_parser.py [187 lines]
-  │   │   │   │   ├── 📄 prefect_dag_parser.py [195 lines]
-  │   │   │   │   ├── 📄 scxml_parser.py [279 lines]
-  │   │   │   │   ├── 📄 uml_state_machine_parser.py [228 lines]
-  │   │   │   │   ├── 📄 xpd_parser.py [289 lines]
-  │   │   │   │   └── 📄 yawl_parser.py [193 lines]
+  │   │   │   │   ├── 📄 __init__.py [58 lines]
+  │   │   │   │   ├── 📄 base_osdm_parser.py [91 lines]
+  │   │   │   │   ├── 📄 bpmn_xml_parser.py [1441 lines]
+  │   │   │   │   ├── 📄 cep_parser.py [119 lines]
+  │   │   │   │   ├── 📄 cmmn_xml_parser.py [394 lines]
+  │   │   │   │   ├── 📄 dmn_xml_parser.py [255 lines]
+  │   │   │   │   ├── 📄 epc_parser.py [200 lines]
+  │   │   │   │   ├── 📄 graphml_xml_parser.py [159 lines]
+  │   │   │   │   ├── 📄 pnml_xml_parser.py [171 lines]
+  │   │   │   │   ├── 📄 prefect_dag_parser.py [182 lines]
+  │   │   │   │   ├── 📄 scxml_parser.py [311 lines]
+  │   │   │   │   ├── 📄 uml_state_machine_parser.py [247 lines]
+  │   │   │   │   └── 📄 xpd_parser.py [337 lines]
   │   │   │   ├── 📁 pdf_parser/
-  │   │   │   │   ├── 📄 __init__.py [7 lines]
-  │   │   │   │   ├── 📄 content_extractor.py [1050 lines]
-  │   │   │   │   ├── 📄 font_handler.py [931 lines]
-  │   │   │   │   ├── 📄 layout_analyzer.py [397 lines]
-  │   │   │   │   ├── 📄 metadata_extractor.py [1534 lines]
-  │   │   │   │   ├── 📄 pdf_objects.py [1227 lines]
-  │   │   │   │   ├── 📄 structure_parser.py [516 lines]
-  │   │   │   │   └── 📄 utils.py [1147 lines]
+  │   │   │   │   ├── 📄 __init__.py [93 lines]
+  │   │   │   │   ├── 📄 content_extractor.py [1049 lines]
+  │   │   │   │   ├── 📄 font_handler.py [923 lines]
+  │   │   │   │   ├── 📄 layout_analyzer.py [398 lines]
+  │   │   │   │   ├── 📄 metadata_extractor.py [1533 lines]
+  │   │   │   │   ├── 📄 pdf_objects.py [1219 lines]
+  │   │   │   │   ├── 📄 structure_parser.py [518 lines]
+  │   │   │   │   └── 📄 utils.py [1145 lines]
   │   │   │   ├── 📁 pptx_parser/
-  │   │   │   │   ├── 📄 __init__.py [13 lines]
-  │   │   │   │   ├── 📄 animation_parser.py [192 lines]
-  │   │   │   │   ├── 📄 comments_parser.py [41 lines]
-  │   │   │   │   ├── 📄 constants.py [108 lines]
-  │   │   │   │   ├── 📄 master_parser.py [189 lines]
-  │   │   │   │   ├── 📄 media_parser.py [104 lines]
-  │   │   │   │   ├── 📄 notes_parser.py [127 lines]
-  │   │   │   │   ├── 📄 ole_parser.py [46 lines]
+  │   │   │   │   ├── 📄 __init__.py [50 lines]
+  │   │   │   │   ├── 📄 animation_parser.py [191 lines]
+  │   │   │   │   ├── 📄 comments_parser.py [40 lines]
+  │   │   │   │   ├── 📄 constants.py [106 lines]
+  │   │   │   │   ├── 📄 master_parser.py [185 lines]
+  │   │   │   │   ├── 📄 media_parser.py [117 lines]
+  │   │   │   │   ├── 📄 notes_parser.py [83 lines]
+  │   │   │   │   ├── 📄 ole_parser.py [45 lines]
   │   │   │   │   ├── 📄 parser.py [403 lines]
-  │   │   │   │   ├── 📄 relationship_utils.py [128 lines]
-  │   │   │   │   ├── 📄 shape_parser.py [96 lines]
-  │   │   │   │   ├── 📄 slide_builder.py [292 lines]
-  │   │   │   │   ├── 📄 table_parser.py [140 lines]
-  │   │   │   │   ├── 📄 theme_parser.py [159 lines]
+  │   │   │   │   ├── 📄 relationship_utils.py [127 lines]
+  │   │   │   │   ├── 📄 shape_parser.py [106 lines]
+  │   │   │   │   ├── 📄 slide_builder.py [297 lines]
+  │   │   │   │   ├── 📄 table_parser.py [138 lines]
+  │   │   │   │   ├── 📄 theme_parser.py [170 lines]
   │   │   │   │   └── 📄 utils.py [62 lines]
   │   │   │   ├── 📁 spreadsheet_parser/
   │   │   │   │   ├── 📁 xlsx/
-  │   │   │   │   │   ├── 📄 __init__.py [12 lines]
-  │   │   │   │   │   ├── 📄 charts_builder.py [120 lines]
-  │   │   │   │   │   ├── 📄 constants.py [245 lines]
-  │   │   │   │   │   ├── 📄 drawings_builder.py [267 lines]
-  │   │   │   │   │   ├── 📄 formulas_builder.py [88 lines]
+  │   │   │   │   │   ├── 📄 __init__.py [77 lines]
+  │   │   │   │   │   ├── 📄 charts_builder.py [122 lines]
+  │   │   │   │   │   ├── 📄 constants.py [233 lines]
+  │   │   │   │   │   ├── 📄 drawings_builder.py [270 lines]
+  │   │   │   │   │   ├── 📄 formulas_builder.py [94 lines]
   │   │   │   │   │   ├── 📄 namespaces.py [16 lines]
-  │   │   │   │   │   ├── 📄 parser.py [308 lines]
+  │   │   │   │   │   ├── 📄 parser.py [317 lines]
   │   │   │   │   │   ├── 📄 pivot_builder.py [70 lines]
-  │   │   │   │   │   ├── 📄 relationships_builder.py [109 lines]
+  │   │   │   │   │   ├── 📄 relationships_builder.py [113 lines]
   │   │   │   │   │   ├── 📄 shared_strings_builder.py [0 lines]
-  │   │   │   │   │   ├── 📄 styles_builder.py [368 lines]
-  │   │   │   │   │   ├── 📄 tables_builder.py [215 lines]
-  │   │   │   │   │   ├── 📄 utils.py [106 lines]
-  │   │   │   │   │   ├── 📄 vba_builder.py [124 lines]
-  │   │   │   │   │   ├── 📄 workbook_builder.py [255 lines]
-  │   │   │   │   │   └── 📄 worksheet_builder.py [439 lines]
-  │   │   │   │   ├── 📄 __init__.py [4 lines]
-  │   │   │   │   ├── 📄 base_spreadsheet_parser.py [86 lines]
-  │   │   │   │   ├── 📄 binary_parser.py [128 lines]
-  │   │   │   │   ├── 📄 delimited_parser.py [116 lines]
+  │   │   │   │   │   ├── 📄 styles_builder.py [366 lines]
+  │   │   │   │   │   ├── 📄 tables_builder.py [236 lines]
+  │   │   │   │   │   ├── 📄 utils.py [113 lines]
+  │   │   │   │   │   ├── 📄 vba_builder.py [123 lines]
+  │   │   │   │   │   ├── 📄 workbook_builder.py [240 lines]
+  │   │   │   │   │   └── 📄 worksheet_builder.py [460 lines]
+  │   │   │   │   ├── 📄 __init__.py [19 lines]
+  │   │   │   │   ├── 📄 base_spreadsheet_parser.py [89 lines]
+  │   │   │   │   ├── 📄 binary_parser.py [130 lines]
+  │   │   │   │   ├── 📄 delimited_parser.py [117 lines]
   │   │   │   │   └── 📄 fixed_width_parser.py [131 lines]
   │   │   │   ├── 📁 ssdm_parsers/
-  │   │   │   │   ├── 📄 __init__.py [9 lines]
-  │   │   │   │   ├── 📄 apib_parser.py [621 lines]
-  │   │   │   │   ├── 📄 asyncapi_parser.py [384 lines]
-  │   │   │   │   ├── 📄 base_ssdm_parser.py [97 lines]
-  │   │   │   │   ├── 📄 cddl_parser.py [514 lines]
-  │   │   │   │   ├── 📄 graphql_service_parser.py [713 lines]
-  │   │   │   │   ├── 📄 mcp_parser.py [364 lines]
-  │   │   │   │   ├── 📄 mib_parser.py [584 lines]
-  │   │   │   │   ├── 📄 openapi_parser.py [657 lines]
-  │   │   │   │   ├── 📄 postman_collection_parser.py [210 lines]
-  │   │   │   │   ├── 📄 proto_service_parser.py [539 lines]
-  │   │   │   │   ├── 📄 python_service_parser.py [365 lines]
-  │   │   │   │   ├── 📄 raml_parser.py [308 lines]
-  │   │   │   │   ├── 📄 webidl_parser.py [447 lines]
-  │   │   │   │   ├── 📄 wsdl_parser.py [246 lines]
-  │   │   │   │   └── 📄 yang_parser.py [448 lines]
+  │   │   │   │   ├── 📄 __init__.py [47 lines]
+  │   │   │   │   ├── 📄 asyncapi_parser.py [379 lines]
+  │   │   │   │   ├── 📄 base_ssdm_parser.py [91 lines]
+  │   │   │   │   ├── 📄 graphql_service_parser.py [724 lines]
+  │   │   │   │   ├── 📄 mcp_parser.py [362 lines]
+  │   │   │   │   ├── 📄 openapi_parser.py [553 lines]
+  │   │   │   │   ├── 📄 proto_service_parser.py [654 lines]
+  │   │   │   │   ├── 📄 python_service_parser.py [464 lines]
+  │   │   │   │   ├── 📄 wsdl_parser.py [286 lines]
+  │   │   │   │   └── 📄 yang_parser.py [660 lines]
   │   │   │   ├── 📁 tsdm_parsers/
-  │   │   │   │   ├── 📄 __init__.py [2 lines]
-  │   │   │   │   ├── 📄 base_tsdm_parser.py [37 lines]
-  │   │   │   │   └── 📄 tsdm_json_parser.py [205 lines]
-  │   │   │   ├── 📄 __init__.py [8 lines]
-  │   │   │   ├── 📄 base.py [87 lines]
-  │   │   │   ├── 📄 binary_parser.py [374 lines]
-  │   │   │   ├── 📄 cad_parser.py [133 lines]
-  │   │   │   ├── 📄 html_parser.py [742 lines]
-  │   │   │   ├── 📄 json_parser.py [155 lines]
-  │   │   │   ├── 📄 latex_parser.py [841 lines]
-  │   │   │   ├── 📄 markdown_parser.py [439 lines]
-  │   │   │   ├── 📄 xml_parser.py [439 lines]
-  │   │   │   └── 📄 yaml_parser.py [190 lines]
+  │   │   │   │   ├── 📄 __init__.py [9 lines]
+  │   │   │   │   ├── 📄 base_tsdm_parser.py [39 lines]
+  │   │   │   │   └── 📄 tsdm_json_parser.py [230 lines]
+  │   │   │   ├── 📄 __init__.py [18 lines]
+  │   │   │   ├── 📄 base.py [90 lines]
+  │   │   │   ├── 📄 html_parser.py [738 lines]
+  │   │   │   ├── 📄 latex_parser.py [835 lines]
+  │   │   │   └── 📄 markdown_parser.py [433 lines]
   │   │   ├── 📁 storage/
-  │   │   │   ├── 📄 __init__.py [3 lines]
-  │   │   │   ├── 📄 chunk_store.py [123 lines]
-  │   │   │   ├── 📄 document_store.py [140 lines]
+  │   │   │   ├── 📄 __init__.py [11 lines]
+  │   │   │   ├── 📄 chunk_store.py [121 lines]
+  │   │   │   ├── 📄 document_store.py [141 lines]
   │   │   │   └── 📄 metadata_store.py [38 lines]
   │   │   ├── 📁 utils/
-  │   │   │   ├── 📄 __init__.py [2 lines]
+  │   │   │   ├── 📄 __init__.py [9 lines]
   │   │   │   ├── 📄 binary_codec.py [100 lines]
   │   │   │   ├── 📄 docx_utils.py [0 lines]
   │   │   │   ├── 📄 ooxml_constants.py [0 lines]
   │   │   │   ├── 📄 streaming_binary_codec.py [46 lines]
-  │   │   │   ├── 📄 xml_parser.py [0 lines]
-  │   │   │   └── 📄 zip_handler.py [0 lines]
+  │   │   │   └── 📄 xml_parser.py [0 lines]
   │   │   ├── 📁 writers/
   │   │   │   ├── 📁 cad_writer/
   │   │   │   │   ├── 📄 __init__.py [0 lines]
-  │   │   │   │   ├── 📄 acis_writer.py [91 lines]
-  │   │   │   │   ├── 📄 base_context.py [77 lines]
-  │   │   │   │   ├── 📄 block_writer.py [124 lines]
-  │   │   │   │   ├── 📄 cad_writer.py [129 lines]
-  │   │   │   │   ├── 📄 dwg_builder.py [177 lines]
-  │   │   │   │   ├── 📄 entity_writer.py [360 lines]
-  │   │   │   │   ├── 📄 finalizer.py [138 lines]
-  │   │   │   │   ├── 📄 non_graphical_writer.py [259 lines]
-  │   │   │   │   ├── 📄 reactor_writer.py [67 lines]
-  │   │   │   │   ├── 📄 table_writer.py [310 lines]
-  │   │   │   │   └── 📄 xdata_writer.py [81 lines]
+  │   │   │   │   ├── 📄 acis_writer.py [71 lines]
+  │   │   │   │   ├── 📄 base_context.py [59 lines]
+  │   │   │   │   ├── 📄 block_writer.py [99 lines]
+  │   │   │   │   ├── 📄 cad_writer.py [104 lines]
+  │   │   │   │   ├── 📄 dwg_builder.py [146 lines]
+  │   │   │   │   ├── 📄 entity_writer.py [297 lines]
+  │   │   │   │   ├── 📄 finalizer.py [115 lines]
+  │   │   │   │   ├── 📄 non_graphical_writer.py [212 lines]
+  │   │   │   │   ├── 📄 reactor_writer.py [53 lines]
+  │   │   │   │   ├── 📄 table_writer.py [245 lines]
+  │   │   │   │   └── 📄 xdata_writer.py [62 lines]
   │   │   │   ├── 📁 docx_writer/
   │   │   │   │   ├── 📄 docx_builder.py [0 lines]
   │   │   │   │   ├── 📄 docx_image_handler.py [0 lines]
@@ -525,86 +551,97 @@
   │   │   │   │   ├── 📄 docx_style_builder.py [0 lines]
   │   │   │   │   ├── 📄 docx_table_builder.py [0 lines]
   │   │   │   │   └── 📄 docx_writer.py [0 lines]
+  │   │   │   ├── 📁 dsdm_writers/
+  │   │   │   │   ├── 📄 __init__.py [49 lines]
+  │   │   │   │   ├── 📄 base_dsdm_writer.py [102 lines]
+  │   │   │   │   ├── 📄 binary_writer.py [51 lines]
+  │   │   │   │   ├── 📄 bson_writer.py [33 lines]
+  │   │   │   │   ├── 📄 cassandra_writer.py [50 lines]
+  │   │   │   │   ├── 📄 cbor_writer.py [24 lines]
+  │   │   │   │   ├── 📄 csv_tsv_writer.py [90 lines]
+  │   │   │   │   ├── 📄 json_writer.py [25 lines]
+  │   │   │   │   ├── 📄 mongodb_writer.py [65 lines]
+  │   │   │   │   ├── 📄 msgpack_writer.py [28 lines]
+  │   │   │   │   ├── 📄 pickle_writer.py [30 lines]
+  │   │   │   │   ├── 📄 protobuf_writer.py [45 lines]
+  │   │   │   │   ├── 📄 redis_writer.py [57 lines]
+  │   │   │   │   ├── 📄 sql_writer.py [119 lines]
+  │   │   │   │   ├── 📄 xml_writer.py [134 lines]
+  │   │   │   │   └── 📄 yaml_writer.py [24 lines]
   │   │   │   ├── 📁 msdm_writers/
-  │   │   │   │   ├── 📄 __init__.py [19 lines]
-  │   │   │   │   ├── 📄 avro_schema_writer.py [399 lines]
-  │   │   │   │   ├── 📄 base_msdm_writer.py [177 lines]
-  │   │   │   │   ├── 📄 cql_writer.py [497 lines]
-  │   │   │   │   ├── 📄 cue_writer.py [218 lines]
-  │   │   │   │   ├── 📄 elasticsearch_mapping_writer.py [290 lines]
-  │   │   │   │   ├── 📄 erd_writer.py [209 lines]
-  │   │   │   │   ├── 📄 graphql_schema_writer.py [315 lines]
-  │   │   │   │   ├── ⚠️ influxdb_schema_writer.py [324 lines]
-  │   │   │   │   ├── 📄 json_schema_writer.py [299 lines]
-  │   │   │   │   ├── 📄 mongodb_schema_writer.py [354 lines]
-  │   │   │   │   ├── 📄 neo4j_schema_writer.py [200 lines]
-  │   │   │   │   ├── 📄 owl_writer.py [197 lines]
-  │   │   │   │   ├── 📄 plantuml_writer.py [246 lines]
-  │   │   │   │   ├── 📄 proto_writer.py [291 lines]
-  │   │   │   │   ├── 📄 python_model_writer.py [391 lines]
-  │   │   │   │   ├── 📄 sql_ddl_writer.py [370 lines]
-  │   │   │   │   ├── 📄 thrift_idl_writer.py [264 lines]
-  │   │   │   │   ├── 📄 typescript_interface_writer.py [288 lines]
-  │   │   │   │   ├── 📄 uml_xmi_writer.py [350 lines]
-  │   │   │   │   └── 📄 xsd_writer.py [324 lines]
+  │   │   │   │   ├── 📄 __init__.py [76 lines]
+  │   │   │   │   ├── 📄 base_msdm_writer.py [180 lines]
+  │   │   │   │   ├── 📄 cql_writer.py [431 lines]
+  │   │   │   │   ├── 📄 elasticsearch_mapping_writer.py [322 lines]
+  │   │   │   │   ├── 📄 erd_writer.py [220 lines]
+  │   │   │   │   ├── 📄 graphql_schema_writer.py [309 lines]
+  │   │   │   │   ├── 📄 influxdb_schema_writer.py [264 lines]
+  │   │   │   │   ├── 📄 json_schema_writer.py [297 lines]
+  │   │   │   │   ├── 📄 mongodb_schema_writer.py [332 lines]
+  │   │   │   │   ├── 📄 neo4j_schema_writer.py [170 lines]
+  │   │   │   │   ├── 📄 owl_writer.py [170 lines]
+  │   │   │   │   ├── 📄 plantuml_writer.py [242 lines]
+  │   │   │   │   ├── 📄 proto_msdm_writer.py [271 lines]
+  │   │   │   │   ├── 📄 python_model_writer.py [342 lines]
+  │   │   │   │   ├── 📄 sql_ddl_writer.py [313 lines]
+  │   │   │   │   ├── 📄 thrift_idl_writer.py [263 lines]
+  │   │   │   │   ├── 📄 typescript_interface_writer.py [283 lines]
+  │   │   │   │   ├── 📄 uml_xmi_writer.py [276 lines]
+  │   │   │   │   └── 📄 xsd_writer.py [260 lines]
   │   │   │   ├── 📁 osdm_writers/
-  │   │   │   │   ├── 📄 __init__.py [16 lines]
-  │   │   │   │   ├── 📄 airflow_dag_writer.py [192 lines]
-  │   │   │   │   ├── ⚠️ aws_step_functions_writer.py [188 lines]
-  │   │   │   │   ├── 📄 azure_logic_apps_writer.py [183 lines]
+  │   │   │   │   ├── 📄 __init__.py [59 lines]
   │   │   │   │   ├── 📄 base_osdm_writer.py [166 lines]
-  │   │   │   │   ├── 📄 bpmn_xml_writer.py [842 lines]
-  │   │   │   │   ├── 📄 cep_writer.py [88 lines]
+  │   │   │   │   ├── 📄 bpmn_xml_writer.py [802 lines]
+  │   │   │   │   ├── 📄 cep_writer.py [80 lines]
   │   │   │   │   ├── 📄 cmmn_xml_writer.py [217 lines]
-  │   │   │   │   ├── 📄 cncf_serverless_workflow_writer.py [165 lines]
-  │   │   │   │   ├── 📄 dmn_xml_writer.py [222 lines]
-  │   │   │   │   ├── 📄 epc_writer.py [136 lines]
-  │   │   │   │   ├── 📄 graphml_xml_writer.py [181 lines]
-  │   │   │   │   ├── 📄 pnml_xml_writer.py [191 lines]
-  │   │   │   │   ├── 📄 prefect_dag_writer.py [189 lines]
-  │   │   │   │   ├── 📄 scxml_writer.py [245 lines]
-  │   │   │   │   ├── 📄 uml_state_machine_writer.py [204 lines]
-  │   │   │   │   ├── 📄 xpd_writer.py [186 lines]
-  │   │   │   │   └── 📄 yawl_writer.py [147 lines]
+  │   │   │   │   ├── 📄 dmn_xml_writer.py [201 lines]
+  │   │   │   │   ├── 📄 epc_writer.py [129 lines]
+  │   │   │   │   ├── 📄 graphml_xml_writer.py [134 lines]
+  │   │   │   │   ├── 📄 pnml_xml_writer.py [143 lines]
+  │   │   │   │   ├── 📄 prefect_dag_writer.py [186 lines]
+  │   │   │   │   ├── 📄 scxml_writer.py [251 lines]
+  │   │   │   │   ├── 📄 uml_state_machine_writer.py [175 lines]
+  │   │   │   │   └── 📄 xpd_writer.py [172 lines]
   │   │   │   ├── 📁 pdf_writer/
-  │   │   │   │   ├── 📄 __init__.py [10 lines]
-  │   │   │   │   ├── 📄 annotation_writer.py [582 lines]
-  │   │   │   │   ├── 📄 content_writer.py [314 lines]
-  │   │   │   │   ├── 📄 encryption.py [965 lines]
-  │   │   │   │   ├── 📄 font_manager.py [1504 lines]
-  │   │   │   │   ├── 📄 init.py [24 lines]
-  │   │   │   │   ├── 📄 layout_builder.py [224 lines]
-  │   │   │   │   ├── 📄 metadata_writer.py [412 lines]
-  │   │   │   │   ├── 📄 optimizer.py [1259 lines]
+  │   │   │   │   ├── 📄 __init__.py [64 lines]
+  │   │   │   │   ├── 📄 annotation_writer.py [581 lines]
+  │   │   │   │   ├── 📄 content_writer.py [313 lines]
+  │   │   │   │   ├── 📄 encryption.py [966 lines]
+  │   │   │   │   ├── 📄 font_manager.py [1498 lines]
+  │   │   │   │   ├── 📄 init.py [28 lines]
+  │   │   │   │   ├── 📄 layout_builder.py [223 lines]
+  │   │   │   │   ├── 📄 metadata_writer.py [413 lines]
+  │   │   │   │   ├── 📄 optimizer.py [1257 lines]
   │   │   │   │   ├── 📄 outline_builder.py [275 lines]
-  │   │   │   │   ├── 📄 pdf_objects.py [502 lines]
-  │   │   │   │   └── 📄 utils.py [439 lines]
+  │   │   │   │   ├── 📄 pdf_objects.py [500 lines]
+  │   │   │   │   └── 📄 utils.py [437 lines]
   │   │   │   ├── 📁 pptx_writer/
-  │   │   │   │   ├── 📄 __init__.py [15 lines]
-  │   │   │   │   ├── 📄 animation_writer.py [90 lines]
+  │   │   │   │   ├── 📄 __init__.py [70 lines]
+  │   │   │   │   ├── 📄 animation_writer.py [94 lines]
+  │   │   │   │   ├── 📄 charts_writer.py [73 lines]
   │   │   │   │   ├── 📄 comments_writer.py [32 lines]
-  │   │   │   │   ├── 📄 constants.py [76 lines]
-  │   │   │   │   ├── 📄 diagram_writer.py [105 lines]
+  │   │   │   │   ├── 📄 constants.py [74 lines]
+  │   │   │   │   ├── 📄 diagram_writer.py [108 lines]
   │   │   │   │   ├── 📄 master_writer.py [88 lines]
   │   │   │   │   ├── 📄 media_writer.py [76 lines]
   │   │   │   │   ├── 📄 notes_writer.py [59 lines]
-  │   │   │   │   ├── 📄 ole_writer.py [48 lines]
-  │   │   │   │   ├── 📄 relationship_utils.py [85 lines]
-  │   │   │   │   ├── 📄 shape_writer.py [163 lines]
-  │   │   │   │   ├── 📄 slide_writer.py [198 lines]
-  │   │   │   │   ├── 📄 style_writer.py [138 lines]
-  │   │   │   │   ├── 📄 table_writer.py [69 lines]
-  │   │   │   │   ├── 📄 theme_writer.py [116 lines]
-  │   │   │   │   ├── 📄 utils.py [30 lines]
-  │   │   │   │   └── 📄 writer.py [463 lines]
+  │   │   │   │   ├── 📄 ole_writer.py [47 lines]
+  │   │   │   │   ├── 📄 relationship_utils.py [86 lines]
+  │   │   │   │   ├── 📄 shape_writer.py [172 lines]
+  │   │   │   │   ├── 📄 slide_writer.py [204 lines]
+  │   │   │   │   ├── 📄 style_writer.py [141 lines]
+  │   │   │   │   ├── 📄 table_writer.py [71 lines]
+  │   │   │   │   ├── 📄 theme_writer.py [119 lines]
+  │   │   │   │   ├── 📄 utils.py [31 lines]
+  │   │   │   │   └── 📄 writer.py [467 lines]
   │   │   │   ├── 📁 spreadsheet_writer/
   │   │   │   │   ├── 📁 xlsx/
-  │   │   │   │   │   ├── 📄 __init__.py [13 lines]
-  │   │   │   │   │   ├── 📄 conditional_formatting_writer.py [182 lines]
+  │   │   │   │   │   ├── 📄 __init__.py [47 lines]
+  │   │   │   │   │   ├── 📄 conditional_formatting_writer.py [181 lines]
   │   │   │   │   │   ├── 📄 const.py [7 lines]
-  │   │   │   │   │   ├── 📄 data_validation_writer.py [117 lines]
-  │   │   │   │   │   ├── 📄 drawing_writer.py [426 lines]
-  │   │   │   │   │   ├── 📄 extra_writers.py [189 lines]
+  │   │   │   │   │   ├── 📄 data_validation_writer.py [116 lines]
+  │   │   │   │   │   ├── 📄 drawing_writer.py [423 lines]
+  │   │   │   │   │   ├── 📄 extra_writers.py [187 lines]
   │   │   │   │   │   ├── 📄 pivot_writer.py [231 lines]
   │   │   │   │   │   ├── 📄 shared_strings_writer.py [48 lines]
   │   │   │   │   │   ├── 📄 styles_writer.py [277 lines]
@@ -612,135 +649,275 @@
   │   │   │   │   │   ├── 📄 vba_writer.py [39 lines]
   │   │   │   │   │   ├── 📄 workbook_writer.py [61 lines]
   │   │   │   │   │   ├── 📄 worksheet_writer.py [310 lines]
-  │   │   │   │   │   ├── 📄 xlsx_writer.py [189 lines]
-  │   │   │   │   │   └── 📄 zip_packager.py [51 lines]
-  │   │   │   │   ├── 📄 __init__.py [3 lines]
-  │   │   │   │   ├── 📄 base.py [316 lines]
-  │   │   │   │   ├── 📄 csv_writer.py [142 lines]
-  │   │   │   │   └── 📄 esdm_writer.py [136 lines]
+  │   │   │   │   │   ├── 📄 xlsx_writer.py [199 lines]
+  │   │   │   │   │   └── 📄 zip_packager.py [53 lines]
+  │   │   │   │   ├── 📄 __init__.py [13 lines]
+  │   │   │   │   ├── 📄 base.py [312 lines]
+  │   │   │   │   ├── 📄 csv_writer.py [152 lines]
+  │   │   │   │   └── 📄 esdm_writer.py [143 lines]
   │   │   │   ├── 📁 ssdm_writers/
-  │   │   │   │   ├── 📄 __init__.py [15 lines]
-  │   │   │   │   ├── 📄 apib_writer.py [211 lines]
-  │   │   │   │   ├── 📄 asyncapi_writer.py [204 lines]
+  │   │   │   │   ├── 📄 __init__.py [36 lines]
+  │   │   │   │   ├── 📄 asyncapi_writer.py [221 lines]
   │   │   │   │   ├── 📄 base_ssdm_writer.py [151 lines]
-  │   │   │   │   ├── 📄 cddl_writer.py [152 lines]
-  │   │   │   │   ├── 📄 graphql_service_writer.py [338 lines]
-  │   │   │   │   ├── 📄 mcp_writer.py [187 lines]
-  │   │   │   │   ├── 📄 mib_writer.py [80 lines]
-  │   │   │   │   ├── 📄 openapi_writer.py [307 lines]
-  │   │   │   │   ├── 📄 postman_collection_writer.py [192 lines]
-  │   │   │   │   ├── 📄 proto_service_writer.py [185 lines]
-  │   │   │   │   ├── 📄 python_service_writer.py [242 lines]
-  │   │   │   │   ├── 📄 raml_writer.py [287 lines]
-  │   │   │   │   ├── 📄 webidl_writer.py [139 lines]
-  │   │   │   │   ├── 📄 wsdl_writer.py [252 lines]
-  │   │   │   │   └── 📄 yang_writer.py [253 lines]
+  │   │   │   │   ├── 📄 graphql_service_writer.py [313 lines]
+  │   │   │   │   ├── 📄 mcp_writer.py [179 lines]
+  │   │   │   │   ├── 📄 openapi_writer.py [345 lines]
+  │   │   │   │   ├── 📄 proto_service_writer.py [181 lines]
+  │   │   │   │   ├── 📄 python_service_writer.py [232 lines]
+  │   │   │   │   ├── 📄 wsdl_writer.py [248 lines]
+  │   │   │   │   └── 📄 yang_writer.py [384 lines]
   │   │   │   ├── 📁 tsdm_writers/
-  │   │   │   │   ├── 📄 __init__.py [2 lines]
-  │   │   │   │   ├── 📄 base_tsdm_writer.py [12 lines]
-  │   │   │   │   └── 📄 tsdm_json_writer.py [67 lines]
-  │   │   │   ├── 📄 __init__.py [8 lines]
-  │   │   │   ├── 📄 base.py [60 lines]
-  │   │   │   ├── 📄 binary_writer.py [281 lines]
-  │   │   │   ├── 📄 cad_writer.py [269 lines]
-  │   │   │   ├── 📄 csv_writer.py [298 lines]
-  │   │   │   ├── 📄 docx_writer.py [306 lines]
-  │   │   │   ├── 📄 drawingml_helpers.py [230 lines]
-  │   │   │   ├── 📄 excel_writer.py [1660 lines]
-  │   │   │   ├── 📄 html_writer.py [279 lines]
-  │   │   │   ├── 📄 json_writer.py [188 lines]
-  │   │   │   ├── 📄 latex_writer.py [640 lines]
-  │   │   │   ├── 📄 markdown_writer.py [290 lines]
-  │   │   │   ├── 📄 xml_writer.py [262 lines]
-  │   │   │   └── 📄 yaml_writer.py [224 lines]
+  │   │   │   │   ├── 📄 __init__.py [8 lines]
+  │   │   │   │   ├── 📄 base_tsdm_writer.py [13 lines]
+  │   │   │   │   └── 📄 tsdm_json_writer.py [209 lines]
+  │   │   │   ├── 📄 __init__.py [25 lines]
+  │   │   │   ├── 📄 base.py [61 lines]
+  │   │   │   ├── 📄 drawingml_helpers.py [231 lines]
+  │   │   │   ├── 📄 html_writer.py [223 lines]
+  │   │   │   ├── 📄 latex_writer.py [636 lines]
+  │   │   │   └── 📄 markdown_writer.py [286 lines]
   │   │   └── 📄 __init__.py [0 lines]
   │   ├── 📁 interaction/
   │   │   ├── 📁 backends/
-  │   │   │   ├── 📄 __init__.py [3 lines]
-  │   │   │   ├── 📄 autogen_backend.py [181 lines]
-  │   │   │   ├── 📄 base_backend.py [7 lines]
-  │   │   │   └── 📄 native_backend.py [77 lines]
-  │   │   ├── 📄 __init__.py [10 lines]
-  │   │   ├── 📄 base_strategy.py [112 lines]
+  │   │   │   ├── 📄 __init__.py [11 lines]
+  │   │   │   ├── 📄 autogen_backend.py [177 lines]
+  │   │   │   ├── 📄 base_backend.py [10 lines]
+  │   │   │   └── 📄 native_backend.py [73 lines]
+  │   │   ├── 📄 __init__.py [34 lines]
+  │   │   ├── 📄 base_strategy.py [113 lines]
   │   │   ├── 📄 broadcast_strategy.py [142 lines]
-  │   │   ├── 📄 coordinator_strategy.py [162 lines]
-  │   │   ├── 📄 debate_strategy.py [125 lines]
-  │   │   ├── 📄 ensemble_strategy.py [171 lines]
-  │   │   ├── 📄 group_chat_strategy.py [268 lines]
-  │   │   ├── 📄 interaction_models.py [52 lines]
-  │   │   ├── 📄 round_robin_strategy.py [142 lines]
-  │   │   ├── 📄 self_refine_strategy.py [148 lines]
-  │   │   └── 📄 strategy_registry.py [62 lines]
+  │   │   ├── 📄 coordinator_strategy.py [160 lines]
+  │   │   ├── 📄 debate_strategy.py [123 lines]
+  │   │   ├── 📄 ensemble_strategy.py [168 lines]
+  │   │   ├── 📄 group_chat_strategy.py [266 lines]
+  │   │   ├── 📄 interaction_models.py [56 lines]
+  │   │   ├── 📄 round_robin_strategy.py [140 lines]
+  │   │   ├── 📄 self_refine_strategy.py [146 lines]
+  │   │   └── 📄 strategy_registry.py [64 lines]
   │   ├── 📁 orchestration/
-  │   │   ├── 📄 __init__.py [0 lines]
-  │   │   ├── 📄 base_workflow_model.py [0 lines]
-  │   │   ├── 📄 bpmn2_model.py [0 lines]
-  │   │   ├── 📄 dag_model.py [0 lines]
-  │   │   ├── 📄 event_driven_model.py [0 lines]
-  │   │   ├── 📄 petri_net_model.py [0 lines]
-  │   │   └── 📄 state_machine_model.py [0 lines]
+  │   │   ├── 📁 api/
+  │   │   │   ├── 📄 __init__.py [0 lines]
+  │   │   │   ├── 📄 admin_api.py [0 lines]
+  │   │   │   ├── 📄 deployment_api.py [0 lines]
+  │   │   │   ├── 📄 engine_api.py [0 lines]
+  │   │   │   ├── 📄 instance_api.py [0 lines]
+  │   │   │   ├── 📄 process_api.py [0 lines]
+  │   │   │   └── 📄 task_api.py [0 lines]
+  │   │   ├── 📁 bpmn/
+  │   │   │   ├── 📄 __init__.py [0 lines]
+  │   │   │   ├── 📄 activity_handler.py [0 lines]
+  │   │   │   ├── 📄 adhoc_handler.py [0 lines]
+  │   │   │   ├── 📄 choreography_handler.py [0 lines]
+  │   │   │   ├── 📄 collaboration_handler.py [0 lines]
+  │   │   │   ├── 📄 data_object_handler.py [0 lines]
+  │   │   │   ├── 📄 engine.py [0 lines]
+  │   │   │   ├── 📄 event_handler.py [0 lines]
+  │   │   │   ├── 📄 gateway_handler.py [0 lines]
+  │   │   │   ├── 📄 global_task_handler.py [0 lines]
+  │   │   │   ├── 📄 loop_handler.py [0 lines]
+  │   │   │   ├── 📄 process_executor.py [0 lines]
+  │   │   │   ├── 📄 sequence_flow.py [0 lines]
+  │   │   │   └── 📄 transaction_handler.py [0 lines]
+  │   │   ├── 📁 cep/
+  │   │   │   ├── 📄 __init__.py [0 lines]
+  │   │   │   ├── 📄 aggregator.py [0 lines]
+  │   │   │   ├── 📄 engine.py [0 lines]
+  │   │   │   ├── 📄 event_store.py [0 lines]
+  │   │   │   ├── 📄 pattern_matcher.py [0 lines]
+  │   │   │   ├── 📄 rule_evaluator.py [0 lines]
+  │   │   │   ├── 📄 stream_processor.py [0 lines]
+  │   │   │   └── 📄 window_manager.py [0 lines]
+  │   │   ├── 📁 cmmn/
+  │   │   │   ├── 📄 __init__.py [0 lines]
+  │   │   │   ├── 📄 case_executor.py [0 lines]
+  │   │   │   ├── 📄 case_file_manager.py [0 lines]
+  │   │   │   ├── 📄 discretionary_handler.py [0 lines]
+  │   │   │   ├── 📄 engine.py [0 lines]
+  │   │   │   ├── 📄 milestone_handler.py [0 lines]
+  │   │   │   ├── 📄 planning_table_handler.py [0 lines]
+  │   │   │   ├── 📄 sentry_evaluator.py [0 lines]
+  │   │   │   ├── 📄 stage_handler.py [0 lines]
+  │   │   │   └── 📄 task_handler.py [0 lines]
+  │   │   ├── 📁 core/
+  │   │   │   ├── 📄 __init__.py [61 lines]
+  │   │   │   ├── 📄 context.py [398 lines]
+  │   │   │   ├── 📄 correlation.py [459 lines]
+  │   │   │   ├── 📄 engine.py [590 lines]
+  │   │   │   ├── 📄 event_bus.py [397 lines]
+  │   │   │   ├── 📄 instance.py [418 lines]
+  │   │   │   ├── 📄 scheduler.py [396 lines]
+  │   │   │   ├── 📄 token.py [443 lines]
+  │   │   │   └── 📄 transaction.py [503 lines]
+  │   │   ├── 📁 deployment/
+  │   │   │   ├── 📄 __init__.py [0 lines]
+  │   │   │   ├── 📄 deployer.py [0 lines]
+  │   │   │   ├── 📄 migration_handler.py [0 lines]
+  │   │   │   ├── 📄 tenant_manager.py [0 lines]
+  │   │   │   └── 📄 version_manager.py [0 lines]
+  │   │   ├── 📁 dmn/
+  │   │   │   ├── 📄 __init__.py [0 lines]
+  │   │   │   ├── 📄 decision_executor.py [0 lines]
+  │   │   │   ├── 📄 decision_table_evaluator.py [0 lines]
+  │   │   │   ├── 📄 engine.py [0 lines]
+  │   │   │   ├── 📄 feel_engine.py [0 lines]
+  │   │   │   ├── 📄 hit_policy_handler.py [0 lines]
+  │   │   │   ├── 📄 invocation_handler.py [0 lines]
+  │   │   │   └── 📄 literal_expression_eval.py [0 lines]
+  │   │   ├── 📁 expression/
+  │   │   │   ├── 📄 __init__.py [0 lines]
+  │   │   │   ├── 📄 context_builder.py [0 lines]
+  │   │   │   ├── 📄 evaluator.py [0 lines]
+  │   │   │   ├── 📄 feel_evaluator.py [0 lines]
+  │   │   │   ├── 📄 javascript_evaluator.py [0 lines]
+  │   │   │   ├── 📄 juel_evaluator.py [0 lines]
+  │   │   │   └── 📄 python_evaluator.py [0 lines]
+  │   │   ├── 📁 integration/
+  │   │   │   ├── 📄 __init__.py [0 lines]
+  │   │   │   ├── 📄 business_rule_adapter.py [0 lines]
+  │   │   │   ├── 📄 connector_registry.py [0 lines]
+  │   │   │   ├── 📄 data_mapper.py [0 lines]
+  │   │   │   ├── 📄 message_adapter.py [0 lines]
+  │   │   │   ├── 📄 script_executor.py [0 lines]
+  │   │   │   ├── 📄 service_invoker.py [0 lines]
+  │   │   │   └── 📄 user_task_adapter.py [0 lines]
+  │   │   ├── 📁 monitoring/
+  │   │   │   ├── 📄 __init__.py [0 lines]
+  │   │   │   ├── 📄 health_checker.py [0 lines]
+  │   │   │   ├── 📄 logger.py [0 lines]
+  │   │   │   ├── 📄 metrics_collector.py [0 lines]
+  │   │   │   ├── 📄 performance_monitor.py [0 lines]
+  │   │   │   └── 📄 tracer.py [0 lines]
+  │   │   ├── 📁 multi_agent/
+  │   │   │   ├── 📄 __init__.py [0 lines]
+  │   │   │   ├── 📄 agent_executor.py [0 lines]
+  │   │   │   ├── 📄 coordination_handler.py [0 lines]
+  │   │   │   ├── 📄 engine.py [0 lines]
+  │   │   │   ├── 📄 interaction_handler.py [0 lines]
+  │   │   │   ├── 📄 message_router.py [0 lines]
+  │   │   │   ├── 📄 negotiation_handler.py [0 lines]
+  │   │   │   └── 📄 protocol_handler.py [0 lines]
+  │   │   ├── 📁 persistence/
+  │   │   │   ├── 📄 __init__.py [0 lines]
+  │   │   │   ├── 📄 definition_repository.py [0 lines]
+  │   │   │   ├── 📄 event_repository.py [0 lines]
+  │   │   │   ├── 📄 history_repository.py [0 lines]
+  │   │   │   ├── 📄 instance_repository.py [0 lines]
+  │   │   │   ├── 📄 repository.py [0 lines]
+  │   │   │   └── 📄 variable_repository.py [0 lines]
+  │   │   ├── 📁 runtime/
+  │   │   │   ├── 📄 __init__.py [0 lines]
+  │   │   │   ├── 📄 compensation.py [0 lines]
+  │   │   │   ├── 📄 error_handler.py [0 lines]
+  │   │   │   ├── 📄 executor.py [0 lines]
+  │   │   │   ├── 📄 resource_manager.py [0 lines]
+  │   │   │   ├── 📄 state_manager.py [0 lines]
+  │   │   │   ├── 📄 timer_manager.py [0 lines]
+  │   │   │   └── 📄 variable_manager.py [0 lines]
+  │   │   ├── 📁 state_machine/
+  │   │   │   ├── 📄 __init__.py [0 lines]
+  │   │   │   ├── 📄 action_executor.py [0 lines]
+  │   │   │   ├── 📄 engine.py [0 lines]
+  │   │   │   ├── 📄 guard_evaluator.py [0 lines]
+  │   │   │   ├── 📄 hierarchical_handler.py [0 lines]
+  │   │   │   ├── 📄 history_manager.py [0 lines]
+  │   │   │   ├── 📄 parallel_state_handler.py [0 lines]
+  │   │   │   ├── 📄 state_executor.py [0 lines]
+  │   │   │   └── 📄 transition_handler.py [0 lines]
+  │   │   ├── 📁 tests/
+  │   │   │   ├── 📁 test_bpmn/
+  │   │   │   │   └── 📄 __init__.py [0 lines]
+  │   │   │   ├── 📁 test_cep/
+  │   │   │   │   └── 📄 __init__.py [0 lines]
+  │   │   │   ├── 📁 test_cmmn/
+  │   │   │   │   └── 📄 __init__.py [0 lines]
+  │   │   │   ├── 📁 test_core/
+  │   │   │   │   └── 📄 __init__.py [0 lines]
+  │   │   │   ├── 📁 test_dmn/
+  │   │   │   │   └── 📄 __init__.py [0 lines]
+  │   │   │   ├── 📁 test_multi_agent/
+  │   │   │   │   └── 📄 __init__.py [0 lines]
+  │   │   │   ├── 📁 test_state_machine/
+  │   │   │   │   └── 📄 __init__.py [0 lines]
+  │   │   │   └── 📄 __init__.py [0 lines]
+  │   │   ├── 📁 utils/
+  │   │   │   ├── 📄 __init__.py [0 lines]
+  │   │   │   ├── 📄 graph_utils.py [0 lines]
+  │   │   │   ├── 📄 id_generator.py [0 lines]
+  │   │   │   ├── 📄 json_parser.py [0 lines]
+  │   │   │   ├── 📄 time_utils.py [0 lines]
+  │   │   │   ├── 📄 type_converter.py [0 lines]
+  │   │   │   └── 📄 xml_parser.py [0 lines]
+  │   │   ├── 📁 validation/
+  │   │   │   ├── 📄 __init__.py [0 lines]
+  │   │   │   ├── 📄 bpmn_validator.py [0 lines]
+  │   │   │   ├── 📄 cmmn_validator.py [0 lines]
+  │   │   │   ├── 📄 dmn_validator.py [0 lines]
+  │   │   │   ├── 📄 semantic_validator.py [0 lines]
+  │   │   │   ├── 📄 state_machine_validator.py [0 lines]
+  │   │   │   └── 📄 validator.py [0 lines]
+  │   │   └── 📄 __init__.py [0 lines]
   │   ├── 📁 rag/
   │   │   ├── 📁 agentic/
-  │   │   │   ├── 📄 __init__.py [6 lines]
+  │   │   │   ├── 📄 __init__.py [20 lines]
   │   │   │   ├── 📄 agent_v2.py [64 lines]
   │   │   │   ├── 📄 evidence_tracker.py [13 lines]
   │   │   │   ├── 📄 multihop_reasoner.py [18 lines]
-  │   │   │   ├── 📄 query_decomposer.py [18 lines]
+  │   │   │   ├── 📄 query_decomposer.py [16 lines]
   │   │   │   ├── 📄 retrieval_agent.py [49 lines]
-  │   │   │   └── 📄 uncertainty.py [25 lines]
+  │   │   │   └── 📄 uncertainty.py [23 lines]
   │   │   ├── 📁 compression/
-  │   │   │   ├── 📄 __init__.py [3 lines]
-  │   │   │   ├── 📄 base.py [12 lines]
-  │   │   │   ├── 📄 embedding_compressor.py [55 lines]
-  │   │   │   └── 📄 llm_compressor.py [42 lines]
+  │   │   │   ├── 📄 __init__.py [11 lines]
+  │   │   │   ├── 📄 base.py [11 lines]
+  │   │   │   ├── 📄 embedding_compressor.py [54 lines]
+  │   │   │   └── 📄 llm_compressor.py [41 lines]
   │   │   ├── 📁 evidence/
-  │   │   │   ├── 📄 __init__.py [1 lines]
-  │   │   │   └── 📄 evidence_clusterer.py [40 lines]
+  │   │   │   ├── 📄 __init__.py [5 lines]
+  │   │   │   └── 📄 evidence_clusterer.py [39 lines]
   │   │   ├── 📁 explain/
-  │   │   │   ├── 📄 __init__.py [1 lines]
-  │   │   │   └── 📄 retrieval_explainer.py [35 lines]
+  │   │   │   ├── 📄 __init__.py [5 lines]
+  │   │   │   └── 📄 retrieval_explainer.py [34 lines]
   │   │   ├── 📁 graph/
-  │   │   │   ├── 📄 __init__.py [4 lines]
-  │   │   │   ├── 📄 graph_builder.py [37 lines]
-  │   │   │   ├── 📄 graph_models.py [17 lines]
+  │   │   │   ├── 📄 __init__.py [15 lines]
+  │   │   │   ├── 📄 graph_builder.py [38 lines]
+  │   │   │   ├── 📄 graph_models.py [16 lines]
   │   │   │   ├── 📄 graph_retriever.py [44 lines]
   │   │   │   └── 📄 graph_store.py [28 lines]
   │   │   ├── 📁 learning/
-  │   │   │   ├── 📄 __init__.py [1 lines]
+  │   │   │   ├── 📄 __init__.py [5 lines]
   │   │   │   └── 📄 retrieval_policy.py [39 lines]
   │   │   ├── 📁 llm/
-  │   │   │   ├── 📄 __init__.py [5 lines]
-  │   │   │   ├── 📄 base_llm.py [13 lines]
+  │   │   │   ├── 📄 __init__.py [14 lines]
+  │   │   │   ├── 📄 base_llm.py [14 lines]
   │   │   │   ├── 📄 llm_factory.py [13 lines]
-  │   │   │   ├── 📄 llm_protocols.py [9 lines]
-  │   │   │   ├── 📄 ollama_llm.py [47 lines]
-  │   │   │   └── 📄 openai_llm.py [36 lines]
+  │   │   │   ├── 📄 llm_protocols.py [11 lines]
+  │   │   │   ├── 📄 ollama_llm.py [48 lines]
+  │   │   │   └── 📄 openai_llm.py [37 lines]
   │   │   ├── 📁 planner/
-  │   │   │   ├── 📄 __init__.py [2 lines]
+  │   │   │   ├── 📄 __init__.py [8 lines]
   │   │   │   ├── 📄 adaptive_planner.py [52 lines]
   │   │   │   └── 📄 retrieval_plan.py [12 lines]
   │   │   ├── 📁 reflection/
-  │   │   │   ├── 📄 __init__.py [2 lines]
+  │   │   │   ├── 📄 __init__.py [8 lines]
   │   │   │   ├── 📄 reflection_critic.py [26 lines]
-  │   │   │   └── 📄 reflection_loop.py [73 lines]
+  │   │   │   └── 📄 reflection_loop.py [72 lines]
   │   │   ├── 📁 reranking/
-  │   │   │   ├── 📄 __init__.py [2 lines]
-  │   │   │   ├── 📄 base_reranker.py [11 lines]
+  │   │   │   ├── 📄 __init__.py [8 lines]
+  │   │   │   ├── 📄 base_reranker.py [13 lines]
   │   │   │   └── 📄 reranker.py [34 lines]
   │   │   ├── 📁 research/
   │   │   │   ├── 📁 autonomous/
-  │   │   │   │   ├── 📄 __init__.py [4 lines]
+  │   │   │   │   ├── 📄 __init__.py [14 lines]
   │   │   │   │   ├── 📄 coverage_scorer.py [45 lines]
   │   │   │   │   ├── 📄 gap_detector.py [48 lines]
-  │   │   │   │   ├── 📄 query_generator.py [37 lines]
+  │   │   │   │   ├── 📄 query_generator.py [38 lines]
   │   │   │   │   └── 📄 research_loop.py [54 lines]
   │   │   │   ├── 📁 dashboard/
-  │   │   │   │   ├── 📄 __init__.py [3 lines]
+  │   │   │   │   ├── 📄 __init__.py [17 lines]
   │   │   │   │   ├── 📄 api_server.py [58 lines]
-  │   │   │   │   ├── 📄 schema.py [51 lines]
-  │   │   │   │   └── 📄 websocket_stream.py [38 lines]
+  │   │   │   │   ├── 📄 schema.py [50 lines]
+  │   │   │   │   └── 📄 websocket_stream.py [37 lines]
   │   │   │   ├── 📁 evaluation/
-  │   │   │   │   ├── 📄 __init__.py [9 lines]
+  │   │   │   │   ├── 📄 __init__.py [31 lines]
   │   │   │   │   ├── 📄 citation_evaluator.py [17 lines]
   │   │   │   │   ├── 📄 completeness_evaluator.py [14 lines]
   │   │   │   │   ├── 📄 coverage_scorer.py [13 lines]
@@ -749,159 +926,159 @@
   │   │   │   │   ├── 📄 improvement_engine.py [31 lines]
   │   │   │   │   ├── 📄 reasoning_evaluator.py [13 lines]
   │   │   │   │   ├── 📄 retrieval_evaluator.py [27 lines]
-  │   │   │   │   └── 📄 schema.py [28 lines]
+  │   │   │   │   └── 📄 schema.py [27 lines]
   │   │   │   ├── 📁 graph/
-  │   │   │   │   ├── 📄 __init__.py [8 lines]
-  │   │   │   │   ├── 📄 entity_extractor.py [81 lines]
+  │   │   │   │   ├── 📄 __init__.py [30 lines]
+  │   │   │   │   ├── 📄 entity_extractor.py [82 lines]
   │   │   │   │   ├── 📄 graph_aware_planner.py [33 lines]
-  │   │   │   │   ├── 📄 graph_canonicalizer.py [21 lines]
-  │   │   │   │   ├── 📄 graph_index.py [79 lines]
-  │   │   │   │   ├── 📄 graph_persistence.py [64 lines]
+  │   │   │   │   ├── 📄 graph_canonicalizer.py [20 lines]
+  │   │   │   │   ├── 📄 graph_index.py [82 lines]
+  │   │   │   │   ├── 📄 graph_persistence.py [63 lines]
   │   │   │   │   ├── 📄 graph_traverser.py [8 lines]
   │   │   │   │   ├── 📄 relation_builder.py [115 lines]
-  │   │   │   │   └── 📄 relation_ranker.py [31 lines]
+  │   │   │   │   └── 📄 relation_ranker.py [30 lines]
   │   │   │   ├── 📁 guardrails/
-  │   │   │   │   ├── 📄 __init__.py [1 lines]
+  │   │   │   │   ├── 📄 __init__.py [5 lines]
   │   │   │   │   └── 📄 hallucination_guard.py [13 lines]
   │   │   │   ├── 📁 improvement/
-  │   │   │   │   ├── 📄 __init__.py [1 lines]
+  │   │   │   │   ├── 📄 __init__.py [5 lines]
   │   │   │   │   └── 📄 feedback_controller.py [32 lines]
   │   │   │   ├── 📁 memory/
   │   │   │   │   ├── 📁 reasoning/
-  │   │   │   │   │   ├── 📄 __init__.py [7 lines]
-  │   │   │   │   │   ├── 📄 event_types.py [29 lines]
-  │   │   │   │   │   ├── 📄 reasoning_event.py [31 lines]
-  │   │   │   │   │   ├── 📄 reasoning_exporter.py [38 lines]
+  │   │   │   │   │   ├── 📄 __init__.py [25 lines]
+  │   │   │   │   │   ├── 📄 event_types.py [28 lines]
+  │   │   │   │   │   ├── 📄 reasoning_event.py [32 lines]
+  │   │   │   │   │   ├── 📄 reasoning_exporter.py [35 lines]
   │   │   │   │   │   ├── 📄 reasoning_memory.py [303 lines]
-  │   │   │   │   │   ├── 📄 reasoning_node.py [51 lines]
-  │   │   │   │   │   ├── 📄 reasoning_recorder.py [60 lines]
-  │   │   │   │   │   └── 📄 reasoning_tree.py [53 lines]
-  │   │   │   │   ├── 📄 __init__.py [5 lines]
+  │   │   │   │   │   ├── 📄 reasoning_node.py [49 lines]
+  │   │   │   │   │   ├── 📄 reasoning_recorder.py [59 lines]
+  │   │   │   │   │   └── 📄 reasoning_tree.py [51 lines]
+  │   │   │   │   ├── 📄 __init__.py [19 lines]
   │   │   │   │   ├── 📄 memory_controller.py [49 lines]
-  │   │   │   │   ├── 📄 memory_retriever.py [38 lines]
-  │   │   │   │   ├── 📄 memory_store.py [39 lines]
-  │   │   │   │   ├── 📄 reasoning_memory.py [153 lines]
-  │   │   │   │   └── 📄 temporal_graph.py [32 lines]
+  │   │   │   │   ├── 📄 memory_retriever.py [39 lines]
+  │   │   │   │   ├── 📄 memory_store.py [38 lines]
+  │   │   │   │   ├── 📄 reasoning_memory.py [150 lines]
+  │   │   │   │   └── 📄 temporal_graph.py [31 lines]
   │   │   │   ├── 📁 observability/
-  │   │   │   │   ├── 📄 __init__.py [9 lines]
+  │   │   │   │   ├── 📄 __init__.py [30 lines]
   │   │   │   │   ├── 📄 failure_analyzer.py [16 lines]
   │   │   │   │   ├── 📄 graph_visualizer.py [13 lines]
-  │   │   │   │   ├── 📄 memory_usage_tracker.py [16 lines]
+  │   │   │   │   ├── 📄 memory_usage_tracker.py [17 lines]
   │   │   │   │   ├── 📄 metrics_store.py [18 lines]
   │   │   │   │   ├── 📄 observability_controller.py [31 lines]
   │   │   │   │   ├── 📄 retrieval_heatmap.py [20 lines]
   │   │   │   │   ├── 📄 telemetry.py [24 lines]
   │   │   │   │   ├── 📄 token_tracker.py [20 lines]
-  │   │   │   │   └── 📄 trace_collector.py [23 lines]
+  │   │   │   │   └── 📄 trace_collector.py [24 lines]
   │   │   │   ├── 📁 summarization/
-  │   │   │   │   ├── 📄 __init__.py [3 lines]
-  │   │   │   │   ├── 📄 base_summarizer.py [19 lines]
+  │   │   │   │   ├── 📄 __init__.py [11 lines]
+  │   │   │   │   ├── 📄 base_summarizer.py [21 lines]
   │   │   │   │   ├── 📄 research_summarizer.py [90 lines]
-  │   │   │   │   └── 📄 section_summarizer.py [67 lines]
-  │   │   │   ├── 📄 __init__.py [4 lines]
-  │   │   │   ├── 📄 answer_planner.py [105 lines]
-  │   │   │   ├── 📄 base_research_agent.py [10 lines]
-  │   │   │   ├── 📄 citation_manager.py [82 lines]
-  │   │   │   └── 📄 research_agent.py [148 lines]
+  │   │   │   │   └── 📄 section_summarizer.py [66 lines]
+  │   │   │   ├── 📄 __init__.py [18 lines]
+  │   │   │   ├── 📄 answer_planner.py [107 lines]
+  │   │   │   ├── 📄 base_research_agent.py [11 lines]
+  │   │   │   ├── 📄 citation_manager.py [80 lines]
+  │   │   │   └── 📄 research_agent.py [149 lines]
   │   │   ├── 📁 retrieval/
-  │   │   │   ├── 📄 __init__.py [12 lines]
-  │   │   │   ├── 📄 base_retriever.py [11 lines]
-  │   │   │   ├── 📄 bm25_retriever.py [89 lines]
+  │   │   │   ├── 📄 __init__.py [39 lines]
+  │   │   │   ├── 📄 base_retriever.py [13 lines]
+  │   │   │   ├── 📄 bm25_retriever.py [88 lines]
   │   │   │   ├── 📄 hybrid_retriever.py [102 lines]
-  │   │   │   ├── 📄 hybrid_retriever_plus.py [156 lines]
-  │   │   │   ├── 📄 hybrid_retriever_super.py [186 lines]
-  │   │   │   ├── 📄 keyword_retriever.py [39 lines]
+  │   │   │   ├── 📄 hybrid_retriever_plus.py [157 lines]
+  │   │   │   ├── 📄 hybrid_retriever_super.py [185 lines]
+  │   │   │   ├── 📄 keyword_retriever.py [35 lines]
   │   │   │   ├── 📄 retrieval_feedback_buffer.py [34 lines]
-  │   │   │   ├── 📄 retriever_result.py [14 lines]
+  │   │   │   ├── 📄 retriever_result.py [15 lines]
   │   │   │   ├── 📄 retriever_trainer.py [48 lines]
   │   │   │   ├── 📄 topk_optimizer.py [20 lines]
-  │   │   │   ├── 📄 vector_retriever.py [54 lines]
+  │   │   │   ├── 📄 vector_retriever.py [53 lines]
   │   │   │   └── 📄 weight_manager.py [27 lines]
   │   │   ├── 📁 services/
-  │   │   │   ├── 📄 __init__.py [3 lines]
-  │   │   │   ├── 📄 chunking.py [65 lines]
-  │   │   │   ├── 📄 embedding.py [61 lines]
+  │   │   │   ├── 📄 __init__.py [11 lines]
+  │   │   │   ├── 📄 chunking.py [64 lines]
+  │   │   │   ├── 📄 embedding.py [62 lines]
   │   │   │   └── 📄 query_rewriter.py [28 lines]
   │   │   ├── 📁 trainer/
-  │   │   │   ├── 📄 __init__.py [3 lines]
-  │   │   │   ├── 📄 base_trainer.py [9 lines]
-  │   │   │   ├── 📄 fusion_trainer.py [37 lines]
-  │   │   │   └── 📄 reranker_trainer.py [23 lines]
-  │   │   ├── 📄 __init__.py [2 lines]
-  │   │   ├── 📄 rag_models.py [24 lines]
-  │   │   └── 📄 vector_service.py [206 lines]
+  │   │   │   ├── 📄 __init__.py [11 lines]
+  │   │   │   ├── 📄 base_trainer.py [10 lines]
+  │   │   │   ├── 📄 fusion_trainer.py [38 lines]
+  │   │   │   └── 📄 reranker_trainer.py [24 lines]
+  │   │   ├── 📄 __init__.py [11 lines]
+  │   │   ├── 📄 rag_models.py [23 lines]
+  │   │   └── 📄 vector_service.py [207 lines]
   │   ├── 📁 storage/
   │   │   ├── 📁 cache/
   │   │   │   ├── 📁 backends/
-  │   │   │   │   ├── 📄 __init__.py [2 lines]
+  │   │   │   │   ├── 📄 __init__.py [8 lines]
   │   │   │   │   ├── 📄 memory_adapter.py [54 lines]
   │   │   │   │   └── 📄 redis_adapter.py [69 lines]
-  │   │   │   ├── 📄 __init__.py [1 lines]
-  │   │   │   └── 📄 base.py [37 lines]
+  │   │   │   ├── 📄 __init__.py [5 lines]
+  │   │   │   └── 📄 base.py [38 lines]
   │   │   ├── 📁 event_log/
   │   │   │   ├── 📁 backends/
-  │   │   │   │   ├── 📄 __init__.py [2 lines]
-  │   │   │   │   ├── 📄 rsyslog.py [63 lines]
-  │   │   │   │   └── 📄 sql_event_log.py [49 lines]
-  │   │   │   ├── 📄 __init__.py [1 lines]
+  │   │   │   │   ├── 📄 __init__.py [8 lines]
+  │   │   │   │   ├── 📄 rsyslog.py [62 lines]
+  │   │   │   │   └── 📄 sql_event_log.py [47 lines]
+  │   │   │   ├── 📄 __init__.py [5 lines]
   │   │   │   └── 📄 base.py [35 lines]
   │   │   ├── 📁 graph/
   │   │   │   ├── 📁 backends/
-  │   │   │   │   ├── 📄 __init__.py [1 lines]
-  │   │   │   │   └── 📄 neo4j_adapter.py [100 lines]
-  │   │   │   ├── 📄 __init__.py [1 lines]
-  │   │   │   └── 📄 base.py [34 lines]
+  │   │   │   │   ├── 📄 __init__.py [5 lines]
+  │   │   │   │   └── 📄 neo4j_adapter.py [101 lines]
+  │   │   │   ├── 📄 __init__.py [5 lines]
+  │   │   │   └── 📄 base.py [33 lines]
   │   │   ├── 📁 key_value/
   │   │   │   ├── 📁 backends/
-  │   │   │   │   ├── 📄 __init__.py [2 lines]
+  │   │   │   │   ├── 📄 __init__.py [9 lines]
   │   │   │   │   ├── 📄 memory_adapter.py [41 lines]
-  │   │   │   │   └── 📄 redis_adapter.py [186 lines]
-  │   │   │   ├── 📄 __init__.py [1 lines]
+  │   │   │   │   └── 📄 redis_adapter.py [190 lines]
+  │   │   │   ├── 📄 __init__.py [5 lines]
   │   │   │   └── 📄 base.py [38 lines]
   │   │   ├── 📁 object/
   │   │   │   ├── 📁 backends/
-  │   │   │   │   ├── 📄 __init__.py [3 lines]
-  │   │   │   │   ├── 📄 filesystem_adapter.py [53 lines]
+  │   │   │   │   ├── 📄 __init__.py [11 lines]
+  │   │   │   │   ├── 📄 filesystem_adapter.py [52 lines]
   │   │   │   │   ├── 📄 minio_adapter.py [141 lines]
-  │   │   │   │   └── 📄 s3_adapter.py [103 lines]
-  │   │   │   ├── 📄 __init__.py [1 lines]
-  │   │   │   └── 📄 base.py [46 lines]
+  │   │   │   │   └── 📄 s3_adapter.py [102 lines]
+  │   │   │   ├── 📄 __init__.py [5 lines]
+  │   │   │   └── 📄 base.py [43 lines]
   │   │   ├── 📁 relational/
   │   │   │   ├── 📁 backends/
-  │   │   │   │   ├── 📄 __init__.py [4 lines]
+  │   │   │   │   ├── 📄 __init__.py [14 lines]
   │   │   │   │   ├── 📄 mysql_adapter.py [7 lines]
-  │   │   │   │   ├── 📄 postgres_adapter.py [85 lines]
+  │   │   │   │   ├── 📄 postgres_adapter.py [86 lines]
   │   │   │   │   ├── 📄 sql_server_adapter.py [7 lines]
-  │   │   │   │   └── 📄 sqlite_adapter.py [61 lines]
-  │   │   │   ├── 📄 __init__.py [1 lines]
-  │   │   │   └── 📄 base.py [102 lines]
+  │   │   │   │   └── 📄 sqlite_adapter.py [63 lines]
+  │   │   │   ├── 📄 __init__.py [6 lines]
+  │   │   │   └── 📄 base.py [103 lines]
   │   │   ├── 📁 stream/
   │   │   │   ├── 📁 backends/
-  │   │   │   │   ├── 📄 __init__.py [2 lines]
+  │   │   │   │   ├── 📄 __init__.py [9 lines]
   │   │   │   │   ├── 📄 kafka_adapter.py [70 lines]
-  │   │   │   │   └── 📄 redis_stream_adapter.py [236 lines]
-  │   │   │   ├── 📄 __init__.py [1 lines]
-  │   │   │   └── 📄 base.py [35 lines]
+  │   │   │   │   └── 📄 redis_stream_adapter.py [241 lines]
+  │   │   │   ├── 📄 __init__.py [5 lines]
+  │   │   │   └── 📄 base.py [33 lines]
   │   │   ├── 📁 timeseries/
   │   │   │   ├── 📁 backends/
-  │   │   │   │   ├── 📄 __init__.py [1 lines]
+  │   │   │   │   ├── 📄 __init__.py [5 lines]
   │   │   │   │   └── 📄 influx_adapter.py [110 lines]
-  │   │   │   ├── 📄 __init__.py [1 lines]
-  │   │   │   └── 📄 base.py [37 lines]
+  │   │   │   ├── 📄 __init__.py [5 lines]
+  │   │   │   └── 📄 base.py [36 lines]
   │   │   ├── 📁 vector/
   │   │   │   ├── 📁 backends/
-  │   │   │   │   ├── 📄 __init__.py [6 lines]
+  │   │   │   │   ├── 📄 __init__.py [20 lines]
   │   │   │   │   ├── 📄 chroma_adapter.py [125 lines]
   │   │   │   │   ├── 📄 faiss_adapter.py [181 lines]
-  │   │   │   │   ├── 📄 memory_adapter.py [110 lines]
-  │   │   │   │   ├── 📄 pinecone_adapter.py [178 lines]
-  │   │   │   │   ├── 📄 qdrant_adapter.py [218 lines]
-  │   │   │   │   └── 📄 weaviate_adapter.py [144 lines]
-  │   │   │   ├── 📄 __init__.py [3 lines]
-  │   │   │   ├── 📄 base.py [109 lines]
+  │   │   │   │   ├── 📄 memory_adapter.py [109 lines]
+  │   │   │   │   ├── 📄 pinecone_adapter.py [180 lines]
+  │   │   │   │   ├── 📄 qdrant_adapter.py [219 lines]
+  │   │   │   │   └── 📄 weaviate_adapter.py [143 lines]
+  │   │   │   ├── 📄 __init__.py [13 lines]
+  │   │   │   ├── 📄 base.py [107 lines]
   │   │   │   ├── 📄 embedding_utils.py [12 lines]
   │   │   │   └── 📄 index_config.py [16 lines]
-  │   │   ├── 📄 __init__.py [1 lines]
+  │   │   ├── 📄 __init__.py [5 lines]
   │   │   └── 📄 base_storage.py [39 lines]
   │   ├── 📁 tools/
   │   │   ├── 📁 adapters/
@@ -926,49 +1103,55 @@
   │   │   └── 📄 tool_registry.py [0 lines]
   │   └── 📄 __init__.py [0 lines]
   ├── 📁 migrations/
-  │   ├── 📄 __init__.py [1 lines]
+  │   ├── 📄 __init__.py [6 lines]
   │   └── 📄 env.py [78 lines]
   ├── 📁 tests/
   │   ├── 📁 agents/
   │   │   ├── 📁 agents_unit/
-  │   │   │   ├── 📄 __init__.py [3 lines]
-  │   │   │   ├── 📄 test_agent_registry.py [59 lines]
+  │   │   │   ├── 📄 __init__.py [14 lines]
+  │   │   │   ├── 📄 test_agent_registry.py [60 lines]
   │   │   │   ├── 📄 test_base_agent.py [87 lines]
   │   │   │   └── 📄 test_message_bus.py [49 lines]
   │   │   ├── 📁 interaction/
   │   │   │   ├── 📁 interaction_performance/
-  │   │   │   │   ├── 📄 __init__.py [9 lines]
-  │   │   │   │   ├── 📄 conftest_performance.py [14 lines]
-  │   │   │   │   ├── 📄 test_broadcast_strategy_performance.py [32 lines]
-  │   │   │   │   ├── 📄 test_coordinator_strategy_performance.py [31 lines]
-  │   │   │   │   ├── 📄 test_debate_strategy_performance.py [31 lines]
+  │   │   │   │   ├── 📄 __init__.py [15 lines]
+  │   │   │   │   ├── 📄 conftest_performance.py [15 lines]
+  │   │   │   │   ├── 📄 test_broadcast_strategy_performance.py [31 lines]
+  │   │   │   │   ├── 📄 test_coordinator_strategy_performance.py [30 lines]
+  │   │   │   │   ├── 📄 test_debate_strategy_performance.py [30 lines]
   │   │   │   │   ├── 📄 test_ensemble_strategy_performance.py [30 lines]
-  │   │   │   │   ├── 📄 test_group_chat_strategy_performance.py [28 lines]
-  │   │   │   │   ├── 📄 test_interaction_agent_performance.py [40 lines]
-  │   │   │   │   ├── 📄 test_native_interaction_backend_performance.py [41 lines]
-  │   │   │   │   └── 📄 test_self_refine_strategy_performance.py [36 lines]
+  │   │   │   │   ├── 📄 test_group_chat_strategy_performance.py [27 lines]
+  │   │   │   │   ├── 📄 test_interaction_agent_performance.py [41 lines]
+  │   │   │   │   ├── 📄 test_native_interaction_backend_performance.py [37 lines]
+  │   │   │   │   └── 📄 test_self_refine_strategy_performance.py [35 lines]
   │   │   │   ├── 📁 interaction_unit/
-  │   │   │   │   ├── 📄 __init__.py [11 lines]
-  │   │   │   │   ├── 📄 conftest.py [64 lines]
+  │   │   │   │   ├── 📄 __init__.py [26 lines]
+  │   │   │   │   ├── 📄 conftest.py [66 lines]
   │   │   │   │   ├── 📄 test_autogen_interaction_backend.py [73 lines]
-  │   │   │   │   ├── 📄 test_broadcast_strategy.py [48 lines]
+  │   │   │   │   ├── 📄 test_broadcast_strategy.py [47 lines]
   │   │   │   │   ├── 📄 test_coordinator_strategy.py [67 lines]
-  │   │   │   │   ├── 📄 test_debate_strategy.py [47 lines]
+  │   │   │   │   ├── 📄 test_debate_strategy.py [46 lines]
   │   │   │   │   ├── 📄 test_ensemble_strategy.py [47 lines]
-  │   │   │   │   ├── 📄 test_group_chat_strategy.py [35 lines]
-  │   │   │   │   ├── 📄 test_interaction_agent.py [49 lines]
+  │   │   │   │   ├── 📄 test_group_chat_strategy.py [34 lines]
+  │   │   │   │   ├── 📄 test_interaction_agent.py [50 lines]
   │   │   │   │   ├── 📄 test_models.py [31 lines]
-  │   │   │   │   ├── 📄 test_native_interaction_backend.py [141 lines]
-  │   │   │   │   └── 📄 test_self_refine_strategy.py [51 lines]
+  │   │   │   │   ├── 📄 test_native_interaction_backend.py [142 lines]
+  │   │   │   │   └── 📄 test_self_refine_strategy.py [50 lines]
   │   │   │   └── 📄 __init__.py [0 lines]
   │   │   └── 📄 __init__.py [0 lines]
   │   └── 📄 __init__.py [0 lines]
   └── 📁 tools/
-      ├── 📄 __init__.py [4 lines]
-      ├── 📄 analyze_architecture.py [435 lines]
+      ├── 📄 __init__.py [131 lines]
+      ├── 📄 ai_fixer.py [372 lines]
+      ├── 📄 analyze_architecture.py [434 lines]
       ├── 📄 clean_pycache.py [21 lines]
-      ├── 📄 code_auditor.py [533 lines]
-      └── 📄 generate_inits.py [113 lines]
+      ├── 📄 code_auditor.py [537 lines]
+      ├── 📄 count_mypy_errors.py [38 lines]
+      ├── 📄 generate_inits.py [250 lines]
+      ├── 📄 mypy_batcher.py [99 lines]
+      ├── 📄 restore_py_modules.py [96 lines]
+      ├── 📄 test_ai.py [23 lines]
+      └── 📄 upgrade.py [2044 lines]
 ```
 
 ---
@@ -1415,9 +1598,9 @@
 | `engines/document/models/csdm_entities.py` | `CADTableCell` | `—` | `` |
 | `engines/document/models/csdm_entities.py` | `CADTableRow` | `—` | `` |
 | `engines/document/models/csdm_entities.py` | `TableEntity` | `BaseEntity` | `add_row` |
-| `engines/document/models/csdm_entities.py` | `ConstraintType` | `—` | `` |
+| `engines/document/models/csdm_entities.py` | `CadConstraintType` | `Enum` | `` |
 | `engines/document/models/csdm_entities.py` | `GeometricConstraintEntity` | `BaseEntity` | `` |
-| `engines/document/models/csdm_entities.py` | `DimConstraintKind` | `—` | `` |
+| `engines/document/models/csdm_entities.py` | `DimConstraintKind` | `Enum` | `` |
 | `engines/document/models/csdm_entities.py` | `DimensionalConstraintEntity` | `BaseEntity` | `` |
 | `engines/document/models/csdm_entities.py` | `DCFCustomEntity` | `BaseEntity` | `` |
 | `engines/document/models/csdm_tables.py` | `TableEntry` | `CSDMObject` | `` |
@@ -1479,18 +1662,19 @@
 | `engines/document/models/csdm_tables.py` | `CSDMTableCollection` | `—` | `create_defaults, register_dcf_table` |
 | `engines/document/models/document_registry.py` | `DocumentRegistry` | `—` | `__init__, register_parser_plugin, register_writer_plugin, _detect_magic_mime, _fallback_mime_detection, resolve_media_type ...` |
 | `engines/document/models/dsdm_models.py` | `DataNodeKind` | `str, Enum` | `` |
-| `engines/document/models/dsdm_models.py` | `ScalarType` | `str, Enum` | `` |
 | `engines/document/models/dsdm_models.py` | `DataValue` | `BaseModel` | `` |
 | `engines/document/models/dsdm_models.py` | `DataSchemaReference` | `BaseModel` | `` |
 | `engines/document/models/dsdm_models.py` | `DataDocumentCapabilities` | `BaseModel` | `` |
+| `engines/document/models/dsdm_models.py` | `SchemaBinding` | `BaseModel` | `check_one_binding` |
 | `engines/document/models/dsdm_models.py` | `DataNode` | `BaseModel` | `is_leaf` |
-| `engines/document/models/dsdm_models.py` | `DataDocument` | `BaseDocument` | `` |
+| `engines/document/models/dsdm_models.py` | `DataDocument` | `BaseDocument` | `validate_against_schema, _validate_node, _check_attribute_constraints, infer_msdm, _entity_from_node, _attribute_from_child ...` |
 | `engines/document/models/esdm_models.py` | `ESDMDocument` | `BaseDocument` | `` |
 | `engines/document/models/esdm_models.py` | `DocumentBaseModel` | `—` | `` |
 | `engines/document/models/esdm_models.py` | `WorkbookProperties` | `DocumentBaseModel` | `` |
-| `engines/document/models/esdm_models.py` | `Relationship` | `DocumentBaseModel` | `` |
+| `engines/document/models/esdm_models.py` | `ExcelRelationship` | `DocumentBaseModel` | `` |
 | `engines/document/models/esdm_models.py` | `RelationshipCollection` | `DocumentBaseModel` | `add, find_by_type` |
 | `engines/document/models/esdm_models.py` | `SharedStrings` | `DocumentBaseModel` | `get_index` |
+| `engines/document/models/esdm_models.py` | `CellFormula` | `DocumentBaseModel` | `create, get` |
 | `engines/document/models/esdm_models.py` | `Cell` | `DocumentBaseModel` | `coordinate, _col_to_letter` |
 | `engines/document/models/esdm_models.py` | `Row` | `DocumentBaseModel` | `get_or_create_cell` |
 | `engines/document/models/esdm_models.py` | `Column` | `DocumentBaseModel` | `` |
@@ -1550,7 +1734,6 @@
 | `engines/document/models/esdm_models.py` | `DefinedName` | `DocumentBaseModel` | `` |
 | `engines/document/models/esdm_models.py` | `ExternalReference` | `DocumentBaseModel` | `` |
 | `engines/document/models/esdm_models.py` | `ExternalLink` | `DocumentBaseModel` | `` |
-| `engines/document/models/esdm_models.py` | `CellFormula` | `DocumentBaseModel` | `create, get` |
 | `engines/document/models/esdm_models.py` | `DataValidationType` | `Enum` | `` |
 | `engines/document/models/esdm_models.py` | `DataValidationOperator` | `Enum` | `` |
 | `engines/document/models/esdm_models.py` | `DataValidationRule` | `DocumentBaseModel` | `` |
@@ -1608,21 +1791,20 @@
 | `engines/document/models/msdm_models.py` | `Cardinality` | `str, Enum` | `` |
 | `engines/document/models/msdm_models.py` | `ConstraintType` | `str, Enum` | `` |
 | `engines/document/models/msdm_models.py` | `ScalarType` | `str, Enum` | `` |
-| `engines/document/models/msdm_models.py` | `XSDFacet` | `str, Enum` | `` |
-| `engines/document/models/msdm_models.py` | `ProtobufOption` | `str, Enum` | `` |
-| `engines/document/models/msdm_models.py` | `AvroLogicalType` | `str, Enum` | `` |
-| `engines/document/models/msdm_models.py` | `GraphQLDirective` | `str, Enum` | `` |
+| `engines/document/models/msdm_models.py` | `IndexMethod` | `str, Enum` | `` |
+| `engines/document/models/msdm_models.py` | `CompositionType` | `str, Enum` | `` |
+| `engines/document/models/msdm_models.py` | `VersionStatus` | `str, Enum` | `` |
+| `engines/document/models/msdm_models.py` | `VisibilityKind` | `str, Enum` | `` |
 | `engines/document/models/msdm_models.py` | `DataType` | `—` | `` |
 | `engines/document/models/msdm_models.py` | `Annotation` | `—` | `` |
 | `engines/document/models/msdm_models.py` | `Constraint` | `—` | `` |
 | `engines/document/models/msdm_models.py` | `Index` | `—` | `` |
 | `engines/document/models/msdm_models.py` | `Attribute` | `—` | `` |
-| `engines/document/models/msdm_models.py` | `Entity` | `—` | `` |
+| `engines/document/models/msdm_models.py` | `Namespace` | `—` | `` |
 | `engines/document/models/msdm_models.py` | `EntityComposition` | `—` | `` |
-| `engines/document/models/msdm_models.py` | `Relationship` | `—` | `` |
+| `engines/document/models/msdm_models.py` | `Entity` | `—` | `` |
+| `engines/document/models/msdm_models.py` | `EntityRelationship` | `—` | `` |
 | `engines/document/models/msdm_models.py` | `MSDMDocument` | `BaseDocument` | `` |
-| `engines/document/models/osdm_models.py` | `YAWLJoinType` | `str, Enum` | `` |
-| `engines/document/models/osdm_models.py` | `YAWLSplitType` | `str, Enum` | `` |
 | `engines/document/models/osdm_models.py` | `ParticipantBandKind` | `str, Enum` | `` |
 | `engines/document/models/osdm_models.py` | `MessageVisibleKind` | `str, Enum` | `` |
 | `engines/document/models/osdm_models.py` | `AlignmentKind` | `str, Enum` | `` |
@@ -1634,9 +1816,6 @@
 | `engines/document/models/osdm_models.py` | `CorrelationPropertyType` | `str, Enum` | `` |
 | `engines/document/models/osdm_models.py` | `CaseFileMultiplicity` | `str, Enum` | `` |
 | `engines/document/models/osdm_models.py` | `EventListenerType` | `str, Enum` | `` |
-| `engines/document/models/osdm_models.py` | `SentryExpression` | `BaseElement` | `` |
-| `engines/document/models/osdm_models.py` | `DecisionTable` | `BaseElement` | `` |
-| `engines/document/models/osdm_models.py` | `ActionList` | `BaseElement` | `` |
 | `engines/document/models/osdm_models.py` | `ActivityType` | `str, Enum` | `` |
 | `engines/document/models/osdm_models.py` | `TaskType` | `str, Enum` | `` |
 | `engines/document/models/osdm_models.py` | `SubProcessType` | `str, Enum` | `` |
@@ -1674,6 +1853,7 @@
 | `engines/document/models/osdm_models.py` | `ExtensionAttributeValue` | `—` | `` |
 | `engines/document/models/osdm_models.py` | `Extension` | `—` | `` |
 | `engines/document/models/osdm_models.py` | `Bounds` | `—` | `` |
+| `engines/document/models/osdm_models.py` | `Locator` | `BaseElement` | `` |
 | `engines/document/models/osdm_models.py` | `DiagramElement` | `BaseElement` | `` |
 | `engines/document/models/osdm_models.py` | `Edge` | `DiagramElement` | `` |
 | `engines/document/models/osdm_models.py` | `Shape` | `DiagramElement` | `` |
@@ -1849,7 +2029,6 @@
 | `engines/document/models/osdm_models.py` | `StateMachineModel` | `—` | `` |
 | `engines/document/models/osdm_models.py` | `PseudoState` | `StateNode` | `` |
 | `engines/document/models/osdm_models.py` | `Place` | `State` | `` |
-| `engines/document/models/osdm_models.py` | `YAWLTaskDecorator` | `BaseElement` | `` |
 | `engines/document/models/osdm_models.py` | `PnTransition` | `Transition` | `` |
 | `engines/document/models/osdm_models.py` | `Arc` | `Transition` | `` |
 | `engines/document/models/osdm_models.py` | `EventStream` | `—` | `` |
@@ -1865,6 +2044,9 @@
 | `engines/document/models/osdm_models.py` | `CEPDocument` | `BaseOSDMDocument` | `` |
 | `engines/document/models/osdm_models.py` | `MultiAgentInteractionDocument` | `BaseOSDMDocument` | `` |
 | `engines/document/models/osdm_models.py` | `OSDMModel` | `—` | `` |
+| `engines/document/models/osdm_models.py` | `SentryExpression` | `FormalExpression` | `` |
+| `engines/document/models/osdm_models.py` | `DecisionTable` | `BaseElement` | `` |
+| `engines/document/models/osdm_models.py` | `ActionList` | `BaseElement` | `` |
 | `engines/document/models/psdm_models.py` | `PlaceholderType` | `str, Enum` | `` |
 | `engines/document/models/psdm_models.py` | `TransitionType` | `str, Enum` | `` |
 | `engines/document/models/psdm_models.py` | `AnimationType` | `str, Enum` | `` |
@@ -1873,7 +2055,7 @@
 | `engines/document/models/psdm_models.py` | `Placeholder` | `—` | `` |
 | `engines/document/models/psdm_models.py` | `SlideLayout` | `—` | `` |
 | `engines/document/models/psdm_models.py` | `SlideMaster` | `—` | `` |
-| `engines/document/models/psdm_models.py` | `Transition` | `—` | `` |
+| `engines/document/models/psdm_models.py` | `PresentationTransition` | `—` | `` |
 | `engines/document/models/psdm_models.py` | `Animation` | `—` | `` |
 | `engines/document/models/psdm_models.py` | `MediaReference` | `—` | `` |
 | `engines/document/models/psdm_models.py` | `NotesSlide` | `—` | `` |
@@ -1884,7 +2066,7 @@
 | `engines/document/models/psdm_models.py` | `HyperlinkAction` | `—` | `` |
 | `engines/document/models/psdm_models.py` | `GroupShapeContent` | `—` | `` |
 | `engines/document/models/psdm_models.py` | `ConnectorContent` | `—` | `` |
-| `engines/document/models/psdm_models.py` | `Section` | `—` | `` |
+| `engines/document/models/psdm_models.py` | `PresentationSection` | `—` | `` |
 | `engines/document/models/psdm_models.py` | `PSDMDocument` | `BaseDocument` | `` |
 | `engines/document/models/ssdm_capabilities.py` | `ParameterNesting` | `str, Enum` | `` |
 | `engines/document/models/ssdm_capabilities.py` | `BodyMediaType` | `str, Enum` | `` |
@@ -1895,45 +2077,37 @@
 | `engines/document/models/ssdm_capabilities.py` | `FormatCapability` | `—` | `` |
 | `engines/document/models/ssdm_models.py` | `HttpMethod` | `str, Enum` | `` |
 | `engines/document/models/ssdm_models.py` | `ParameterLocation` | `str, Enum` | `` |
-| `engines/document/models/ssdm_models.py` | `SecurityType` | `str, Enum` | `` |
+| `engines/document/models/ssdm_models.py` | `AuthMethod` | `str, Enum` | `` |
 | `engines/document/models/ssdm_models.py` | `OAuth2Flow` | `str, Enum` | `` |
 | `engines/document/models/ssdm_models.py` | `ApiKeyLocation` | `str, Enum` | `` |
 | `engines/document/models/ssdm_models.py` | `OperationType` | `str, Enum` | `` |
-| `engines/document/models/ssdm_models.py` | `YangStatement` | `str, Enum` | `` |
-| `engines/document/models/ssdm_models.py` | `SnmpAccess` | `str, Enum` | `` |
-| `engines/document/models/ssdm_models.py` | `SnmpStatus` | `str, Enum` | `` |
-| `engines/document/models/ssdm_models.py` | `ContactInfo` | `—` | `` |
-| `engines/document/models/ssdm_models.py` | `LicenseInfo` | `—` | `` |
-| `engines/document/models/ssdm_models.py` | `Server` | `—` | `` |
-| `engines/document/models/ssdm_models.py` | `SecurityScheme` | `—` | `` |
-| `engines/document/models/ssdm_models.py` | `OAuth2FlowInfo` | `—` | `` |
-| `engines/document/models/ssdm_models.py` | `Parameter` | `—` | `` |
-| `engines/document/models/ssdm_models.py` | `RequestBody` | `—` | `` |
-| `engines/document/models/ssdm_models.py` | `Link` | `—` | `` |
-| `engines/document/models/ssdm_models.py` | `Response` | `—` | `` |
-| `engines/document/models/ssdm_models.py` | `Operation` | `—` | `` |
-| `engines/document/models/ssdm_models.py` | `YangType` | `—` | `` |
-| `engines/document/models/ssdm_models.py` | `YangLeaf` | `—` | `` |
-| `engines/document/models/ssdm_models.py` | `YangContainer` | `—` | `` |
-| `engines/document/models/ssdm_models.py` | `MibObjectType` | `—` | `` |
-| `engines/document/models/ssdm_models.py` | `MibModule` | `—` | `` |
-| `engines/document/models/ssdm_models.py` | `GraphQLService` | `—` | `` |
-| `engines/document/models/ssdm_models.py` | `AsyncAPIInfo` | `—` | `` |
-| `engines/document/models/ssdm_models.py` | `SSDMDocument ` | `BaseDocument` | `` |
 | `engines/document/models/ssdm_models.py` | `Transport` | `str, Enum` | `` |
-| `engines/document/models/ssdm_models.py` | `AuthMethod` | `str, Enum` | `` |
-| `engines/document/models/ssdm_models.py` | `ApiKeyLocation` | `str, Enum` | `` |
 | `engines/document/models/ssdm_models.py` | `ValueSource` | `str, Enum` | `` |
-| `engines/document/models/ssdm_models.py` | `OAuth2Flow` | `str, Enum` | `` |
 | `engines/document/models/ssdm_models.py` | `RetryPolicy` | `str, Enum` | `` |
 | `engines/document/models/ssdm_models.py` | `PortProtocol` | `str, Enum` | `` |
 | `engines/document/models/ssdm_models.py` | `HealthProbeType` | `str, Enum` | `` |
 | `engines/document/models/ssdm_models.py` | `PerformedBy` | `str, Enum` | `` |
 | `engines/document/models/ssdm_models.py` | `DiscoveryBackend` | `str, Enum` | `` |
 | `engines/document/models/ssdm_models.py` | `ServiceType` | `str, Enum` | `` |
+| `engines/document/models/ssdm_models.py` | `MeshRuleType` | `str, Enum` | `` |
+| `engines/document/models/ssdm_models.py` | `MessageFormat` | `str, Enum` | `` |
+| `engines/document/models/ssdm_models.py` | `SubscriptionType` | `str, Enum` | `` |
+| `engines/document/models/ssdm_models.py` | `InternalComponentType` | `str, Enum` | `` |
+| `engines/document/models/ssdm_models.py` | `CoordinationProtocol` | `str, Enum` | `` |
+| `engines/document/models/ssdm_models.py` | `ContactInfo` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `LicenseInfo` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `Server` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `Parameter` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `RequestBody` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `Link` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `Response` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `YangMetadata` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `ServiceOperation` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `SSDMDocument` | `BaseDocument` | `` |
+| `engines/document/models/ssdm_models.py` | `SecurityRequirement` | `—` | `` |
 | `engines/document/models/ssdm_models.py` | `JWTValidation` | `—` | `` |
 | `engines/document/models/ssdm_models.py` | `AuthConfig` | `—` | `` |
-| `engines/document/models/ssdm_models.py` | `SlAPolicy` | `—` | `` |
+| `engines/document/models/ssdm_models.py` | `SlaPolicy` | `—` | `` |
 | `engines/document/models/ssdm_models.py` | `RateLimit` | `—` | `` |
 | `engines/document/models/ssdm_models.py` | `CORSConfig` | `—` | `` |
 | `engines/document/models/ssdm_models.py` | `GatewayRule` | `—` | `` |
@@ -1944,35 +2118,28 @@
 | `engines/document/models/ssdm_models.py` | `GRPCProbe` | `—` | `` |
 | `engines/document/models/ssdm_models.py` | `HealthCheck` | `—` | `` |
 | `engines/document/models/ssdm_models.py` | `DiscoveryConfig` | `—` | `` |
-| `engines/document/models/ssdm_models.py` | `MeshRuleType` | `str, Enum` | `` |
 | `engines/document/models/ssdm_models.py` | `MeshRule` | `—` | `` |
 | `engines/document/models/ssdm_models.py` | `IngressRule` | `—` | `` |
 | `engines/document/models/ssdm_models.py` | `LoadBalancerConfig` | `—` | `` |
 | `engines/document/models/ssdm_models.py` | `ServiceExposure` | `—` | `` |
 | `engines/document/models/ssdm_models.py` | `DeploymentDescriptor` | `—` | `` |
-| `engines/document/models/ssdm_models.py` | `MessageFormat` | `str, Enum` | `` |
-| `engines/document/models/ssdm_models.py` | `SubscriptionType` | `str, Enum` | `` |
 | `engines/document/models/ssdm_models.py` | `MessageBinding` | `—` | `` |
 | `engines/document/models/ssdm_models.py` | `ServiceBinding` | `—` | `` |
 | `engines/document/models/ssdm_models.py` | `MCPToolBinding` | `—` | `` |
 | `engines/document/models/ssdm_models.py` | `MCPResourceBinding` | `—` | `` |
 | `engines/document/models/ssdm_models.py` | `MCPPromptBinding` | `—` | `` |
 | `engines/document/models/ssdm_models.py` | `MCPNorthBoundBinding` | `—` | `` |
-| `engines/document/models/ssdm_models.py` | `InternalComponentType` | `str, Enum` | `` |
-| `engines/document/models/ssdm_models.py` | `CoordinationProtocol` | `str, Enum` | `` |
 | `engines/document/models/ssdm_models.py` | `ParameterMapping` | `—` | `` |
 | `engines/document/models/ssdm_models.py` | `ResponseMapping` | `—` | `` |
 | `engines/document/models/ssdm_models.py` | `InternalServiceBinding` | `—` | `` |
 | `engines/document/models/ssdm_models.py` | `NorthBoundBinding` | `ServiceBinding` | `` |
 | `engines/document/models/ssdm_models.py` | `MCPClientToolBinding` | `—` | `` |
-| `engines/document/models/ssdm_models.py` | `MCPSouthBoundBinding` | `—` | `` |
 | `engines/document/models/ssdm_models.py` | `MCPSouthBoundBinding` | `—` | `to_service_binding` |
 | `engines/document/models/standard.py` | `DocumentStandard` | `str, Enum` | `full_name, description` |
 | `engines/document/models/standard.py` | `MediaCategory` | `str, Enum` | `` |
 | `engines/document/models/tsdm_models.py` | `ToolKind` | `str, Enum` | `` |
 | `engines/document/models/tsdm_models.py` | `ParameterSource` | `str, Enum` | `` |
 | `engines/document/models/tsdm_models.py` | `ParameterType` | `str, Enum` | `` |
-| `engines/document/models/tsdm_models.py` | `HttpMethod` | `str, Enum` | `` |
 | `engines/document/models/tsdm_models.py` | `LoadBalanceStrategy` | `str, Enum` | `` |
 | `engines/document/models/tsdm_models.py` | `SnmpVersion` | `str, Enum` | `` |
 | `engines/document/models/tsdm_models.py` | `NetconfProtocol` | `str, Enum` | `` |
@@ -2000,7 +2167,7 @@
 | `engines/document/models/usdm_models.py` | `DocumentElement` | `—` | `` |
 | `engines/document/models/usdm_models.py` | `Section` | `—` | `` |
 | `engines/document/models/usdm_models.py` | `PageContent` | `—` | `` |
-| `engines/document/models/usdm_models.py` | `LogicalElement` | `—` | `` |
+| `engines/document/models/usdm_models.py` | `LogicalElement` | `—` | `_meta` |
 | `engines/document/models/usdm_models.py` | `RichTextSpan` | `—` | `` |
 | `engines/document/models/usdm_models.py` | `RichTextContent` | `—` | `` |
 | `engines/document/models/usdm_models.py` | `ParagraphContent` | `—` | `` |
@@ -2067,8 +2234,6 @@
 | `engines/document/models/usdm_models.py` | `SpreadsheetContent` | `—` | `` |
 | `engines/document/parsers/base.py` | `ParseOptions` | `BaseModel` | `` |
 | `engines/document/parsers/base.py` | `BaseDocumentParser` | `ABC` | `parse_bytes, parse_path, parse_stream, supports_extension, iter_supported_extensions` |
-| `engines/document/parsers/binary_parser.py` | `BinaryParser` | `BaseDocumentParser` | `__init__, parse_bytes, parse_path, parse_stream, _detect_format, _parse_binary_data ...` |
-| `engines/document/parsers/binary_parser.py` | `RestrictedUnpickler` | `pickle.Unpickler` | `find_class` |
 | `engines/document/parsers/docx_parser/docx_extractor.py` | `DOCXExtractor` | `—` | `__init__, extract, extract_document_xml, extract_styles_xml, extract_numbering_xml, get_relationship_target ...` |
 | `engines/document/parsers/docx_parser/docx_image_extractor.py` | `DOCXImageExtractor` | `—` | `__init__, extract_all_images, extract_image_by_rel_id, extract_image_by_path, extract_images_from_drawing_elements, get_image_metadata ...` |
 | `engines/document/parsers/docx_parser/docx_math_parser.py` | `OMMLParser` | `—` | `__init__, _register_namespaces, parse_math_paragraph, parse_math, parse_math_from_xml, _parse_math_element ...` |
@@ -2081,7 +2246,7 @@
 | `engines/document/parsers/docx_parser/docx_models.py` | `TextDirection` | `str, Enum` | `` |
 | `engines/document/parsers/docx_parser/docx_models.py` | `DOCXRunProperties` | `—` | `` |
 | `engines/document/parsers/docx_parser/docx_models.py` | `DOCXTextRun` | `—` | `` |
-| `engines/document/parsers/docx_parser/docx_models.py` | `DOCXDiagram` | `—` | `` |
+| `engines/document/parsers/docx_parser/docx_models.py` | `DOCXDiagram` | `—` | `__init__` |
 | `engines/document/parsers/docx_parser/docx_models.py` | `DOCXDrawing` | `—` | `` |
 | `engines/document/parsers/docx_parser/docx_models.py` | `DOCXField` | `—` | `` |
 | `engines/document/parsers/docx_parser/docx_models.py` | `DOCXSymbol` | `—` | `` |
@@ -2123,21 +2288,35 @@
 | `engines/document/parsers/docx_parser/docx_utils.py` | `DocxNumberingInfo` | `—` | `__post_init__` |
 | `engines/document/parsers/docx_parser/docx_utils.py` | `DocxUtils` | `—` | `extract_text_style, extract_paragraph_style, extract_style_properties, extract_numbering_definition, extract_text_from_element, convert_omml_to_latex ...` |
 | `engines/document/parsers/drawingml/diagram_parser.py` | `DiagramNode` | `—` | `__init__` |
+| `engines/document/parsers/dsdm_parsers/base_dsdm_parser.py` | `DSDMParseOptions` | `ParseOptions` | `` |
+| `engines/document/parsers/dsdm_parsers/base_dsdm_parser.py` | `BaseDSDMParser` | `BaseDocumentParser` | `parse_bytes, _parse_to_datanode, _detect_media_type, _bind_schema, _bind_node, _coerce_default_value ...` |
+| `engines/document/parsers/dsdm_parsers/binary_parser.py` | `BinaryParser` | `BaseDSDMParser` | `_parse_to_datanode, _detect_media_type` |
+| `engines/document/parsers/dsdm_parsers/bson_parser.py` | `BSONParser` | `BinaryParser` | `_parse_to_datanode, _detect_media_type` |
+| `engines/document/parsers/dsdm_parsers/cassandra_parser.py` | `CassandraParser` | `BaseDSDMParser` | `fetch_from_cassandra, _coerce_cassandra_value` |
+| `engines/document/parsers/dsdm_parsers/cbor_parser.py` | `CBORParser` | `BinaryParser` | `_parse_to_datanode, _detect_media_type` |
+| `engines/document/parsers/dsdm_parsers/csv_tsv_parser.py` | `CSVTSVParser` | `BaseDSDMParser` | `_parse_to_datanode, _coerce_value, _detect_media_type` |
+| `engines/document/parsers/dsdm_parsers/json_parser.py` | `JSONParser` | `BaseDSDMParser` | `_parse_to_datanode, _detect_media_type` |
+| `engines/document/parsers/dsdm_parsers/mongodb_parser.py` | `MongoDBParser` | `BSONParser` | `fetch_collection, _coerce_mongo_value, _mongo_field_to_node` |
+| `engines/document/parsers/dsdm_parsers/msgpack_parser.py` | `MsgPackParser` | `BinaryParser` | `_parse_to_datanode, _detect_media_type` |
+| `engines/document/parsers/dsdm_parsers/pickle_parser.py` | `PickleParser` | `BinaryParser` | `_parse_to_datanode, _detect_media_type` |
+| `engines/document/parsers/dsdm_parsers/protobuf_parser.py` | `ProtobufParser` | `BaseDSDMParser` | `_parse_to_datanode, _detect_media_type` |
+| `engines/document/parsers/dsdm_parsers/redis_parser.py` | `RedisParser` | `BaseDSDMParser` | `_parse_to_datanode, _detect_media_type, fetch_from_redis, _coerce_redis_value` |
+| `engines/document/parsers/dsdm_parsers/sql_parser.py` | `AsyncDBConnection` | `Protocol` | `execute` |
+| `engines/document/parsers/dsdm_parsers/sql_parser.py` | `SQLDataParser` | `BaseDSDMParser` | `_parse_to_datanode, _detect_media_type, fetch_from_database, _build_tree_from_rows, _coerce_value_from_db, _parse_default` |
+| `engines/document/parsers/dsdm_parsers/xml_parser.py` | `XMLParser` | `BaseDSDMParser` | `_parse_to_datanode, _elem_to_datanode, _detect_media_type` |
+| `engines/document/parsers/dsdm_parsers/yaml_parser.py` | `YAMLParser` | `BaseDSDMParser` | `_parse_to_datanode, _detect_media_type` |
 | `engines/document/parsers/html_parser.py` | `HTMLDocumentParser` | `HTMLParser` | `__init__, _generate_id, _create_rich_text_span, _flush_current_text, handle_starttag, handle_endtag ...` |
 | `engines/document/parsers/html_parser.py` | `HtmlParser` | `BaseDocumentParser` | `parse_bytes, parse_text, parse_stream, get_supported_media_types, get_supported_extensions, _extract_math_from_html` |
-| `engines/document/parsers/json_parser.py` | `JsonDocumentParser` | `BaseDocumentParser` | `__init__, parse_bytes, parse_path, get_supported_media_types, get_supported_extensions` |
 | `engines/document/parsers/latex_parser.py` | `LatexParser` | `BaseDocumentParser` | `__init__, parse_bytes, parse_stream, _reset_parser_state, _generate_id, _extract_title ...` |
 | `engines/document/parsers/markdown_parser.py` | `MarkdownTreeProcessor` | `Treeprocessor` | `__init__, run, _generate_id, _process_node, _extract_text, _process_list ...` |
 | `engines/document/parsers/markdown_parser.py` | `MarkdownExtension` | `Extension` | `extendMarkdown` |
 | `engines/document/parsers/markdown_parser.py` | `MarkdownParser` | `BaseDocumentParser` | `__init__, parse_bytes, parse_stream` |
-| `engines/document/parsers/msdm_parsers/avro_schema_parser.py` | `AvroSchemaParser` | `BaseMSDMParser` | `_parse_to_msdm, _process_schema_entry, _parse_record, _parse_enum, _parse_fixed, _parse_field ...` |
-| `engines/document/parsers/msdm_parsers/base_msdm_parser.py` | `BaseMSDMParser` | `BaseDocumentParser` | `__init__, parse_bytes, parse_path, parse_stream, _parse_to_msdm` |
+| `engines/document/parsers/msdm_parsers/base_msdm_parser.py` | `BaseMSDMParser` | `BaseDocumentParser` | `__init__, parse_bytes, parse_path, parse_stream, _parse_to_msdm, resolve_references ...` |
 | `engines/document/parsers/msdm_parsers/cql_parser.py` | `CQLParser` | `BaseMSDMParser` | `_parse_to_msdm, _strip_comments, _process_statement, _parse_create_table, _parse_create_type, _parse_create_index ...` |
-| `engines/document/parsers/msdm_parsers/cue_parser.py` | `CueParser` | `BaseMSDMParser` | `_parse_to_msdm, _strip_comments, _parse_cue_text, _tokenize, _peek, _advance ...` |
 | `engines/document/parsers/msdm_parsers/elasticsearch_mapping_parser.py` | `ElasticsearchMappingParser` | `BaseMSDMParser` | `_parse_to_msdm, _store_settings, _parse_mappings, _parse_field, _flatten` |
 | `engines/document/parsers/msdm_parsers/erd_parser.py` | `ERDParser` | `BaseMSDMParser` | `_parse_to_msdm, _parse_json, _parse_json_entity, _parse_json_attribute, _parse_json_relationship, _parse_xml ...` |
 | `engines/document/parsers/msdm_parsers/graphql_schema_parser.py` | `TokenType` | `Enum` | `` |
-| `engines/document/parsers/msdm_parsers/graphql_schema_parser.py` | `GraphQLSchemaParser` | `BaseMSDMParser` | `_parse_to_msdm, _peek, _advance, _skip_comments, _parse_definition, _parse_description ...` |
+| `engines/document/parsers/msdm_parsers/graphql_schema_parser.py` | `GraphQLSchemaParser` | `BaseMSDMParser` | `_parse_to_msdm, _peek, _advance, _skip_comments, _expect, _expect_name ...` |
 | `engines/document/parsers/msdm_parsers/influxdb_schema_parser.py` | `InfluxDBSchemaParser` | `BaseMSDMParser` | `_parse_to_msdm, _strip_comments, _split_statements, _process_statement, _parse_create_measurement, _parse_measurement_fields ...` |
 | `engines/document/parsers/msdm_parsers/json_schema_parser.py` | `JsonSchemaParser` | `BaseMSDMParser` | `_parse_to_msdm, _process_schema, _parse_attribute, _type_to_datatype, _resolve_refs, _store_definitions ...` |
 | `engines/document/parsers/msdm_parsers/mongodb_schema_parser.py` | `MongoDBSchemaParser` | `BaseMSDMParser` | `_parse_to_msdm, _try_json, _parse_validator, _process_validator_object, _parse_validator_field, _bson_type_to_datatype ...` |
@@ -2148,18 +2327,14 @@
 | `engines/document/parsers/msdm_parsers/python_model_parser.py` | `PythonModelParser` | `BaseMSDMParser` | `_parse_to_msdm, _process_class, _process_enum, _extract_fields, _annotation_to_datatype, _ast_to_datatype ...` |
 | `engines/document/parsers/msdm_parsers/sql_ddl_parser.py` | `SqlDDLParser` | `BaseMSDMParser` | `_parse_to_msdm, _strip_sql_comments, _split_statements, _parse_create_table, _parse_column_definition, _sql_type_to_datatype ...` |
 | `engines/document/parsers/msdm_parsers/thrift_idl_parser.py` | `ThriftIDLParser` | `BaseMSDMParser` | `_parse_to_msdm, _process_file_directives, _parse_typedef, _parse_enum, _parse_struct, _split_field_lines ...` |
-| `engines/document/parsers/msdm_parsers/typescript_interface_parser.py` | `Token` | `—` | `__init__` |
-| `engines/document/parsers/msdm_parsers/typescript_interface_parser.py` | `TypeScriptInterfaceParser` | `BaseMSDMParser` | `_parse_to_msdm, _peek, _advance, _match, _expect, _parse_declaration ...` |
-| `engines/document/parsers/msdm_parsers/uml_xmi_parser.py` | `UMLXmiParser` | `BaseMSDMParser` | `_parse_to_msdm, _collect_elements, _parse_class, _is_association_end, _parse_attribute, _parse_operation ...` |
+| `engines/document/parsers/msdm_parsers/typescript_interface_parser.py` | `_Token` | `—` | `__init__` |
+| `engines/document/parsers/msdm_parsers/typescript_interface_parser.py` | `TypeScriptInterfaceParser` | `BaseMSDMParser` | `_parse_to_msdm, _peek, _peek_value, _peek_kind, _advance, _expect ...` |
+| `engines/document/parsers/msdm_parsers/uml_xmi_parser.py` | `UMLXmiParser` | `BaseMSDMParser` | `_parse_to_msdm, _collect_elements, _collect_enum_literals, _parse_class, _is_association_end, _parse_attribute ...` |
 | `engines/document/parsers/msdm_parsers/xsd_parser.py` | `XSDParser` | `BaseMSDMParser` | `_parse_to_msdm, _parse_complex_type, _process_complex_content, _process_base_type, _process_compositor_or_attrs, _process_compositor ...` |
-| `engines/document/parsers/osdm_parsers/airflow_dag_parser.py` | `AirflowDAGParser` | `BaseOSDMParser` | `_parse_to_document, _find_dag_definitions, _is_dag_context, _is_dag_call, _extract_dag_info_from_with, _extract_dag_info_from_assign ...` |
-| `engines/document/parsers/osdm_parsers/aws_step_functions_parser.py` | `AWSStepFunctionsParser` | `BaseOSDMParser` | `_parse_to_document, _build_state_machine, _parse_state, _choice_to_expression` |
-| `engines/document/parsers/osdm_parsers/azure_logic_apps_parser.py` | `AzureLogicAppsParser` | `BaseOSDMParser` | `_parse_to_document, _build_state_machine, _parse_triggers, _parse_action, _parse_iso8601_duration` |
-| `engines/document/parsers/osdm_parsers/base_osdm_parser.py` | `BaseOSDMParser` | `BaseDocumentParser` | `__init__, parse_bytes, parse_path, parse_stream, _parse_to_document, _detect_version ...` |
-| `engines/document/parsers/osdm_parsers/bpmn_xml_parser.py` | `BPMNXMLParser` | `BaseOSDMParser` | `_parse_to_document, _parse_process, _parse_flow_element, _parse_task, _parse_activity_common, _parse_sub_process ...` |
+| `engines/document/parsers/osdm_parsers/base_osdm_parser.py` | `BaseOSDMParser` | `BaseDocumentParser` | `__init__, parse_bytes, parse_path, parse_stream, _parse_to_document, _detect_version` |
+| `engines/document/parsers/osdm_parsers/bpmn_xml_parser.py` | `BPMNXMLParser` | `BaseOSDMParser` | `__init__, _map_enum, _map_gateway_type, _map_gateway_direction, _map_process_type, _map_association_direction ...` |
 | `engines/document/parsers/osdm_parsers/cep_parser.py` | `CEPParser` | `BaseOSDMParser` | `_parse_to_document, _parse_definition, _parse_stream, _parse_rule` |
 | `engines/document/parsers/osdm_parsers/cmmn_xml_parser.py` | `CMMNXMLParser` | `BaseOSDMParser` | `_parse_to_document, _parse_case, _parse_stage, _parse_flow_element, _parse_milestone, _parse_event_listener ...` |
-| `engines/document/parsers/osdm_parsers/cncf_serverless_workflow_parser.py` | `CNCFServerlessWorkflowParser` | `BaseOSDMParser` | `_parse_to_document, _build_state_machine, _parse_state, _parse_iso8601_duration` |
 | `engines/document/parsers/osdm_parsers/dmn_xml_parser.py` | `DMNXMLParser` | `BaseOSDMParser` | `_parse_to_document, _parse_definitions, _parse_decision, _resolve_decision_requirements, _parse_information_requirement, _parse_knowledge_requirement ...` |
 | `engines/document/parsers/osdm_parsers/epc_parser.py` | `EPCParser` | `BaseOSDMParser` | `_parse_to_document, _parse_epc, _parse_event, _parse_function, _parse_connector, _parse_arc ...` |
 | `engines/document/parsers/osdm_parsers/graphml_xml_parser.py` | `GraphMLXMLParser` | `BaseOSDMParser` | `_parse_to_document, _parse_graph, _parse_node, _parse_edge, _parse_port` |
@@ -2167,8 +2342,7 @@
 | `engines/document/parsers/osdm_parsers/prefect_dag_parser.py` | `PrefectDAGParser` | `BaseOSDMParser` | `_parse_to_document, _find_flows, _is_decorator_name, _build_state_machine, _build_state_machine_from_tasks, _find_tasks ...` |
 | `engines/document/parsers/osdm_parsers/scxml_parser.py` | `SCXMLParser` | `BaseOSDMParser` | `_parse_to_document, _parse_scxml, _parse_state_or_parallel, _add_to_region, _parse_transition, _parse_on_entry_exit ...` |
 | `engines/document/parsers/osdm_parsers/uml_state_machine_parser.py` | `UMLStateMachineParser` | `BaseOSDMParser` | `_parse_to_document, _parse_state_machine, _parse_region, _parse_state, _parse_activity, _parse_final_state ...` |
-| `engines/document/parsers/osdm_parsers/xpd_parser.py` | `XPDLParser` | `BaseOSDMParser` | `_parse_to_document, _parse_workflow_process, _parse_activity, _parse_transition, _parse_lane, _parse_data_field ...` |
-| `engines/document/parsers/osdm_parsers/yawl_parser.py` | `YAWLParser` | `BaseOSDMParser` | `_parse_to_document, _parse_specification_and_net, _parse_condition, _parse_task, _parse_arc, _parse_cancellation_set ...` |
+| `engines/document/parsers/osdm_parsers/xpd_parser.py` | `XPDLParser` | `BaseOSDMParser` | `_parse_to_document, _parse_workflow_process_first_pass, _parse_activity_first_pass, _parse_transition_first_pass, _parse_association_first_pass, _parse_artifact_first_pass ...` |
 | `engines/document/parsers/pdf_parser/content_extractor.py` | `ContentType` | `Enum` | `` |
 | `engines/document/parsers/pdf_parser/content_extractor.py` | `ExtractedText` | `—` | `` |
 | `engines/document/parsers/pdf_parser/content_extractor.py` | `ExtractedTable` | `—` | `to_dataframe, to_csv` |
@@ -2246,40 +2420,18 @@
 | `engines/document/parsers/spreadsheet_parser/delimited_parser.py` | `TSVParser` | `DelimitedParser` | `` |
 | `engines/document/parsers/spreadsheet_parser/fixed_width_parser.py` | `FixedWidthParser` | `BaseSpreadsheetParser` | `_parse_to_workbook, _slice_line, _get_sheet_name` |
 | `engines/document/parsers/spreadsheet_parser/xlsx/parser.py` | `XLSXParser` | `BaseSpreadsheetParser` | `_parse_to_workbook, _load_xml, _load_relationships, _load_sheet_relationships, _resolve_sheets, _find_sheet_relationship ...` |
-| `engines/document/parsers/ssdm_parsers/apib_parser.py` | `APIBlueprintTokenizer` | `—` | `__init__, eof, current, peek, advance, next_non_empty ...` |
-| `engines/document/parsers/ssdm_parsers/apib_parser.py` | `APIBObject` | `—` | `to_dict` |
-| `engines/document/parsers/ssdm_parsers/apib_parser.py` | `APIBMetadata` | `APIBObject` | `__init__` |
-| `engines/document/parsers/ssdm_parsers/apib_parser.py` | `APIBParameter` | `APIBObject` | `__init__` |
-| `engines/document/parsers/ssdm_parsers/apib_parser.py` | `APIBBody` | `APIBObject` | `__init__` |
-| `engines/document/parsers/ssdm_parsers/apib_parser.py` | `APIBAction` | `APIBObject` | `__init__` |
-| `engines/document/parsers/ssdm_parsers/apib_parser.py` | `APIBResource` | `APIBObject` | `__init__` |
-| `engines/document/parsers/ssdm_parsers/apib_parser.py` | `APIBGroup` | `APIBObject` | `__init__` |
-| `engines/document/parsers/ssdm_parsers/apib_parser.py` | `APIBlueprintParser` | `—` | `__init__, parse, _skip_blank, _parse_metadata, _parse_group, _parse_resource ...` |
-| `engines/document/parsers/ssdm_parsers/apib_parser.py` | `APIBlueprintToSSDMParser` | `BaseSSDMParser` | `_parse_to_document, _build_servers, _action_to_operation, _object_to_entity` |
 | `engines/document/parsers/ssdm_parsers/asyncapi_parser.py` | `AsyncAPIParser` | `BaseSSDMParser` | `_parse_to_document, _parse_contact, _parse_license, _parse_servers, _parse_security_schemes, _parse_channel ...` |
-| `engines/document/parsers/ssdm_parsers/base_ssdm_parser.py` | `BaseSSDMParser` | `BaseDocumentParser` | `__init__, parse_bytes, parse_path, parse_stream, _parse_to_document, _detect_version ...` |
-| `engines/document/parsers/ssdm_parsers/cddl_parser.py` | `CDDLTokenType` | `—` | `` |
-| `engines/document/parsers/ssdm_parsers/cddl_parser.py` | `CDDLToken` | `—` | `` |
-| `engines/document/parsers/ssdm_parsers/cddl_parser.py` | `CDDLLexer` | `—` | `__init__, _skip_spaces_and_comments, _make_token, next_token` |
-| `engines/document/parsers/ssdm_parsers/cddl_parser.py` | `CDDLType` | `—` | `__init__, __repr__` |
-| `engines/document/parsers/ssdm_parsers/cddl_parser.py` | `CDDLParser` | `—` | `__init__, _eat, _skip_newlines, parse, _parse_type, _parse_choice ...` |
-| `engines/document/parsers/ssdm_parsers/cddl_parser.py` | `CDDLServiceParser` | `BaseSSDMParser` | `_parse_to_document, _cddl_to_entity, _type_to_string, _primitive_to_type_string` |
-| `engines/document/parsers/ssdm_parsers/graphql_service_parser.py` | `TokenType` | `—` | `` |
-| `engines/document/parsers/ssdm_parsers/graphql_service_parser.py` | `Token` | `—` | `` |
-| `engines/document/parsers/ssdm_parsers/graphql_service_parser.py` | `GraphQLScanner` | `—` | `__init__, peek, next, _next_token, _skip_whitespace_and_comments, _scan_number ...` |
-| `engines/document/parsers/ssdm_parsers/graphql_service_parser.py` | `GraphQLField` | `—` | `__init__` |
-| `engines/document/parsers/ssdm_parsers/graphql_service_parser.py` | `GraphQLType` | `—` | `__init__` |
-| `engines/document/parsers/ssdm_parsers/graphql_service_parser.py` | `GraphQLSchema` | `—` | `__init__` |
-| `engines/document/parsers/ssdm_parsers/graphql_service_parser.py` | `GraphQLParser` | `—` | `__init__, parse, _match, _advance, _peek, _parse_schema_definition ...` |
-| `engines/document/parsers/ssdm_parsers/graphql_service_parser.py` | `GraphQLServiceParser` | `BaseSSDMParser` | `_parse_to_document, _convert_type_to_entity, _map_gql_type_to_string, _fields_to_operations` |
+| `engines/document/parsers/ssdm_parsers/base_ssdm_parser.py` | `BaseSSDMParser` | `BaseDocumentParser` | `__init__, parse_bytes, parse_path, parse_stream, _parse_to_document, _detect_version` |
+| `engines/document/parsers/ssdm_parsers/graphql_service_parser.py` | `_TokenType` | `—` | `` |
+| `engines/document/parsers/ssdm_parsers/graphql_service_parser.py` | `_Token` | `—` | `` |
+| `engines/document/parsers/ssdm_parsers/graphql_service_parser.py` | `_GraphQLScanner` | `—` | `__init__, peek, next, _next_token, _skip_whitespace_and_comments, _scan_number ...` |
+| `engines/document/parsers/ssdm_parsers/graphql_service_parser.py` | `_GraphQLField` | `—` | `__init__` |
+| `engines/document/parsers/ssdm_parsers/graphql_service_parser.py` | `_GraphQLType` | `—` | `__init__` |
+| `engines/document/parsers/ssdm_parsers/graphql_service_parser.py` | `_GraphQLSchema` | `—` | `__init__` |
+| `engines/document/parsers/ssdm_parsers/graphql_service_parser.py` | `_GraphQLParser` | `—` | `__init__, parse, _match, _advance, _peek, _parse_schema_definition ...` |
+| `engines/document/parsers/ssdm_parsers/graphql_service_parser.py` | `GraphQLServiceParser` | `BaseSSDMParser` | `_parse_to_document, _convert_type_to_entity, _map_gql_type_to_datatype, _fields_to_operations` |
 | `engines/document/parsers/ssdm_parsers/mcp_parser.py` | `MCPParser` | `BaseSSDMParser` | `_parse_to_document, _parse_mcp_binding, _parse_auth, _parse_internal_binding, _parse_tool_binding, _parse_resource_binding ...` |
-| `engines/document/parsers/ssdm_parsers/mib_parser.py` | `MIBLexer` | `—` | `__init__, eof, current_line, advance, skip_blank_and_comments, peek_after_blanks ...` |
-| `engines/document/parsers/ssdm_parsers/mib_parser.py` | `OIDNode` | `—` | `__init__, add_child, get_full_oid` |
-| `engines/document/parsers/ssdm_parsers/mib_parser.py` | `MIBDef` | `—` | `__init__` |
-| `engines/document/parsers/ssdm_parsers/mib_parser.py` | `MIBDocParser` | `—` | `__init__, _parse, _parse_imports, _parse_module_identity, _set_module_field, _parse_object_type ...` |
-| `engines/document/parsers/ssdm_parsers/mib_parser.py` | `MIBParser` | `BaseSSDMParser` | `_parse_to_document, _map_access, _make_get_operation, _make_set_operation, _make_notification_operation` |
-| `engines/document/parsers/ssdm_parsers/openapi_parser.py` | `OpenAPIV3Parser` | `BaseSSDMParser` | `_parse_to_document, _parse_contact, _parse_license, _parse_servers, _parse_security_schemes, _parse_reusable_parameters ...` |
-| `engines/document/parsers/ssdm_parsers/postman_collection_parser.py` | `PostmanCollectionParser` | `BaseSSDMParser` | `_parse_to_document, _process_item, _parse_request, _infer_entity_from_json, _infer_datatype` |
+| `engines/document/parsers/ssdm_parsers/openapi_parser.py` | `OpenAPIV3Parser` | `BaseSSDMParser` | `_parse_to_document, _parse_contact, _parse_license, _parse_servers, _parse_security_schemes, _parse_paths ...` |
 | `engines/document/parsers/ssdm_parsers/proto_service_parser.py` | `ProtoToken` | `—` | `__init__` |
 | `engines/document/parsers/ssdm_parsers/proto_service_parser.py` | `ProtoLexer` | `—` | `__init__, next_token, _skip_whitespace_and_comments, _scan_string, _scan_number` |
 | `engines/document/parsers/ssdm_parsers/proto_service_parser.py` | `ProtoType` | `—` | `__init__` |
@@ -2290,18 +2442,13 @@
 | `engines/document/parsers/ssdm_parsers/proto_service_parser.py` | `ServiceDef` | `—` | `__init__` |
 | `engines/document/parsers/ssdm_parsers/proto_service_parser.py` | `ProtoFile` | `—` | `__init__` |
 | `engines/document/parsers/ssdm_parsers/proto_service_parser.py` | `ProtoParser` | `—` | `__init__, _eat, parse, _parse_syntax, _parse_package, _parse_message ...` |
-| `engines/document/parsers/ssdm_parsers/proto_service_parser.py` | `ProtoServiceParser` | `BaseSSDMParser` | `_parse_to_document, _message_to_entity, _field_to_attribute, _enum_to_entity, _method_to_operation` |
+| `engines/document/parsers/ssdm_parsers/proto_service_parser.py` | `ProtoServiceParser` | `BaseSSDMParser` | `_parse_to_document, _message_to_entity, _field_to_attribute, _enum_to_entity, _method_to_operation, _proto_type_to_datatype ...` |
 | `engines/document/parsers/ssdm_parsers/python_service_parser.py` | `PythonServiceParser` | `BaseSSDMParser` | `_parse_to_document, _find_app_instance, _collect_pydantic_models, _pydantic_class_to_entity, _parse_routes, _is_route_decorator ...` |
-| `engines/document/parsers/ssdm_parsers/raml_parser.py` | `RAMLParser` | `BaseSSDMParser` | `_parse_to_document, _parse_resource, _parse_method, _parse_parameter, _parse_raml_type, _raml_prop_to_datatype ...` |
-| `engines/document/parsers/ssdm_parsers/webidl_parser.py` | `Token` | `—` | `__init__` |
-| `engines/document/parsers/ssdm_parsers/webidl_parser.py` | `WebIDLParser` | `BaseSSDMParser` | `_parse_to_document, _peek, _advance, _expect, _match, _parse_definition ...` |
 | `engines/document/parsers/ssdm_parsers/wsdl_parser.py` | `WSDLParser` | `BaseSSDMParser` | `_parse_to_document, _parse_xsd_schema, _xsd_type_to_datatype, _parts_to_parameters, _parts_to_body_entity, _get_child_text` |
-| `engines/document/parsers/ssdm_parsers/yang_parser.py` | `Token` | `—` | `__init__` |
-| `engines/document/parsers/ssdm_parsers/yang_parser.py` | `YANGParser` | `BaseSSDMParser` | `_parse_to_document, _peek, _advance, _match, _expect, _parse_module ...` |
+| `engines/document/parsers/ssdm_parsers/yang_parser.py` | `_Token` | `—` | `__init__` |
+| `engines/document/parsers/ssdm_parsers/yang_parser.py` | `YANGParser` | `BaseSSDMParser` | `_parse_to_document, _peek, _peek_value, _peek_kind, _advance, _expect ...` |
 | `engines/document/parsers/tsdm_parsers/base_tsdm_parser.py` | `BaseTSDMParser` | `BaseDocumentParser` | `parse_bytes, parse_path, parse_stream, _parse_to_tsdm` |
 | `engines/document/parsers/tsdm_parsers/tsdm_json_parser.py` | `TsdmJsonParser` | `BaseTSDMParser` | `_parse_to_tsdm, _parse_tool, _parse_parameters, _parse_outputs` |
-| `engines/document/parsers/xml_parser.py` | `XmlDocumentParser` | `BaseDocumentParser` | `__init__, parse_bytes, parse_path, _dom_to_dsdm, _handle_element_node, _handle_text_node ...` |
-| `engines/document/parsers/yaml_parser.py` | `YamlDocumentParser` | `BaseDocumentParser` | `__init__, parse_bytes, parse_path, get_supported_media_types, get_supported_extensions` |
 | `engines/document/storage/chunk_store.py` | `ChunkStore` | `—` | `__init__, _key, add_chunks, get_chunk, list_chunks_for_document, attach_embeddings ...` |
 | `engines/document/storage/document_store.py` | `DocumentStore` | `—` | `__init__, _document_key, _chunk_key, add_document, add_chunks, get_document ...` |
 | `engines/document/storage/metadata_store.py` | `MetadataStore` | `—` | `__init__, _key, put_metadata, get_metadata, delete_metadata` |
@@ -2310,26 +2457,40 @@
 | `engines/document/utils/streaming_binary_codec.py` | `StreamingBinaryCodec` | `—` | `chunk_file_to_payloads, payloads_to_file` |
 | `engines/document/writers/base.py` | `WriteOptions` | `BaseModel` | `` |
 | `engines/document/writers/base.py` | `BaseDocumentWriter` | `ABC` | `__init__, write_stream, write, write_to_file, get_supported_media_types, get_supported_extensions` |
-| `engines/document/writers/binary_writer.py` | `BinaryWriter` | `BaseDocumentWriter` | `__init__, write_stream, write, write_to_file, _serialize_document, _determine_output_format ...` |
-| `engines/document/writers/json_writer.py` | `JsonDocumentWriter` | `BaseDocumentWriter` | `__init__, write, _document_to_python, _json_default_serializer, write_to_file, get_supported_media_types ...` |
+| `engines/document/writers/dsdm_writers/base_dsdm_writer.py` | `DSDMWriteOptions` | `WriteOptions` | `` |
+| `engines/document/writers/dsdm_writers/base_dsdm_writer.py` | `BaseDSDMWriter` | `BaseDocumentWriter` | `__init__, write, write_stream, write_to_file, _serialise_root, _serialise_node ...` |
+| `engines/document/writers/dsdm_writers/binary_writer.py` | `BinaryWriter` | `BaseDSDMWriter` | `get_supported_media_types, get_supported_extensions, _serialise_root, _serialise_node` |
+| `engines/document/writers/dsdm_writers/bson_writer.py` | `BSONWriter` | `BaseDSDMWriter` | `get_supported_media_types, get_supported_extensions, _serialise_root, _serialise_node` |
+| `engines/document/writers/dsdm_writers/cassandra_writer.py` | `CassandraWriter` | `BaseDSDMWriter` | `get_supported_media_types, get_supported_extensions, _serialise_root, _serialise_node, write_to_cassandra` |
+| `engines/document/writers/dsdm_writers/cbor_writer.py` | `CBORWriter` | `BaseDSDMWriter` | `get_supported_media_types, get_supported_extensions, _serialise_root, _serialise_node` |
+| `engines/document/writers/dsdm_writers/csv_tsv_writer.py` | `CSVTSVWriter` | `BaseDSDMWriter` | `get_supported_media_types, get_supported_extensions, _serialise_root, _serialise_node, _format_cell` |
+| `engines/document/writers/dsdm_writers/json_writer.py` | `JSONWriter` | `BaseDSDMWriter` | `get_supported_media_types, get_supported_extensions, _serialise_root, _serialise_node` |
+| `engines/document/writers/dsdm_writers/mongodb_writer.py` | `MongoDBWriter` | `BaseDSDMWriter` | `get_supported_media_types, get_supported_extensions, _serialise_root, _serialise_node, write_to_collection, _convert_to_mongo_documents ...` |
+| `engines/document/writers/dsdm_writers/msgpack_writer.py` | `MsgPackWriter` | `BaseDSDMWriter` | `get_supported_media_types, get_supported_extensions, _serialise_root, _serialise_node` |
+| `engines/document/writers/dsdm_writers/pickle_writer.py` | `PickleWriter` | `BaseDSDMWriter` | `get_supported_media_types, get_supported_extensions, _serialise_root, _serialise_node` |
+| `engines/document/writers/dsdm_writers/protobuf_writer.py` | `ProtobufWriter` | `BaseDSDMWriter` | `get_supported_media_types, get_supported_extensions, _serialise_root, _serialise_node` |
+| `engines/document/writers/dsdm_writers/redis_writer.py` | `RedisWriter` | `BaseDSDMWriter` | `get_supported_media_types, get_supported_extensions, _serialise_root, _serialise_node, write_to_redis, _extract_redis_value` |
+| `engines/document/writers/dsdm_writers/sql_writer.py` | `AsyncSQLConnection` | `Protocol` | `execute, executemany` |
+| `engines/document/writers/dsdm_writers/sql_writer.py` | `SQLDataWriter` | `BaseDSDMWriter` | `get_supported_media_types, get_supported_extensions, _serialise_root, _serialise_node, write_to_database, _generate_upsert_sql ...` |
+| `engines/document/writers/dsdm_writers/xml_writer.py` | `XMLWriter` | `BaseDSDMWriter` | `get_supported_media_types, get_supported_extensions, _serialise_root, _serialise_node, _node_to_xml, _native_xml_element ...` |
+| `engines/document/writers/dsdm_writers/yaml_writer.py` | `YAMLWriter` | `BaseDSDMWriter` | `get_supported_media_types, get_supported_extensions, _serialise_root, _serialise_node` |
 | `engines/document/writers/latex_writer.py` | `LatexWriter` | `BaseDocumentWriter` | `__init__, write, write_stream, write_to_file, get_supported_media_types, get_supported_extensions ...` |
 | `engines/document/writers/markdown_writer.py` | `MarkdownWriter` | `BaseDocumentWriter` | `__init__, write, write_stream, write_to_file, get_supported_media_types, get_supported_extensions ...` |
-| `engines/document/writers/msdm_writers/avro_schema_writer.py` | `AvroSchemaWriter` | `BaseMSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _entity_to_avro, _is_enum_entity ...` |
 | `engines/document/writers/msdm_writers/base_msdm_writer.py` | `WriteTarget` | `str, Enum` | `` |
 | `engines/document/writers/msdm_writers/base_msdm_writer.py` | `SoftDeleteStrategy` | `str, Enum` | `` |
 | `engines/document/writers/msdm_writers/base_msdm_writer.py` | `ConnectionConfig` | `BaseModel` | `` |
 | `engines/document/writers/msdm_writers/base_msdm_writer.py` | `BaseMSDMWriter` | `BaseDocumentWriter` | `__init__, write_stream, write, write_to_file, apply_to_database, _write_design ...` |
 | `engines/document/writers/msdm_writers/cql_writer.py` | `CQLWriter` | `BaseMSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _write_create_table, _write_create_type ...` |
-| `engines/document/writers/msdm_writers/cue_writer.py` | `CUEWriter` | `BaseMSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _entity_to_cue, _attribute_to_cue ...` |
 | `engines/document/writers/msdm_writers/elasticsearch_mapping_writer.py` | `ElasticsearchMappingWriter` | `BaseMSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _build_index_definition, _attribute_to_es_field ...` |
 | `engines/document/writers/msdm_writers/erd_writer.py` | `ERDWriter` | `BaseMSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _build_json, _entity_to_json ...` |
 | `engines/document/writers/msdm_writers/graphql_schema_writer.py` | `GraphQLSchemaWriter` | `BaseMSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _is_scalar_type, _is_enum_type ...` |
+| `engines/document/writers/msdm_writers/influxdb_schema_writer.py` | `InfluxDBSchemaWriter` | `BaseMSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _write_measurement, _is_implicit_timestamp ...` |
 | `engines/document/writers/msdm_writers/json_schema_writer.py` | `JsonSchemaWriter` | `BaseMSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _entity_to_schema, _attribute_to_property_schema ...` |
 | `engines/document/writers/msdm_writers/mongodb_schema_writer.py` | `MongoDBSchemaWriter` | `BaseMSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _build_validator_schema, _entity_to_json_schema ...` |
 | `engines/document/writers/msdm_writers/neo4j_schema_writer.py` | `Neo4jSchemaWriter` | `BaseMSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _write_node_constraints, _write_edge_constraints ...` |
 | `engines/document/writers/msdm_writers/owl_writer.py` | `OWLWriter` | `BaseMSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _base_uri, _entity_to_uri ...` |
 | `engines/document/writers/msdm_writers/plantuml_writer.py` | `PlantUMLWriter` | `BaseMSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _entity_to_block, _field_to_plantuml ...` |
-| `engines/document/writers/msdm_writers/proto_writer.py` | `ProtoWriter` | `BaseMSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _write_entity, _is_enum_entity ...` |
+| `engines/document/writers/msdm_writers/proto_msdm_writer.py` | `ProtoWriter` | `BaseMSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _write_entity, _is_enum_entity ...` |
 | `engines/document/writers/msdm_writers/python_model_writer.py` | `TargetStyle` | `str, Enum` | `` |
 | `engines/document/writers/msdm_writers/python_model_writer.py` | `PythonModelWriter` | `BaseMSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _is_enum_entity, _build_enum ...` |
 | `engines/document/writers/msdm_writers/sql_ddl_writer.py` | `SqlDDLWriter` | `BaseMSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _build_create_table, _column_definition ...` |
@@ -2337,8 +2498,6 @@
 | `engines/document/writers/msdm_writers/typescript_interface_writer.py` | `TypeScriptInterfaceWriter` | `BaseMSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _entity_to_declaration, _is_enum ...` |
 | `engines/document/writers/msdm_writers/uml_xmi_writer.py` | `UMLXmiWriter` | `BaseMSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _new_id, _existing_or_new_id ...` |
 | `engines/document/writers/msdm_writers/xsd_writer.py` | `XSDWriter` | `BaseMSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _entity_to_schema_item, _is_simple_entity ...` |
-| `engines/document/writers/osdm_writers/airflow_dag_writer.py` | `AirflowDAGWriter` | `BaseOSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _write_header, _write_dag_definition ...` |
-| `engines/document/writers/osdm_writers/azure_logic_apps_writer.py` | `AzureLogicAppsWriter` | `BaseOSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _build_workflow, _collect_states ...` |
 | `engines/document/writers/osdm_writers/base_osdm_writer.py` | `VersionStrategy` | `str, Enum` | `` |
 | `engines/document/writers/osdm_writers/base_osdm_writer.py` | `VersionIncrement` | `str, Enum` | `` |
 | `engines/document/writers/osdm_writers/base_osdm_writer.py` | `OSDMWriteOptions` | `WriteOptions` | `` |
@@ -2346,16 +2505,14 @@
 | `engines/document/writers/osdm_writers/bpmn_xml_writer.py` | `BPMNXMLWriter` | `BaseOSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _obj_id, _add_bpmn_element ...` |
 | `engines/document/writers/osdm_writers/cep_writer.py` | `CEPWriter` | `BaseOSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _definition_to_dict, _stream_to_dict ...` |
 | `engines/document/writers/osdm_writers/cmmn_xml_writer.py` | `CMMNXMLWriter` | `BaseOSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _obj_id, _add_cmmn_element ...` |
-| `engines/document/writers/osdm_writers/cncf_serverless_workflow_writer.py` | `CNCFServerlessWorkflowWriter` | `BaseOSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _build_workflow, _resolve_initial_state ...` |
 | `engines/document/writers/osdm_writers/dmn_xml_writer.py` | `DMNXMLWriter` | `BaseOSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _new_id, _obj_id ...` |
 | `engines/document/writers/osdm_writers/epc_writer.py` | `EPCWriter` | `BaseOSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _write_process, _write_organisational_units ...` |
 | `engines/document/writers/osdm_writers/graphml_xml_writer.py` | `GraphMLXMLWriter` | `BaseOSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _define_attributes, _write_graph ...` |
-| `engines/document/writers/osdm_writers/pnml_xml_writer.py` | `PNMLXMLWriter` | `BaseOSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _is_petri_net, _get_annotation ...` |
+| `engines/document/writers/osdm_writers/pnml_xml_writer.py` | `PNMLXMLWriter` | `BaseOSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _write_net, _write_page ...` |
 | `engines/document/writers/osdm_writers/prefect_dag_writer.py` | `PrefectDAGWriter` | `BaseOSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _write_header, _write_flow_definition ...` |
 | `engines/document/writers/osdm_writers/scxml_writer.py` | `SCXMLWriter` | `BaseOSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _write_scxml_body, _resolve_initial_state ...` |
 | `engines/document/writers/osdm_writers/uml_state_machine_writer.py` | `UMLStateMachineWriter` | `BaseOSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _new_id, _add_uml_element ...` |
 | `engines/document/writers/osdm_writers/xpd_writer.py` | `XPDLWriter` | `BaseOSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _write_participant, _write_workflow_process ...` |
-| `engines/document/writers/osdm_writers/yawl_writer.py` | `YAWLWriter` | `BaseOSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _write_specification, _write_net ...` |
 | `engines/document/writers/pdf_writer/annotation_writer.py` | `AnnotationType` | `Enum` | `` |
 | `engines/document/writers/pdf_writer/annotation_writer.py` | `AnnotationBorderStyle` | `Enum` | `` |
 | `engines/document/writers/pdf_writer/annotation_writer.py` | `AnnotationFlag` | `Enum` | `` |
@@ -2420,29 +2577,20 @@
 | `engines/document/writers/spreadsheet_writer/xlsx/worksheet_writer.py` | `WorksheetWriter` | `—` | `__init__, write, _write_cell, _write_run_properties, _format_cell_value, _get_sheet_dimension ...` |
 | `engines/document/writers/spreadsheet_writer/xlsx/xlsx_writer.py` | `XLSXWriter` | `ESDMBaseWriter` | `__init__, write_stream, write, write_to_file, _build_xlsx, _write_workbook_xml ...` |
 | `engines/document/writers/spreadsheet_writer/xlsx/zip_packager.py` | `ZipPackager` | `—` | `__init__, pack, _add_extra_parts, _add_image_binaries` |
-| `engines/document/writers/ssdm_writers/apib_writer.py` | `APIBlueprintWriter` | `BaseSSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _write_parameter, _write_body ...` |
 | `engines/document/writers/ssdm_writers/asyncapi_writer.py` | `AsyncAPIWriter` | `BaseSSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _build_info, _build_servers ...` |
 | `engines/document/writers/ssdm_writers/base_ssdm_writer.py` | `VersionStrategy` | `str, Enum` | `` |
 | `engines/document/writers/ssdm_writers/base_ssdm_writer.py` | `VersionIncrement` | `str, Enum` | `` |
 | `engines/document/writers/ssdm_writers/base_ssdm_writer.py` | `SSDMWriteOptions` | `WriteOptions` | `` |
 | `engines/document/writers/ssdm_writers/base_ssdm_writer.py` | `BaseSSDMWriter` | `BaseDocumentWriter` | `__init__, write_stream, write, write_to_file, _write_design, get_supported_media_types ...` |
-| `engines/document/writers/ssdm_writers/cddl_writer.py` | `CDDLWriter` | `BaseSSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _write_entity, _write_operation ...` |
-| `engines/document/writers/ssdm_writers/graphql_service_writer.py` | `GraphQLServiceWriter` | `BaseSSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _is_scalar_type, _is_enum_type ...` |
+| `engines/document/writers/ssdm_writers/graphql_service_writer.py` | `GraphQLServiceWriter` | `BaseSSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _get_annotation, _has_annotation ...` |
 | `engines/document/writers/ssdm_writers/mcp_writer.py` | `MCPWriter` | `BaseSSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _build_input_schema, _build_output_schema ...` |
-| `engines/document/writers/ssdm_writers/mib_writer.py` | `MIBWriter` | `BaseSSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _write_object, _quote` |
 | `engines/document/writers/ssdm_writers/openapi_writer.py` | `OpenAPIWriter` | `BaseSSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _build_info, _build_servers ...` |
-| `engines/document/writers/ssdm_writers/postman_collection_writer.py` | `PostmanCollectionWriter` | `BaseSSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _build_request_item, _entity_to_json_example ...` |
 | `engines/document/writers/ssdm_writers/proto_service_writer.py` | `ProtoServiceWriter` | `BaseSSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _prepare_operation_messages, _param_to_proto_type ...` |
 | `engines/document/writers/ssdm_writers/python_service_writer.py` | `PythonServiceWriter` | `BaseSSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _write_pydantic_model, _write_route ...` |
-| `engines/document/writers/ssdm_writers/raml_writer.py` | `RAMLWriter` | `BaseSSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _build_resources, _set_nested_resource ...` |
-| `engines/document/writers/ssdm_writers/webidl_writer.py` | `WebIDLWriter` | `BaseSSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _write_dictionary, _write_operation ...` |
 | `engines/document/writers/ssdm_writers/wsdl_writer.py` | `WSDLWriter` | `BaseSSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _write_types, _write_xsd_entity ...` |
-| `engines/document/writers/ssdm_writers/yang_writer.py` | `YANGWriter` | `BaseSSDMWriter` | `__init__, _write_design, get_supported_media_types, get_supported_extensions, _write_module, _write_description ...` |
+| `engines/document/writers/ssdm_writers/yang_writer.py` | `YANGWriter` | `BaseDocumentWriter` | `__init__, write_stream, write, write_to_file, get_supported_media_types, get_supported_extensions ...` |
 | `engines/document/writers/tsdm_writers/base_tsdm_writer.py` | `BaseTSDMWriter` | `BaseDocumentWriter` | `_write_design` |
 | `engines/document/writers/tsdm_writers/tsdm_json_writer.py` | `TsdmJsonWriter` | `BaseTSDMWriter` | `_write_design, _tool_to_dict, _param_to_dict, _output_to_dict` |
-| `engines/document/writers/xml_writer.py` | `XmlDocumentWriter` | `BaseDocumentWriter` | `__init__, write, write_to_file, _document_to_xml_string, _dsdm_to_element, _handle_xml_element ...` |
-| `engines/document/writers/yaml_writer.py` | `YamlDocumentWriter` | `BaseDocumentWriter` | `__init__, write, _document_to_python, write_to_file, get_supported_media_types, get_supported_extensions ...` |
-| `engines/document/writers/yaml_writer.py` | `CustomDumper` | `yaml.SafeDumper` | `datetime_representer, date_representer, bytes_representer, decimal_representer, datavalue_representer, datanode_representer` |
 | `engines/interaction/backends/autogen_backend.py` | `AutoGenOrchestrationBackend` | `BaseOrchestrationBackend` | `__init__, _autogen_available, is_available, execute, _execute_with_autogen_group_chat` |
 | `engines/interaction/backends/base_backend.py` | `BaseOrchestrationBackend` | `ABC` | `execute` |
 | `engines/interaction/backends/native_backend.py` | `NativeOrchestrationBackend` | `BaseOrchestrationBackend` | `__init__, _build_strategy, execute` |
@@ -2458,6 +2606,49 @@
 | `engines/interaction/round_robin_strategy.py` | `RoundRobinStrategy` | `InteractionStrategy` | `__init__, execute` |
 | `engines/interaction/self_refine_strategy.py` | `SelfRefineStrategy` | `InteractionStrategy` | `execute, _extract_score` |
 | `engines/interaction/strategy_registry.py` | `InteractionStrategyRegistry` | `Generic[TStrategy]` | `__init__, register, unregister, get, require, list_scenarios ...` |
+| `engines/orchestration/core/context.py` | `ContextScope` | `Enum` | `` |
+| `engines/orchestration/core/context.py` | `VariableScope` | `Enum` | `` |
+| `engines/orchestration/core/context.py` | `Variable` | `—` | `` |
+| `engines/orchestration/core/context.py` | `ExecutionContext` | `—` | `__init__, set_variable, get_variable, get_variable_object, has_variable, remove_variable ...` |
+| `engines/orchestration/core/context.py` | `ContextManager` | `—` | `__init__, create_context, get_context, destroy_context, cleanup_inactive_contexts, get_statistics ...` |
+| `engines/orchestration/core/correlation.py` | `CorrelationKey` | `—` | `__hash__, __eq__` |
+| `engines/orchestration/core/correlation.py` | `CorrelationKeySet` | `—` | `add_key, matches, to_dict, __hash__, __eq__` |
+| `engines/orchestration/core/correlation.py` | `Message` | `—` | `` |
+| `engines/orchestration/core/correlation.py` | `MessageSubscription` | `—` | `` |
+| `engines/orchestration/core/correlation.py` | `EventSubscription` | `—` | `` |
+| `engines/orchestration/core/correlation.py` | `CorrelationEngine` | `—` | `__init__, subscribe_message, unsubscribe_message, subscribe_event, unsubscribe_event, correlate_message ...` |
+| `engines/orchestration/core/engine.py` | `EngineState` | `Enum` | `` |
+| `engines/orchestration/core/engine.py` | `DeploymentMode` | `Enum` | `` |
+| `engines/orchestration/core/engine.py` | `EngineConfig` | `—` | `` |
+| `engines/orchestration/core/engine.py` | `ProcessDefinition` | `—` | `` |
+| `engines/orchestration/core/engine.py` | `Deployment` | `—` | `` |
+| `engines/orchestration/core/engine.py` | `OrchestrationEngine` | `—` | `__init__, start, stop, pause, resume, register_engine_handler ...` |
+| `engines/orchestration/core/event_bus.py` | `EventType` | `Enum` | `` |
+| `engines/orchestration/core/event_bus.py` | `EventPriority` | `Enum` | `` |
+| `engines/orchestration/core/event_bus.py` | `Event` | `—` | `to_dict` |
+| `engines/orchestration/core/event_bus.py` | `Subscription` | `—` | `` |
+| `engines/orchestration/core/event_bus.py` | `EventBus` | `—` | `__init__, start, stop, subscribe, unsubscribe, publish ...` |
+| `engines/orchestration/core/instance.py` | `InstanceState` | `Enum` | `` |
+| `engines/orchestration/core/instance.py` | `InstanceType` | `Enum` | `` |
+| `engines/orchestration/core/instance.py` | `IncidentInfo` | `—` | `` |
+| `engines/orchestration/core/instance.py` | `ActivityInstance` | `—` | `` |
+| `engines/orchestration/core/instance.py` | `ProcessInstance` | `—` | `__init__, set_variable, get_variable, has_variable, remove_variable, set_variables ...` |
+| `engines/orchestration/core/instance.py` | `InstanceManager` | `—` | `__init__, add_instance, get_instance, remove_instance, find_by_business_key, find_by_definition ...` |
+| `engines/orchestration/core/scheduler.py` | `ScheduleType` | `Enum` | `` |
+| `engines/orchestration/core/scheduler.py` | `TaskState` | `Enum` | `` |
+| `engines/orchestration/core/scheduler.py` | `ScheduledTask` | `—` | `__lt__` |
+| `engines/orchestration/core/scheduler.py` | `Scheduler` | `—` | `__init__, start, stop, pause, resume, schedule_once ...` |
+| `engines/orchestration/core/token.py` | `TokenState` | `Enum` | `` |
+| `engines/orchestration/core/token.py` | `TokenType` | `Enum` | `` |
+| `engines/orchestration/core/token.py` | `TokenSnapshot` | `—` | `` |
+| `engines/orchestration/core/token.py` | `Token` | `—` | `__init__, move_to, wait, resume, complete, terminate ...` |
+| `engines/orchestration/core/token.py` | `TokenManager` | `—` | `__init__, create_token, get_token, remove_token, get_instance_tokens, get_active_tokens ...` |
+| `engines/orchestration/core/transaction.py` | `TransactionState` | `Enum` | `` |
+| `engines/orchestration/core/transaction.py` | `IsolationLevel` | `Enum` | `` |
+| `engines/orchestration/core/transaction.py` | `TransactionParticipant` | `—` | `` |
+| `engines/orchestration/core/transaction.py` | `CompensationAction` | `—` | `` |
+| `engines/orchestration/core/transaction.py` | `TransactionScope` | `—` | `__init__, add_participant, add_compensation, prepare, commit, rollback ...` |
+| `engines/orchestration/core/transaction.py` | `TransactionManager` | `—` | `__init__, begin_transaction, get_transaction, commit_transaction, rollback_transaction, transaction ...` |
 | `engines/rag/agentic/agent_v2.py` | `RetrievalAgentV2` | `—` | `__init__, run` |
 | `engines/rag/agentic/evidence_tracker.py` | `EvidenceTracker` | `—` | `__init__, add, needs_more` |
 | `engines/rag/agentic/multihop_reasoner.py` | `MultiHopReasoner` | `—` | `__init__, generate_followup` |
@@ -2661,6 +2852,39 @@
 | `tools/code_auditor.py` | `MockDiagnosticSeverity` | `—` | `` |
 | `tools/code_auditor.py` | `Issue` | `—` | `__str__` |
 | `tools/code_auditor.py` | `CodeAuditor` | `—` | `__init__, _iter_files, _check_syntax, _get_params, _is_intentionally_empty, _assign_to_stmt ...` |
+| `tools/upgrade.py` | `CyclePolicy` | `Enum` | `` |
+| `tools/upgrade.py` | `PipelineConfig` | `—` | `__post_init__` |
+| `tools/upgrade.py` | `ToolResult` | `NamedTuple` | `` |
+| `tools/upgrade.py` | `StageOutcome` | `Enum` | `` |
+| `tools/upgrade.py` | `StageRecord` | `—` | `` |
+| `tools/upgrade.py` | `HintSource` | `Enum` | `` |
+| `tools/upgrade.py` | `HintKind` | `Enum` | `` |
+| `tools/upgrade.py` | `TypeHint` | `—` | `__post_init__` |
+| `tools/upgrade.py` | `FunctionLocation` | `—` | `` |
+| `tools/upgrade.py` | `SymbolIndex` | `—` | `__init__, build` |
+| `tools/upgrade.py` | `_SymbolCollector` | `cst.CSTVisitor` | `__init__, visit_ClassDef, leave_ClassDef, visit_FunctionDef` |
+| `tools/upgrade.py` | `MypyError` | `—` | `__init__, __hash__` |
+| `tools/upgrade.py` | `MypyErrorParser` | `—` | `parse` |
+| `tools/upgrade.py` | `ConvergenceTracker` | `—` | `__init__, update, should_stop` |
+| `tools/upgrade.py` | `ReturnTypeCollector` | `cst.CSTVisitor` | `__init__, visit_Return, consolidate` |
+| `tools/upgrade.py` | `OptionalAssignmentDetector` | `cst.CSTVisitor` | `__init__, _is_none_check, visit_If, visit_IfExp` |
+| `tools/upgrade.py` | `IsInstanceUnionDetector` | `cst.CSTVisitor` | `__init__, visit_If, _process_instance_check, _type_to_str` |
+| `tools/upgrade.py` | `ParamUsageInferer` | `cst.CSTVisitor` | `__init__, visit_Call, _literal_type` |
+| `tools/upgrade.py` | `TypeHintMerger` | `—` | `__init__, merge, _select_best` |
+| `tools/upgrade.py` | `AnnotationInjector` | `cst.CSTTransformer` | `__init__, leave_FunctionDef, _parse_annotation` |
+| `tools/upgrade.py` | `ExternalToolRunner` | `—` | `run_pyright, run_pytype, run_mypy` |
+| `tools/upgrade.py` | `PyrightHintExtractor` | `—` | `extract` |
+| `tools/upgrade.py` | `PytypeHintExtractor` | `—` | `extract` |
+| `tools/upgrade.py` | `LibCSTInferencer` | `—` | `infer_file, __init__, visit_FunctionDef` |
+| `tools/upgrade.py` | `ImportGraph` | `—` | `__init__, add_edge, build_from_project, find_cycles, _path_to_module, dfs` |
+| `tools/upgrade.py` | `APISurfaceAnalyser` | `—` | `dump_api, load_api_dump, _get_public_symbols_all, _path_to_module, detect_breaking_changes, detect_signature_changes ...` |
+| `tools/upgrade.py` | `RollbackManager` | `—` | `__init__, snapshot_project, rollback_stage, rollback_file` |
+| `tools/upgrade.py` | `FixStrategy` | `Enum` | `` |
+| `tools/upgrade.py` | `MypyErrorFixer` | `cst.CSTTransformer` | `__init__, _pos, _get_error_for_node, _parse_annotation, _is_none_literal, _wrap_async_return ...` |
+| `tools/upgrade.py` | `RuffDiagnostic` | `—` | `` |
+| `tools/upgrade.py` | `RuffErrorFixer` | `cst.CSTTransformer` | `__init__, _pos, _get_diag, leave_If, leave_Try, leave_SimpleStatementLine ...` |
+| `tools/upgrade.py` | `PipelineSupervisor` | `—` | `__init__, log, add_stage, save_report, run_stage, _maybe_write_file ...` |
+| `tools/upgrade.py` | `FunctionCollector` | `cst.CSTVisitor` | `__init__, visit_FunctionDef` |
 
 ---
 
@@ -3061,7 +3285,9 @@ BaseEntity  →  ToleranceEntity
 BaseEntity  →  FieldEntity
 BaseEntity  →  MLeaderContentEntity
 BaseEntity  →  TableEntity
+Enum  →  CadConstraintType
 BaseEntity  →  GeometricConstraintEntity
+Enum  →  DimConstraintKind
 BaseEntity  →  DimensionalConstraintEntity
 BaseEntity  →  DCFCustomEntity
 CSDMObject  →  TableEntry
@@ -3118,18 +3344,18 @@ TableEntry  →  DCFTableEntry
 CSDMObject  →  DCFCustomTable
 str  →  DataNodeKind
 Enum  →  DataNodeKind
-str  →  ScalarType
-Enum  →  ScalarType
 BaseModel  →  DataValue
 BaseModel  →  DataSchemaReference
 BaseModel  →  DataDocumentCapabilities
+BaseModel  →  SchemaBinding
 BaseModel  →  DataNode
 BaseDocument  →  DataDocument
 BaseDocument  →  ESDMDocument
 DocumentBaseModel  →  WorkbookProperties
-DocumentBaseModel  →  Relationship
+DocumentBaseModel  →  ExcelRelationship
 DocumentBaseModel  →  RelationshipCollection
 DocumentBaseModel  →  SharedStrings
+DocumentBaseModel  →  CellFormula
 DocumentBaseModel  →  Cell
 DocumentBaseModel  →  Row
 DocumentBaseModel  →  Column
@@ -3189,7 +3415,6 @@ DocumentBaseModel  →  SharedFormula
 DocumentBaseModel  →  DefinedName
 DocumentBaseModel  →  ExternalReference
 DocumentBaseModel  →  ExternalLink
-DocumentBaseModel  →  CellFormula
 Enum  →  DataValidationType
 Enum  →  DataValidationOperator
 DocumentBaseModel  →  DataValidationRule
@@ -3261,19 +3486,15 @@ str  →  ConstraintType
 Enum  →  ConstraintType
 str  →  ScalarType
 Enum  →  ScalarType
-str  →  XSDFacet
-Enum  →  XSDFacet
-str  →  ProtobufOption
-Enum  →  ProtobufOption
-str  →  AvroLogicalType
-Enum  →  AvroLogicalType
-str  →  GraphQLDirective
-Enum  →  GraphQLDirective
+str  →  IndexMethod
+Enum  →  IndexMethod
+str  →  CompositionType
+Enum  →  CompositionType
+str  →  VersionStatus
+Enum  →  VersionStatus
+str  →  VisibilityKind
+Enum  →  VisibilityKind
 BaseDocument  →  MSDMDocument
-str  →  YAWLJoinType
-Enum  →  YAWLJoinType
-str  →  YAWLSplitType
-Enum  →  YAWLSplitType
 str  →  ParticipantBandKind
 Enum  →  ParticipantBandKind
 str  →  MessageVisibleKind
@@ -3296,9 +3517,6 @@ str  →  CaseFileMultiplicity
 Enum  →  CaseFileMultiplicity
 str  →  EventListenerType
 Enum  →  EventListenerType
-BaseElement  →  SentryExpression
-BaseElement  →  DecisionTable
-BaseElement  →  ActionList
 str  →  ActivityType
 Enum  →  ActivityType
 str  →  TaskType
@@ -3358,6 +3576,7 @@ Enum  →  InteractionStrategy
 BaseElement  →  RootElement
 BaseElement  →  StateNode
 BaseElement  →  Transition
+BaseElement  →  Locator
 BaseElement  →  DiagramElement
 DiagramElement  →  Edge
 DiagramElement  →  Shape
@@ -3517,7 +3736,6 @@ Transition  →  StateTransition
 BaseElement  →  StateMachineRegion
 StateNode  →  PseudoState
 State  →  Place
-BaseElement  →  YAWLTaskDecorator
 Transition  →  PnTransition
 Transition  →  Arc
 BaseElement  →  InteractionProtocol
@@ -3528,6 +3746,9 @@ BaseOSDMDocument  →  StateMachineDocument
 BaseOSDMDocument  →  DMNDocument
 BaseOSDMDocument  →  CEPDocument
 BaseOSDMDocument  →  MultiAgentInteractionDocument
+FormalExpression  →  SentryExpression
+BaseElement  →  DecisionTable
+BaseElement  →  ActionList
 str  →  PlaceholderType
 Enum  →  PlaceholderType
 str  →  TransitionType
@@ -3555,31 +3776,18 @@ str  →  HttpMethod
 Enum  →  HttpMethod
 str  →  ParameterLocation
 Enum  →  ParameterLocation
-str  →  SecurityType
-Enum  →  SecurityType
+str  →  AuthMethod
+Enum  →  AuthMethod
 str  →  OAuth2Flow
 Enum  →  OAuth2Flow
 str  →  ApiKeyLocation
 Enum  →  ApiKeyLocation
 str  →  OperationType
 Enum  →  OperationType
-str  →  YangStatement
-Enum  →  YangStatement
-str  →  SnmpAccess
-Enum  →  SnmpAccess
-str  →  SnmpStatus
-Enum  →  SnmpStatus
-BaseDocument  →  SSDMDocument 
 str  →  Transport
 Enum  →  Transport
-str  →  AuthMethod
-Enum  →  AuthMethod
-str  →  ApiKeyLocation
-Enum  →  ApiKeyLocation
 str  →  ValueSource
 Enum  →  ValueSource
-str  →  OAuth2Flow
-Enum  →  OAuth2Flow
 str  →  RetryPolicy
 Enum  →  RetryPolicy
 str  →  PortProtocol
@@ -3602,6 +3810,7 @@ str  →  InternalComponentType
 Enum  →  InternalComponentType
 str  →  CoordinationProtocol
 Enum  →  CoordinationProtocol
+BaseDocument  →  SSDMDocument
 ServiceBinding  →  NorthBoundBinding
 str  →  DocumentStandard
 Enum  →  DocumentStandard
@@ -3613,8 +3822,6 @@ str  →  ParameterSource
 Enum  →  ParameterSource
 str  →  ParameterType
 Enum  →  ParameterType
-str  →  HttpMethod
-Enum  →  HttpMethod
 str  →  LoadBalanceStrategy
 Enum  →  LoadBalanceStrategy
 str  →  SnmpVersion
@@ -3642,8 +3849,6 @@ BaseDocument  →  USDMDocument
 ABC  →  FormatPlugin
 BaseModel  →  ParseOptions
 ABC  →  BaseDocumentParser
-BaseDocumentParser  →  BinaryParser
-pickle.Unpickler  →  RestrictedUnpickler
 str  →  DOCXElementType
 Enum  →  DOCXElementType
 str  →  RunPropertyName
@@ -3658,17 +3863,31 @@ str  →  VerticalAlignment
 Enum  →  VerticalAlignment
 str  →  TextDirection
 Enum  →  TextDirection
+ParseOptions  →  DSDMParseOptions
+BaseDocumentParser  →  BaseDSDMParser
+BaseDSDMParser  →  BinaryParser
+BinaryParser  →  BSONParser
+BaseDSDMParser  →  CassandraParser
+BinaryParser  →  CBORParser
+BaseDSDMParser  →  CSVTSVParser
+BaseDSDMParser  →  JSONParser
+BSONParser  →  MongoDBParser
+BinaryParser  →  MsgPackParser
+BinaryParser  →  PickleParser
+BaseDSDMParser  →  ProtobufParser
+BaseDSDMParser  →  RedisParser
+Protocol  →  AsyncDBConnection
+BaseDSDMParser  →  SQLDataParser
+BaseDSDMParser  →  XMLParser
+BaseDSDMParser  →  YAMLParser
 HTMLParser  →  HTMLDocumentParser
 BaseDocumentParser  →  HtmlParser
-BaseDocumentParser  →  JsonDocumentParser
 BaseDocumentParser  →  LatexParser
 Treeprocessor  →  MarkdownTreeProcessor
 Extension  →  MarkdownExtension
 BaseDocumentParser  →  MarkdownParser
-BaseMSDMParser  →  AvroSchemaParser
 BaseDocumentParser  →  BaseMSDMParser
 BaseMSDMParser  →  CQLParser
-BaseMSDMParser  →  CueParser
 BaseMSDMParser  →  ElasticsearchMappingParser
 BaseMSDMParser  →  ERDParser
 Enum  →  TokenType
@@ -3686,14 +3905,10 @@ BaseMSDMParser  →  ThriftIDLParser
 BaseMSDMParser  →  TypeScriptInterfaceParser
 BaseMSDMParser  →  UMLXmiParser
 BaseMSDMParser  →  XSDParser
-BaseOSDMParser  →  AirflowDAGParser
-BaseOSDMParser  →  AWSStepFunctionsParser
-BaseOSDMParser  →  AzureLogicAppsParser
 BaseDocumentParser  →  BaseOSDMParser
 BaseOSDMParser  →  BPMNXMLParser
 BaseOSDMParser  →  CEPParser
 BaseOSDMParser  →  CMMNXMLParser
-BaseOSDMParser  →  CNCFServerlessWorkflowParser
 BaseOSDMParser  →  DMNXMLParser
 BaseOSDMParser  →  EPCParser
 BaseOSDMParser  →  GraphMLXMLParser
@@ -3702,7 +3917,6 @@ BaseOSDMParser  →  PrefectDAGParser
 BaseOSDMParser  →  SCXMLParser
 BaseOSDMParser  →  UMLStateMachineParser
 BaseOSDMParser  →  XPDLParser
-BaseOSDMParser  →  YAWLParser
 Enum  →  ContentType
 Enum  →  FontType
 Enum  →  FontEncoding
@@ -3747,38 +3961,38 @@ DelimitedParser  →  CSVParser
 DelimitedParser  →  TSVParser
 BaseSpreadsheetParser  →  FixedWidthParser
 BaseSpreadsheetParser  →  XLSXParser
-APIBObject  →  APIBMetadata
-APIBObject  →  APIBParameter
-APIBObject  →  APIBBody
-APIBObject  →  APIBAction
-APIBObject  →  APIBResource
-APIBObject  →  APIBGroup
-BaseSSDMParser  →  APIBlueprintToSSDMParser
 BaseSSDMParser  →  AsyncAPIParser
 BaseDocumentParser  →  BaseSSDMParser
-BaseSSDMParser  →  CDDLServiceParser
 BaseSSDMParser  →  GraphQLServiceParser
 BaseSSDMParser  →  MCPParser
-BaseSSDMParser  →  MIBParser
 BaseSSDMParser  →  OpenAPIV3Parser
-BaseSSDMParser  →  PostmanCollectionParser
 BaseSSDMParser  →  ProtoServiceParser
 BaseSSDMParser  →  PythonServiceParser
-BaseSSDMParser  →  RAMLParser
-BaseSSDMParser  →  WebIDLParser
 BaseSSDMParser  →  WSDLParser
 BaseSSDMParser  →  YANGParser
 BaseDocumentParser  →  BaseTSDMParser
 BaseTSDMParser  →  TsdmJsonParser
-BaseDocumentParser  →  XmlDocumentParser
-BaseDocumentParser  →  YamlDocumentParser
 BaseModel  →  WriteOptions
 ABC  →  BaseDocumentWriter
-BaseDocumentWriter  →  BinaryWriter
-BaseDocumentWriter  →  JsonDocumentWriter
+WriteOptions  →  DSDMWriteOptions
+BaseDocumentWriter  →  BaseDSDMWriter
+BaseDSDMWriter  →  BinaryWriter
+BaseDSDMWriter  →  BSONWriter
+BaseDSDMWriter  →  CassandraWriter
+BaseDSDMWriter  →  CBORWriter
+BaseDSDMWriter  →  CSVTSVWriter
+BaseDSDMWriter  →  JSONWriter
+BaseDSDMWriter  →  MongoDBWriter
+BaseDSDMWriter  →  MsgPackWriter
+BaseDSDMWriter  →  PickleWriter
+BaseDSDMWriter  →  ProtobufWriter
+BaseDSDMWriter  →  RedisWriter
+Protocol  →  AsyncSQLConnection
+BaseDSDMWriter  →  SQLDataWriter
+BaseDSDMWriter  →  XMLWriter
+BaseDSDMWriter  →  YAMLWriter
 BaseDocumentWriter  →  LatexWriter
 BaseDocumentWriter  →  MarkdownWriter
-BaseMSDMWriter  →  AvroSchemaWriter
 str  →  WriteTarget
 Enum  →  WriteTarget
 str  →  SoftDeleteStrategy
@@ -3786,10 +4000,10 @@ Enum  →  SoftDeleteStrategy
 BaseModel  →  ConnectionConfig
 BaseDocumentWriter  →  BaseMSDMWriter
 BaseMSDMWriter  →  CQLWriter
-BaseMSDMWriter  →  CUEWriter
 BaseMSDMWriter  →  ElasticsearchMappingWriter
 BaseMSDMWriter  →  ERDWriter
 BaseMSDMWriter  →  GraphQLSchemaWriter
+BaseMSDMWriter  →  InfluxDBSchemaWriter
 BaseMSDMWriter  →  JsonSchemaWriter
 BaseMSDMWriter  →  MongoDBSchemaWriter
 BaseMSDMWriter  →  Neo4jSchemaWriter
@@ -3804,8 +4018,6 @@ BaseMSDMWriter  →  ThriftIDLWriter
 BaseMSDMWriter  →  TypeScriptInterfaceWriter
 BaseMSDMWriter  →  UMLXmiWriter
 BaseMSDMWriter  →  XSDWriter
-BaseOSDMWriter  →  AirflowDAGWriter
-BaseOSDMWriter  →  AzureLogicAppsWriter
 str  →  VersionStrategy
 Enum  →  VersionStrategy
 str  →  VersionIncrement
@@ -3815,7 +4027,6 @@ BaseDocumentWriter  →  BaseOSDMWriter
 BaseOSDMWriter  →  BPMNXMLWriter
 BaseOSDMWriter  →  CEPWriter
 BaseOSDMWriter  →  CMMNXMLWriter
-BaseOSDMWriter  →  CNCFServerlessWorkflowWriter
 BaseOSDMWriter  →  DMNXMLWriter
 BaseOSDMWriter  →  EPCWriter
 BaseOSDMWriter  →  GraphMLXMLWriter
@@ -3824,7 +4035,6 @@ BaseOSDMWriter  →  PrefectDAGWriter
 BaseOSDMWriter  →  SCXMLWriter
 BaseOSDMWriter  →  UMLStateMachineWriter
 BaseOSDMWriter  →  XPDLWriter
-BaseOSDMWriter  →  YAWLWriter
 Enum  →  AnnotationType
 Enum  →  AnnotationBorderStyle
 Enum  →  AnnotationFlag
@@ -3846,7 +4056,6 @@ BaseDocumentWriter  →  ESDMBaseWriter
 ESDMBaseWriter  →  CSVWriter
 CSVWriter  →  TSVWriter
 ESDMBaseWriter  →  XLSXWriter
-BaseSSDMWriter  →  APIBlueprintWriter
 BaseSSDMWriter  →  AsyncAPIWriter
 str  →  VersionStrategy
 Enum  →  VersionStrategy
@@ -3854,23 +4063,15 @@ str  →  VersionIncrement
 Enum  →  VersionIncrement
 WriteOptions  →  SSDMWriteOptions
 BaseDocumentWriter  →  BaseSSDMWriter
-BaseSSDMWriter  →  CDDLWriter
 BaseSSDMWriter  →  GraphQLServiceWriter
 BaseSSDMWriter  →  MCPWriter
-BaseSSDMWriter  →  MIBWriter
 BaseSSDMWriter  →  OpenAPIWriter
-BaseSSDMWriter  →  PostmanCollectionWriter
 BaseSSDMWriter  →  ProtoServiceWriter
 BaseSSDMWriter  →  PythonServiceWriter
-BaseSSDMWriter  →  RAMLWriter
-BaseSSDMWriter  →  WebIDLWriter
 BaseSSDMWriter  →  WSDLWriter
-BaseSSDMWriter  →  YANGWriter
+BaseDocumentWriter  →  YANGWriter
 BaseDocumentWriter  →  BaseTSDMWriter
 BaseTSDMWriter  →  TsdmJsonWriter
-BaseDocumentWriter  →  XmlDocumentWriter
-BaseDocumentWriter  →  YamlDocumentWriter
-yaml.SafeDumper  →  CustomDumper
 BaseOrchestrationBackend  →  AutoGenOrchestrationBackend
 ABC  →  BaseOrchestrationBackend
 BaseOrchestrationBackend  →  NativeOrchestrationBackend
@@ -3885,6 +4086,20 @@ BaseModel  →  AgentMessage
 InteractionStrategy  →  RoundRobinStrategy
 InteractionStrategy  →  SelfRefineStrategy
 Generic[TStrategy]  →  InteractionStrategyRegistry
+Enum  →  ContextScope
+Enum  →  VariableScope
+Enum  →  EngineState
+Enum  →  DeploymentMode
+Enum  →  EventType
+Enum  →  EventPriority
+Enum  →  InstanceState
+Enum  →  InstanceType
+Enum  →  ScheduleType
+Enum  →  TaskState
+Enum  →  TokenState
+Enum  →  TokenType
+Enum  →  TransactionState
+Enum  →  IsolationLevel
 BaseCompressor  →  EmbeddingCompressor
 BaseCompressor  →  LLMCompressor
 BaseModel  →  GraphNode
@@ -3997,6 +4212,21 @@ MessageBus  →  DummyMessageBus2
 BaseOrchestrationBackend  →  DummyBackend
 InteractionResult  →  Result
 MessageBus  →  DummyMessageBus
+Enum  →  CyclePolicy
+NamedTuple  →  ToolResult
+Enum  →  StageOutcome
+Enum  →  HintSource
+Enum  →  HintKind
+cst.CSTVisitor  →  _SymbolCollector
+cst.CSTVisitor  →  ReturnTypeCollector
+cst.CSTVisitor  →  OptionalAssignmentDetector
+cst.CSTVisitor  →  IsInstanceUnionDetector
+cst.CSTVisitor  →  ParamUsageInferer
+cst.CSTTransformer  →  AnnotationInjector
+Enum  →  FixStrategy
+cst.CSTTransformer  →  MypyErrorFixer
+cst.CSTTransformer  →  RuffErrorFixer
+cst.CSTVisitor  →  FunctionCollector
 ```
 
 ---
@@ -4062,9 +4292,6 @@ MessageBus  →  DummyMessageBus
 
 ## 🔍 تحلیل مشکلات احتمالی
 
-### ⚠️ خطاهای Parse
-- `engines/document/writers/msdm_writers/influxdb_schema_writer.py`: SyntaxError: invalid syntax (influxdb_schema_writer.py, line 271)
-- `engines/document/writers/osdm_writers/aws_step_functions_writer.py`: SyntaxError: invalid syntax (aws_step_functions_writer.py, line 18)
 
 ### 🔴 کلاس‌های بزرگ (بیش از ۱۵ متد — نشانه نقض SRP)
 - `DOCXExtractor` در `engines/document/parsers/docx_parser/docx_extractor.py` — 68 متد
@@ -4074,36 +4301,30 @@ MessageBus  →  DummyMessageBus
 - `DocxUtils` در `engines/document/parsers/docx_parser/docx_utils.py` — 36 متد
 - `HTMLDocumentParser` در `engines/document/parsers/html_parser.py` — 31 متد
 - `LatexParser` در `engines/document/parsers/latex_parser.py` — 35 متد
-- `CueParser` در `engines/document/parsers/msdm_parsers/cue_parser.py` — 17 متد
 - `GraphQLSchemaParser` در `engines/document/parsers/msdm_parsers/graphql_schema_parser.py` — 21 متد
 - `ProtoParser` در `engines/document/parsers/msdm_parsers/proto_msdm_parser.py` — 18 متد
-- `TypeScriptInterfaceParser` در `engines/document/parsers/msdm_parsers/typescript_interface_parser.py` — 17 متد
-- `AirflowDAGParser` در `engines/document/parsers/osdm_parsers/airflow_dag_parser.py` — 19 متد
-- `BPMNXMLParser` در `engines/document/parsers/osdm_parsers/bpmn_xml_parser.py` — 55 متد
-- `CMMNXMLParser` در `engines/document/parsers/osdm_parsers/cmmn_xml_parser.py` — 17 متد
+- `TypeScriptInterfaceParser` در `engines/document/parsers/msdm_parsers/typescript_interface_parser.py` — 22 متد
+- `BPMNXMLParser` در `engines/document/parsers/osdm_parsers/bpmn_xml_parser.py` — 69 متد
+- `CMMNXMLParser` در `engines/document/parsers/osdm_parsers/cmmn_xml_parser.py` — 19 متد
 - `ContentExtractor` در `engines/document/parsers/pdf_parser/content_extractor.py` — 27 متد
 - `FontHandler` در `engines/document/parsers/pdf_parser/font_handler.py` — 20 متد
 - `PDFMetadataExtractor` در `engines/document/parsers/pdf_parser/metadata_extractor.py` — 24 متد
-- `APIBlueprintParser` در `engines/document/parsers/ssdm_parsers/apib_parser.py` — 16 متد
-- `GraphQLParser` در `engines/document/parsers/ssdm_parsers/graphql_service_parser.py` — 19 متد
-- `MIBDocParser` در `engines/document/parsers/ssdm_parsers/mib_parser.py` — 16 متد
-- `OpenAPIV3Parser` در `engines/document/parsers/ssdm_parsers/openapi_parser.py` — 25 متد
+- `_GraphQLParser` در `engines/document/parsers/ssdm_parsers/graphql_service_parser.py` — 19 متد
+- `OpenAPIV3Parser` در `engines/document/parsers/ssdm_parsers/openapi_parser.py` — 16 متد
 - `ProtoParser` در `engines/document/parsers/ssdm_parsers/proto_service_parser.py` — 17 متد
-- `PythonServiceParser` در `engines/document/parsers/ssdm_parsers/python_service_parser.py` — 17 متد
-- `WebIDLParser` در `engines/document/parsers/ssdm_parsers/webidl_parser.py` — 20 متد
-- `YANGParser` در `engines/document/parsers/ssdm_parsers/yang_parser.py` — 23 متد
+- `PythonServiceParser` در `engines/document/parsers/ssdm_parsers/python_service_parser.py` — 18 متد
+- `YANGParser` در `engines/document/parsers/ssdm_parsers/yang_parser.py` — 25 متد
 - `LatexWriter` در `engines/document/writers/latex_writer.py` — 24 متد
 - `MarkdownWriter` در `engines/document/writers/markdown_writer.py` — 19 متد
-- `AvroSchemaWriter` در `engines/document/writers/msdm_writers/avro_schema_writer.py` — 16 متد
 - `CQLWriter` در `engines/document/writers/msdm_writers/cql_writer.py` — 23 متد
 - `GraphQLSchemaWriter` در `engines/document/writers/msdm_writers/graphql_schema_writer.py` — 21 متد
-- `ProtoWriter` در `engines/document/writers/msdm_writers/proto_writer.py` — 16 متد
-- `SqlDDLWriter` در `engines/document/writers/msdm_writers/sql_ddl_writer.py` — 20 متد
+- `ProtoWriter` در `engines/document/writers/msdm_writers/proto_msdm_writer.py` — 20 متد
+- `SqlDDLWriter` در `engines/document/writers/msdm_writers/sql_ddl_writer.py` — 22 متد
 - `TypeScriptInterfaceWriter` در `engines/document/writers/msdm_writers/typescript_interface_writer.py` — 16 متد
 - `XSDWriter` در `engines/document/writers/msdm_writers/xsd_writer.py` — 16 متد
-- `BPMNXMLWriter` در `engines/document/writers/osdm_writers/bpmn_xml_writer.py` — 63 متد
+- `BPMNXMLWriter` در `engines/document/writers/osdm_writers/bpmn_xml_writer.py` — 61 متد
 - `CMMNXMLWriter` در `engines/document/writers/osdm_writers/cmmn_xml_writer.py` — 22 متد
-- `DMNXMLWriter` در `engines/document/writers/osdm_writers/dmn_xml_writer.py` — 20 متد
+- `DMNXMLWriter` در `engines/document/writers/osdm_writers/dmn_xml_writer.py` — 21 متد
 - `AnnotationWriter` در `engines/document/writers/pdf_writer/annotation_writer.py` — 27 متد
 - `PDFEncryptor` در `engines/document/writers/pdf_writer/encryption.py` — 30 متد
 - `FontManager` در `engines/document/writers/pdf_writer/font_manager.py` — 31 متد
@@ -4112,12 +4333,20 @@ MessageBus  →  DummyMessageBus
 - `OutlineBuilder` در `engines/document/writers/pdf_writer/outline_builder.py` — 17 متد
 - `PPTXWriter` در `engines/document/writers/pptx_writer/writer.py` — 19 متد
 - `ESDMBaseWriter` در `engines/document/writers/spreadsheet_writer/base.py` — 19 متد
-- `GraphQLServiceWriter` در `engines/document/writers/ssdm_writers/graphql_service_writer.py` — 24 متد
+- `GraphQLServiceWriter` در `engines/document/writers/ssdm_writers/graphql_service_writer.py` — 21 متد
 - `OpenAPIWriter` در `engines/document/writers/ssdm_writers/openapi_writer.py` — 16 متد
-- `YANGWriter` در `engines/document/writers/ssdm_writers/yang_writer.py` — 20 متد
+- `YANGWriter` در `engines/document/writers/ssdm_writers/yang_writer.py` — 22 متد
+- `ExecutionContext` در `engines/orchestration/core/context.py` — 16 متد
+- `OrchestrationEngine` در `engines/orchestration/core/engine.py` — 20 متد
+- `ProcessInstance` در `engines/orchestration/core/instance.py` — 26 متد
+- `Scheduler` در `engines/orchestration/core/scheduler.py` — 20 متد
+- `Token` در `engines/orchestration/core/token.py` — 18 متد
+- `MypyErrorFixer` در `tools/upgrade.py` — 19 متد
+- `RuffErrorFixer` در `tools/upgrade.py` — 24 متد
+- `PipelineSupervisor` در `tools/upgrade.py` — 25 متد
 
 ### 🟡 فایل‌های خالی یا فقط شامل import
-- `config/settings.py` [22 lines]
+- `config/settings.py` [21 lines]
 - `engines/agents/base_agents/base_research_agent/metadata.py` [0 lines]
 - `engines/agents/base_agents/base_research_agent/prompts.py` [0 lines]
 - `engines/agents/base_agents/base_research_agent/rag_config.py` [0 lines]
@@ -4190,50 +4419,142 @@ MessageBus  →  DummyMessageBus
 - `engines/document/model_tools/report_generators/data_simple_page_with_related_list_report_generator.py` [0 lines]
 - `engines/document/model_tools/report_generators/schema_report_generator.py` [0 lines]
 - `engines/document/model_tools/report_generators/service_report_generator.py` [0 lines]
-- `engines/document/parsers/cad_parser/csdm_loader.py` [641 lines]
-- `engines/document/parsers/cad_parser/csdm_parser.py` [74 lines]
-- `engines/document/parsers/cad_parser/csdm_relationships.py` [281 lines]
-- `engines/document/parsers/cad_parser/oda_bridge.py` [273 lines]
-- `engines/document/parsers/cad_parser.py` [133 lines]
-- `engines/document/parsers/pptx_parser/constants.py` [108 lines]
-- `engines/document/parsers/spreadsheet_parser/xlsx/constants.py` [245 lines]
+- `engines/document/parsers/cad_parser/csdm_loader.py` [580 lines]
+- `engines/document/parsers/cad_parser/csdm_parser.py` [60 lines]
+- `engines/document/parsers/cad_parser/csdm_relationships.py` [240 lines]
+- `engines/document/parsers/cad_parser/oda_bridge.py` [238 lines]
+- `engines/document/parsers/pptx_parser/constants.py` [106 lines]
+- `engines/document/parsers/spreadsheet_parser/xlsx/constants.py` [233 lines]
 - `engines/document/parsers/spreadsheet_parser/xlsx/namespaces.py` [16 lines]
 - `engines/document/parsers/spreadsheet_parser/xlsx/shared_strings_builder.py` [0 lines]
 - `engines/document/utils/docx_utils.py` [0 lines]
 - `engines/document/utils/ooxml_constants.py` [0 lines]
 - `engines/document/utils/xml_parser.py` [0 lines]
-- `engines/document/utils/zip_handler.py` [0 lines]
-- `engines/document/writers/cad_writer/acis_writer.py` [91 lines]
-- `engines/document/writers/cad_writer/base_context.py` [77 lines]
-- `engines/document/writers/cad_writer/block_writer.py` [124 lines]
-- `engines/document/writers/cad_writer/cad_writer.py` [129 lines]
-- `engines/document/writers/cad_writer/dwg_builder.py` [177 lines]
-- `engines/document/writers/cad_writer/entity_writer.py` [360 lines]
-- `engines/document/writers/cad_writer/finalizer.py` [138 lines]
-- `engines/document/writers/cad_writer/non_graphical_writer.py` [259 lines]
-- `engines/document/writers/cad_writer/reactor_writer.py` [67 lines]
-- `engines/document/writers/cad_writer/table_writer.py` [310 lines]
-- `engines/document/writers/cad_writer/xdata_writer.py` [81 lines]
-- `engines/document/writers/cad_writer.py` [269 lines]
-- `engines/document/writers/csv_writer.py` [298 lines]
+- `engines/document/writers/cad_writer/acis_writer.py` [71 lines]
+- `engines/document/writers/cad_writer/base_context.py` [59 lines]
+- `engines/document/writers/cad_writer/block_writer.py` [99 lines]
+- `engines/document/writers/cad_writer/cad_writer.py` [104 lines]
+- `engines/document/writers/cad_writer/dwg_builder.py` [146 lines]
+- `engines/document/writers/cad_writer/entity_writer.py` [297 lines]
+- `engines/document/writers/cad_writer/finalizer.py` [115 lines]
+- `engines/document/writers/cad_writer/non_graphical_writer.py` [212 lines]
+- `engines/document/writers/cad_writer/reactor_writer.py` [53 lines]
+- `engines/document/writers/cad_writer/table_writer.py` [245 lines]
+- `engines/document/writers/cad_writer/xdata_writer.py` [62 lines]
 - `engines/document/writers/docx_writer/docx_builder.py` [0 lines]
 - `engines/document/writers/docx_writer/docx_image_handler.py` [0 lines]
 - `engines/document/writers/docx_writer/docx_math_writer.py` [0 lines]
 - `engines/document/writers/docx_writer/docx_style_builder.py` [0 lines]
 - `engines/document/writers/docx_writer/docx_table_builder.py` [0 lines]
 - `engines/document/writers/docx_writer/docx_writer.py` [0 lines]
-- `engines/document/writers/docx_writer.py` [306 lines]
-- `engines/document/writers/excel_writer.py` [1660 lines]
-- `engines/document/writers/html_writer.py` [279 lines]
-- `engines/document/writers/pdf_writer/init.py` [24 lines]
-- `engines/document/writers/pptx_writer/constants.py` [76 lines]
+- `engines/document/writers/html_writer.py` [223 lines]
+- `engines/document/writers/pdf_writer/init.py` [28 lines]
+- `engines/document/writers/pptx_writer/constants.py` [74 lines]
 - `engines/document/writers/spreadsheet_writer/xlsx/const.py` [7 lines]
-- `engines/orchestration/base_workflow_model.py` [0 lines]
-- `engines/orchestration/bpmn2_model.py` [0 lines]
-- `engines/orchestration/dag_model.py` [0 lines]
-- `engines/orchestration/event_driven_model.py` [0 lines]
-- `engines/orchestration/petri_net_model.py` [0 lines]
-- `engines/orchestration/state_machine_model.py` [0 lines]
+- `engines/orchestration/api/admin_api.py` [0 lines]
+- `engines/orchestration/api/deployment_api.py` [0 lines]
+- `engines/orchestration/api/engine_api.py` [0 lines]
+- `engines/orchestration/api/instance_api.py` [0 lines]
+- `engines/orchestration/api/process_api.py` [0 lines]
+- `engines/orchestration/api/task_api.py` [0 lines]
+- `engines/orchestration/bpmn/activity_handler.py` [0 lines]
+- `engines/orchestration/bpmn/adhoc_handler.py` [0 lines]
+- `engines/orchestration/bpmn/choreography_handler.py` [0 lines]
+- `engines/orchestration/bpmn/collaboration_handler.py` [0 lines]
+- `engines/orchestration/bpmn/data_object_handler.py` [0 lines]
+- `engines/orchestration/bpmn/engine.py` [0 lines]
+- `engines/orchestration/bpmn/event_handler.py` [0 lines]
+- `engines/orchestration/bpmn/gateway_handler.py` [0 lines]
+- `engines/orchestration/bpmn/global_task_handler.py` [0 lines]
+- `engines/orchestration/bpmn/loop_handler.py` [0 lines]
+- `engines/orchestration/bpmn/process_executor.py` [0 lines]
+- `engines/orchestration/bpmn/sequence_flow.py` [0 lines]
+- `engines/orchestration/bpmn/transaction_handler.py` [0 lines]
+- `engines/orchestration/cep/aggregator.py` [0 lines]
+- `engines/orchestration/cep/engine.py` [0 lines]
+- `engines/orchestration/cep/event_store.py` [0 lines]
+- `engines/orchestration/cep/pattern_matcher.py` [0 lines]
+- `engines/orchestration/cep/rule_evaluator.py` [0 lines]
+- `engines/orchestration/cep/stream_processor.py` [0 lines]
+- `engines/orchestration/cep/window_manager.py` [0 lines]
+- `engines/orchestration/cmmn/case_executor.py` [0 lines]
+- `engines/orchestration/cmmn/case_file_manager.py` [0 lines]
+- `engines/orchestration/cmmn/discretionary_handler.py` [0 lines]
+- `engines/orchestration/cmmn/engine.py` [0 lines]
+- `engines/orchestration/cmmn/milestone_handler.py` [0 lines]
+- `engines/orchestration/cmmn/planning_table_handler.py` [0 lines]
+- `engines/orchestration/cmmn/sentry_evaluator.py` [0 lines]
+- `engines/orchestration/cmmn/stage_handler.py` [0 lines]
+- `engines/orchestration/cmmn/task_handler.py` [0 lines]
+- `engines/orchestration/deployment/deployer.py` [0 lines]
+- `engines/orchestration/deployment/migration_handler.py` [0 lines]
+- `engines/orchestration/deployment/tenant_manager.py` [0 lines]
+- `engines/orchestration/deployment/version_manager.py` [0 lines]
+- `engines/orchestration/dmn/decision_executor.py` [0 lines]
+- `engines/orchestration/dmn/decision_table_evaluator.py` [0 lines]
+- `engines/orchestration/dmn/engine.py` [0 lines]
+- `engines/orchestration/dmn/feel_engine.py` [0 lines]
+- `engines/orchestration/dmn/hit_policy_handler.py` [0 lines]
+- `engines/orchestration/dmn/invocation_handler.py` [0 lines]
+- `engines/orchestration/dmn/literal_expression_eval.py` [0 lines]
+- `engines/orchestration/expression/context_builder.py` [0 lines]
+- `engines/orchestration/expression/evaluator.py` [0 lines]
+- `engines/orchestration/expression/feel_evaluator.py` [0 lines]
+- `engines/orchestration/expression/javascript_evaluator.py` [0 lines]
+- `engines/orchestration/expression/juel_evaluator.py` [0 lines]
+- `engines/orchestration/expression/python_evaluator.py` [0 lines]
+- `engines/orchestration/integration/business_rule_adapter.py` [0 lines]
+- `engines/orchestration/integration/connector_registry.py` [0 lines]
+- `engines/orchestration/integration/data_mapper.py` [0 lines]
+- `engines/orchestration/integration/message_adapter.py` [0 lines]
+- `engines/orchestration/integration/script_executor.py` [0 lines]
+- `engines/orchestration/integration/service_invoker.py` [0 lines]
+- `engines/orchestration/integration/user_task_adapter.py` [0 lines]
+- `engines/orchestration/monitoring/health_checker.py` [0 lines]
+- `engines/orchestration/monitoring/logger.py` [0 lines]
+- `engines/orchestration/monitoring/metrics_collector.py` [0 lines]
+- `engines/orchestration/monitoring/performance_monitor.py` [0 lines]
+- `engines/orchestration/monitoring/tracer.py` [0 lines]
+- `engines/orchestration/multi_agent/agent_executor.py` [0 lines]
+- `engines/orchestration/multi_agent/coordination_handler.py` [0 lines]
+- `engines/orchestration/multi_agent/engine.py` [0 lines]
+- `engines/orchestration/multi_agent/interaction_handler.py` [0 lines]
+- `engines/orchestration/multi_agent/message_router.py` [0 lines]
+- `engines/orchestration/multi_agent/negotiation_handler.py` [0 lines]
+- `engines/orchestration/multi_agent/protocol_handler.py` [0 lines]
+- `engines/orchestration/persistence/definition_repository.py` [0 lines]
+- `engines/orchestration/persistence/event_repository.py` [0 lines]
+- `engines/orchestration/persistence/history_repository.py` [0 lines]
+- `engines/orchestration/persistence/instance_repository.py` [0 lines]
+- `engines/orchestration/persistence/repository.py` [0 lines]
+- `engines/orchestration/persistence/variable_repository.py` [0 lines]
+- `engines/orchestration/runtime/compensation.py` [0 lines]
+- `engines/orchestration/runtime/error_handler.py` [0 lines]
+- `engines/orchestration/runtime/executor.py` [0 lines]
+- `engines/orchestration/runtime/resource_manager.py` [0 lines]
+- `engines/orchestration/runtime/state_manager.py` [0 lines]
+- `engines/orchestration/runtime/timer_manager.py` [0 lines]
+- `engines/orchestration/runtime/variable_manager.py` [0 lines]
+- `engines/orchestration/state_machine/action_executor.py` [0 lines]
+- `engines/orchestration/state_machine/engine.py` [0 lines]
+- `engines/orchestration/state_machine/guard_evaluator.py` [0 lines]
+- `engines/orchestration/state_machine/hierarchical_handler.py` [0 lines]
+- `engines/orchestration/state_machine/history_manager.py` [0 lines]
+- `engines/orchestration/state_machine/parallel_state_handler.py` [0 lines]
+- `engines/orchestration/state_machine/state_executor.py` [0 lines]
+- `engines/orchestration/state_machine/transition_handler.py` [0 lines]
+- `engines/orchestration/utils/graph_utils.py` [0 lines]
+- `engines/orchestration/utils/id_generator.py` [0 lines]
+- `engines/orchestration/utils/json_parser.py` [0 lines]
+- `engines/orchestration/utils/time_utils.py` [0 lines]
+- `engines/orchestration/utils/type_converter.py` [0 lines]
+- `engines/orchestration/utils/xml_parser.py` [0 lines]
+- `engines/orchestration/validation/bpmn_validator.py` [0 lines]
+- `engines/orchestration/validation/cmmn_validator.py` [0 lines]
+- `engines/orchestration/validation/dmn_validator.py` [0 lines]
+- `engines/orchestration/validation/semantic_validator.py` [0 lines]
+- `engines/orchestration/validation/state_machine_validator.py` [0 lines]
+- `engines/orchestration/validation/validator.py` [0 lines]
 - `engines/tools/adapters/ai_model_executor.py` [0 lines]
 - `engines/tools/adapters/cli_executor.py` [0 lines]
 - `engines/tools/adapters/composite_executor.py` [0 lines]
@@ -4251,6 +4572,8 @@ MessageBus  →  DummyMessageBus
 - `engines/tools/base_executor.py` [0 lines]
 - `engines/tools/parameter_mapper.py` [0 lines]
 - `engines/tools/tool_registry.py` [0 lines]
+- `tools/mypy_batcher.py` [99 lines]
+- `tools/test_ai.py` [23 lines]
 
 ### 🟠 کلاس‌های بدون Base Class (احتمال عدم رعایت interface مشترک)
 - `DocumentEmbeddingService` در `engines/document/embedding/service.py`
@@ -4258,7 +4581,7 @@ MessageBus  →  DummyMessageBus
 - `AsyncIngestService` در `engines/document/ingestion/services/async_ingest_service.py`
 - `BatchIngestService` در `engines/document/ingestion/services/batch_ingest_service.py`
 - `UploadService` در `engines/document/ingestion/services/upload_service.py`
-- `GraphQLService` در `engines/document/models/ssdm_models.py`
+- `ServiceOperation` در `engines/document/models/ssdm_models.py`
 - `ServiceExposure` در `engines/document/models/ssdm_models.py`
 - `ServiceBinding` در `engines/document/models/ssdm_models.py`
 - `InternalServiceBinding` در `engines/document/models/ssdm_models.py`
@@ -4267,6 +4590,7 @@ MessageBus  →  DummyMessageBus
 - `ServiceDef` در `engines/document/parsers/ssdm_parsers/proto_service_parser.py`
 - `PDFSecurityHandler` در `engines/document/writers/pdf_writer/encryption.py`
 - `InteractionStrategy` در `engines/interaction/base_strategy.py`
+- `EventBus` در `engines/orchestration/core/event_bus.py`
 - `VectorService` در `engines/rag/vector_service.py`
 
 ---

@@ -1,0 +1,162 @@
+engines/orchestration/
+│
+├── Documentation
+│   ├── README.md              # Main documentation
+│   ├── STRUCTURE.md           # Detailed structure guide
+│   ├── FILE_MANIFEST.md       # File manifest and coverage
+│   └── TREE_VIEW.txt          # This file
+│
+├── Core Layer (9 files)
+│   ├── engine.py              # Main orchestration engine
+│   ├── context.py             # Execution context
+│   ├── instance.py            # Instance management
+│   ├── token.py               # Token tracking
+│   ├── scheduler.py           # Task scheduling
+│   ├── event_bus.py           # Event system
+│   ├── correlation.py         # Correlation engine
+│   └── transaction.py         # Transaction management
+│
+├── Runtime Layer (8 files)
+│   ├── executor.py            # Execution coordinator
+│   ├── state_manager.py       # State persistence
+│   ├── variable_manager.py    # Variable management
+│   ├── compensation.py        # Compensation handling
+│   ├── error_handler.py       # Error handling
+│   ├── timer_manager.py       # Timer management
+│   └── resource_manager.py    # Resource allocation
+│
+├── BPMN Engine (14 files) - Supports BPMNDocument
+│   ├── engine.py              # BPMN coordinator
+│   ├── process_executor.py    # Process execution
+│   ├── activity_handler.py    # Activities (Task, SubProcess, CallActivity)
+│   ├── gateway_handler.py     # Gateways (Exclusive, Parallel, Inclusive, etc.)
+│   ├── event_handler.py       # Events (Start, End, Intermediate, Boundary)
+│   ├── sequence_flow.py       # Flow evaluation
+│   ├── data_object_handler.py # Data objects
+│   ├── collaboration_handler.py # Collaborations
+│   ├── choreography_handler.py  # Choreographies
+│   ├── transaction_handler.py   # Transactions
+│   ├── adhoc_handler.py         # Ad-hoc subprocesses
+│   ├── loop_handler.py          # Loops and multi-instance
+│   └── global_task_handler.py   # Global tasks
+│
+├── CMMN Engine (10 files) - Supports CMMNDocument
+│   ├── engine.py              # CMMN coordinator
+│   ├── case_executor.py       # Case execution
+│   ├── stage_handler.py       # Stage management
+│   ├── task_handler.py        # Case tasks
+│   ├── milestone_handler.py   # Milestones
+│   ├── sentry_evaluator.py    # Sentry evaluation
+│   ├── case_file_manager.py   # Case file management
+│   ├── discretionary_handler.py # Discretionary items
+│   └── planning_table_handler.py # Planning tables
+│
+├── State Machine Engine (9 files) - Supports StateMachineDocument
+│   ├── engine.py              # State machine coordinator
+│   ├── state_executor.py      # State execution
+│   ├── transition_handler.py  # Transitions
+│   ├── guard_evaluator.py     # Guard conditions
+│   ├── action_executor.py     # Actions
+│   ├── history_manager.py     # History states
+│   ├── parallel_state_handler.py # Parallel states
+│   └── hierarchical_handler.py   # Hierarchical states
+│
+├── DMN Engine (8 files) - Supports DMNDocument
+│   ├── engine.py              # DMN coordinator
+│   ├── decision_executor.py   # Decision execution
+│   ├── decision_table_evaluator.py # Decision tables
+│   ├── literal_expression_eval.py  # Expressions
+│   ├── invocation_handler.py       # BKM invocation
+│   ├── feel_engine.py              # FEEL language
+│   └── hit_policy_handler.py       # Hit policies
+│
+├── CEP Engine (8 files) - Supports CEPDocument
+│   ├── engine.py              # CEP coordinator
+│   ├── pattern_matcher.py     # Pattern matching
+│   ├── window_manager.py      # Window management
+│   ├── aggregator.py          # Aggregation
+│   ├── stream_processor.py    # Stream processing
+│   ├── rule_evaluator.py      # Rule evaluation
+│   └── event_store.py         # Event storage
+│
+├── Multi-Agent Engine (8 files) - Supports MultiAgentInteractionDocument
+│   ├── engine.py              # Multi-agent coordinator
+│   ├── agent_executor.py      # Agent execution
+│   ├── interaction_handler.py # Interactions
+│   ├── protocol_handler.py    # Protocols
+│   ├── message_router.py      # Message routing
+│   ├── coordination_handler.py # Coordination
+│   └── negotiation_handler.py  # Negotiation
+│
+├── Integration Layer (8 files)
+│   ├── service_invoker.py     # Service invocation
+│   ├── message_adapter.py     # Message adapters
+│   ├── script_executor.py     # Script execution
+│   ├── business_rule_adapter.py # Business rules
+│   ├── user_task_adapter.py   # User tasks
+│   ├── data_mapper.py         # Data mapping
+│   └── connector_registry.py  # Connector registry
+│
+├── Persistence Layer (7 files)
+│   ├── repository.py          # Base repository
+│   ├── instance_repository.py # Instance storage
+│   ├── definition_repository.py # Definition storage
+│   ├── history_repository.py  # History storage
+│   ├── variable_repository.py # Variable storage
+│   └── event_repository.py    # Event storage
+│
+├── Monitoring Layer (6 files)
+│   ├── metrics_collector.py   # Metrics
+│   ├── tracer.py              # Tracing
+│   ├── logger.py              # Logging
+│   ├── health_checker.py      # Health checks
+│   └── performance_monitor.py # Performance
+│
+├── Validation Layer (7 files)
+│   ├── validator.py           # Base validator
+│   ├── bpmn_validator.py      # BPMN validation
+│   ├── cmmn_validator.py      # CMMN validation
+│   ├── state_machine_validator.py # State machine validation
+│   ├── dmn_validator.py       # DMN validation
+│   └── semantic_validator.py  # Semantic validation
+│
+├── Expression Layer (7 files)
+│   ├── evaluator.py           # Base evaluator
+│   ├── python_evaluator.py    # Python expressions
+│   ├── javascript_evaluator.py # JavaScript
+│   ├── feel_evaluator.py      # FEEL
+│   ├── juel_evaluator.py      # JUEL
+│   └── context_builder.py     # Context building
+│
+├── Deployment Layer (5 files)
+│   ├── deployer.py            # Deployment
+│   ├── version_manager.py     # Versioning
+│   ├── migration_handler.py   # Migration
+│   └── tenant_manager.py      # Multi-tenancy
+│
+├── API Layer (7 files)
+│   ├── engine_api.py          # Engine API
+│   ├── process_api.py         # Process API
+│   ├── task_api.py            # Task API
+│   ├── instance_api.py        # Instance API
+│   ├── deployment_api.py      # Deployment API
+│   └── admin_api.py           # Admin API
+│
+├── Utils Layer (7 files)
+│   ├── id_generator.py        # ID generation
+│   ├── time_utils.py          # Time utilities
+│   ├── xml_parser.py          # XML parsing
+│   ├── json_parser.py         # JSON parsing
+│   ├── graph_utils.py         # Graph utilities
+│   └── type_converter.py      # Type conversion
+│
+└── Tests (8 directories)
+    ├── test_core/             # Core tests
+    ├── test_bpmn/             # BPMN tests
+    ├── test_cmmn/             # CMMN tests
+    ├── test_state_machine/    # State machine tests
+    ├── test_dmn/              # DMN tests
+    ├── test_cep/              # CEP tests
+    └── test_multi_agent/      # Multi-agent tests
+
+TOTAL: 137 Python files across 17 modules
