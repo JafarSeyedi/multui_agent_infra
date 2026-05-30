@@ -3,21 +3,38 @@ Correlation Engine
 
 Handles message and event correlation for process instances.
 Supports correlation keys, message matching, and event subscription.
+OSDM-aligned with CorrelationSubscription and CorrelationPropertyBinding models.
 """
 
 from __future__ import annotations
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple, TYPE_CHECKING
 from dataclasses import dataclass, field
 from uuid import uuid4
 from collections import defaultdict
 
 from ..persistence.history_repository import HistoryRepository
 
+if TYPE_CHECKING:
+    from engines.document.models.osdm_models import (
+        CorrelationKey as OsDmCorrelationKey,
+        CorrelationSubscription as OsDmCorrelationSubscription,
+        CorrelationPropertyBinding as OsDmCorrelationPropertyBinding,
+        TimerEventDefinition as OsDmTimerEventDefinition,
+    )
+
 
 logger = logging.getLogger(__name__)
+
+
+def _parse_datetime(value: Any) -> datetime:
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, str):
+        return datetime.fromisoformat(value)
+    return datetime.utcnow()
 
 
 @dataclass
@@ -33,6 +50,40 @@ class CorrelationKey:
         if not isinstance(other, CorrelationKey):
             return False
         return self.name == other.name and self.value == other.value
+
+
+@dataclass
+class OsDmCorrelationSubscriptionBinding:
+    """OSDM-aligned correlation property binding for message matching."""
+    name: str
+    value: str
+    property_ref_name: Optional[str] = None
+    data_path: Optional[str] = None
+
+    def matches(self, test_value: Any) -> bool:
+        if test_value is None:
+            return False
+        return str(test_value) == self.value
+
+
+@dataclass
+class CorrelationRule:
+    """OSDM correlation rule for evaluating message correlation."""
+    rule_id: str
+    name: str
+    bindings: List[OsDmCorrelationSubscriptionBinding] = field(default_factory=list)
+    timer_definition: Optional[OsDmTimerEventDefinition] = None
+
+    def evaluate(self, correlation_keys: 'CorrelationKeySet') -> bool:
+        if not self.bindings:
+            return True
+        for binding in self.bindings:
+            key_dict = correlation_keys.to_dict()
+            if binding.name not in key_dict:
+                return False
+            if not binding.matches(key_dict.get(binding.name)):
+                return False
+        return True
 
 
 @dataclass
@@ -666,11 +717,3 @@ class CorrelationEngine:
                 "created_at": datetime.utcnow().isoformat(),
             },
         )
-
-
-def _parse_datetime(value: Any) -> datetime:
-    if isinstance(value, datetime):
-        return value
-    if isinstance(value, str):
-        return datetime.fromisoformat(value)
-    return datetime.utcnow()

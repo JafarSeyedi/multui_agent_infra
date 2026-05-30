@@ -127,11 +127,12 @@ class ActivityInstance:
 class ProcessInstance:
     """
     Represents a running process instance.
-    
+
     Tracks instance lifecycle, state, variables, and execution history.
     Supports hierarchical instances (parent-child relationships).
+    Aligned with OSDM Process/Stage/Decision/StateMachineModel semantics.
     """
-    
+
     def __init__(
         self,
         id: str,
@@ -156,18 +157,24 @@ class ProcessInstance:
         self.tenant_id = tenant_id
         self.state = state
         self.instance_type = instance_type
-        
+
+        # OSDM model references (lazy-loaded)
+        self._osdm_process_ref: "Process | None" = None
+        self._osdm_stage_ref: "Stage | None" = None
+        self._osdm_decision_ref: "Decision | None" = None
+        self._osdm_state_machine_ref: "StateMachineModel | None" = None
+
         # Hierarchy
         self.parent_id = parent_id
         self.root_instance_id = root_instance_id or id
         self.super_instance_id = super_instance_id
         self.child_instances: list[str] = []
-        
+
         # Timing
         self.start_time = start_time or datetime.utcnow()
         self.end_time: datetime | None = None
         self.duration_ms: int | None = None
-        
+
         # Variables
         self.variables: dict[str, Any] = variables or {}
         
@@ -465,7 +472,38 @@ class ProcessInstance:
             if isinstance(item, dict)
         ]
         return instance
-    
+
+    # ---------------------------------------------------------------------------
+    # OSDM/DSDM serialization support
+    # ---------------------------------------------------------------------------
+
+    async def serialize_to_dsdm(self, *, variable_data: dict[str, Any] | None = None) -> "DataDocument":
+        """Serialize this instance to a DSDM DataDocument with MSDM schema binding."""
+        from ...document.models.dsdm_models import DataDocument
+        from ...document.parsers.dsdm_parsers.dsdm_utils import build_node_from_python
+        payload = variable_data or dict(self.variables)
+        payload.update({
+            "instance_id": self.id,
+            "definition_id": self.definition_id,
+            "definition_key": self.definition_key,
+            "state": self.state.value,
+            "instance_type": self.instance_type.value,
+        })
+        node = build_node_from_python(payload, path="$.instance", name="process_instance")
+        return DataDocument(
+            title=f"Process Instance {self.id}",
+            document_id=f"instance:{self.id}",
+            media_type=None,
+            root=node,
+        )
+
+    async def to_dsdm_json(self) -> str:
+        """Serialize this instance to JSON via DSDM serialization."""
+        from ...document.writers.dsdm_writers.json_writer import JSONWriter
+        doc = await self.serialize_to_dsdm()
+        raw = await JSONWriter().write(doc)
+        return raw.decode("utf-8")
+
     def __repr__(self) -> str:
         return (
             f"ProcessInstance(id={self.id}, definition={self.definition_key}, "

@@ -2,7 +2,7 @@
 Task Scheduler
 
 Manages scheduled tasks, timer events, and job execution.
-Supports one-time and recurring schedules with cron-like expressions.
+Supports one-time and recurring schedules with OSDM TimerEventDefinition semantics.
 """
 
 from __future__ import annotations
@@ -18,9 +18,39 @@ from uuid import uuid4
 
 from ..persistence.history_repository import HistoryRepository
 from ..persistence.token_repository import TokenRepository
+from ..utils.time_utils import parse_duration
 
 
 logger = logging.getLogger(__name__)
+
+
+class OsDmTimerEventType(str, Enum):
+    """OSDM timer event types for TimerEventDefinition alignment."""
+    DATE = "dateTime"
+    CYCLE = "timeCycle"
+    DURATION = "timeDuration"
+
+
+@dataclass(frozen=True)
+class OsDmTimerEventDefinition:
+    """OSDM TimerEventDefinition model for timer configuration."""
+    timer_type: OsDmTimerEventType = OsDmTimerEventType.DURATION
+    time_date: datetime | None = None
+    time_cycle: str | None = None
+    time_duration: str | int | float | timedelta | None = None
+
+    def calculate_deadline(self, reference_time: datetime | None = None) -> datetime:
+        """Calculate deadline based on OSDM timer type."""
+        ref = reference_time or datetime.utcnow()
+        if self.timer_type == OsDmTimerEventType.DURATION:
+            delta = parse_duration(self.time_duration) if self.time_duration else timedelta()
+            return ref + delta
+        if self.timer_type == OsDmTimerEventType.DATE:
+            return self.time_date or ref
+        if self.timer_type == OsDmTimerEventType.CYCLE:
+            delta = parse_duration(self.time_cycle) if self.time_cycle else timedelta(hours=1)
+            return ref + delta
+        return ref + timedelta(hours=1)
 
 
 class ScheduleType(Enum):

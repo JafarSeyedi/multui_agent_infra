@@ -3,6 +3,7 @@ Token-based Execution Tracking
 
 Implements token-based execution semantics for BPMN and other flow-based
 orchestration standards. Tokens represent execution flow through the process.
+OSDM-aligned with BPMN flow element types.
 """
 
 from __future__ import annotations
@@ -11,8 +12,19 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any, Set, cast
+from typing import Any, Set, cast, TYPE_CHECKING
 from uuid import uuid4
+
+from ..utils.time_utils import parse_duration
+
+if TYPE_CHECKING:
+    from engines.document.models.osdm_models import (
+        Activity as OsDmActivity,
+        FlowNode as OsDmFlowNode,
+        SequenceFlow as OsDmSequenceFlow,
+        Gateway as OsDmGateway,
+        Event as OsDmEvent,
+    )
 
 
 logger = logging.getLogger(__name__)
@@ -71,6 +83,7 @@ class Token:
     
     Tokens move through the process following sequence flows, splitting
     at parallel gateways and merging at join points.
+    OSDM-aligned with BPMN flow element types for type-aware execution.
     """
     
     def __init__(
@@ -86,6 +99,12 @@ class Token:
         self.parent_token_id = parent_token_id
         self.token_type = token_type
         self.state = TokenState.ACTIVE
+        
+        # OSDM flow element references (runtime-only, not serialized)
+        self._osdm_flow_node: OsDmFlowNode | None = None
+        self._osdm_activity: OsDmActivity | None = None
+        self._osdm_gateway: OsDmGateway | None = None
+        self._osdm_event: OsDmEvent | None = None
         
         # Position tracking
         self.current_element_id = current_element_id
@@ -125,6 +144,19 @@ class Token:
             self.execution_path.append(element_id)
         
         logger.debug(f"Token {self.token_id} moved to {element_id} ({element_type})")
+    
+    def set_osdm_flow_node(self, flow_node: OsDmFlowNode) -> None:
+        """Set OSDM flow node reference for runtime type awareness."""
+        self._osdm_flow_node = flow_node
+        self.current_element_type = (
+            flow_node.__class__.__name__.replace("OsDm", "").replace("FlowNode", "flowNode")
+            if flow_node else self.current_element_type
+        )
+    
+    def set_osdm_activity(self, activity: OsDmActivity) -> None:
+        """Set OSDM activity reference."""
+        self._osdm_activity = activity
+        self.set_osdm_flow_node(activity)
     
     def wait(self, reason: str) -> None:
         """Put token in waiting state"""

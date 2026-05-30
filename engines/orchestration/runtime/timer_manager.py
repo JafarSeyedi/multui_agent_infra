@@ -1,11 +1,14 @@
-"""Timer support for execution components."""
+"""Timer support for execution components.
+
+Aligned with OSDM TimerEventDefinition semantics: date, timeCycle, timeDuration.
+"""
 
 from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass
-from datetime import datetime
-from typing import Callable
+from datetime import datetime, timedelta
+from typing import Callable, Any
 from uuid import uuid4
 
 from ..utils.time_utils import parse_duration, utc_now
@@ -17,6 +20,34 @@ class TimerHandle:
     name: str
     callback: Callable[[], None]
     deadline: datetime
+    state: str = "pending"
+    osdm_timer_definition: Any = None
+
+
+@dataclass
+class OsDmTimerDefinition:
+    """OSDM timer definition adapter for duration/date/cycle timers."""
+    timer_type: str  # "date", "cycle", "duration"
+    time_date: datetime | None = None
+    time_cycle: str | None = None
+    time_duration: str | float | int | None = None
+
+    @classmethod
+    def from_duration(cls, duration: str | int | float | timedelta) -> "OsDmTimerDefinition":
+        return cls(timer_type="duration", time_duration=duration)
+
+    @classmethod
+    def from_date(cls, date_value: datetime) -> "OsDmTimerDefinition":
+        return cls(timer_type="date", time_date=date_value)
+
+    def calculate_deadline(self, reference_time: datetime | None = None) -> datetime:
+        ref = reference_time or utc_now()
+        if self.timer_type == "duration":
+            delta = parse_duration(self.time_duration) if self.time_duration else timedelta()
+            return ref + delta
+        if self.timer_type == "date":
+            return self.time_date or ref
+        return ref + timedelta(hours=1)
 
 
 class TimerManager:

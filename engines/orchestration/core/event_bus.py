@@ -3,7 +3,7 @@ Event Bus for Pub/Sub Messaging
 
 Provides event-driven communication between orchestration components.
 Supports synchronous and asynchronous event handling, event filtering,
-and subscription management.
+and subscription management. OSDM-aligned event types for BPMN/CAMMN/DMN/CEP.
 """
 
 from __future__ import annotations
@@ -14,10 +14,13 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 import logging
-from typing import Any, Callable, Set, cast
+from typing import Any, Callable, Set, cast, TYPE_CHECKING
 from uuid import uuid4
 
 from ..persistence.event_repository import EventRepository
+
+if TYPE_CHECKING:
+    from engines.document.models.osdm_models import EventListenerType, EventDefinitionType, CEPOperator
 
 
 logger = logging.getLogger(__name__)
@@ -163,6 +166,20 @@ class Event:
             correlation_id=_optional_str(payload.get("correlation_id")),
             metadata=dict(nested_payload.get("metadata") or payload.get("metadata") or {}),
         )
+
+    def set_osdm_metadata(
+        self,
+        listener_type: Any = None,
+        event_definition_type: Any = None,
+        cep_operator: Any = None,
+    ) -> None:
+        """Set OSDM event metadata for BPMN/CEP alignment."""
+        if listener_type is not None:
+            self.metadata["osdm_listener_type"] = listener_type.value
+        if event_definition_type is not None:
+            self.metadata["osdm_event_definition_type"] = event_definition_type.value
+        if cep_operator is not None:
+            self.metadata["osdm_cep_operator"] = cep_operator.value
 
 
 @dataclass
@@ -447,7 +464,7 @@ class EventBus:
             for event in events:
                 await self._handle_event(event)
         return events
-    
+
     def get_statistics(self) -> dict[str, Any]:
         """Get event bus statistics"""
         type_counts: dict[str, int] = defaultdict(int)
@@ -463,7 +480,7 @@ class EventBus:
             "subscriptions": len(self.subscriptions),
             "event_type_distribution": dict(type_counts)
         }
-    
+
     def get_subscriptions(self, event_type: EventType | None = None) -> list[Subscription]:
         """Get subscriptions, optionally filtered by event type"""
         if event_type is None:
