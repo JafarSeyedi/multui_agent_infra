@@ -32,4 +32,52 @@ class EventRepository(PersistentRuntimeRepository):
         return await self.save_persisted(key, payload)
 
     def by_correlation(self, correlation_id: str) -> list[dict[str, Any]]:
+        """Get events by correlation ID (basic correlation support)."""
         return self.list(predicate=lambda row: row.get("correlation_id") == correlation_id)
+
+    def by_correlation_osdm(self, correlation_key: dict[str, Any]) -> list[dict[str, Any]]:
+        """Get events by OSDM correlation key (advanced correlation support).
+        
+        This method supports OSDM-style correlation where events are correlated
+        based on matching property values in the payload, similar to OSDM
+        CorrelationRule evaluation.
+        """
+        def _matches_osdm_correlation(event: dict[str, Any]) -> bool:
+            # Check if event has the correlation_id field (basic support)
+            if event.get("correlation_id"):
+                # In a full OSDM implementation, we would check if the correlation_id
+                # matches the OSDM correlation key. For now, we'll do a simple string match
+                # if the correlation_key is a simple string, or check payload properties
+                # if it's a more complex structure.
+                if isinstance(correlation_key, str):
+                    return event.get("correlation_id") == correlation_key
+                elif isinstance(correlation_key, dict):
+                    # Check if all key-value pairs in correlation_key match the event payload
+                    payload = event.get("payload", {})
+                    for key, expected_value in correlation_key.items():
+                        if payload.get(key) != expected_value:
+                            return False
+                    return True
+            return False
+            
+        return self.list(predicate=_matches_osdm_correlation)
+
+    def by_instance_and_time_ordered(self, instance_id: str) -> list[dict[str, Any]]:
+        """Get events for a specific instance, ordered by timestamp (oldest first)."""
+        events = self.list(predicate=lambda row: row.get("instance_id") == instance_id)
+        # Sort by created_at timestamp
+        return sorted(events, key=lambda x: x.get("created_at", ""))
+
+    def by_instance_and_time_ordered_desc(self, instance_id: str) -> list[dict[str, Any]]:
+        """Get events for a specific instance, ordered by timestamp (newest first)."""
+        events = self.list(predicate=lambda row: row.get("instance_id") == instance_id)
+        # Sort by created_at timestamp, descending
+        return sorted(events, key=lambda x: x.get("created_at", ""), reverse=True)
+
+    def by_time_range(self, start_time: str, end_time: str) -> list[dict[str, Any]]:
+        """Get events within a specific time range, ordered by timestamp."""
+        events = self.list(predicate=lambda row: 
+                          row.get("created_at", "") >= start_time and 
+                          row.get("created_at", "") <= end_time)
+        # Sort by created_at timestamp
+        return sorted(events, key=lambda x: x.get("created_at", ""))
