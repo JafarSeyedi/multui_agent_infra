@@ -5,14 +5,19 @@ Manages scheduled tasks, timer events, and job execution.
 Supports one-time and recurring schedules with cron-like expressions.
 """
 
+from __future__ import annotations
+
 import asyncio
-import logging
-from datetime import datetime, timedelta
-from typing import Any, Callable, Set
-from enum import Enum
-from dataclasses import dataclass, field
-from uuid import uuid4
 import heapq
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta
+from enum import Enum
+import logging
+from typing import Any, Callable, Set
+from uuid import uuid4
+
+from ..persistence.history_repository import HistoryRepository
+from ..persistence.token_repository import TokenRepository
 
 
 logger = logging.getLogger(__name__)
@@ -57,6 +62,26 @@ class ScheduledTask:
         """For heap ordering"""
         return self.next_execution < other.next_execution
 
+    def to_record_payload(self) -> dict[str, Any]:
+        return {
+            "job_id": self.task_id,
+            "job_type": self.schedule_type.value,
+            "state": self.state.value,
+            "updated_at": (self.last_execution or self.created_at).isoformat(),
+            "payload": {
+                "name": self.name,
+                "next_execution": self.next_execution.isoformat(),
+                "schedule_data": dict(self.schedule_data),
+                "created_at": self.created_at.isoformat(),
+                "last_execution": self.last_execution.isoformat() if self.last_execution else None,
+                "execution_count": self.execution_count,
+                "failure_count": self.failure_count,
+                "max_retries": self.max_retries,
+                "retry_delay_seconds": self.retry_delay_seconds,
+                "metadata": dict(self.metadata),
+            },
+        }
+
 
 class Scheduler:
     """
@@ -70,7 +95,13 @@ class Scheduler:
     - Concurrent execution control
     """
     
-    def __init__(self, max_concurrent_tasks: int = 100):
+    def __init__(
+        self,
+        max_concurrent_tasks: int = 100,
+        *,
+        history_repository: HistoryRepository | None = None,
+        token_repository: TokenRepository | None = None,
+    ):
         self.max_concurrent_tasks = max_concurrent_tasks
         
         # Task storage
@@ -88,6 +119,8 @@ class Scheduler:
         # Statistics
         self.total_executed = 0
         self.total_failed = 0
+        self.history_repository = history_repository
+        self.token_repository = token_repository
         
         logger.info("Scheduler created")
     
@@ -266,6 +299,60 @@ class Scheduler:
         """Add a task to the scheduler"""
         self.tasks[task.task_id] = task
         heapq.heappush(self.task_heap, task)
+
+    async def _persist_task_state(self, task: ScheduledTask, action: str) -> None:
+        if self.history_repository is None:
+            return
+        await self.history_repository.append_persisted(
+            str(task.metadata.get("instance_id", "scheduler")),
+            {
+                "action": action,
+                "activity_id": task.metadata.get("activity_id"),
+                "payload": task.to_record_payload(),
+                "created_at": datetime.utcnow().isoformat(),
+            },
+        )
+
+    async def reload_tasks_from_history(self, instance_id: str) -> list[ScheduledTask]:
+        if self.history_repository is None:
+            return list(self.tasks.values())
+        history_rows = self.history_repository.query(instance_id)
+        restored: list[ScheduledTask] = []
+        seen: set[str] = set()
+        for row in history_rows:
+            payload = row.get("payload")
+            if not isinstance(payload, dict):
+                continue
+            job_payload = payload.get("payload")
+            if not isinstance(job_payload, dict):
+                continue
+            task_id = str(payload.get("job_id", ""))
+            if not task_id or task_id in seen:
+                continue
+            seen.add(task_id)
+            task = ScheduledTask(
+                task_id=task_id,
+                name=str(job_payload.get("name", task_id)),
+                schedule_type=ScheduleType(str(payload.get("job_type", ScheduleType.ONE_TIME.value))),
+                handler=lambda _task: None,
+                next_execution=datetime.fromisoformat(str(job_payload.get("next_execution", datetime.utcnow().isoformat()))),
+                schedule_data=dict(job_payload.get("schedule_data") or {}),
+                state=TaskState(str(payload.get("state", TaskState.PENDING.value))),
+                metadata=dict(job_payload.get("metadata") or {}),
+            )
+            task.created_at = datetime.fromisoformat(str(job_payload.get("created_at", datetime.utcnow().isoformat())))
+            last_execution = job_payload.get("last_execution")
+            if last_execution:
+                task.last_execution = datetime.fromisoformat(str(last_execution))
+            task.execution_count = int(job_payload.get("execution_count", 0))
+            task.failure_count = int(job_payload.get("failure_count", 0))
+            task.max_retries = int(job_payload.get("max_retries", 3))
+            task.retry_delay_seconds = int(job_payload.get("retry_delay_seconds", 60))
+            self.tasks[task.task_id] = task
+            if task.state in {TaskState.PENDING, TaskState.RUNNING}:
+                heapq.heappush(self.task_heap, task)
+            restored.append(task)
+        return restored
     
     async def _scheduler_loop(self) -> None:
         """Main scheduler loop"""
@@ -310,6 +397,7 @@ class Scheduler:
         task.state = TaskState.RUNNING
         task.last_execution = datetime.utcnow()
         self.running_tasks.add(task.task_id)
+        await self._persist_task_state(task, "job.running")
         
         try:
             # Execute handler
@@ -321,6 +409,7 @@ class Scheduler:
             task.execution_count += 1
             task.state = TaskState.COMPLETED
             self.total_executed += 1
+            await self._persist_task_state(task, "job.completed")
             
             logger.debug(f"Executed task {task.task_id} ({task.name})")
             
@@ -332,6 +421,7 @@ class Scheduler:
             task.failure_count += 1
             task.state = TaskState.FAILED
             self.total_failed += 1
+            await self._persist_task_state(task, "job.failed")
             
             logger.error(f"Task {task.task_id} failed: {e}", exc_info=True)
             

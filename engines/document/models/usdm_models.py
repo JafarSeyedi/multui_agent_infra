@@ -24,7 +24,7 @@ class USDMDocument(BaseDocument):
 # pages: لایه‌ی فیزیکی/صفحه‌بندی → خروجی صفحه‌بندی شده (PDF-like)
     elements: list[DocumentElement] = field(default_factory=list)
     logical_elements: list[LogicalElement] = field(default_factory=list)
-    stylesheet: StyleSheet = field(default_factory=StyleSheet)
+    stylesheet: "StyleSheet" = field(default_factory=lambda: StyleSheet())
 
 
 @dataclass
@@ -151,7 +151,7 @@ class TableCell:
 
 @dataclass
 class TableRow:
-    cells: list[TableCell] = []
+    cells: list[TableCell] = field(default_factory=list)
     is_header: bool = False
     metadata: dict[str, Any] = field(default_factory=dict)
 

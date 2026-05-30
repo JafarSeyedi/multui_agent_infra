@@ -5,12 +5,16 @@ Handles message and event correlation for process instances.
 Supports correlation keys, message matching, and event subscription.
 """
 
+from __future__ import annotations
+
 import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Set, Tuple
 from dataclasses import dataclass, field
 from uuid import uuid4
 from collections import defaultdict
+
+from ..persistence.history_repository import HistoryRepository
 
 
 logger = logging.getLogger(__name__)
@@ -74,6 +78,31 @@ class Message:
     ttl_seconds: Optional[int] = None
     metadata: Dict[str, Any] = field(default_factory=dict)
 
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "message_id": self.message_id,
+            "message_name": self.message_name,
+            "correlation_keys": self.correlation_keys.to_dict(),
+            "payload": dict(self.payload),
+            "timestamp": self.timestamp.isoformat(),
+            "ttl_seconds": self.ttl_seconds,
+            "metadata": dict(self.metadata),
+        }
+
+    @classmethod
+    def from_dict(cls, payload: Dict[str, Any]) -> "Message":
+        return cls(
+            message_id=str(payload["message_id"]),
+            message_name=str(payload["message_name"]),
+            correlation_keys=CorrelationKeySet(
+                [CorrelationKey(name=str(name), value=str(value)) for name, value in dict(payload.get("correlation_keys") or {}).items()]
+            ),
+            payload=dict(payload.get("payload") or {}),
+            timestamp=_parse_datetime(payload.get("timestamp")),
+            ttl_seconds=int(payload["ttl_seconds"]) if payload.get("ttl_seconds") is not None else None,
+            metadata=dict(payload.get("metadata") or {}),
+        )
+
 
 @dataclass
 class MessageSubscription:
@@ -86,6 +115,31 @@ class MessageSubscription:
     created_at: datetime = field(default_factory=datetime.utcnow)
     metadata: Dict[str, Any] = field(default_factory=dict)
 
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "subscription_id": self.subscription_id,
+            "message_name": self.message_name,
+            "correlation_keys": self.correlation_keys.to_dict(),
+            "instance_id": self.instance_id,
+            "activity_id": self.activity_id,
+            "created_at": self.created_at.isoformat(),
+            "metadata": dict(self.metadata),
+        }
+
+    @classmethod
+    def from_dict(cls, payload: Dict[str, Any]) -> "MessageSubscription":
+        return cls(
+            subscription_id=str(payload["subscription_id"]),
+            message_name=str(payload["message_name"]),
+            correlation_keys=CorrelationKeySet(
+                [CorrelationKey(name=str(name), value=str(value)) for name, value in dict(payload.get("correlation_keys") or {}).items()]
+            ),
+            instance_id=str(payload["instance_id"]),
+            activity_id=str(payload["activity_id"]),
+            created_at=_parse_datetime(payload.get("created_at")),
+            metadata=dict(payload.get("metadata") or {}),
+        )
+
 
 @dataclass
 class EventSubscription:
@@ -96,6 +150,27 @@ class EventSubscription:
     activity_id: str
     created_at: datetime = field(default_factory=datetime.utcnow)
     metadata: Dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "subscription_id": self.subscription_id,
+            "event_name": self.event_name,
+            "instance_id": self.instance_id,
+            "activity_id": self.activity_id,
+            "created_at": self.created_at.isoformat(),
+            "metadata": dict(self.metadata),
+        }
+
+    @classmethod
+    def from_dict(cls, payload: Dict[str, Any]) -> "EventSubscription":
+        return cls(
+            subscription_id=str(payload["subscription_id"]),
+            event_name=str(payload["event_name"]),
+            instance_id=str(payload["instance_id"]),
+            activity_id=str(payload["activity_id"]),
+            created_at=_parse_datetime(payload.get("created_at")),
+            metadata=dict(payload.get("metadata") or {}),
+        )
 
 
 class CorrelationEngine:
@@ -109,8 +184,9 @@ class CorrelationEngine:
     - Subscription management
     """
     
-    def __init__(self, event_bus) -> None:
+    def __init__(self, event_bus, history_repository: HistoryRepository | None = None) -> None:
         self.event_bus = event_bus
+        self.history_repository = history_repository
         
         # Message subscriptions
         self.message_subscriptions: Dict[str, MessageSubscription] = {}
@@ -173,6 +249,25 @@ class CorrelationEngine:
         self._check_buffered_messages(subscription)
         
         return subscription_id
+
+    async def subscribe_message_persisted(
+        self,
+        message_name: str,
+        correlation_keys: CorrelationKeySet,
+        instance_id: str,
+        activity_id: str,
+        subscription_id: Optional[str] = None,
+    ) -> str:
+        subscription_id = self.subscribe_message(
+            message_name=message_name,
+            correlation_keys=correlation_keys,
+            instance_id=instance_id,
+            activity_id=activity_id,
+            subscription_id=subscription_id,
+        )
+        subscription = self.message_subscriptions[subscription_id]
+        await self._append_history(instance_id, "correlation.message_subscription.created", subscription.to_dict())
+        return subscription_id
     
     def unsubscribe_message(self, subscription_id: str) -> bool:
         """Unsubscribe from a message"""
@@ -185,6 +280,17 @@ class CorrelationEngine:
         
         logger.debug(f"Removed message subscription {subscription_id}")
         return True
+
+    async def unsubscribe_message_persisted(self, subscription_id: str) -> bool:
+        subscription = self.message_subscriptions.get(subscription_id)
+        removed = self.unsubscribe_message(subscription_id)
+        if removed and subscription is not None:
+            await self._append_history(
+                subscription.instance_id,
+                "correlation.message_subscription.deleted",
+                {"subscription_id": subscription_id},
+            )
+        return removed
     
     def subscribe_event(
         self,
@@ -225,6 +331,23 @@ class CorrelationEngine:
         )
         
         return subscription_id
+
+    async def subscribe_event_persisted(
+        self,
+        event_name: str,
+        instance_id: str,
+        activity_id: str,
+        subscription_id: Optional[str] = None,
+    ) -> str:
+        subscription_id = self.subscribe_event(
+            event_name=event_name,
+            instance_id=instance_id,
+            activity_id=activity_id,
+            subscription_id=subscription_id,
+        )
+        subscription = self.event_subscriptions[subscription_id]
+        await self._append_history(instance_id, "correlation.event_subscription.created", subscription.to_dict())
+        return subscription_id
     
     def unsubscribe_event(self, subscription_id: str) -> bool:
         """Unsubscribe from an event"""
@@ -237,6 +360,17 @@ class CorrelationEngine:
         
         logger.debug(f"Removed event subscription {subscription_id}")
         return True
+
+    async def unsubscribe_event_persisted(self, subscription_id: str) -> bool:
+        subscription = self.event_subscriptions.get(subscription_id)
+        removed = self.unsubscribe_event(subscription_id)
+        if removed and subscription is not None:
+            await self._append_history(
+                subscription.instance_id,
+                "correlation.event_subscription.deleted",
+                {"subscription_id": subscription_id},
+            )
+        return removed
     
     async def correlate_message(
         self,
@@ -290,6 +424,7 @@ class CorrelationEngine:
         else:
             # Buffer message for later matching
             self._buffer_message(message)
+            await self._append_history("correlation", "correlation.buffered_message.created", message.to_dict())
             logger.debug(f"Buffered message '{message_name}' (no matching subscriptions)")
             return []
     
@@ -368,6 +503,13 @@ class CorrelationEngine:
             for message in matched_messages:
                 asyncio.create_task(self._notify_message_match(subscription, message))
                 self.buffered_messages.remove(message)
+                asyncio.create_task(
+                    self._append_history(
+                        "correlation",
+                        "correlation.buffered_message.deleted",
+                        {"message_id": message.message_id},
+                    )
+                )
     
     async def _notify_message_match(
         self,
@@ -424,6 +566,17 @@ class CorrelationEngine:
         total = len(message_subs) + len(event_subs)
         logger.info(f"Cleaned up {total} subscriptions for instance {instance_id}")
         return total
+
+    async def cleanup_instance_subscriptions_persisted(self, instance_id: str) -> int:
+        message_subs = list(self.instance_message_subs.get(instance_id, set()))
+        for sub_id in message_subs:
+            await self.unsubscribe_message_persisted(sub_id)
+        event_subs = list(self.instance_event_subs.get(instance_id, set()))
+        for sub_id in event_subs:
+            await self.unsubscribe_event_persisted(sub_id)
+        total = len(message_subs) + len(event_subs)
+        logger.info("Cleaned up %s persisted subscriptions for instance %s", total, instance_id)
+        return total
     
     def cleanup_expired_messages(self) -> int:
         """Clean up expired buffered messages"""
@@ -457,3 +610,67 @@ class CorrelationEngine:
                 set(self.instance_event_subs.keys())
             )
         }
+
+    async def reload_from_history(self) -> None:
+        if self.history_repository is None:
+            return
+        self.message_subscriptions.clear()
+        self.message_name_index.clear()
+        self.instance_message_subs.clear()
+        self.event_subscriptions.clear()
+        self.event_name_index.clear()
+        self.instance_event_subs.clear()
+        self.buffered_messages.clear()
+
+        rows = sorted(self.history_repository.list(), key=lambda item: str(item.get("created_at", "")))
+        for row in rows:
+            action = str(row.get("action", ""))
+            payload = row.get("payload")
+            if not isinstance(payload, dict):
+                continue
+            if action == "correlation.message_subscription.created":
+                subscription = MessageSubscription.from_dict(payload)
+                self.subscribe_message(
+                    subscription.message_name,
+                    subscription.correlation_keys,
+                    subscription.instance_id,
+                    subscription.activity_id,
+                    subscription.subscription_id,
+                )
+            elif action == "correlation.message_subscription.deleted":
+                self.unsubscribe_message(str(payload.get("subscription_id", "")))
+            elif action == "correlation.event_subscription.created":
+                subscription = EventSubscription.from_dict(payload)
+                self.subscribe_event(
+                    subscription.event_name,
+                    subscription.instance_id,
+                    subscription.activity_id,
+                    subscription.subscription_id,
+                )
+            elif action == "correlation.event_subscription.deleted":
+                self.unsubscribe_event(str(payload.get("subscription_id", "")))
+            elif action == "correlation.buffered_message.created":
+                self._buffer_message(Message.from_dict(payload))
+            elif action == "correlation.buffered_message.deleted":
+                message_id = str(payload.get("message_id", ""))
+                self.buffered_messages = [message for message in self.buffered_messages if message.message_id != message_id]
+
+    async def _append_history(self, instance_id: str, action: str, payload: Dict[str, Any]) -> None:
+        if self.history_repository is None:
+            return
+        await self.history_repository.append_persisted(
+            instance_id,
+            {
+                "action": action,
+                "payload": payload,
+                "created_at": datetime.utcnow().isoformat(),
+            },
+        )
+
+
+def _parse_datetime(value: Any) -> datetime:
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, str):
+        return datetime.fromisoformat(value)
+    return datetime.utcnow()

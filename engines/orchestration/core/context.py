@@ -6,15 +6,24 @@ Manages execution context for process instances including:
 - Execution hierarchy (process, subprocess, activity)
 - Context propagation and isolation
 - Transactional boundaries
+- MSDM schema binding for variable typing
+- DSDM serialization for persistence
 """
 
+from __future__ import annotations
+
 import logging
-from datetime import datetime
-from typing import Any, Set
-from enum import Enum
-from dataclasses import dataclass, field
-from uuid import uuid4
 from copy import deepcopy
+from dataclasses import dataclass, field
+from datetime import datetime
+from enum import Enum
+from typing import Any, Set, cast
+from uuid import uuid4
+
+from ...document.models.dsdm_models import DataDocument, DataSchemaReference, SchemaBinding
+from ...document.models.msdm_models import Attribute, DataType, Entity, ScalarType
+from ...document.parsers.dsdm_parsers.dsdm_utils import build_node_from_python
+from ...document.writers.dsdm_writers.json_writer import JSONWriter
 
 
 logger = logging.getLogger(__name__)
@@ -38,25 +47,110 @@ class VariableScope(Enum):
 
 @dataclass
 class Variable:
-    """Process variable with metadata"""
+    """Process variable with metadata and MSDM schema binding"""
     name: str
     value: Any
-    type: str  # string, integer, boolean, json, xml, bytes, etc.
+    type: str = "object"
     scope: VariableScope = VariableScope.PUBLIC
     created_at: datetime = field(default_factory=datetime.utcnow)
     updated_at: datetime = field(default_factory=datetime.utcnow)
-    is_transient: bool = False  # Transient variables not persisted
+    is_transient: bool = False
     metadata: dict[str, Any] = field(default_factory=dict)
+    schema_binding: SchemaBinding | None = None
+    _schema_entity_cache: Entity | None = field(default=None, repr=False)
+
+    def bind_schema(self, entity: Entity | None = None, attribute: Attribute | None = None) -> None:
+        """Bind this variable to an MSDM schema element for type validation."""
+        self.schema_binding = SchemaBinding(entity=entity, attribute=attribute, source_schema=None)
+        self._schema_entity_cache = entity
+        self.updated_at = datetime.utcnow()
+
+    def to_msdm_type(self) -> DataType:
+        """Convert variable type to MSDM DataType."""
+        type_map = {
+            "boolean": ScalarType.BOOLEAN,
+            "integer": ScalarType.INT,
+            "double": ScalarType.DOUBLE,
+            "float": ScalarType.FLOAT,
+            "string": ScalarType.STRING,
+            "list": ScalarType.ARRAY,
+            "json": ScalarType.JSON,
+            "bytes": ScalarType.BINARY,
+            "null": ScalarType.NULL,
+        }
+        return DataType(base=type_map.get(self.type, ScalarType.ANY))
+
+    def to_record_payload(self, *, instance_id: str, scope_id: str) -> dict[str, Any]:
+        return {
+            "instance_id": instance_id,
+            "scope_id": scope_id,
+            "name": self.name,
+            "value": self.value,
+            "value_type": self.type,
+            "updated_at": self.updated_at.isoformat(),
+            "payload": {
+                "scope": self.scope.value,
+                "created_at": self.created_at.isoformat(),
+                "is_transient": self.is_transient,
+                "metadata": dict(self.metadata),
+            },
+        }
+
+    @classmethod
+    def from_record_payload(cls, payload: dict[str, Any]) -> Variable:
+        nested_payload = cast(dict[str, Any], payload.get("payload")) if isinstance(payload.get("payload"), dict) else {}
+        schema_binding_data = nested_payload.get("schema_binding") if isinstance(nested_payload.get("schema_binding"), dict) else None
+        schema_binding: SchemaBinding | None = None
+        if schema_binding_data:
+            entity_data = schema_binding_data.get("entity")
+            if isinstance(entity_data, dict):
+                schema_binding = SchemaBinding(
+                    entity=Entity(name=str(entity_data.get("name", "unknown"))),
+                    attribute=None,
+                    source_schema=None,
+                )
+        return cls(
+            name=str(payload["name"]),
+            value=payload.get("value"),
+            type=str(payload.get("value_type", "object")),
+            scope=VariableScope(str(nested_payload.get("scope", VariableScope.PUBLIC.value))),
+            created_at=_parse_datetime(nested_payload.get("created_at")),
+            updated_at=_parse_datetime(payload.get("updated_at")),
+            is_transient=bool(nested_payload.get("is_transient", False)),
+            metadata=dict(nested_payload.get("metadata") or {}),
+            schema_binding=schema_binding,
+        )
+
+    async def to_dsdm_document(self, *, instance_id: str, context_id: str) -> DataDocument:
+        """Serialize this variable to a DSDM DataDocument."""
+        payload = {
+            "name": self.name,
+            "value": self.value,
+            "type": self.type,
+            "scope": self.scope.value,
+            "is_transient": self.is_transient,
+            "updated_at": self.updated_at.isoformat(),
+            "created_at": self.created_at.isoformat(),
+            "metadata": dict(self.metadata),
+        }
+        node = build_node_from_python(payload, path=f"$.variables.{self.name}", name=self.name)
+        return DataDocument(
+            title=f"Variable {self.name}",
+            document_id=f"variable:{instance_id}:{context_id}:{self.name}",
+            media_type=None,
+            root=node,
+        )
 
 
 class ExecutionContext:
     """
     Execution context for process instances.
-    
+
     Manages hierarchical variable scopes, execution state, and context
     propagation through the process execution tree.
+    Supports MSDM schema binding for variable validation and DSDM serialization.
     """
-    
+
     def __init__(
         self,
         context_id: str,
@@ -67,19 +161,23 @@ class ExecutionContext:
         self.scope = scope
         self.parent = parent
         self.children: list['ExecutionContext'] = []
-        
+
+        # MSDM schema binding for context-level typing
+        self.schema_entity: Entity | None = None
+        self._schema_registry: dict[str, Entity] = {}
+
         # Variable storage
         self.variables: dict[str, Variable] = {}
-        
+
         # Execution metadata
         self.metadata: dict[str, Any] = {}
         self.created_at = datetime.utcnow()
         self.updated_at = datetime.utcnow()
-        
+
         # State tracking
         self.is_active = True
-        self.is_scope = True  # Whether this context creates a variable scope
-        
+        self.is_scope = True
+
         # Register with parent
         if parent:
             parent.children.append(self)
@@ -236,19 +334,57 @@ class ExecutionContext:
                         name=name,
                         value=deepcopy(var.value),
                         variable_type=var.type,
-                        scope=var.scope,
+scope=var.scope,
                         is_transient=var.is_transient
                     )
-    
+
     def get_metadata(self, key: str, default: Any = None) -> Any:
         """Get metadata value"""
         return self.metadata.get(key, default)
-    
+
     def set_metadata(self, key: str, value: Any) -> None:
         """Set metadata value"""
         self.metadata[key] = value
         self.updated_at = datetime.utcnow()
-    
+
+    def bind_schema(self, entity: Entity) -> None:
+        """Bind an MSDM Entity to this context for variable type validation."""
+        self.schema_entity = entity
+        self._schema_registry[entity.name] = entity
+
+    def get_schema(self, name: str) -> Entity | None:
+        """Get a schema entity by name from the registry."""
+        return self._schema_registry.get(name)
+
+    async def serialize_to_dsdm(self, *, instance_id: str) -> DataDocument:
+        """Serialize all variables in this context to a DSDM DataDocument."""
+        variables_dict = {}
+        for name, var in self.variables.items():
+            if var.is_transient:
+                continue
+            variables_dict[name] = {
+                "value": var.value,
+                "type": var.type,
+                "updated_at": var.updated_at.isoformat(),
+            }
+        node = build_node_from_python(
+            {"variables": variables_dict, "context_id": self.context_id, "scope": self.scope.value},
+            path=f"$.contexts.{self.context_id}",
+            name=self.context_id,
+        )
+        return DataDocument(
+            title=f"Context {self.context_id}",
+            document_id=f"context:{instance_id}:{self.context_id}",
+            media_type=None,
+            root=node,
+        )
+
+    async def serialize_to_json(self, *, instance_id: str) -> str:
+        """Serialize variables to JSON string via DSDM."""
+        doc = await self.serialize_to_dsdm(instance_id=instance_id)
+        raw = await JSONWriter().write(doc)
+        return raw.decode("utf-8")
+
     def _infer_type(self, value: Any) -> str:
         """Infer variable type from value"""
         if isinstance(value, bool):
@@ -290,6 +426,19 @@ class ExecutionContext:
             "metadata": self.metadata,
             "children_count": len(self.children)
         }
+
+    def to_variable_record_payloads(self, *, instance_id: str) -> list[dict[str, Any]]:
+        return [
+            variable.to_record_payload(instance_id=instance_id, scope_id=self.context_id)
+            for variable in self.variables.values()
+        ]
+
+    def restore_variable_records(self, payloads: list[dict[str, Any]]) -> None:
+        self.variables = {}
+        for payload in payloads:
+            variable = Variable.from_record_payload(payload)
+            self.variables[variable.name] = variable
+        self.updated_at = datetime.utcnow()
     
     def __repr__(self) -> str:
         return (
@@ -305,9 +454,10 @@ class ContextManager:
     Provides context lifecycle management, lookup, and cleanup.
     """
     
-    def __init__(self) -> None:
+    def __init__(self, variable_repository: Any | None = None) -> None:
         self.contexts: dict[str, ExecutionContext] = {}
         self.root_contexts: Set[str] = set()
+        self.variable_repository = variable_repository
     
     def create_context(
         self,
@@ -396,3 +546,41 @@ class ContextManager:
             scope = ctx.scope.value
             distribution[scope] = distribution.get(scope, 0) + 1
         return distribution
+
+    async def persist_context_variables(self, instance_id: str, context_id: str) -> list[dict[str, Any]]:
+        context = self.get_context(context_id)
+        if context is None:
+            return []
+        records = context.to_variable_record_payloads(instance_id=instance_id)
+        if self.variable_repository is None:
+            return records
+        for record in records:
+            key = f"{instance_id}:{context_id}:{record['name']}"
+            if hasattr(self.variable_repository, "save_persisted"):
+                await self.variable_repository.save_persisted(key, record)
+            else:
+                self.variable_repository.save(key, record)
+        return records
+
+    async def load_context_variables(self, instance_id: str, context_id: str) -> list[dict[str, Any]]:
+        context = self.get_context(context_id)
+        if context is None:
+            return []
+        if self.variable_repository is None:
+            return context.to_variable_record_payloads(instance_id=instance_id)
+        if hasattr(self.variable_repository, "get_by_scope"):
+            payloads = self.variable_repository.get_by_scope(instance_id, context_id)
+        else:
+            payloads = self.variable_repository.list(
+                predicate=lambda row: row.get("instance_id") == instance_id and row.get("scope_id") == context_id
+            )
+        context.restore_variable_records(payloads)
+        return payloads
+
+
+def _parse_datetime(value: Any) -> datetime:
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, str):
+        return datetime.fromisoformat(value)
+    return datetime.utcnow()

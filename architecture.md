@@ -1,7 +1,7 @@
 # 📐 Architecture Report
 
 > تولید شده توسط `tools/analyze_architecture.py`  
-> تاریخ: 2026-05-12 20:37:50  
+> تاریخ: 2026-05-19 00:10:04  
 ---
 
 ## 📊 آمار کلی
@@ -9,10 +9,10 @@
 | معیار | مقدار |
 |-------|-------|
 | فایل‌های Python | 848 |
-| کلاس‌ها | 1723 |
-| توابع سطح بالا | 396 |
+| کلاس‌ها | 1902 |
+| توابع سطح بالا | 418 |
 | فایل‌های با خطا | 0 |
-| مجموع خطوط کد | 105085 |
+| مجموع خطوط کد | 108683 |
 
 ---
 
@@ -696,48 +696,48 @@
   │   │   └── 📄 strategy_registry.py [64 lines]
   │   ├── 📁 orchestration/
   │   │   ├── 📁 api/
-  │   │   │   ├── 📄 __init__.py [0 lines]
-  │   │   │   ├── 📄 admin_api.py [0 lines]
-  │   │   │   ├── 📄 deployment_api.py [0 lines]
-  │   │   │   ├── 📄 engine_api.py [0 lines]
-  │   │   │   ├── 📄 instance_api.py [0 lines]
-  │   │   │   ├── 📄 process_api.py [0 lines]
-  │   │   │   └── 📄 task_api.py [0 lines]
+  │   │   │   ├── 📄 __init__.py [17 lines]
+  │   │   │   ├── 📄 admin_api.py [24 lines]
+  │   │   │   ├── 📄 deployment_api.py [31 lines]
+  │   │   │   ├── 📄 engine_api.py [27 lines]
+  │   │   │   ├── 📄 instance_api.py [33 lines]
+  │   │   │   ├── 📄 process_api.py [28 lines]
+  │   │   │   └── 📄 task_api.py [23 lines]
   │   │   ├── 📁 bpmn/
-  │   │   │   ├── 📄 __init__.py [0 lines]
-  │   │   │   ├── 📄 activity_handler.py [0 lines]
-  │   │   │   ├── 📄 adhoc_handler.py [0 lines]
-  │   │   │   ├── 📄 choreography_handler.py [0 lines]
-  │   │   │   ├── 📄 collaboration_handler.py [0 lines]
-  │   │   │   ├── 📄 data_object_handler.py [0 lines]
-  │   │   │   ├── 📄 engine.py [0 lines]
-  │   │   │   ├── 📄 event_handler.py [0 lines]
-  │   │   │   ├── 📄 gateway_handler.py [0 lines]
-  │   │   │   ├── 📄 global_task_handler.py [0 lines]
-  │   │   │   ├── 📄 loop_handler.py [0 lines]
-  │   │   │   ├── 📄 process_executor.py [0 lines]
-  │   │   │   ├── 📄 sequence_flow.py [0 lines]
-  │   │   │   └── 📄 transaction_handler.py [0 lines]
+  │   │   │   ├── 📄 __init__.py [31 lines]
+  │   │   │   ├── 📄 activity_handler.py [42 lines]
+  │   │   │   ├── 📄 adhoc_handler.py [20 lines]
+  │   │   │   ├── 📄 choreography_handler.py [17 lines]
+  │   │   │   ├── 📄 collaboration_handler.py [21 lines]
+  │   │   │   ├── 📄 data_object_handler.py [29 lines]
+  │   │   │   ├── 📄 engine.py [63 lines]
+  │   │   │   ├── 📄 event_handler.py [24 lines]
+  │   │   │   ├── 📄 gateway_handler.py [37 lines]
+  │   │   │   ├── 📄 global_task_handler.py [17 lines]
+  │   │   │   ├── 📄 loop_handler.py [18 lines]
+  │   │   │   ├── 📄 process_executor.py [89 lines]
+  │   │   │   ├── 📄 sequence_flow.py [42 lines]
+  │   │   │   └── 📄 transaction_handler.py [27 lines]
   │   │   ├── 📁 cep/
-  │   │   │   ├── 📄 __init__.py [0 lines]
-  │   │   │   ├── 📄 aggregator.py [0 lines]
-  │   │   │   ├── 📄 engine.py [0 lines]
-  │   │   │   ├── 📄 event_store.py [0 lines]
-  │   │   │   ├── 📄 pattern_matcher.py [0 lines]
-  │   │   │   ├── 📄 rule_evaluator.py [0 lines]
-  │   │   │   ├── 📄 stream_processor.py [0 lines]
-  │   │   │   └── 📄 window_manager.py [0 lines]
+  │   │   │   ├── 📄 __init__.py [21 lines]
+  │   │   │   ├── 📄 aggregator.py [37 lines]
+  │   │   │   ├── 📄 engine.py [28 lines]
+  │   │   │   ├── 📄 event_store.py [36 lines]
+  │   │   │   ├── 📄 pattern_matcher.py [17 lines]
+  │   │   │   ├── 📄 rule_evaluator.py [19 lines]
+  │   │   │   ├── 📄 stream_processor.py [34 lines]
+  │   │   │   └── 📄 window_manager.py [29 lines]
   │   │   ├── 📁 cmmn/
-  │   │   │   ├── 📄 __init__.py [0 lines]
-  │   │   │   ├── 📄 case_executor.py [0 lines]
-  │   │   │   ├── 📄 case_file_manager.py [0 lines]
-  │   │   │   ├── 📄 discretionary_handler.py [0 lines]
-  │   │   │   ├── 📄 engine.py [0 lines]
-  │   │   │   ├── 📄 milestone_handler.py [0 lines]
-  │   │   │   ├── 📄 planning_table_handler.py [0 lines]
-  │   │   │   ├── 📄 sentry_evaluator.py [0 lines]
-  │   │   │   ├── 📄 stage_handler.py [0 lines]
-  │   │   │   └── 📄 task_handler.py [0 lines]
+  │   │   │   ├── 📄 __init__.py [23 lines]
+  │   │   │   ├── 📄 case_executor.py [37 lines]
+  │   │   │   ├── 📄 case_file_manager.py [26 lines]
+  │   │   │   ├── 📄 discretionary_handler.py [18 lines]
+  │   │   │   ├── 📄 engine.py [30 lines]
+  │   │   │   ├── 📄 milestone_handler.py [19 lines]
+  │   │   │   ├── 📄 planning_table_handler.py [16 lines]
+  │   │   │   ├── 📄 sentry_evaluator.py [20 lines]
+  │   │   │   ├── 📄 stage_handler.py [20 lines]
+  │   │   │   └── 📄 task_handler.py [18 lines]
   │   │   ├── 📁 core/
   │   │   │   ├── 📄 __init__.py [61 lines]
   │   │   │   ├── 📄 context.py [398 lines]
@@ -749,80 +749,80 @@
   │   │   │   ├── 📄 token.py [443 lines]
   │   │   │   └── 📄 transaction.py [503 lines]
   │   │   ├── 📁 deployment/
-  │   │   │   ├── 📄 __init__.py [0 lines]
-  │   │   │   ├── 📄 deployer.py [0 lines]
-  │   │   │   ├── 📄 migration_handler.py [0 lines]
-  │   │   │   ├── 📄 tenant_manager.py [0 lines]
-  │   │   │   └── 📄 version_manager.py [0 lines]
+  │   │   │   ├── 📄 __init__.py [17 lines]
+  │   │   │   ├── 📄 deployer.py [56 lines]
+  │   │   │   ├── 📄 migration_handler.py [39 lines]
+  │   │   │   ├── 📄 tenant_manager.py [36 lines]
+  │   │   │   └── 📄 version_manager.py [48 lines]
   │   │   ├── 📁 dmn/
-  │   │   │   ├── 📄 __init__.py [0 lines]
-  │   │   │   ├── 📄 decision_executor.py [0 lines]
-  │   │   │   ├── 📄 decision_table_evaluator.py [0 lines]
-  │   │   │   ├── 📄 engine.py [0 lines]
-  │   │   │   ├── 📄 feel_engine.py [0 lines]
-  │   │   │   ├── 📄 hit_policy_handler.py [0 lines]
-  │   │   │   ├── 📄 invocation_handler.py [0 lines]
-  │   │   │   └── 📄 literal_expression_eval.py [0 lines]
+  │   │   │   ├── 📄 __init__.py [17 lines]
+  │   │   │   ├── 📄 decision_executor.py [29 lines]
+  │   │   │   ├── 📄 decision_table_evaluator.py [25 lines]
+  │   │   │   ├── 📄 engine.py [26 lines]
+  │   │   │   ├── 📄 feel_engine.py [16 lines]
+  │   │   │   ├── 📄 hit_policy_handler.py [23 lines]
+  │   │   │   ├── 📄 invocation_handler.py [25 lines]
+  │   │   │   └── 📄 literal_expression_eval.py [11 lines]
   │   │   ├── 📁 expression/
-  │   │   │   ├── 📄 __init__.py [0 lines]
-  │   │   │   ├── 📄 context_builder.py [0 lines]
-  │   │   │   ├── 📄 evaluator.py [0 lines]
-  │   │   │   ├── 📄 feel_evaluator.py [0 lines]
-  │   │   │   ├── 📄 javascript_evaluator.py [0 lines]
-  │   │   │   ├── 📄 juel_evaluator.py [0 lines]
-  │   │   │   └── 📄 python_evaluator.py [0 lines]
+  │   │   │   ├── 📄 __init__.py [18 lines]
+  │   │   │   ├── 📄 context_builder.py [21 lines]
+  │   │   │   ├── 📄 evaluator.py [20 lines]
+  │   │   │   ├── 📄 feel_evaluator.py [33 lines]
+  │   │   │   ├── 📄 javascript_evaluator.py [30 lines]
+  │   │   │   ├── 📄 juel_evaluator.py [21 lines]
+  │   │   │   └── 📄 python_evaluator.py [36 lines]
   │   │   ├── 📁 integration/
-  │   │   │   ├── 📄 __init__.py [0 lines]
-  │   │   │   ├── 📄 business_rule_adapter.py [0 lines]
-  │   │   │   ├── 📄 connector_registry.py [0 lines]
-  │   │   │   ├── 📄 data_mapper.py [0 lines]
-  │   │   │   ├── 📄 message_adapter.py [0 lines]
-  │   │   │   ├── 📄 script_executor.py [0 lines]
-  │   │   │   ├── 📄 service_invoker.py [0 lines]
-  │   │   │   └── 📄 user_task_adapter.py [0 lines]
+  │   │   │   ├── 📄 __init__.py [22 lines]
+  │   │   │   ├── 📄 business_rule_adapter.py [16 lines]
+  │   │   │   ├── 📄 connector_registry.py [37 lines]
+  │   │   │   ├── 📄 data_mapper.py [26 lines]
+  │   │   │   ├── 📄 message_adapter.py [26 lines]
+  │   │   │   ├── 📄 script_executor.py [35 lines]
+  │   │   │   ├── 📄 service_invoker.py [42 lines]
+  │   │   │   └── 📄 user_task_adapter.py [23 lines]
   │   │   ├── 📁 monitoring/
-  │   │   │   ├── 📄 __init__.py [0 lines]
-  │   │   │   ├── 📄 health_checker.py [0 lines]
-  │   │   │   ├── 📄 logger.py [0 lines]
-  │   │   │   ├── 📄 metrics_collector.py [0 lines]
-  │   │   │   ├── 📄 performance_monitor.py [0 lines]
-  │   │   │   └── 📄 tracer.py [0 lines]
+  │   │   │   ├── 📄 __init__.py [23 lines]
+  │   │   │   ├── 📄 health_checker.py [50 lines]
+  │   │   │   ├── 📄 logger.py [28 lines]
+  │   │   │   ├── 📄 metrics_collector.py [95 lines]
+  │   │   │   ├── 📄 performance_monitor.py [35 lines]
+  │   │   │   └── 📄 tracer.py [68 lines]
   │   │   ├── 📁 multi_agent/
-  │   │   │   ├── 📄 __init__.py [0 lines]
-  │   │   │   ├── 📄 agent_executor.py [0 lines]
-  │   │   │   ├── 📄 coordination_handler.py [0 lines]
-  │   │   │   ├── 📄 engine.py [0 lines]
-  │   │   │   ├── 📄 interaction_handler.py [0 lines]
-  │   │   │   ├── 📄 message_router.py [0 lines]
-  │   │   │   ├── 📄 negotiation_handler.py [0 lines]
-  │   │   │   └── 📄 protocol_handler.py [0 lines]
+  │   │   │   ├── 📄 __init__.py [20 lines]
+  │   │   │   ├── 📄 agent_executor.py [24 lines]
+  │   │   │   ├── 📄 coordination_handler.py [21 lines]
+  │   │   │   ├── 📄 engine.py [25 lines]
+  │   │   │   ├── 📄 interaction_handler.py [19 lines]
+  │   │   │   ├── 📄 message_router.py [25 lines]
+  │   │   │   ├── 📄 negotiation_handler.py [15 lines]
+  │   │   │   └── 📄 protocol_handler.py [17 lines]
   │   │   ├── 📁 persistence/
-  │   │   │   ├── 📄 __init__.py [0 lines]
-  │   │   │   ├── 📄 definition_repository.py [0 lines]
-  │   │   │   ├── 📄 event_repository.py [0 lines]
-  │   │   │   ├── 📄 history_repository.py [0 lines]
-  │   │   │   ├── 📄 instance_repository.py [0 lines]
-  │   │   │   ├── 📄 repository.py [0 lines]
-  │   │   │   └── 📄 variable_repository.py [0 lines]
+  │   │   │   ├── 📄 __init__.py [21 lines]
+  │   │   │   ├── 📄 definition_repository.py [18 lines]
+  │   │   │   ├── 📄 event_repository.py [19 lines]
+  │   │   │   ├── 📄 history_repository.py [20 lines]
+  │   │   │   ├── 📄 instance_repository.py [15 lines]
+  │   │   │   ├── 📄 repository.py [66 lines]
+  │   │   │   └── 📄 variable_repository.py [10 lines]
   │   │   ├── 📁 runtime/
-  │   │   │   ├── 📄 __init__.py [0 lines]
-  │   │   │   ├── 📄 compensation.py [0 lines]
-  │   │   │   ├── 📄 error_handler.py [0 lines]
-  │   │   │   ├── 📄 executor.py [0 lines]
-  │   │   │   ├── 📄 resource_manager.py [0 lines]
-  │   │   │   ├── 📄 state_manager.py [0 lines]
-  │   │   │   ├── 📄 timer_manager.py [0 lines]
-  │   │   │   └── 📄 variable_manager.py [0 lines]
+  │   │   │   ├── 📄 __init__.py [30 lines]
+  │   │   │   ├── 📄 compensation.py [39 lines]
+  │   │   │   ├── 📄 error_handler.py [69 lines]
+  │   │   │   ├── 📄 executor.py [42 lines]
+  │   │   │   ├── 📄 resource_manager.py [38 lines]
+  │   │   │   ├── 📄 state_manager.py [86 lines]
+  │   │   │   ├── 📄 timer_manager.py [54 lines]
+  │   │   │   └── 📄 variable_manager.py [46 lines]
   │   │   ├── 📁 state_machine/
-  │   │   │   ├── 📄 __init__.py [0 lines]
-  │   │   │   ├── 📄 action_executor.py [0 lines]
-  │   │   │   ├── 📄 engine.py [0 lines]
-  │   │   │   ├── 📄 guard_evaluator.py [0 lines]
-  │   │   │   ├── 📄 hierarchical_handler.py [0 lines]
-  │   │   │   ├── 📄 history_manager.py [0 lines]
-  │   │   │   ├── 📄 parallel_state_handler.py [0 lines]
-  │   │   │   ├── 📄 state_executor.py [0 lines]
-  │   │   │   └── 📄 transition_handler.py [0 lines]
+  │   │   │   ├── 📄 __init__.py [22 lines]
+  │   │   │   ├── 📄 action_executor.py [17 lines]
+  │   │   │   ├── 📄 engine.py [28 lines]
+  │   │   │   ├── 📄 guard_evaluator.py [14 lines]
+  │   │   │   ├── 📄 hierarchical_handler.py [17 lines]
+  │   │   │   ├── 📄 history_manager.py [19 lines]
+  │   │   │   ├── 📄 parallel_state_handler.py [17 lines]
+  │   │   │   ├── 📄 state_executor.py [37 lines]
+  │   │   │   └── 📄 transition_handler.py [31 lines]
   │   │   ├── 📁 tests/
   │   │   │   ├── 📁 test_bpmn/
   │   │   │   │   └── 📄 __init__.py [0 lines]
@@ -840,22 +840,22 @@
   │   │   │   │   └── 📄 __init__.py [0 lines]
   │   │   │   └── 📄 __init__.py [0 lines]
   │   │   ├── 📁 utils/
-  │   │   │   ├── 📄 __init__.py [0 lines]
-  │   │   │   ├── 📄 graph_utils.py [0 lines]
-  │   │   │   ├── 📄 id_generator.py [0 lines]
-  │   │   │   ├── 📄 json_parser.py [0 lines]
-  │   │   │   ├── 📄 time_utils.py [0 lines]
-  │   │   │   ├── 📄 type_converter.py [0 lines]
-  │   │   │   └── 📄 xml_parser.py [0 lines]
+  │   │   │   ├── 📄 __init__.py [31 lines]
+  │   │   │   ├── 📄 graph_utils.py [89 lines]
+  │   │   │   ├── 📄 id_generator.py [47 lines]
+  │   │   │   ├── 📄 json_parser.py [28 lines]
+  │   │   │   ├── 📄 time_utils.py [53 lines]
+  │   │   │   ├── 📄 type_converter.py [64 lines]
+  │   │   │   └── 📄 xml_parser.py [31 lines]
   │   │   ├── 📁 validation/
-  │   │   │   ├── 📄 __init__.py [0 lines]
-  │   │   │   ├── 📄 bpmn_validator.py [0 lines]
-  │   │   │   ├── 📄 cmmn_validator.py [0 lines]
-  │   │   │   ├── 📄 dmn_validator.py [0 lines]
-  │   │   │   ├── 📄 semantic_validator.py [0 lines]
-  │   │   │   ├── 📄 state_machine_validator.py [0 lines]
-  │   │   │   └── 📄 validator.py [0 lines]
-  │   │   └── 📄 __init__.py [0 lines]
+  │   │   │   ├── 📄 __init__.py [19 lines]
+  │   │   │   ├── 📄 bpmn_validator.py [14 lines]
+  │   │   │   ├── 📄 cmmn_validator.py [14 lines]
+  │   │   │   ├── 📄 dmn_validator.py [14 lines]
+  │   │   │   ├── 📄 semantic_validator.py [23 lines]
+  │   │   │   ├── 📄 state_machine_validator.py [14 lines]
+  │   │   │   └── 📄 validator.py [31 lines]
+  │   │   └── 📄 __init__.py [4 lines]
   │   ├── 📁 rag/
   │   │   ├── 📁 agentic/
   │   │   │   ├── 📄 __init__.py [20 lines]
@@ -2606,6 +2606,66 @@
 | `engines/interaction/round_robin_strategy.py` | `RoundRobinStrategy` | `InteractionStrategy` | `__init__, execute` |
 | `engines/interaction/self_refine_strategy.py` | `SelfRefineStrategy` | `InteractionStrategy` | `execute, _extract_score` |
 | `engines/interaction/strategy_registry.py` | `InteractionStrategyRegistry` | `Generic[TStrategy]` | `__init__, register, unregister, get, require, list_scenarios ...` |
+| `engines/orchestration/api/admin_api.py` | `AdminAPI` | `—` | `cleanup, stats` |
+| `engines/orchestration/api/deployment_api.py` | `DeploymentAPI` | `—` | `create_definition_payload, deploy, undeploy` |
+| `engines/orchestration/api/engine_api.py` | `EngineAPI` | `—` | `start, stop, pause, resume, is_running` |
+| `engines/orchestration/api/instance_api.py` | `InstanceAPI` | `—` | `get, suspend, resume, terminate, states` |
+| `engines/orchestration/api/process_api.py` | `ProcessAPI` | `—` | `start_process, complete_process, list_running, generate_temporary_correlation` |
+| `engines/orchestration/api/task_api.py` | `TaskAPI` | `—` | `complete_activity, active_activity, variables` |
+| `engines/orchestration/bpmn/activity_handler.py` | `ActivityExecutionResult` | `—` | `` |
+| `engines/orchestration/bpmn/activity_handler.py` | `ActivityHandler` | `—` | `__init__, execute` |
+| `engines/orchestration/bpmn/adhoc_handler.py` | `AdHocProcess` | `—` | `` |
+| `engines/orchestration/bpmn/adhoc_handler.py` | `AdhocHandler` | `—` | `iterate, execute` |
+| `engines/orchestration/bpmn/choreography_handler.py` | `ChoreographyStep` | `—` | `` |
+| `engines/orchestration/bpmn/choreography_handler.py` | `ChoreographyHandler` | `—` | `execute` |
+| `engines/orchestration/bpmn/collaboration_handler.py` | `MessageFlow` | `—` | `` |
+| `engines/orchestration/bpmn/collaboration_handler.py` | `CollaborationHandler` | `—` | `route, validate` |
+| `engines/orchestration/bpmn/data_object_handler.py` | `DataObject` | `—` | `` |
+| `engines/orchestration/bpmn/data_object_handler.py` | `DataObjectHandler` | `—` | `__init__, set, get, read_map, clear` |
+| `engines/orchestration/bpmn/engine.py` | `BPMNExecutionError` | `RuntimeError` | `` |
+| `engines/orchestration/bpmn/engine.py` | `BPMNEngine` | `—` | `__init__, execute_instance` |
+| `engines/orchestration/bpmn/event_handler.py` | `BPMNEvent` | `—` | `` |
+| `engines/orchestration/bpmn/event_handler.py` | `EventHandler` | `—` | `start, end, signal` |
+| `engines/orchestration/bpmn/gateway_handler.py` | `GatewayDecision` | `—` | `` |
+| `engines/orchestration/bpmn/gateway_handler.py` | `GatewayHandler` | `—` | `__init__, choose` |
+| `engines/orchestration/bpmn/global_task_handler.py` | `GlobalTask` | `—` | `` |
+| `engines/orchestration/bpmn/global_task_handler.py` | `GlobalTaskHandler` | `—` | `execute` |
+| `engines/orchestration/bpmn/loop_handler.py` | `LoopConfiguration` | `—` | `` |
+| `engines/orchestration/bpmn/loop_handler.py` | `LoopHandler` | `—` | `execute` |
+| `engines/orchestration/bpmn/process_executor.py` | `ProcessModel` | `—` | `` |
+| `engines/orchestration/bpmn/process_executor.py` | `BPMNProcessExecutor` | `—` | `__init__, execute, _normalize_model` |
+| `engines/orchestration/bpmn/sequence_flow.py` | `SequenceFlow` | `—` | `` |
+| `engines/orchestration/bpmn/transaction_handler.py` | `TransactionBoundary` | `—` | `` |
+| `engines/orchestration/bpmn/transaction_handler.py` | `TransactionHandler` | `—` | `__init__, begin, commit, rollback` |
+| `engines/orchestration/cep/aggregator.py` | `Aggregation` | `—` | `compute` |
+| `engines/orchestration/cep/aggregator.py` | `Aggregator` | `—` | `sum, avg, count, min, max` |
+| `engines/orchestration/cep/engine.py` | `CEPEngine` | `—` | `__init__, execute_instance` |
+| `engines/orchestration/cep/event_store.py` | `StoredEvent` | `—` | `` |
+| `engines/orchestration/cep/event_store.py` | `EventStore` | `—` | `__init__, append, query, clear` |
+| `engines/orchestration/cep/pattern_matcher.py` | `Pattern` | `—` | `` |
+| `engines/orchestration/cep/pattern_matcher.py` | `PatternMatcher` | `—` | `match` |
+| `engines/orchestration/cep/rule_evaluator.py` | `Rule` | `—` | `` |
+| `engines/orchestration/cep/rule_evaluator.py` | `RuleEvaluator` | `—` | `evaluate` |
+| `engines/orchestration/cep/stream_processor.py` | `StreamProcessor` | `—` | `process, collect_window` |
+| `engines/orchestration/cep/window_manager.py` | `TimeWindow` | `—` | `` |
+| `engines/orchestration/cep/window_manager.py` | `WindowManager` | `—` | `__init__, push` |
+| `engines/orchestration/cmmn/case_executor.py` | `CaseExecutionError` | `RuntimeError` | `` |
+| `engines/orchestration/cmmn/case_executor.py` | `CaseExecutor` | `—` | `__init__, execute, plan` |
+| `engines/orchestration/cmmn/case_file_manager.py` | `CaseFileItem` | `—` | `` |
+| `engines/orchestration/cmmn/case_file_manager.py` | `CaseFileManager` | `—` | `__init__, add, get, list_ids` |
+| `engines/orchestration/cmmn/discretionary_handler.py` | `DiscretionaryTask` | `—` | `` |
+| `engines/orchestration/cmmn/discretionary_handler.py` | `DiscretionaryHandler` | `—` | `choose` |
+| `engines/orchestration/cmmn/engine.py` | `CMMNExecutionError` | `RuntimeError` | `` |
+| `engines/orchestration/cmmn/engine.py` | `CMMNEngine` | `—` | `__init__, execute_instance` |
+| `engines/orchestration/cmmn/milestone_handler.py` | `Milestone` | `—` | `` |
+| `engines/orchestration/cmmn/milestone_handler.py` | `MilestoneHandler` | `—` | `set_reached, evaluate` |
+| `engines/orchestration/cmmn/planning_table_handler.py` | `PlanningEntry` | `—` | `` |
+| `engines/orchestration/cmmn/planning_table_handler.py` | `PlanningTableHandler` | `—` | `resolve` |
+| `engines/orchestration/cmmn/sentry_evaluator.py` | `SentryEvaluator` | `—` | `is_active, is_complete` |
+| `engines/orchestration/cmmn/stage_handler.py` | `Stage` | `—` | `` |
+| `engines/orchestration/cmmn/stage_handler.py` | `StageHandler` | `—` | `activate, complete` |
+| `engines/orchestration/cmmn/task_handler.py` | `CMMNTask` | `—` | `` |
+| `engines/orchestration/cmmn/task_handler.py` | `CMMNTaskHandler` | `—` | `execute` |
 | `engines/orchestration/core/context.py` | `ContextScope` | `Enum` | `` |
 | `engines/orchestration/core/context.py` | `VariableScope` | `Enum` | `` |
 | `engines/orchestration/core/context.py` | `Variable` | `—` | `` |
@@ -2649,6 +2709,125 @@
 | `engines/orchestration/core/transaction.py` | `CompensationAction` | `—` | `` |
 | `engines/orchestration/core/transaction.py` | `TransactionScope` | `—` | `__init__, add_participant, add_compensation, prepare, commit, rollback ...` |
 | `engines/orchestration/core/transaction.py` | `TransactionManager` | `—` | `__init__, begin_transaction, get_transaction, commit_transaction, rollback_transaction, transaction ...` |
+| `engines/orchestration/deployment/deployer.py` | `DeploymentError` | `RuntimeError` | `` |
+| `engines/orchestration/deployment/deployer.py` | `DeploymentArtifact` | `—` | `` |
+| `engines/orchestration/deployment/deployer.py` | `Deployer` | `—` | `__init__, deploy, apply, metadata, _ensure_versioning` |
+| `engines/orchestration/deployment/migration_handler.py` | `MigrationPlan` | `—` | `` |
+| `engines/orchestration/deployment/migration_handler.py` | `MigrationResult` | `—` | `` |
+| `engines/orchestration/deployment/migration_handler.py` | `MigrationHandler` | `—` | `__init__, migrate` |
+| `engines/orchestration/deployment/tenant_manager.py` | `TenantInfo` | `—` | `` |
+| `engines/orchestration/deployment/tenant_manager.py` | `TenantManager` | `—` | `__init__, register, disable, is_enabled, get` |
+| `engines/orchestration/deployment/version_manager.py` | `VersionConflict` | `RuntimeError` | `` |
+| `engines/orchestration/deployment/version_manager.py` | `VersionManager` | `—` | `__init__, versions, assign_version, get_latest, snapshot` |
+| `engines/orchestration/dmn/decision_executor.py` | `DecisionExecutionError` | `RuntimeError` | `` |
+| `engines/orchestration/dmn/decision_executor.py` | `DecisionExecutor` | `—` | `__init__, evaluate` |
+| `engines/orchestration/dmn/decision_table_evaluator.py` | `DecisionTableEvaluator` | `—` | `evaluate` |
+| `engines/orchestration/dmn/engine.py` | `DMNExecutionError` | `RuntimeError` | `` |
+| `engines/orchestration/dmn/engine.py` | `DMNEngine` | `—` | `__init__, execute_instance` |
+| `engines/orchestration/dmn/feel_engine.py` | `FEELEngine` | `—` | `evaluate` |
+| `engines/orchestration/dmn/hit_policy_handler.py` | `HitPolicy` | `str, Enum` | `` |
+| `engines/orchestration/dmn/invocation_handler.py` | `InvocationError` | `RuntimeError` | `` |
+| `engines/orchestration/dmn/invocation_handler.py` | `InvocationHandler` | `—` | `__init__, register, invoke` |
+| `engines/orchestration/dmn/literal_expression_eval.py` | `LiteralExpressionEvaluator` | `—` | `evaluate` |
+| `engines/orchestration/expression/context_builder.py` | `ExpressionContext` | `—` | `from_mapping, merge` |
+| `engines/orchestration/expression/evaluator.py` | `EvaluationContext` | `—` | `` |
+| `engines/orchestration/expression/evaluator.py` | `Evaluator` | `Protocol` | `evaluate` |
+| `engines/orchestration/expression/evaluator.py` | `EvaluationError` | `RuntimeError` | `` |
+| `engines/orchestration/expression/feel_evaluator.py` | `FEELExpressionEvaluator` | `—` | `evaluate` |
+| `engines/orchestration/expression/javascript_evaluator.py` | `JavaScriptEvaluator` | `—` | `evaluate` |
+| `engines/orchestration/expression/juel_evaluator.py` | `JuelExpressionEvaluator` | `—` | `__post_init__, evaluate` |
+| `engines/orchestration/expression/python_evaluator.py` | `PythonEvaluator` | `—` | `evaluate` |
+| `engines/orchestration/integration/business_rule_adapter.py` | `BusinessRuleAdapter` | `—` | `invoke` |
+| `engines/orchestration/integration/connector_registry.py` | `Connector` | `—` | `` |
+| `engines/orchestration/integration/connector_registry.py` | `ConnectorRegistry` | `—` | `__init__, register, get, execute, unregister, list` |
+| `engines/orchestration/integration/data_mapper.py` | `DataMapper` | `—` | `get_path, map_payload` |
+| `engines/orchestration/integration/message_adapter.py` | `MessageAdapter` | `—` | `publish, receive, drain` |
+| `engines/orchestration/integration/script_executor.py` | `ScriptExecutionError` | `RuntimeError` | `` |
+| `engines/orchestration/integration/script_executor.py` | `ScriptExecutor` | `—` | `__post_init__, execute` |
+| `engines/orchestration/integration/service_invoker.py` | `InvokeResult` | `—` | `` |
+| `engines/orchestration/integration/service_invoker.py` | `ServiceInvoker` | `—` | `call_json, call` |
+| `engines/orchestration/integration/user_task_adapter.py` | `UserTaskAdapter` | `—` | `assign, complete` |
+| `engines/orchestration/monitoring/health_checker.py` | `HealthStatus` | `str, Enum` | `` |
+| `engines/orchestration/monitoring/health_checker.py` | `HealthCheckResult` | `—` | `` |
+| `engines/orchestration/monitoring/health_checker.py` | `HealthMonitor` | `—` | `__init__, register, unregister, run, all_healthy` |
+| `engines/orchestration/monitoring/logger.py` | `StructuredEvent` | `—` | `` |
+| `engines/orchestration/monitoring/logger.py` | `StructuredLogger` | `—` | `emit` |
+| `engines/orchestration/monitoring/metrics_collector.py` | `MetricSample` | `—` | `` |
+| `engines/orchestration/monitoring/metrics_collector.py` | `HistogramBucket` | `—` | `` |
+| `engines/orchestration/monitoring/metrics_collector.py` | `MetricsCollector` | `—` | `__init__, inc, gauge, observe, snapshot, clear ...` |
+| `engines/orchestration/monitoring/metrics_collector.py` | `_Timed` | `—` | `__enter__, __exit__` |
+| `engines/orchestration/monitoring/performance_monitor.py` | `TrackContext` | `—` | `` |
+| `engines/orchestration/monitoring/performance_monitor.py` | `PerformanceMonitor` | `—` | `__init__, track, summary` |
+| `engines/orchestration/monitoring/tracer.py` | `Span` | `—` | `` |
+| `engines/orchestration/monitoring/tracer.py` | `TraceContext` | `—` | `` |
+| `engines/orchestration/monitoring/tracer.py` | `Tracer` | `—` | `__init__, start_span, _emit, current_context` |
+| `engines/orchestration/multi_agent/agent_executor.py` | `Agent` | `—` | `` |
+| `engines/orchestration/multi_agent/agent_executor.py` | `AgentExecutor` | `—` | `execute` |
+| `engines/orchestration/multi_agent/coordination_handler.py` | `CoordinationTask` | `—` | `` |
+| `engines/orchestration/multi_agent/coordination_handler.py` | `CoordinationHandler` | `—` | `coordinate, _task_id` |
+| `engines/orchestration/multi_agent/engine.py` | `MultiAgentExecutionError` | `RuntimeError` | `` |
+| `engines/orchestration/multi_agent/engine.py` | `MultiAgentEngine` | `—` | `__init__, execute_instance` |
+| `engines/orchestration/multi_agent/interaction_handler.py` | `Interaction` | `—` | `` |
+| `engines/orchestration/multi_agent/interaction_handler.py` | `InteractionHandler` | `—` | `start, complete` |
+| `engines/orchestration/multi_agent/message_router.py` | `Message` | `—` | `` |
+| `engines/orchestration/multi_agent/message_router.py` | `MessageRouter` | `—` | `__init__, route, inbox` |
+| `engines/orchestration/multi_agent/negotiation_handler.py` | `Proposal` | `—` | `` |
+| `engines/orchestration/multi_agent/protocol_handler.py` | `ProtocolStep` | `—` | `` |
+| `engines/orchestration/multi_agent/protocol_handler.py` | `ProtocolHandler` | `—` | `execute` |
+| `engines/orchestration/persistence/definition_repository.py` | `DefinitionRepository` | `InMemoryRepository` | `get_by_key, get_latest` |
+| `engines/orchestration/persistence/event_repository.py` | `EventRepository` | `InMemoryRepository` | `append, by_correlation` |
+| `engines/orchestration/persistence/history_repository.py` | `HistoryRepository` | `InMemoryRepository` | `append, query` |
+| `engines/orchestration/persistence/instance_repository.py` | `InstanceRepository` | `InMemoryRepository` | `get_by_definition, get_active` |
+| `engines/orchestration/persistence/repository.py` | `RepositoryError` | `RuntimeError` | `` |
+| `engines/orchestration/persistence/repository.py` | `RepositoryProtocol` | `—` | `save, get, delete, list` |
+| `engines/orchestration/persistence/repository.py` | `InMemoryRepository` | `RepositoryProtocol` | `__init__, save, get, delete, list, clear` |
+| `engines/orchestration/persistence/variable_repository.py` | `VariableRepository` | `InMemoryRepository` | `get_by_instance` |
+| `engines/orchestration/runtime/compensation.py` | `CompensationStep` | `—` | `` |
+| `engines/orchestration/runtime/compensation.py` | `CompensationManager` | `—` | `__init__, register, clear, rollback` |
+| `engines/orchestration/runtime/error_handler.py` | `ErrorLevel` | `Enum` | `` |
+| `engines/orchestration/runtime/error_handler.py` | `ExecutionError` | `RuntimeError` | `` |
+| `engines/orchestration/runtime/error_handler.py` | `ErrorRecord` | `—` | `` |
+| `engines/orchestration/runtime/error_handler.py` | `ErrorRecoveryContext` | `—` | `` |
+| `engines/orchestration/runtime/error_handler.py` | `ErrorResolver` | `—` | `__init__, record, handle, errors, clear` |
+| `engines/orchestration/runtime/executor.py` | `RuntimeTaskError` | `RuntimeError` | `` |
+| `engines/orchestration/runtime/executor.py` | `ExecutionOutcome` | `—` | `` |
+| `engines/orchestration/runtime/executor.py` | `RuntimeExecutor` | `—` | `run, run_async_or_sync` |
+| `engines/orchestration/runtime/resource_manager.py` | `ResourceContext` | `—` | `` |
+| `engines/orchestration/runtime/resource_manager.py` | `ResourceManager` | `—` | `__init__, configure, acquire, limit` |
+| `engines/orchestration/runtime/state_manager.py` | `InstanceStateSnapshot` | `—` | `` |
+| `engines/orchestration/runtime/state_manager.py` | `StateManager` | `—` | `__init__, get, set, delete, history, clear` |
+| `engines/orchestration/runtime/timer_manager.py` | `TimerHandle` | `—` | `` |
+| `engines/orchestration/runtime/timer_manager.py` | `TimerManager` | `—` | `__init__, schedule, cancel, shutdown, _runner` |
+| `engines/orchestration/runtime/variable_manager.py` | `VariableConflictError` | `ValueError` | `` |
+| `engines/orchestration/runtime/variable_manager.py` | `VariableManager` | `—` | `__init__, get, set, pop, snapshot, restore ...` |
+| `engines/orchestration/state_machine/action_executor.py` | `ActionExecutionError` | `RuntimeError` | `` |
+| `engines/orchestration/state_machine/action_executor.py` | `ActionExecutor` | `—` | `run` |
+| `engines/orchestration/state_machine/engine.py` | `StateMachineError` | `RuntimeError` | `` |
+| `engines/orchestration/state_machine/engine.py` | `StateMachineEngine` | `—` | `__init__, execute_instance` |
+| `engines/orchestration/state_machine/guard_evaluator.py` | `GuardEvaluator` | `—` | `evaluate` |
+| `engines/orchestration/state_machine/hierarchical_handler.py` | `HierarchicalHandler` | `—` | `normalize_path, ancestors` |
+| `engines/orchestration/state_machine/history_manager.py` | `StateMachineHistory` | `—` | `__init__, record, clear` |
+| `engines/orchestration/state_machine/parallel_state_handler.py` | `ParallelRegion` | `—` | `` |
+| `engines/orchestration/state_machine/parallel_state_handler.py` | `ParallelStateHandler` | `—` | `execute` |
+| `engines/orchestration/state_machine/state_executor.py` | `StateMachineExecutor` | `—` | `__post_init__, execute` |
+| `engines/orchestration/state_machine/transition_handler.py` | `Transition` | `—` | `` |
+| `engines/orchestration/state_machine/transition_handler.py` | `TransitionHandler` | `—` | `__init__, resolve` |
+| `engines/orchestration/utils/graph_utils.py` | `GraphNode` | `—` | `` |
+| `engines/orchestration/utils/graph_utils.py` | `Edge` | `—` | `` |
+| `engines/orchestration/utils/id_generator.py` | `IdPrefix` | `—` | `` |
+| `engines/orchestration/utils/id_generator.py` | `IdGenerator` | `—` | `__init__, next_id, next_uuid, parse_uuid` |
+| `engines/orchestration/utils/json_parser.py` | `JsonParseError` | `ValueError` | `` |
+| `engines/orchestration/utils/time_utils.py` | `DurationError` | `ValueError` | `` |
+| `engines/orchestration/utils/type_converter.py` | `ConversionError` | `ValueError` | `` |
+| `engines/orchestration/utils/xml_parser.py` | `XmlParseError` | `ValueError` | `` |
+| `engines/orchestration/validation/bpmn_validator.py` | `BPMNValidator` | `Validator` | `validate` |
+| `engines/orchestration/validation/cmmn_validator.py` | `CMMNValidator` | `Validator` | `validate` |
+| `engines/orchestration/validation/dmn_validator.py` | `DMNValidator` | `Validator` | `validate` |
+| `engines/orchestration/validation/semantic_validator.py` | `SemanticValidator` | `Validator` | `validate, find_reference_gaps` |
+| `engines/orchestration/validation/state_machine_validator.py` | `StateMachineValidator` | `Validator` | `validate` |
+| `engines/orchestration/validation/validator.py` | `ValidationLevel` | `str, Enum` | `` |
+| `engines/orchestration/validation/validator.py` | `ValidationResult` | `—` | `is_ok` |
+| `engines/orchestration/validation/validator.py` | `Validator` | `—` | `validate, _result` |
 | `engines/rag/agentic/agent_v2.py` | `RetrievalAgentV2` | `—` | `__init__, run` |
 | `engines/rag/agentic/evidence_tracker.py` | `EvidenceTracker` | `—` | `__init__, add, needs_more` |
 | `engines/rag/agentic/multihop_reasoner.py` | `MultiHopReasoner` | `—` | `__init__, generate_followup` |
@@ -4086,6 +4265,9 @@ BaseModel  →  AgentMessage
 InteractionStrategy  →  RoundRobinStrategy
 InteractionStrategy  →  SelfRefineStrategy
 Generic[TStrategy]  →  InteractionStrategyRegistry
+RuntimeError  →  BPMNExecutionError
+RuntimeError  →  CaseExecutionError
+RuntimeError  →  CMMNExecutionError
 Enum  →  ContextScope
 Enum  →  VariableScope
 Enum  →  EngineState
@@ -4100,6 +4282,43 @@ Enum  →  TokenState
 Enum  →  TokenType
 Enum  →  TransactionState
 Enum  →  IsolationLevel
+RuntimeError  →  DeploymentError
+RuntimeError  →  VersionConflict
+RuntimeError  →  DecisionExecutionError
+RuntimeError  →  DMNExecutionError
+str  →  HitPolicy
+Enum  →  HitPolicy
+RuntimeError  →  InvocationError
+Protocol  →  Evaluator
+RuntimeError  →  EvaluationError
+RuntimeError  →  ScriptExecutionError
+str  →  HealthStatus
+Enum  →  HealthStatus
+RuntimeError  →  MultiAgentExecutionError
+InMemoryRepository  →  DefinitionRepository
+InMemoryRepository  →  EventRepository
+InMemoryRepository  →  HistoryRepository
+InMemoryRepository  →  InstanceRepository
+RuntimeError  →  RepositoryError
+RepositoryProtocol  →  InMemoryRepository
+InMemoryRepository  →  VariableRepository
+Enum  →  ErrorLevel
+RuntimeError  →  ExecutionError
+RuntimeError  →  RuntimeTaskError
+ValueError  →  VariableConflictError
+RuntimeError  →  ActionExecutionError
+RuntimeError  →  StateMachineError
+ValueError  →  JsonParseError
+ValueError  →  DurationError
+ValueError  →  ConversionError
+ValueError  →  XmlParseError
+Validator  →  BPMNValidator
+Validator  →  CMMNValidator
+Validator  →  DMNValidator
+Validator  →  SemanticValidator
+Validator  →  StateMachineValidator
+str  →  ValidationLevel
+Enum  →  ValidationLevel
 BaseCompressor  →  EmbeddingCompressor
 BaseCompressor  →  LLMCompressor
 BaseModel  →  GraphNode
@@ -4451,110 +4670,6 @@ cst.CSTVisitor  →  FunctionCollector
 - `engines/document/writers/pdf_writer/init.py` [28 lines]
 - `engines/document/writers/pptx_writer/constants.py` [74 lines]
 - `engines/document/writers/spreadsheet_writer/xlsx/const.py` [7 lines]
-- `engines/orchestration/api/admin_api.py` [0 lines]
-- `engines/orchestration/api/deployment_api.py` [0 lines]
-- `engines/orchestration/api/engine_api.py` [0 lines]
-- `engines/orchestration/api/instance_api.py` [0 lines]
-- `engines/orchestration/api/process_api.py` [0 lines]
-- `engines/orchestration/api/task_api.py` [0 lines]
-- `engines/orchestration/bpmn/activity_handler.py` [0 lines]
-- `engines/orchestration/bpmn/adhoc_handler.py` [0 lines]
-- `engines/orchestration/bpmn/choreography_handler.py` [0 lines]
-- `engines/orchestration/bpmn/collaboration_handler.py` [0 lines]
-- `engines/orchestration/bpmn/data_object_handler.py` [0 lines]
-- `engines/orchestration/bpmn/engine.py` [0 lines]
-- `engines/orchestration/bpmn/event_handler.py` [0 lines]
-- `engines/orchestration/bpmn/gateway_handler.py` [0 lines]
-- `engines/orchestration/bpmn/global_task_handler.py` [0 lines]
-- `engines/orchestration/bpmn/loop_handler.py` [0 lines]
-- `engines/orchestration/bpmn/process_executor.py` [0 lines]
-- `engines/orchestration/bpmn/sequence_flow.py` [0 lines]
-- `engines/orchestration/bpmn/transaction_handler.py` [0 lines]
-- `engines/orchestration/cep/aggregator.py` [0 lines]
-- `engines/orchestration/cep/engine.py` [0 lines]
-- `engines/orchestration/cep/event_store.py` [0 lines]
-- `engines/orchestration/cep/pattern_matcher.py` [0 lines]
-- `engines/orchestration/cep/rule_evaluator.py` [0 lines]
-- `engines/orchestration/cep/stream_processor.py` [0 lines]
-- `engines/orchestration/cep/window_manager.py` [0 lines]
-- `engines/orchestration/cmmn/case_executor.py` [0 lines]
-- `engines/orchestration/cmmn/case_file_manager.py` [0 lines]
-- `engines/orchestration/cmmn/discretionary_handler.py` [0 lines]
-- `engines/orchestration/cmmn/engine.py` [0 lines]
-- `engines/orchestration/cmmn/milestone_handler.py` [0 lines]
-- `engines/orchestration/cmmn/planning_table_handler.py` [0 lines]
-- `engines/orchestration/cmmn/sentry_evaluator.py` [0 lines]
-- `engines/orchestration/cmmn/stage_handler.py` [0 lines]
-- `engines/orchestration/cmmn/task_handler.py` [0 lines]
-- `engines/orchestration/deployment/deployer.py` [0 lines]
-- `engines/orchestration/deployment/migration_handler.py` [0 lines]
-- `engines/orchestration/deployment/tenant_manager.py` [0 lines]
-- `engines/orchestration/deployment/version_manager.py` [0 lines]
-- `engines/orchestration/dmn/decision_executor.py` [0 lines]
-- `engines/orchestration/dmn/decision_table_evaluator.py` [0 lines]
-- `engines/orchestration/dmn/engine.py` [0 lines]
-- `engines/orchestration/dmn/feel_engine.py` [0 lines]
-- `engines/orchestration/dmn/hit_policy_handler.py` [0 lines]
-- `engines/orchestration/dmn/invocation_handler.py` [0 lines]
-- `engines/orchestration/dmn/literal_expression_eval.py` [0 lines]
-- `engines/orchestration/expression/context_builder.py` [0 lines]
-- `engines/orchestration/expression/evaluator.py` [0 lines]
-- `engines/orchestration/expression/feel_evaluator.py` [0 lines]
-- `engines/orchestration/expression/javascript_evaluator.py` [0 lines]
-- `engines/orchestration/expression/juel_evaluator.py` [0 lines]
-- `engines/orchestration/expression/python_evaluator.py` [0 lines]
-- `engines/orchestration/integration/business_rule_adapter.py` [0 lines]
-- `engines/orchestration/integration/connector_registry.py` [0 lines]
-- `engines/orchestration/integration/data_mapper.py` [0 lines]
-- `engines/orchestration/integration/message_adapter.py` [0 lines]
-- `engines/orchestration/integration/script_executor.py` [0 lines]
-- `engines/orchestration/integration/service_invoker.py` [0 lines]
-- `engines/orchestration/integration/user_task_adapter.py` [0 lines]
-- `engines/orchestration/monitoring/health_checker.py` [0 lines]
-- `engines/orchestration/monitoring/logger.py` [0 lines]
-- `engines/orchestration/monitoring/metrics_collector.py` [0 lines]
-- `engines/orchestration/monitoring/performance_monitor.py` [0 lines]
-- `engines/orchestration/monitoring/tracer.py` [0 lines]
-- `engines/orchestration/multi_agent/agent_executor.py` [0 lines]
-- `engines/orchestration/multi_agent/coordination_handler.py` [0 lines]
-- `engines/orchestration/multi_agent/engine.py` [0 lines]
-- `engines/orchestration/multi_agent/interaction_handler.py` [0 lines]
-- `engines/orchestration/multi_agent/message_router.py` [0 lines]
-- `engines/orchestration/multi_agent/negotiation_handler.py` [0 lines]
-- `engines/orchestration/multi_agent/protocol_handler.py` [0 lines]
-- `engines/orchestration/persistence/definition_repository.py` [0 lines]
-- `engines/orchestration/persistence/event_repository.py` [0 lines]
-- `engines/orchestration/persistence/history_repository.py` [0 lines]
-- `engines/orchestration/persistence/instance_repository.py` [0 lines]
-- `engines/orchestration/persistence/repository.py` [0 lines]
-- `engines/orchestration/persistence/variable_repository.py` [0 lines]
-- `engines/orchestration/runtime/compensation.py` [0 lines]
-- `engines/orchestration/runtime/error_handler.py` [0 lines]
-- `engines/orchestration/runtime/executor.py` [0 lines]
-- `engines/orchestration/runtime/resource_manager.py` [0 lines]
-- `engines/orchestration/runtime/state_manager.py` [0 lines]
-- `engines/orchestration/runtime/timer_manager.py` [0 lines]
-- `engines/orchestration/runtime/variable_manager.py` [0 lines]
-- `engines/orchestration/state_machine/action_executor.py` [0 lines]
-- `engines/orchestration/state_machine/engine.py` [0 lines]
-- `engines/orchestration/state_machine/guard_evaluator.py` [0 lines]
-- `engines/orchestration/state_machine/hierarchical_handler.py` [0 lines]
-- `engines/orchestration/state_machine/history_manager.py` [0 lines]
-- `engines/orchestration/state_machine/parallel_state_handler.py` [0 lines]
-- `engines/orchestration/state_machine/state_executor.py` [0 lines]
-- `engines/orchestration/state_machine/transition_handler.py` [0 lines]
-- `engines/orchestration/utils/graph_utils.py` [0 lines]
-- `engines/orchestration/utils/id_generator.py` [0 lines]
-- `engines/orchestration/utils/json_parser.py` [0 lines]
-- `engines/orchestration/utils/time_utils.py` [0 lines]
-- `engines/orchestration/utils/type_converter.py` [0 lines]
-- `engines/orchestration/utils/xml_parser.py` [0 lines]
-- `engines/orchestration/validation/bpmn_validator.py` [0 lines]
-- `engines/orchestration/validation/cmmn_validator.py` [0 lines]
-- `engines/orchestration/validation/dmn_validator.py` [0 lines]
-- `engines/orchestration/validation/semantic_validator.py` [0 lines]
-- `engines/orchestration/validation/state_machine_validator.py` [0 lines]
-- `engines/orchestration/validation/validator.py` [0 lines]
 - `engines/tools/adapters/ai_model_executor.py` [0 lines]
 - `engines/tools/adapters/cli_executor.py` [0 lines]
 - `engines/tools/adapters/composite_executor.py` [0 lines]
@@ -4590,7 +4705,32 @@ cst.CSTVisitor  →  FunctionCollector
 - `ServiceDef` در `engines/document/parsers/ssdm_parsers/proto_service_parser.py`
 - `PDFSecurityHandler` در `engines/document/writers/pdf_writer/encryption.py`
 - `InteractionStrategy` در `engines/interaction/base_strategy.py`
+- `ActivityHandler` در `engines/orchestration/bpmn/activity_handler.py`
+- `AdhocHandler` در `engines/orchestration/bpmn/adhoc_handler.py`
+- `ChoreographyHandler` در `engines/orchestration/bpmn/choreography_handler.py`
+- `CollaborationHandler` در `engines/orchestration/bpmn/collaboration_handler.py`
+- `DataObjectHandler` در `engines/orchestration/bpmn/data_object_handler.py`
+- `EventHandler` در `engines/orchestration/bpmn/event_handler.py`
+- `GatewayHandler` در `engines/orchestration/bpmn/gateway_handler.py`
+- `GlobalTaskHandler` در `engines/orchestration/bpmn/global_task_handler.py`
+- `LoopHandler` در `engines/orchestration/bpmn/loop_handler.py`
+- `TransactionHandler` در `engines/orchestration/bpmn/transaction_handler.py`
+- `DiscretionaryHandler` در `engines/orchestration/cmmn/discretionary_handler.py`
+- `MilestoneHandler` در `engines/orchestration/cmmn/milestone_handler.py`
+- `PlanningTableHandler` در `engines/orchestration/cmmn/planning_table_handler.py`
+- `StageHandler` در `engines/orchestration/cmmn/stage_handler.py`
+- `CMMNTaskHandler` در `engines/orchestration/cmmn/task_handler.py`
 - `EventBus` در `engines/orchestration/core/event_bus.py`
+- `MigrationHandler` در `engines/orchestration/deployment/migration_handler.py`
+- `InvocationHandler` در `engines/orchestration/dmn/invocation_handler.py`
+- `BusinessRuleAdapter` در `engines/orchestration/integration/business_rule_adapter.py`
+- `ServiceInvoker` در `engines/orchestration/integration/service_invoker.py`
+- `CoordinationHandler` در `engines/orchestration/multi_agent/coordination_handler.py`
+- `InteractionHandler` در `engines/orchestration/multi_agent/interaction_handler.py`
+- `ProtocolHandler` در `engines/orchestration/multi_agent/protocol_handler.py`
+- `HierarchicalHandler` در `engines/orchestration/state_machine/hierarchical_handler.py`
+- `ParallelStateHandler` در `engines/orchestration/state_machine/parallel_state_handler.py`
+- `TransitionHandler` در `engines/orchestration/state_machine/transition_handler.py`
 - `VectorService` در `engines/rag/vector_service.py`
 
 ---

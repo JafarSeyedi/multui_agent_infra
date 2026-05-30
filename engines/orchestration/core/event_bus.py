@@ -6,14 +6,18 @@ Supports synchronous and asynchronous event handling, event filtering,
 and subscription management.
 """
 
+from __future__ import annotations
+
 import asyncio
-import logging
-from datetime import datetime
-from typing import Any, Callable, Set
-from enum import Enum
-from dataclasses import dataclass, field
-from uuid import uuid4
 from collections import defaultdict
+from dataclasses import dataclass, field
+from datetime import datetime
+from enum import Enum
+import logging
+from typing import Any, Callable, Set, cast
+from uuid import uuid4
+
+from ..persistence.event_repository import EventRepository
 
 
 logger = logging.getLogger(__name__)
@@ -119,6 +123,47 @@ class Event:
             "metadata": self.metadata
         }
 
+    def to_record_payload(self) -> dict[str, Any]:
+        return {
+            "event_id": self.event_id,
+            "instance_id": self.data.get("instance_id"),
+            "event_type": self.type.value,
+            "type": self.type.value,
+            "correlation_id": self.correlation_id,
+            "created_at": self.timestamp.isoformat(),
+            "recorded_at": self.timestamp.isoformat(),
+            "payload": {
+                "data": dict(self.data),
+                "priority": self.priority.value,
+                "source": self.source,
+                "metadata": dict(self.metadata),
+            },
+        }
+
+    @classmethod
+    def from_record_payload(cls, payload: dict[str, Any]) -> Event:
+        nested_payload = cast(dict[str, Any], payload.get("payload")) if isinstance(payload.get("payload"), dict) else {}
+        event_type_raw = str(payload.get("event_type") or payload.get("type") or EventType.CUSTOM.value)
+        try:
+            event_type = EventType(event_type_raw)
+        except ValueError:
+            event_type = EventType.CUSTOM
+        priority_raw = nested_payload.get("priority", EventPriority.NORMAL.value)
+        try:
+            priority = EventPriority(int(priority_raw))
+        except (TypeError, ValueError):
+            priority = EventPriority.NORMAL
+        return cls(
+            type=event_type,
+            data=dict(nested_payload.get("data") or payload.get("data") or {}),
+            event_id=str(payload.get("event_id", str(uuid4()))),
+            timestamp=_parse_datetime(payload.get("recorded_at") or payload.get("created_at")),
+            priority=priority,
+            source=_optional_str(nested_payload.get("source") or payload.get("source")),
+            correlation_id=_optional_str(payload.get("correlation_id")),
+            metadata=dict(nested_payload.get("metadata") or payload.get("metadata") or {}),
+        )
+
 
 @dataclass
 class Subscription:
@@ -145,7 +190,12 @@ class EventBus:
     - Event history and replay
     """
     
-    def __init__(self, max_history_size: int = 10000):
+    def __init__(
+        self,
+        max_history_size: int = 10000,
+        *,
+        event_repository: EventRepository | None = None,
+    ):
         self.max_history_size = max_history_size
         
         # Subscriptions
@@ -162,6 +212,7 @@ class EventBus:
         self.published_count = 0
         self.processed_count = 0
         self.failed_count = 0
+        self.event_repository = event_repository
         
         # State
         self.is_running = False
@@ -261,9 +312,8 @@ class EventBus:
         self.published_count += 1
         
         # Add to history
-        self.event_history.append(event)
-        if len(self.event_history) > self.max_history_size:
-            self.event_history.pop(0)
+        self._append_history(event)
+        await self._persist_event(event)
         
         # Add to queue for async processing
         await self.event_queue.put(event)
@@ -280,9 +330,8 @@ class EventBus:
         self.published_count += 1
         
         # Add to history
-        self.event_history.append(event)
-        if len(self.event_history) > self.max_history_size:
-            self.event_history.pop(0)
+        self._append_history(event)
+        await self._persist_event(event)
         
         # Process immediately
         await self._handle_event(event)
@@ -367,6 +416,37 @@ class EventBus:
         """Clear event history"""
         self.event_history.clear()
         logger.info("Cleared event history")
+
+    async def reload_history(self, *, limit: int = 100) -> list[Event]:
+        """Reload recent history from repository when available."""
+        if self.event_repository is None:
+            return self.get_event_history(limit=limit)
+        rows = self.event_repository.list()[-limit:]
+        self.event_history = [Event.from_record_payload(row) for row in rows]
+        return list(self.event_history)
+
+    async def replay_events(
+        self,
+        *,
+        event_type: EventType | None = None,
+        correlation_id: str | None = None,
+        limit: int = 100,
+        publish: bool = False,
+    ) -> list[Event]:
+        """Reload persisted events and optionally replay them through handlers."""
+        if self.event_repository is None:
+            events = self.get_event_history(event_type=event_type, limit=limit)
+        else:
+            rows = self.event_repository.list()
+            if event_type is not None:
+                rows = [row for row in rows if row.get("event_type") == event_type.value or row.get("type") == event_type.value]
+            if correlation_id is not None:
+                rows = [row for row in rows if row.get("correlation_id") == correlation_id]
+            events = [Event.from_record_payload(row) for row in rows[-limit:]]
+        if publish:
+            for event in events:
+                await self._handle_event(event)
+        return events
     
     def get_statistics(self) -> dict[str, Any]:
         """Get event bus statistics"""
@@ -395,3 +475,25 @@ class EventBus:
             for sid in subscription_ids
             if sid in self.subscriptions
         ]
+
+    def _append_history(self, event: Event) -> None:
+        self.event_history.append(event)
+        if len(self.event_history) > self.max_history_size:
+            self.event_history.pop(0)
+
+    async def _persist_event(self, event: Event) -> None:
+        if self.event_repository is None:
+            return
+        await self.event_repository.append_persisted(event.to_record_payload())
+
+
+def _parse_datetime(value: Any) -> datetime:
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, str):
+        return datetime.fromisoformat(value)
+    return datetime.utcnow()
+
+
+def _optional_str(value: Any) -> str | None:
+    return None if value is None else str(value)
