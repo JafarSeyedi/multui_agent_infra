@@ -1,22 +1,43 @@
 """State machine orchestration components."""
 
-from .action_executor import ActionExecutionError, ActionExecutor
-from .guard_evaluator import GuardEvaluator
-from .history_manager import StateMachineHistory
-from .hierarchical_handler import HierarchicalHandler
-from .parallel_state_handler import ParallelStateHandler
-from .state_executor import StateMachineExecutor
-from .transition_handler import Transition
-from .engine import StateMachineEngine
+from .action_executor import ActionExecutionError, ActionExecutor, StateAction
+from .engine import StateMachineEngine, StateMachineError
+from .guard_evaluator import GuardCondition, GuardEvaluator
+from .hierarchical_handler import HierarchicalHandler, StateNode
+from .history_manager import HistoryEntry, HistoryKind, StateMachineHistory
+from .parallel_state_handler import ParallelStateHandler, RegionState
+from .state_executor import (
+    PseudoStateKind,
+    RegionContext,
+    StateContext,
+    StateKind,
+    StateMachineExecutor,
+    StateMachineModel,
+)
+from .transition_handler import Transition, TransitionHandler, TriggerMatch
 
 __all__ = [
-    "ActionExecutor",
     "ActionExecutionError",
+    "ActionExecutor",
+    "GuardCondition",
     "GuardEvaluator",
-    "ParallelStateHandler",
     "HierarchicalHandler",
+    "HistoryEntry",
+    "HistoryKind",
+    "ParallelStateHandler",
+    "PseudoStateKind",
+    "RegionContext",
+    "RegionState",
+    "StateAction",
+    "StateContext",
+    "StateKind",
     "StateMachineEngine",
+    "StateMachineError",
     "StateMachineExecutor",
     "StateMachineHistory",
+    "StateMachineModel",
+    "StateNode",
     "Transition",
+    "TransitionHandler",
+    "TriggerMatch",
 ]

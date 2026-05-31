@@ -1,21 +1,33 @@
-"""Complex Event Processing components."""
+"""CEP runtime components."""
 
-from .aggregator import Aggregation, Aggregator
-from .engine import CEPEngine
-from .event_store import EventStore
-from .pattern_matcher import PatternMatcher
-from .rule_evaluator import RuleEvaluator
-from .stream_processor import StreamProcessor
-from .window_manager import TimeWindow, WindowManager
+from .aggregator import Aggregator, AggregationDefinition, AggregationFunction
+from .engine import CEPExecutionError, CEPEngine
+from .event_store import CEPEventStore, StoredEvent
+from .pattern_matcher import PatternDefinition, PatternMatcher, PatternOperator, TemporalRelation
+from .rule_evaluator import CEPRule, CEPRuleCondition, RuleEvaluator
+from .stream_processor import StreamProcessingResult, StreamProcessor, WatermarkPolicy
+from .window_manager import WindowDefinition, WindowManager, WindowState, WindowType
 
 __all__ = [
-    "Aggregation",
+    "AggregationDefinition",
+    "AggregationFunction",
     "Aggregator",
+    "CEPExecutionError",
     "CEPEngine",
-    "EventStore",
+    "CEPEventStore",
+    "CEPRule",
+    "CEPRuleCondition",
+    "PatternDefinition",
     "PatternMatcher",
+    "PatternOperator",
     "RuleEvaluator",
+    "StoredEvent",
+    "StreamProcessingResult",
     "StreamProcessor",
-    "TimeWindow",
+    "TemporalRelation",
+    "WatermarkPolicy",
+    "WindowDefinition",
     "WindowManager",
+    "WindowState",
+    "WindowType",
 ]

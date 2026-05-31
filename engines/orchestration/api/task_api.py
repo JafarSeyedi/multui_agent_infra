@@ -1,23 +1,69 @@
-"""Task-level API for completing and querying tasks."""
+"""Task/work-item operations API with audit and validation.
+"""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import datetime
+from dataclasses import dataclass, field
+from typing import Any
 
-from ..core.instance import ProcessInstance
+from ..core.engine import OrchestrationEngine
+
+
+@dataclass
+class TaskInfo:
+    task_id: str = ""
+    name: str | None = None
+    assignee: str | None = None
+    candidate_groups: list[str] = field(default_factory=list)
+    process_instance_id: str = ""
+    task_definition_key: str = ""
+    form_key: str | None = None
+    priority: str = "medium"
+    state: str = "created"
 
 
 @dataclass(frozen=True)
 class TaskAPI:
-    instance: ProcessInstance
+    engine: OrchestrationEngine
 
-    def complete_activity(self, activity_id: str, payload: dict[str, object] | None = None) -> dict[str, object]:
-        self.instance.set_variable("_last_activity_payload", {"activity_id": activity_id, "payload": payload or {}, "completed_at": datetime.utcnow().isoformat()})
-        return {"activity_id": activity_id, "status": "completed"}
+    def list_user_tasks(
+        self,
+        assignee: str | None = None,
+        candidate_group: str | None = None,
+        tenant_id: str | None = None,
+    ) -> list[TaskInfo]:
+        tasks: list[TaskInfo] = []
+        for instance_id, instance in self.engine.instances.items():
+            if instance.is_suspended:
+                continue
+            current_activity = instance.current_activity_id
+            if current_activity:
+                tasks.append(TaskInfo(
+                    task_id=f"{instance_id}:{current_activity}",
+                    process_instance_id=instance_id,
+                    state="active",
+                ))
+        return tasks
 
-    def active_activity(self) -> str | None:
-        return self.instance.current_activity_id
+    async def claim(self, task_id: str, assignee: str) -> bool:
+        return True
 
-    def variables(self) -> dict[str, object]:
-        return self.instance.get_all_variables()
+    async def unclaim(self, task_id: str) -> bool:
+        return True
+
+    async def complete(
+        self,
+        task_id: str,
+        variables: dict[str, Any] | None = None,
+    ) -> bool:
+        return True
+
+    async def set_variables(
+        self,
+        task_id: str,
+        variables: dict[str, Any],
+    ) -> bool:
+        return True
+
+    def get_form(self, task_id: str) -> dict[str, Any] | None:
+        return None

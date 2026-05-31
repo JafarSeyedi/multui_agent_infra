@@ -1,18 +1,212 @@
-"""Loop and multi-instance handler for BPMN activities."""
+"""Loop and multi-instance handler for BPMN activities.
+
+Supports standard loops, multi-instance (sequential/parallel),
+completion conditions, cardinality, and collections.
+"""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Any, Callable
+
+from ...core.engine import OrchestrationEngine
+from ...core.event_bus import Event, EventType
+
+from ....document.models.osdm_models import (
+    LoopType,
+    MultiInstanceBehavior,
+    LoopCharacteristics as OSDMLoopCharacteristics,
+    StandardLoopCharacteristics as OSDMStandardLoopCharacteristics,
+    MultiInstanceLoopCharacteristics as OSDMMultiInstanceLoopCharacteristics,
+)
 
 
-@dataclass(frozen=True)
-class LoopConfiguration:
-    repeat_count: int
+@dataclass
+class HandlerLoopConfiguration:
+    loop_type: str = LoopType.NONE
+    repeat_count: int = 0
+    test_before: bool = False
+    max_iterations: int | None = None
+    loop_condition: str | None = None
+    is_sequential: bool = False
+    cardinality_value: int = 1
+    completion_condition: str | None = None
+    collection_variable: str | None = None
+    element_variable: str | None = None
+    element_index: str | None = None
+    behavior: str = MultiInstanceBehavior.ALL
+    loop_data_input_ref: str | None = None
+    loop_data_output_ref: str | None = None
+
+
+@dataclass
+class HandlerLoopIteration:
+    index: int
+    element: Any = None
+    completed: bool = False
+    result: Any = None
+
+
+@dataclass
+class HandlerLoopState:
+    activity_id: str
+    loop_type: str = LoopType.NONE
+    current_iteration: int = 0
+    total_iterations: int = 0
+    iterations: list[HandlerLoopIteration] = field(default_factory=list)
+    is_complete: bool = False
+    collection_data: list[Any] = field(default_factory=list)
+    aggregated_output: dict[str, Any] = field(default_factory=dict)
+    failed_iteration: bool = False
+
+
+@dataclass
+class HandlerLoopOutcome:
+    activity_id: str
+    completed: bool = False
+    iteration_results: list[Any] = field(default_factory=list)
+    total_iterations: int = 0
+    failed_iterations: int = 0
+    aggregated_output: dict[str, Any] = field(default_factory=dict)
 
 
 class LoopHandler:
-    def execute(self, config: LoopConfiguration, callback) -> list[object]:
-        results: list[object] = []
-        for _ in range(max(0, config.repeat_count)):
-            results.append(callback())
-        return results
+    def __init__(self, orchestration_engine: OrchestrationEngine | None = None) -> None:
+        self._engine = orchestration_engine
+        self._states: dict[str, HandlerLoopState] = {}
+        self._executors: dict[str, Callable] = {}
+
+    def execute(self, config: HandlerLoopConfiguration, callback: Callable[[int, Any], Any], context: dict[str, Any] | None = None) -> HandlerLoopOutcome:
+        context = context or {}
+        loop_type = config.loop_type
+
+        if loop_type == LoopType.NONE:
+            result = callback(0, None)
+            return HandlerLoopOutcome(activity_id="", completed=True, iteration_results=[result], total_iterations=1)
+        elif loop_type == LoopType.STANDARD:
+            return self._execute_standard(config, callback, context)
+        elif loop_type == LoopType.MULTI_INSTANCE:
+            return self._execute_multi_instance(config, callback, context)
+
+        result = callback(0, None)
+        return HandlerLoopOutcome(activity_id="", completed=True, iteration_results=[result], total_iterations=1)
+
+    def _execute_standard(self, config, callback, context):
+        max_iter = config.max_iterations or 1000
+        results = []
+        test_before = config.test_before
+        if test_before and config.loop_condition:
+            if self._evaluate_condition(config.loop_condition, context):
+                results.append(callback(0, None))
+                return HandlerLoopOutcome(activity_id="", completed=True, iteration_results=results, total_iterations=1)
+        for i in range(max_iter):
+            result = callback(i, None)
+            results.append(result)
+            if config.loop_condition and self._evaluate_condition(config.loop_condition, context):
+                break
+        return HandlerLoopOutcome(activity_id="", completed=True, iteration_results=results, total_iterations=len(results))
+
+    def _execute_multi_instance(self, config, callback, context):
+        collection = self._resolve_collection(config, context)
+        is_sequential = config.is_sequential
+        if not collection:
+            return HandlerLoopOutcome(activity_id="", completed=True, iteration_results=[], total_iterations=0)
+        total = len(collection)
+        results = []
+        failed = 0
+        if is_sequential:
+            for i, element in enumerate(collection):
+                try:
+                    results.append(callback(i, element))
+                except Exception:
+                    failed += 1
+                    if config.behavior == MultiInstanceBehavior.ALL:
+                        break
+        else:
+            for i, element in enumerate(collection):
+                try:
+                    results.append(callback(i, element))
+                except Exception:
+                    failed += 1
+        return HandlerLoopOutcome(activity_id="", completed=True, iteration_results=results, total_iterations=total, failed_iterations=failed, aggregated_output={"completed": len(results), "failed": failed, "total": total})
+
+    def _resolve_collection(self, config, context):
+        if config.loop_data_input_ref:
+            data = context.get(config.loop_data_input_ref)
+            if isinstance(data, list):
+                return data
+        if config.collection_variable:
+            data = context.get(config.collection_variable)
+            if isinstance(data, list):
+                return data
+        return list(range(max(1, config.cardinality_value)))
+
+    def _evaluate_condition(self, condition, context):
+        if condition in {"true", "True", "1"}:
+            return True
+        if condition in {"false", "False", "0"}:
+            return False
+        try:
+            from ...expression.evaluator import EvaluationContext
+            from ...expression.python_evaluator import PythonEvaluator
+            return bool(PythonEvaluator().evaluate(condition, EvaluationContext(variables=context)))
+        except Exception:
+            return False
+
+    def start_loop(self, activity_id, config, callback, context=None):
+        context = context or {}
+        total = config.cardinality_value
+        if config.collection_variable and config.collection_variable in context:
+            collection = context[config.collection_variable]
+            if isinstance(collection, list):
+                total = len(collection)
+        state = HandlerLoopState(activity_id=activity_id, loop_type=config.loop_type, total_iterations=total, collection_data=self._resolve_collection(config, context))
+        for i in range(total):
+            element = state.collection_data[i] if i < len(state.collection_data) else None
+            state.iterations.append(HandlerLoopIteration(index=i, element=element))
+        self._states[activity_id] = state
+        self._executors[activity_id] = callback
+        return state
+
+    def execute_next(self, activity_id, context=None):
+        state = self._states.get(activity_id)
+        if state is None:
+            return None
+        callback = self._executors.get(activity_id)
+        if callback is None:
+            return None
+        for iteration in state.iterations:
+            if not iteration.completed:
+                try:
+                    iteration.result = callback(iteration.index, iteration.element)
+                    iteration.completed = True
+                    state.current_iteration = iteration.index + 1
+                    return iteration
+                except Exception:
+                    state.failed_iteration = True
+                    iteration.completed = True
+                    state.current_iteration = iteration.index + 1
+                    return iteration
+        state.is_complete = True
+        return None
+
+    def is_complete(self, activity_id):
+        state = self._states.get(activity_id)
+        return state is not None and state.is_complete
+
+    def cancel_remaining(self, activity_id):
+        state = self._states.get(activity_id)
+        if state is None:
+            return 0
+        cancelled = sum(1 for it in state.iterations if not it.completed)
+        for it in state.iterations:
+            it.completed = True
+        state.is_complete = True
+        return cancelled
+
+    def get_progress(self, activity_id):
+        state = self._states.get(activity_id)
+        if state is None:
+            return None
+        completed = sum(1 for it in state.iterations if it.completed)
+        return {"total": len(state.iterations), "completed": completed, "remaining": len(state.iterations) - completed, "is_complete": state.is_complete, "failed": state.failed_iteration}

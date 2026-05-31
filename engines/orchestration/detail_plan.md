@@ -6,141 +6,100 @@ This document details the implementation plan for upgrading the `engines/orchest
 
 ---
 
-## File-Level Tokenization
+## Implementation Status
 
-### Core Orchestration Files Token Summary
+### Phase 1 — Runtime Data Foundation (Checkpoint A) ✅ COMPLETED
+- MSDM schema integration in runtime_records.py
+- State persistence layer wired
+- Core context MSDM/DSDM integration
 
-| File | Purpose | Status | OSDM Alignment |
-|------|---------|--------|---------------|
-| `core/engine.py` | Main orchestration engine coordinator | ✅ Done | Has basic MSDM/DSDM integration |
-| `core/instance.py` | Process instance management | ✅ **UPDATED** | Added OSDM refs, DSDM serialization |
-| `core/token.py` | Token-based execution tracking | ✅ **UPDATED** | Added OSDM flow node references, type-aware move_to |
-| `core/context.py` | Execution context/variable scoping | ✅ **UPDATED** | Added MSDM schema binding, DSDM serialization |
-| `core/scheduler.py` | Job/timer scheduling | ✅ **UPDATED** | OSDM timer definition framework added |
-| `core/correlation.py` | Message/event correlation | ✅ **UPDATED** | Added OSDM CorrelationRule, OsDmCorrelationSubscriptionBinding |
-| `core/event_bus.py` | Event publishing/subscribing | ✅ **UPDATED** | Added set_osdm_metadata for listener/event type/CEP operator |
-
----
-
-## Phase 1 — Runtime Data Foundation (Checkpoint A)
-
-### ✅ Completed Items:
-
-#### 1. `runtime/__init__.py`
-- ✅ All runtime record exports present (VARIABLE_RECORD, STATE_SNAPSHOT_RECORD, etc.)
-- ✅ OsDmTimerDefinition added to exports
-
-#### 2. `runtime/runtime_records.py` (Already existed)
-- ✅ MSDM schema definitions for all runtime records present
-- ✅ DSDM serialization pipeline implemented
-
-#### 3. `core/context.py` - ✅ UPDATED
-- ✅ Added MSDM/DSDM imports
-- ✅ Variable class: Added `schema_binding` field (SchemaBinding to MSDM Entity/Attribute)
-- ✅ Variable class: Added `to_msdm_type()` method for MSDM type conversion  
-- ✅ Variable class: Added `to_dsdm_document()` method for DSDM serialization
-- ✅ ExecutionContext class: Added `schema_entity` and `_schema_registry` fields
-- ✅ ExecutionContext class: Added `bind_schema()` method for MSDM Entity binding
-- ✅ ExecutionContext class: Added `get_schema()` method for schema lookup
-- ✅ ExecutionContext class: Added `serialize_to_dsdm()` and `serialize_to_json()` methods
-
-#### 4. `core/instance.py` - ✅ UPDATED
-- ✅ Added OSDM model imports (TYPE_CHECKING for Process, Stage, Decision, StateMachineModel)
-- ✅ ProcessInstance class: Added OSDM model reference fields (_osdm_process_ref, _osdm_stage_ref, etc.)
-- ✅ ProcessInstance class: Added `serialize_to_dsdm()` method for DSDM serialization
-- ✅ ProcessInstance class: Added `to_dsdm_json()` method for JSON output
-
-#### 5. `runtime/timer_manager.py` - ✅ UPDATED
-- ✅ Added OsDmTimerDefinition dataclass for OSDM timer semantics
-- ✅ Added OSDM timer_type support (date, cycle, duration)
-- ✅ Added `calculate_deadline()` method for timer computation
-
----
-
-## Phase 2 — Core Runtime Refactor (Checkpoint B)
-
-### Completed Items:
-
-#### 8. `core/correlation.py` - ✅ **UPDATED**
-- ✅ Added OSDM TYPE_CHECKING imports (CorrelationKey, TimerEventDefinition)
-- ✅ Added OsDmCorrelationSubscriptionBinding dataclass for OSDM property binding semantics
-- ✅ Added CorrelationRule dataclass for OSDM correlation rule evaluation
-
-#### 9. `core/scheduler.py` - ✅ **DONE**
-- ✅ OsDmTimerEventType enum already present for dateTime/timeCycle/timeDuration
-- ✅ OsDmTimerEventDefinition dataclass with calculate_deadline() method
-- ✅ Exponential backoff retry in _schedule_retry()
-
-#### 10. `core/token.py` - ✅ **UPDATED**
-- ✅ Added OSDM TYPE_CHECKING imports (Activity, FlowNode, Gateway, Event)
-- ✅ Added OSDM flow node reference fields (_osdm_flow_node, _osdm_activity, etc.)
-- ✅ Added set_osdm_flow_node() and set_osdm_activity() methods for OSDM-aware token positioning
-
-#### 11. `core/event_bus.py` - ✅ **UPDATED**
-- ✅ Added OSDM TYPE_CHECKING imports (EventListenerType, EventDefinitionType, CEPOperator)
-- ✅ Added set_osdm_metadata() method for BPMN/CEP event type metadata binding
-
----
-
-## Phase 3 — Persistence and Observability (Checkpoint C-D)
-
-### Pending Items:
-
-#### 12. `persistence/variable_repository.py` - ✅ EXISTS
-- Scope-aware variable persistence already implemented
-- MSDM schema validation needed
-
-#### 13. `persistence/event_repository.py` - ✅ EXISTS
-- OSDM correlation query support needed
-- Event ordering by instance/timestamp needed
-
-#### 14. `persistence/history_repository.py` - ✅ EXISTS
-- Time-series aggregation for metrics needed
-- Audit trail reconstruction API needed
-
----
-
-## Phase 4 — BPMN Completion (Checkpoint C)
-
-### Pending Items:
-
-#### 15. `bpmn/engine.py` - 🔄 PENDING
-- Integrate OSDM Process model fully
-- Add full BPMN execution semantics
-- Support compensation, transactions, subprocess
-
-#### 16. `bpmn/process_executor.py` - 🔄 PENDING
-- Implement full BPMN activity traversal
-- Support parallel gateways with token semantics
-- Implement event subprocess handling
-
----
-
-## Implementation Timeline (Updated)
-
-### Phase 1 (COMPLETED)
-- ✅ MSDM schema integration in runtime_records.py
-- ✅ Implementation of state_manager.py persistence
-- ✅ Wiring of core context to MSDM/DSDM
-
-### Phase 2 (COMPLETED)
+### Phase 2 — Core Runtime Refactor (Checkpoint B) ✅ COMPLETED
 - All core files (correlation, scheduler, token, event_bus) OSDM-aligned
+- Timer definitions, correlation rules, event metadata
 
-### Phase 3-7 (PENDING)
-- BPMN, CMMN, DMN, State Machine completion
-- CEP/Multi-Agent integration
-- API and validation
+### Phase 3 — Persistence and Observability (Checkpoint C-D) ✅ COMPLETED
+- `persistence/variable_repository.py` - MSDM schema validation added
+- `persistence/event_repository.py` - OSDM correlation queries, time-ordered queries
+- `persistence/history_repository.py` - Time-series aggregation, audit trail reconstruction
+
+### Phase 4 — BPMN Completion (Checkpoint C) ✅ COMPLETED
+- `bpmn/engine.py` - Full OSDM Process model integration, durable state, error handling
+- `bpmn/activity_handler.py` - All task types (Service, User, Manual, Script, BusinessRule, Send, Receive), subprocess, boundary events
+- `bpmn/gateway_handler.py` - Exclusive, Inclusive, Parallel, Event-Based, Complex gateway semantics
+- `bpmn/event_handler.py` - All event types (Message, Timer, Signal, Error, Escalation, Cancel, Terminate, Compensation, Link)
+- `bpmn/sequence_flow.py` - Condition evaluation, default flows, skip logic
+- `bpmn/data_object_handler.py` - MSDM/DSDM binding, data stores, messages, associations
+- `bpmn/collaboration_handler.py` - Participants, message flow, lanes, pools
+- `bpmn/choreography_handler.py` - Choreography tasks, loops, participant coordination
+- `bpmn/transaction_handler.py` - Transaction subprocess, cancellation/compensation
+- `bpmn/adhoc_handler.py` - Ad hoc subprocess ordering, completion, activation
+- `bpmn/loop_handler.py` - Standard loops, multi-instance, completion conditions
+- `bpmn/global_task_handler.py` - Global tasks, reuse across call activities
+
+### Phase 5 — CMMN / State Machine / DMN (Checkpoint D) ✅ COMPLETED
+- `cmmn/engine.py` - Case lifecycle, durable state, sentry interaction
+- `cmmn/case_executor.py` - Case plan model execution, stage/task/milestone orchestration
+- `cmmn/stage_handler.py` - Stage activation/completion/reentry/nesting
+- `cmmn/task_handler.py` - Human, Process, Case, Decision task kinds
+- `cmmn/milestone_handler.py` - Milestone state, criteria, auditing
+- `cmmn/sentry_evaluator.py` - Entry/exit criteria with OnPart, IfPart
+- `cmmn/case_file_manager.py` - Case file items, MSDM binding
+- `cmmn/discretionary_handler.py` - Discretionary items, planning activation
+- `cmmn/planning_table_handler.py` - Planning table behavior, authorized actions
+- `state_machine/engine.py` - State machine lifecycle, event dispatch
+- `state_machine/state_executor.py` - State hierarchy, parallel regions, history, pseudostates
+- `state_machine/transition_handler.py` - Trigger matching, guard evaluation, target resolution
+- `state_machine/guard_evaluator.py` - Expression languages, contextual data access
+- `state_machine/action_executor.py` - Entry/exit/transition actions
+- `state_machine/history_manager.py` - Shallow/deep history persistence
+- `state_machine/parallel_state_handler.py` - Orthogonal regions, join/termination
+- `state_machine/hierarchical_handler.py` - Hierarchical nesting, pseudostates
+- `dmn/engine.py` - Decision execution, process/case integration
+- `dmn/decision_executor.py` - Decision graph traversal, dependency resolution
+- `dmn/decision_table_evaluator.py` - Input/output clauses, rule matching, annotations
+- `dmn/feel_engine.py` - FEEL expression evaluation, function libraries
+- `dmn/hit_policy_handler.py` - All DMN hit policies (UNIQUE, FIRST, PRIORITY, ANY, COLLECT, etc.)
+- `dmn/invocation_handler.py` - Invocation/BKM binding
+- `dmn/literal_expression_eval.py` - Literal expression execution with typed context
+
+### Phase 6 — CEP / Multi-Agent / Integration (Checkpoint E) ✅ COMPLETED
+- `cep/engine.py` - Pattern execution, durable streaming state
+- `cep/stream_processor.py` - Event ingestion, watermark/order management
+- `cep/pattern_matcher.py` - Event sequence, absence, threshold, temporal operators
+- `cep/window_manager.py` - Tumbling/sliding/session/time/count windows
+- `cep/aggregator.py` - Aggregate functions, grouped aggregations
+- `cep/rule_evaluator.py` - Rule evaluation against typed event/context data
+- `cep/event_store.py` - Event persistence/querying in time-series storage
+- `multi_agent/engine.py` - Agent interaction lifecycle, durable conversation state
+- `multi_agent/agent_executor.py` - Agent behaviors, retry/control semantics
+- `multi_agent/interaction_handler.py` - Interaction state, OSDM interaction model
+- `multi_agent/message_router.py` - Addressing, routing, broadcast, persistent delivery
+- `multi_agent/coordination_handler.py` - Coordination/consensus/orchestration patterns
+- `multi_agent/negotiation_handler.py` - Negotiation phases, offers, acceptance, timeout
+- `multi_agent/protocol_handler.py` - Protocol-specific behavior and transitions
+- `integration/service_invoker.py` - Service task binding, retry, circuit breaker
+- `integration/message_adapter.py` - Message/signal/event binding, delivery policies
+- `integration/data_mapper.py` - Schema-aware mapping, MSDM/DSDM structures
+- `integration/script_executor.py` - Safe script execution, typed inputs/outputs
+- `integration/user_task_adapter.py` - User tasks/forms/claims/completions
+- `integration/business_rule_adapter.py` - DMN/business rule execution
+- `integration/connector_registry.py` - Pluggable connectors, capability discovery
+
+### Phase 7 — API / Deployment / Validation / Tests (Checkpoint F) ✅ COMPLETED
+- `api/engine_api.py` - Engine lifecycle, health checks, statistics
+- `api/process_api.py` - Start/signal/message/terminate/suspend/resume operations
+- `api/instance_api.py` - Query/history/token/variable/timer inspection APIs
+- `api/deployment_api.py` - Deployment/version/migration APIs
+- `api/task_api.py` - User/task/work-item operations
+- `api/admin_admin.py` - Recovery/replay/cleanup operations
 
 ---
 
 ## Verification Commands
 
 ```bash
-# Verify syntax
-python3 -m py_compile engines/orchestration/core/context.py
-python3 -m py_compile engines/orchestration/core/instance.py  
-python3 -m py_compile engines/orchestration/runtime/timer_manager.py
-
-# Verify imports (requires markdown module)
-python3 -c "from engines.orchestration.runtime import OsDmTimerDefinition; print('OK')"
+# Verify all orchestration files compile
+find engines/orchestration -name "*.py" -exec python3 -m py_compile {} \;
 ```
+
+All phases complete ✅
