@@ -94,3 +94,76 @@ class InstanceAPI:
             return rows
         except Exception:
             return []
+
+    async def modify_instance(
+        self,
+        instance_id: str,
+        activity_id: str | None = None,
+        transition_id: str | None = None,
+        variables: dict[str, Any] | None = None,
+        cancel_at_activity: str | None = None,
+    ) -> dict[str, Any]:
+        return await self.engine.batch_manager.modify_instance(
+            instance_id, activity_id=activity_id, transition_id=transition_id,
+            variables=variables, cancel_at_activity=cancel_at_activity,
+        )
+
+    def get_incidents(
+        self,
+        instance_id: str | None = None,
+        state: str | None = None,
+        incident_type: str | None = None,
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        from engines.orchestration.runtime.incident_manager import IncidentQuery
+        query = IncidentQuery(
+            instance_id=instance_id, state=state, incident_type=incident_type, limit=limit,
+        )
+        incidents = self.engine.incident_manager.query_incidents(query)
+        return [
+            {
+                "incident_id": inc.incident_id, "type": inc.incident_type,
+                "state": inc.state, "instance_id": inc.instance_id,
+                "activity_id": inc.activity_id, "error_message": inc.error_message,
+                "created_at": inc.created_at, "retry_count": inc.retry_count,
+            }
+            for inc in incidents
+        ]
+
+    async def resolve_incident(self, incident_id: str, resolution: str = "manual") -> dict[str, Any]:
+        incident = self.engine.incident_manager.resolve_incident(incident_id, resolution)
+        if incident is None:
+            return {"success": False, "error": f"Incident not found: {incident_id}"}
+        return {"success": True, "incident_id": incident.incident_id, "state": incident.state}
+
+    def get_external_tasks(
+        self,
+        instance_id: str | None = None,
+        topic_name: str | None = None,
+        state: str | None = None,
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        from engines.orchestration.runtime.external_task import ExternalTaskQuery
+        query = ExternalTaskQuery(
+            instance_id=instance_id, topic_name=topic_name, state=state, limit=limit,
+        )
+        tasks = self.engine.external_task_manager.query_tasks(query)
+        return [
+            {
+                "task_id": t.task_id, "topic": t.topic_name, "state": t.state,
+                "instance_id": t.instance_id, "activity_id": t.activity_id,
+                "retries": t.retries, "priority": t.priority,
+            }
+            for t in tasks
+        ]
+
+    def get_forms(self, form_key: str | None = None) -> list[dict[str, Any]]:
+        if form_key:
+            form = self.engine.form_engine.get_form(form_key)
+            return [form.to_dict()] if form else []
+        return [f.to_dict() for f in self.engine.form_engine.list_forms()]
+
+    async def submit_form(
+        self, form_key: str, data: dict[str, Any], instance_id: str | None = None,
+    ) -> dict[str, Any]:
+        return self.engine.form_engine.submit_form(form_key, data, instance_id)

@@ -50,6 +50,8 @@ class HandlerBPMNEvent:
     correlation_keys: dict[str, Any] = field(default_factory=dict)
     link_source: str | None = None
     link_target: str | None = None
+    multiple_event_definitions: list[str] = field(default_factory=list)
+    is_parallel_multiple: bool = False
 
 
 @dataclass
@@ -73,6 +75,8 @@ class EventHandler:
         self._engine = orchestration_engine
 
     def handle_start(self, event: HandlerBPMNEvent) -> HandlerBPMNEventOutcome:
+        if event.is_parallel_multiple:
+            return self._handle_parallel_multiple_start(event)
         def_type = event.event_definition_type
         if def_type == EventDefinitionType.MESSAGE:
             return HandlerBPMNEventOutcome(handled=True, wait_required=True, wait_kind="message", wait_name=event.message_name, correlation_keys=event.correlation_keys)
@@ -80,9 +84,63 @@ class EventHandler:
             return HandlerBPMNEventOutcome(handled=True, wait_required=True, wait_kind="timer", wait_name=event.timer_schedule.time_duration if event.timer_schedule else None)
         elif def_type == EventDefinitionType.SIGNAL:
             return HandlerBPMNEventOutcome(handled=True, wait_required=True, wait_kind="event", wait_name=event.signal_name)
+        elif def_type == EventDefinitionType.ERROR:
+            return HandlerBPMNEventOutcome(handled=True, error_raised=event.error_code)
+        elif def_type == EventDefinitionType.ESCALATION:
+            return HandlerBPMNEventOutcome(handled=True, escalation_raised=event.escalation_code)
         elif def_type == EventDefinitionType.CONDITIONAL:
             return HandlerBPMNEventOutcome(handled=True)
+        elif def_type == EventDefinitionType.COMPENSATION:
+            return HandlerBPMNEventOutcome(handled=True, compensation_triggered=event.payload.get("activity_ref"))
         return HandlerBPMNEventOutcome(handled=True)
+
+    def _handle_parallel_multiple_start(self, event: HandlerBPMNEvent) -> HandlerBPMNEventOutcome:
+        definitions = event.multiple_event_definitions or [event.event_definition_type]
+        all_handled = True
+        any_wait = False
+        wait_kind = None
+        wait_name = None
+        for d in definitions:
+            if d == EventDefinitionType.MESSAGE:
+                any_wait = True; wait_kind = "message"; wait_name = event.message_name
+            elif d == EventDefinitionType.TIMER:
+                any_wait = True; wait_kind = "timer"
+                wait_name = event.timer_schedule.time_duration if event.timer_schedule else None
+            elif d == EventDefinitionType.SIGNAL:
+                any_wait = True; wait_kind = "event"; wait_name = event.signal_name
+            elif d == EventDefinitionType.CONDITIONAL:
+                pass
+            else:
+                all_handled = False
+        return HandlerBPMNEventOutcome(handled=all_handled, wait_required=any_wait, wait_kind=wait_kind, wait_name=wait_name)
+
+    def _handle_parallel_multiple_start(self, event: HandlerBPMNEvent) -> HandlerBPMNEventOutcome:
+        definitions = event.multiple_event_definitions or [event.event_definition_type]
+        all_handled = True
+        any_wait = False
+        wait_kind = None
+        wait_name = None
+        for d in definitions:
+            if d == EventDefinitionType.MESSAGE:
+                any_wait = True
+                wait_kind = "message"
+                wait_name = event.message_name
+            elif d == EventDefinitionType.TIMER:
+                any_wait = True
+                wait_kind = "timer"
+                wait_name = event.timer_schedule.time_duration if event.timer_schedule else None
+            elif d == EventDefinitionType.SIGNAL:
+                any_wait = True
+                wait_kind = "event"
+                wait_name = event.signal_name
+            elif d == EventDefinitionType.CONDITIONAL:
+                pass
+            else:
+                all_handled = False
+        return HandlerBPMNEventOutcome(
+            handled=all_handled, wait_required=any_wait,
+            wait_kind=wait_kind, wait_name=wait_name,
+        )
 
     def handle_end(self, event: HandlerBPMNEvent) -> HandlerBPMNEventOutcome:
         def_type = event.event_definition_type

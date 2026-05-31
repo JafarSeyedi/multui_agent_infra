@@ -58,6 +58,7 @@ from .loop_handler import (
     HandlerLoopState,
     LoopHandler,
 )
+from .process_model import TypedProcessModel, classify_node
 from .process_executor import BPMNProcessExecutor, ProcessExecutionOutcome, ProcessModel
 from .sequence_flow import (
     FlowTraversalResult,

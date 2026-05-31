@@ -12,19 +12,15 @@ from ..core.engine import OrchestrationEngine, ProcessDefinition
 from ..core.instance import InstanceState, ProcessInstance
 from ..runtime.state_manager import StateManager
 from .process_executor import BPMNProcessExecutor
+from .choreography_executor import ChoreographyExecutor
+from .conversation_executor import ConversationExecutor
+from .pool_lane_executor import PoolLaneExecutor
 
 # OSDM BPMN model imports
 from ....document.parsers.osdm_parsers.bpmn_xml_parser import BPMNXMLParser
 from ....document.models.osdm_models import (
-    BPMNDocument, 
-    Process, 
-    FlowElement, 
-    FlowNode,
-    Activity,
-    SequenceFlow,
-    Event,
-    Gateway,
-    EventType
+    BPMNDocument, Process, FlowElement, FlowNode, Activity, SequenceFlow,
+    Event, Gateway, EventType, Choreography, Collaboration,
 )
 
 
@@ -54,6 +50,9 @@ class BPMNEngine:
             state_manager=self.state_manager,
             context_manager=self.context_manager,
         )
+        self.choreography_executor = ChoreographyExecutor(orchestration_engine=orchestration_engine)
+        self.conversation_executor = ConversationExecutor(orchestration_engine=orchestration_engine)
+        self.pool_lane_executor = PoolLaneExecutor()
         # Parser for converting BPMN XML to OSDM model objects
         self._bpmn_parser = BPMNXMLParser()
         # Cache for parsed BPMN documents to avoid reparsing

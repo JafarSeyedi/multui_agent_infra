@@ -164,19 +164,36 @@ class GatewayHandler:
 
     def _choose_event_based(self, gateway_id, gateway, context):
         outgoing = gateway.get("branches", gateway.get("outgoing", gateway.get("flows", [])))
-        event_types = []
-        for flow in outgoing:
-            target = str(flow.get("target") or flow.get("targetRef") or flow.get("target_id", ""))
-            event_type = flow.get("event_type") or flow.get("eventType") or (flow.get("eventDefinition", {}).get("type") if isinstance(flow.get("eventDefinition"), dict) else None)
-            if event_type:
-                event_types.append(event_type)
+        is_parallel = gateway.get("parallelMultiple", False) or gateway.get("isParallelMultiple", False)
         triggered_event = gateway.get("triggered_event") or context.get(f"{gateway_id}.triggered_event")
         if triggered_event:
             for flow in outgoing:
                 target = str(flow.get("target") or flow.get("targetRef") or flow.get("target_id", ""))
                 flow_event = flow.get("event_type") or flow.get("eventType") or ""
                 if flow_event == triggered_event:
-                    return GatewayDecision(gateway_id=gateway_id, next_targets=[target], gateway_type=GatewayType.EVENT_BASED, event_triggered=triggered_event)
+                    return GatewayDecision(
+                        gateway_id=gateway_id, next_targets=[target],
+                        gateway_type=GatewayType.EVENT_BASED, event_triggered=triggered_event,
+                    )
+            return GatewayDecision(gateway_id=gateway_id, next_targets=[], gateway_type=GatewayType.EVENT_BASED)
+        elif is_parallel:
+            triggered_events_raw = gateway.get("triggered_events") or context.get(f"{gateway_id}.triggered_events") or []
+            selected_targets = []
+            for flow in outgoing:
+                target = str(flow.get("target") or flow.get("targetRef") or flow.get("target_id", ""))
+                flow_event = flow.get("event_type") or flow.get("eventType") or ""
+                if flow_event and flow_event in triggered_events_raw:
+                    selected_targets.append(target)
+            all_events_present = True
+            for flow in outgoing:
+                flow_event = flow.get("event_type") or flow.get("eventType") or ""
+                if flow_event and flow_event not in triggered_events_raw:
+                    all_events_present = False
+                    break
+            if selected_targets and all_events_present:
+                return GatewayDecision(gateway_id=gateway_id, next_targets=selected_targets, gateway_type=GatewayType.EVENT_BASED)
+            else:
+                return GatewayDecision(gateway_id=gateway_id, next_targets=[], gateway_type=GatewayType.EVENT_BASED)
         return GatewayDecision(gateway_id=gateway_id, next_targets=[], gateway_type=GatewayType.EVENT_BASED)
 
     def _choose_complex(self, gateway_id, gateway, context):

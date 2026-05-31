@@ -146,13 +146,19 @@ class ActivityHandler:
         return ActivityExecutionResult(success=True, output=output, io_mappings_applied=True)
 
     def _execute_user_task(self, instance, activity_id, activity_type, payload, activity, context):
-        self._apply_io_mappings(instance, activity, context)
+        self._apply_io_mappings(instance, context)
         assignee = payload.get("assignee")
         candidate_groups = payload.get("candidateGroups", [])
         candidate_users = payload.get("candidateUsers", [])
         form_key = payload.get("formKey")
         due_date = payload.get("dueDate")
+        follow_up_date = payload.get("followUpDate")
         priority = payload.get("priority")
+        escalation_code = payload.get("escalationCode")
+        deadline_duration = payload.get("deadlineDuration")
+        escalation_duration = payload.get("escalationDuration")
+        repeat_count = payload.get("repeatCount", 0)
+        end_date = payload.get("endDate")
         instance.set_variable(f"{activity_id}.assignee", assignee)
         instance.set_variable(f"{activity_id}.candidateGroups", candidate_groups)
         instance.set_variable(f"{activity_id}.candidateUsers", candidate_users)
@@ -160,9 +166,29 @@ class ActivityHandler:
             instance.set_variable(f"{activity_id}.formKey", form_key)
         if due_date:
             instance.set_variable(f"{activity_id}.dueDate", due_date)
+        if follow_up_date:
+            instance.set_variable(f"{activity_id}.followUpDate", follow_up_date)
         if priority is not None:
             instance.set_variable(f"{activity_id}.priority", priority)
-        output = {"assignee": assignee, "candidateGroups": candidate_groups, "candidateUsers": candidate_users, "formKey": form_key}
+        if escalation_code:
+            instance.set_variable(f"{activity_id}.escalationCode", escalation_code)
+        if deadline_duration:
+            instance.set_variable(f"{activity_id}.deadlineDuration", deadline_duration)
+            instance.set_variable(f"{activity_id}.deadlineActive", True)
+        if escalation_duration:
+            instance.set_variable(f"{activity_id}.escalationDuration", escalation_duration)
+            instance.set_variable(f"{activity_id}.escalationActive", True)
+        if repeat_count > 0:
+            instance.set_variable(f"{activity_id}.repeatCount", repeat_count)
+        if end_date:
+            instance.set_variable(f"{activity_id}.endDate", end_date)
+        output = {
+            "assignee": assignee, "candidateGroups": candidate_groups,
+            "candidateUsers": candidate_users, "formKey": form_key,
+            "dueDate": due_date, "followUpDate": follow_up_date,
+            "escalationCode": escalation_code, "deadlineActive": bool(deadline_duration),
+            "escalationActive": bool(escalation_duration),
+        }
         instance.set_variable(f"{activity_id}.output", output)
         return ActivityExecutionResult(success=True, output=output, io_mappings_applied=True)
 

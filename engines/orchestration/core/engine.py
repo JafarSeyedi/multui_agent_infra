@@ -30,6 +30,25 @@ from ..persistence import (
     VariableRepository,
 )
 from ..runtime import StateManager, VariableManager
+from ..runtime.incident_manager import IncidentManager
+from ..runtime.migration import ProcessInstanceMigrator, BatchOperationManager
+from ..runtime.tenant import TenantManager
+from ..runtime.circuit_breaker import CircuitBreakerRegistry, RetryHandler, RetryConfig
+from ..runtime.external_task import ExternalTaskManager, ExternalTaskWorker
+from ..runtime.listeners import TaskListenerManager, ExecutionListenerManager
+from ..runtime.rate_limiter import RateLimiter
+from ..runtime.state_snapshot import StateSnapshotManager, CheckpointConfig
+from ..forms.form_engine import FormEngine
+from ..monitoring.metrics_collector import MetricsCollector
+from ..monitoring.process_heatmap import ProcessHeatmap, BottleneckDetection, KpiTracker
+from ..persistence.audit_log import AuditLog
+from ..validation.osdm_validator import (
+    BpmnOsdmValidator,
+    CmmnOsdmValidator,
+    DmnOsdmValidator,
+    StateMachineOsdmValidator,
+)
+from ..runtime.osdm_serializer import OsdmSerializer, OsdmDeserializer, SerializationContext
 
 
 logger = logging.getLogger(__name__)
@@ -139,6 +158,39 @@ class OrchestrationEngine:
         self.token_manager = TokenManager(repository=self.token_repository)
         self.variable_manager = VariableManager(repository=self.variable_repository)
         self.state_manager = StateManager()
+
+        self.incident_manager = IncidentManager()
+        self.tenant_manager = TenantManager()
+        self.circuit_breaker_registry = CircuitBreakerRegistry()
+        self.retry_handler = RetryHandler()
+        self.external_task_manager = ExternalTaskManager()
+        self.task_listener_manager = TaskListenerManager()
+        self.execution_listener_manager = ExecutionListenerManager()
+        self.rate_limiter = RateLimiter()
+        self.snapshot_manager = StateSnapshotManager(
+            config=CheckpointConfig(
+                enabled=True,
+                auto_checkpoint_interval_seconds=30,
+                checkpoint_on_activity_start=True,
+                checkpoint_on_activity_complete=True,
+                checkpoint_on_error=True,
+            )
+        )
+        self.form_engine = FormEngine()
+        self.metrics_collector = MetricsCollector()
+        self.process_heatmap = ProcessHeatmap()
+        self.bottleneck_detector = BottleneckDetection()
+        self.kpi_tracker = KpiTracker()
+        self.audit_log = AuditLog()
+        self.osdm_serializer = OsdmSerializer()
+        self.osdm_deserializer = OsdmDeserializer()
+        self.bpmn_validator = BpmnOsdmValidator()
+        self.cmmn_validator = CmmnOsdmValidator()
+        self.dmn_validator = DmnOsdmValidator()
+        self.state_machine_validator = StateMachineOsdmValidator()
+
+        self.migrator = ProcessInstanceMigrator(self)
+        self.batch_manager = BatchOperationManager(self)
 
         self.deployments: Dict[str, Deployment] = {}
         self.definitions: Dict[str, ProcessDefinition] = {}
