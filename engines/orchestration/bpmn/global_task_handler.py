@@ -12,7 +12,13 @@ from typing import Any, Callable
 from ...core.engine import OrchestrationEngine
 from ...core.event_bus import Event, EventType
 
-from ....document.models.osdm_models import GlobalTask as OSDMGlobalTask
+from ....document.models.osdm_models import (
+    GlobalTask as OSDMGlobalTask,
+    GlobalUserTask,
+    GlobalScriptTask,
+    GlobalManualTask,
+    GlobalBusinessRuleTask,
+)
 
 
 @dataclass
@@ -96,9 +102,11 @@ class GlobalTaskHandler:
         return before - len(self._execution_history)
 
     def register_osdm(self, task: OSDMGlobalTask) -> HandlerGlobalTask:
+        """Register from OSDM GlobalTask, dispatching type-specific behavior."""
+        task_type_str = self._resolve_global_task_type(task)
         handler_task = HandlerGlobalTask(
             task_id=task.id,
-            task_type=task.task_type.value if hasattr(task.task_type, "value") else str(task.task_type),
+            task_type=task_type_str,
             name=task.name,
             osdm_task=task,
             payload={
@@ -106,10 +114,23 @@ class GlobalTaskHandler:
                 "supported_interface_refs": [iface.id for iface in task.supported_interface_refs] if task.supported_interface_refs else [],
                 "io_specification": task.io_specification is not None,
                 "io_binding_count": len(task.io_binding) if task.io_binding else 0,
+                "global_task_subtype": task_type_str,
             },
         )
         self.register(handler_task)
         return handler_task
+
+    def _resolve_global_task_type(self, task: OSDMGlobalTask) -> str:
+        """Resolve specific global task subtype from OSDM class hierarchy."""
+        if isinstance(task, GlobalBusinessRuleTask):
+            return "businessRuleTask"
+        if isinstance(task, GlobalScriptTask):
+            return "scriptTask"
+        if isinstance(task, GlobalManualTask):
+            return "manualTask"
+        if isinstance(task, GlobalUserTask):
+            return "userTask"
+        return task.task_type.value if hasattr(task.task_type, "value") else str(task.task_type)
 
     def execute_osdm(self, task: OSDMGlobalTask, context: dict[str, Any] | None = None) -> GlobalTaskExecutionResult:
         handler_task = self.register_osdm(task)

@@ -19,6 +19,10 @@ from ....document.models.osdm_models import (
     LaneSet as OSDMLaneSet,
     MessageFlow as OSDMMessageFlow,
     Participant as OSDMParticipant,
+    ParticipantMultiplicity,
+    ParticipantAssociation,
+    PartnerEntity,
+    PartnerRole,
 )
 
 
@@ -225,3 +229,49 @@ class CollaborationHandler:
         pool = ctx.pools.get(pool_id)
         participant = pool.get("participant", {}) if pool else {}
         return participant.get("id") or pool_id
+
+    def add_participant_multiplicity(self, participant_id: str, multiplicity: ParticipantMultiplicity) -> None:
+        """Register participant multiplicity (min/max instances)."""
+        for ctx in self._contexts.values():
+            if participant_id in ctx.participants:
+                ctx.participants[participant_id]["multiplicity"] = {
+                    "minimum": multiplicity.minimum if hasattr(multiplicity, "minimum") else 0,
+                    "maximum": multiplicity.maximum if hasattr(multiplicity, "maximum") else 1,
+                }
+
+    def add_participant_association(
+        self,
+        association: ParticipantAssociation,
+    ) -> None:
+        """Register inner/outer participant association for call activities."""
+        inner_ref = _id_from_ref(getattr(association, "inner_participant_ref", None))
+        outer_ref = _id_from_ref(getattr(association, "outer_participant_ref", None))
+        if inner_ref and outer_ref:
+            for ctx in self._contexts.values():
+                if inner_ref in ctx.participants:
+                    ctx.participants[inner_ref]["associated_outer"] = outer_ref
+                if outer_ref in ctx.participants:
+                    ctx.participants[outer_ref]["associated_inner"] = inner_ref
+
+    def register_partner_entity(self, entity: PartnerEntity) -> str:
+        """Register a partner entity reference."""
+        entity_id = entity.id
+        for ctx in self._contexts.values():
+            ctx.participants[entity_id] = {
+                "id": entity_id,
+                "name": getattr(entity, "name", None),
+                "type": "partner_entity",
+            }
+        return entity_id
+
+    def register_partner_role(self, role: PartnerRole) -> str:
+        """Register a partner role reference."""
+        role_id = role.id
+        for ctx in self._contexts.values():
+            ctx.participants[role_id] = {
+                "id": role_id,
+                "name": getattr(role, "name", None),
+                "type": "partner_role",
+                "required": getattr(role, "required", False),
+            }
+        return role_id

@@ -127,6 +127,7 @@ class EventType(str, Enum):
     END = "End"
     INTERMEDIATE_CATCH = "IntermediateCatch"
     INTERMEDIATE_THROW = "IntermediateThrow"
+    IMPLICIT_THROW = "ImplicitThrow"
     BOUNDARY = "Boundary"
 
 class LoopType(str, Enum):

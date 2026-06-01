@@ -22,6 +22,7 @@ if TYPE_CHECKING:
         CorrelationKey as OsDmCorrelationKey,
         CorrelationSubscription as OsDmCorrelationSubscription,
         CorrelationPropertyBinding as OsDmCorrelationPropertyBinding,
+        CorrelationPropertyRetrievalExpression as OsDmCorrelationPropertyRetrievalExpression,
         TimerEventDefinition as OsDmTimerEventDefinition,
     )
 

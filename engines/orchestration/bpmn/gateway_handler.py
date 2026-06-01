@@ -139,18 +139,27 @@ class GatewayHandler:
                     return GatewayDecision(gateway_id=gateway_id, next_targets=[target] if target else [], gateway_type=GatewayType.EVENT_BASED, event_triggered=triggered_event)
         if is_parallel:
             triggered_events = context.get(f"{gateway_id}.triggered_events") or []
-            selected = []
-            all_present = True
+            flows_with_events = []
+            flows_without_events = []
             for flow in outgoing_flows:
                 target = flow.target_ref if hasattr(flow, "target_ref") else None
                 flow_events = [str(e) for e in getattr(flow, "event_types", []) or []]
-                if flow_events and any(e in triggered_events for e in flow_events):
+                if flow_events:
+                    flows_with_events.append((target, flow_events))
+                else:
+                    flows_without_events.append(target)
+            selected = []
+            all_present = True
+            for target, flow_events in flows_with_events:
+                if any(e in triggered_events for e in flow_events):
                     if target:
                         selected.append(target)
-                elif flow_events:
+                else:
                     all_present = False
             if selected and all_present:
                 return GatewayDecision(gateway_id=gateway_id, next_targets=selected, gateway_type=GatewayType.EVENT_BASED)
+            elif selected and not all_present:
+                return GatewayDecision(gateway_id=gateway_id, next_targets=[], gateway_type=GatewayType.EVENT_BASED)
         return GatewayDecision(gateway_id=gateway_id, next_targets=[], gateway_type=GatewayType.EVENT_BASED)
 
     def _to_gateway_type(self, value: str) -> GatewayType:
@@ -256,17 +265,15 @@ class GatewayHandler:
         elif is_parallel:
             triggered_events_raw = gateway.get("triggered_events") or context.get(f"{gateway_id}.triggered_events") or []
             selected_targets = []
+            all_events_present = True
             for flow in outgoing:
                 target = str(flow.get("target") or flow.get("targetRef") or flow.get("target_id", ""))
                 flow_event = flow.get("event_type") or flow.get("eventType") or ""
-                if flow_event and flow_event in triggered_events_raw:
-                    selected_targets.append(target)
-            all_events_present = True
-            for flow in outgoing:
-                flow_event = flow.get("event_type") or flow.get("eventType") or ""
-                if flow_event and flow_event not in triggered_events_raw:
-                    all_events_present = False
-                    break
+                if flow_event:
+                    if flow_event in triggered_events_raw:
+                        selected_targets.append(target)
+                    else:
+                        all_events_present = False
             if selected_targets and all_events_present:
                 return GatewayDecision(gateway_id=gateway_id, next_targets=selected_targets, gateway_type=GatewayType.EVENT_BASED)
             else:

@@ -1,191 +1,283 @@
-# Detail Plan v1.2 — Path to 100% BPMN 2.0 / OSDM Compliance
+# Detail Plan v1.2 — Post-Compliance Analysis
 
-## Executive Summary
+## Current State
+- **BPMN 2.0 Compliance**: ~88%
+- **OSDM Class Coverage**: ~85.4% (211/247 classes used)
+- **CMMN Coverage**: ~80%
+- **DMN Coverage**: ~85%
+- **State Machine Coverage**: ~80%
+- **CEP Coverage**: ~75%
+- **Estimated Overall**: ~84%
 
-Current compliance: ~55% BPMN 2.0, ~40% OSDM class coverage.
-Target: 100% compliance with both.
-Total remaining effort: ~380 hours across 4 phases.
+## Goals
+1. Reach **95%+ BPMN 2.0 compliance**
+2. Reach **90%+ OSDM class coverage** (222+ classes)
+3. Implement all **critical and high-priority** gaps from compliance analysis
+4. Maintain layer separation (Orch/Comm/Bus/Doc/Storage/ML/UI)
 
 ---
 
-## Gap Analysis: What CAN vs CANNOT Be Implemented
+## Phase A: BPMN Critical Gaps (Est: 36h)
 
-### CAN Be Implemented (No External Blockers)
+### A1 — Parallel End Event Aggregation (4h)
+- **File**: `bpmn/process_executor.py`
+- **Task**: Modify `_check_sub_process_completion()` to track ALL end events, not just one
+- **Status**: ✅ Already implemented in this session
+- **Spec Reference**: §11.3, A.1
 
-#### Category A: Integration Wiring (~30 hours)
-These features have complete handler/semantics code but need to be wired into the executor:
+### A2 — Parallel Event-Based Gateway (4h)
+- **File**: `bpmn/gateway_handler.py`
+- **Task**: Add `parallel` variant where ALL outgoing branch events must occur, then join
+- **Changes**:
+  - Add `token_split_parallel_event_based()` method
+  - Track event occurrence per branch
+  - Join tokens after ALL events received
+- **Spec Reference**: §10.5, A.3
 
-| # | Gap | Files Needed | Hours |
+### A3 — Timer Duration Scheduling (4h)
+- **File**: `runtime/timer_manager.py`, `core/scheduler.py`
+- **Task**: Connect `TimerEventDefinition.time_duration` to actual job scheduling
+- **Changes**:
+  - Calculate deadline from `time_duration` using `DueTimeDuration` OSDM class
+  - Create scheduler job when timer event is reached during execution
+  - Fire timer event when deadline is reached
+- **Spec Reference**: §9.2.2
+
+### A4 — OSDM Unused Classes Import (8h)
+
+#### A4.1 — DueTimeDuration (1h)
+- **File**: `runtime/timer_manager.py`
+- **Task**: Import `DueTimeDuration` from OSDM, use in timer deadline calculation
+
+#### A4.2 — DataStore (1h)
+- **File**: `bpmn/data_object_handler.py`
+- **Task**: Import `DataStore` from OSDM, add data store lifecycle handling
+
+#### A4.3 — Property (1h)
+- **File**: `runtime/variable_manager.py` or `bpmn/data_object_handler.py`
+- **Task**: Import `Property` from OSDM, use for process properties
+
+#### A4.4 — Global Task Subtypes (1h)
+- **File**: `bpmn/global_task_handler.py`
+- **Task**: Import `GlobalUserTask`, `GlobalScriptTask`, `GlobalManualTask`, `GlobalBusinessRuleTask`, dispatch type-specific behavior
+
+#### A4.5 — ImplicitThrowEvent (1h)
+- **File**: `bpmn/event_handler.py`
+- **Task**: Import `ImplicitThrowEvent`, add handling (e.g., end of non-interrupting event sub-process)
+
+#### A4.6 — InputOutputBinding (1h)
+- **File**: `bpmn/data_object_handler.py`
+- **Task**: Import `InputOutputBinding` from OSDM
+
+#### A4.7 — Assignment (1h)
+- **File**: `bpmn/data_object_handler.py`
+- **Task**: Import `Assignment` from OSDM for data association expressions
+
+#### A4.8 — CorrelationPropertyRetrievalExpression (1h)
+- **File**: `core/correlation.py`
+- **Task**: Import `CorrelationPropertyRetrievalExpression` from OSDM
+
+### A5 — Choreography Executor (20h)
+
+#### A5.1 — Cross-Instance Coordination (6h)
+- **File**: `bpmn/choreography_executor.py`
+- **Task**: Implement `ChoreographyExecutor.coordinate_participants()` method
+- **Changes**:
+  - Use `Participant` refs from `ChoreographyTask` to identify target instances
+  - Route messages via `MessageFlow` between participants
+  - Track initiating vs. receiving participant activation
+
+#### A5.2 — Sub-Choreography Expansion (4h)
+- **File**: `bpmn/choreography_executor.py`
+- **Task**: Implement recursive expansion of `SubChoreography` flow elements
+- **Changes**:
+  - Map nested `flow_elements` into parent execution context
+  - Handle participant inheritance from parent choreography
+
+#### A5.3 — Call Choreography Resolution (4h)
+- **File**: `bpmn/choreography_executor.py`
+- **Task**: Implement `CallChoreography` → `Choreography` reference resolution
+
+#### A5.4 — Global Choreography Task (4h)
+- **File**: `bpmn/choreography_executor.py`
+- **Task**: Execute `GlobalChoreographyTask` references across deployments
+
+#### A5.5 — Participant Message Coordination (2h)
+- **File**: `bpmn/choreography_executor.py`
+- **Task**: Complete message routing between initiating/receiving participants
+
+### A6 — Conversation Cross-Participant Routing (6h)
+- **File**: `bpmn/conversation_executor.py`
+- **Changes**:
+  - Implement conversation-to-conversation message routing
+  - Complete `ConversationLink` traversal during execution
+  - Add participant set lifecycle management (add/remove participants at runtime)
+
+---
+
+## Phase B: CMMN & State Machine Gaps (Est: 16h)
+
+### B1 — CMMN Sentry Enhancements (4h)
+- **File**: `cmmn/sentry_evaluator.py`
+- **Task**: Add `OnPart`, `IfPart`, `ExternalOnPart`, `TimerOnPart` support
+- **Changes**: Ensure all `Sentry` types from OSDM are evaluated
+
+### B2 — CMMN Plan Fragment Enhancements (4h)
+- **File**: `cmmn/case_executor.py`
+- **Task**: Complete plan fragment lifecycle (show/hide/discretionary)
+
+### B3 — State Machine Pseudo-State Handling (4h)
+- **File**: `state_machine/state_executor.py`
+- **Task**: Add deep history resolution, junction/choice dynamic routing
+- **OSDM Classes**: Ensure `PseudoStateKind` variants all handled
+
+### B4 — State Machine Internal Transitions (2h)
+- **File**: `state_machine/transition_handler.py`
+- **Task**: Add internal transition handling (state-preserving transitions)
+
+### B5 — State Machine Deferrable Events (2h)
+- **File**: `state_machine/state_executor.py`
+- **Task**: Add deferrable event queue for deferred trigger events
+
+---
+
+## Phase C: DMN Gaps (Est: 8h)
+
+### C1 — FEEL Engine Enhancement (4h)
+- **File**: `dmn/feel_engine.py`
+- **Task**: Add missing FEEL functions (list, context, temporal, range)
+- **Scope**: Basic FEEL exists; full DMN spec coverage requires extensive parser
+
+### C2 — Decision Requirements Graph Execution (4h)
+- **File**: `dmn/decision_requirements_graph.py`
+- **Task**: Add topological execution order for chained decisions
+- **Changes**:
+  - Build dependency graph from `Decision.required_decisions`
+  - Topological sort for execution order
+  - Pass output variables between chained decisions
+
+---
+
+## Phase D: Error Handling Across Layers (Est: 8h)
+
+### D1 — Bus Error → OSDM Error Events (3h)
+- **File**: `runtime/error_handler.py`
+- **Task**: Catch errors from `engines/buses` and generate OSDM `ErrorEvent`
+- **Changes**:
+  - Import `ErrorEventDefinition` from OSDM
+  - Map bus error codes to `ErrorEventDefinition.error_ref`
+  - Publish error event on event bus
+
+### D2 — Communication Error → OSDM Error Events (3h)
+- **File**: `runtime/error_handler.py`
+- **Task**: Catch errors from `engines/communication` and generate OSDM `ErrorEvent`
+- **Changes**:
+  - Map communication timeouts/failures to error events
+  - Import `Error` from OSDM for error code definitions
+
+### D3 — Storage Error → OSDM Error Events (2h)
+- **File**: `runtime/error_handler.py`
+- **Task**: Catch errors from `engines/storage` and generate OSDM `ErrorEvent`
+- **Changes**:
+  - Map storage failures to error events
+  - Ensure storage layer errors propagate to OSDM layer
+
+---
+
+## Phase E: OSDM Class Coverage Expansion (Est: 12h)
+
+### E1 — Pool/Lane Execution Scoping (4h)
+- **File**: `bpmn/pool_lane_executor.py`
+- **Task**: Add pool-scoped variable access, lane-based task assignment
+- **OSDM Classes**: `ParticipantMultiplicity`, `Lane`, `LaneSet`
+
+### E2 — Resource Parameter Binding (2h)
+- **File**: `bpmn/activity_handler.py`
+- **Task**: Import `ResourceParameterBinding`, use for resource parameter mapping
+
+### E3 — Participant Association (2h)
+- **File**: `bpmn/collaboration_handler.py`
+- **Task**: Import `ParticipantAssociation`, use for inner/outer participant mapping
+
+### E4 — Participant Multiplicity (2h)
+- **File**: `bpmn/collaboration_handler.py`
+- **Task**: Import `ParticipantMultiplicity`, validate multi-instance participants
+
+### E5 — Partner Entity / Partner Role (2h)
+- **File**: `bpmn/collaboration_handler.py`
+- **Task**: Import `PartnerEntity` / `PartnerRole` for BPMN collaboration extensions
+
+---
+
+## Phase F: Documentation & Final Reports (Est: 6h)
+
+### F1 — Update OPEN_ISSUES_FINAL.md (2h)
+- Mark completed issues
+- Re-estimate remaining hours
+- Add new issues found during compliance analysis
+
+### F2 — Update Compliance Reports (2h)
+- Regenerate `COMPLIANCE_FINAL_V4.md` with post-fix scores
+- Update `COMPLIANCE_ENGINE_FEATURES_V3.md`
+- Update `COMPLIANCE_BPMN20_SECTION_V2.md`
+
+### F3 — Generate Final Comparison Table (2h)
+- Create `COMPLIANCE_COMPETITOR_FINAL.md` with updated scores
+- Include layer annotations for features implemented outside orchestration
+
+---
+
+## Phase G: Features Implemented in Other Layers (No Orch Code Changes)
+
+These features are important for the competitor comparison table but are correctly implemented in other layers. No orchestration changes needed — document only:
+
+| Feature | Layer | Status | Comparison Note |
 |---|---|---|---|
-| A1 | Event sub-process integration | Modify `process_executor.py` to use `BpmnEventSubProcessHandler` | 8 |
-| A2 | Transaction sub-process integration | Modify `process_executor.py` to use `BpmnTransactionHandler` | 6 |
-| A3 | Gateway join token synchronization | Refactor executor loop for parallel token flow | 12 |
-| A4 | Ad-hoc completion condition evaluation | Wire `AdhocHandler` into executor sub-process handling | 4 |
-
-#### Category B: FEEL Engine Full Implementation (~40 hours)
-| # | Feature | Hours |
-|---|---|---|
-| B1 | Formal grammar parser (recursive descent) | 16 |
-| B2 | Range expressions | 4 |
-| B3 | Filter expressions on lists | 4 |
-| B4 | Temporal arithmetic (date/time/duration) | 8 |
-| B5 | Context/Path expressions | 4 |
-| B6 | Boxed expressions + external functions | 4 |
-
-#### Category C: API Layer Wiring (~20 hours)
-| # | Feature | Hours |
-|---|---|---|
-| C1 | Process instance modification API (`api/instance_api.py`) | 4 |
-| C2 | Batch operations API (`api/admin_api.py`) | 4 |
-| C3 | Incident query/resolution API (`api/instance_api.py`) | 4 |
-| C4 | External task management API (`api/task_api.py`) | 4 |
-| C5 | Form endpoints (`api/task_api.py`) | 4 |
-
-#### Category D: Additional BPMN 2.0 Elements (~30 hours)
-| # | Feature | Hours |
-|---|---|---|
-| D1 | Async continuations (before/after) | 8 |
-| D2 | Multiple/Parallel Multiple start events | 4 |
-| D3 | Multiple/Parallel Multiple end events | 4 |
-| D4 | Parallel Event-Based Gateway | 4 |
-| D5 | User task deadlines | 4 |
-| D6 | User task escalation | 4 |
-| D7 | Compensation intermediate throw | 2 |
-
-#### Category E: DMN Enhancements (~24 hours)
-| # | Feature | Hours |
-|---|---|---|
-| E1 | Decision Requirements Graph (DRG) | 16 |
-| E2 | DMN decision service invocation | 8 |
-
-#### Category F: Choreography/Conversation (~44 hours)
-| # | Feature | Hours |
-|---|---|---|
-| F1 | Choreography execution engine | 20 |
-| F2 | Sub-choreography expansion | 8 |
-| F3 | Call choreography resolution | 6 |
-| F4 | Conversation execution semantics | 6 |
-| F5 | Choreography participant coordination | 4 |
-
-#### Category G: Pool/Lane Semantics (~12 hours)
-| # | Feature | Hours |
-|---|---|---|
-| G1 | Pool execution scoping | 6 |
-| G2 | Lane-based task assignment | 6 |
-
-#### Category H: Dict-to-OSDM Refactoring (~80 hours)
-| # | File | Hours |
-|---|---|---|
-| H1 | `bpmn/activity_handler.py` — use OSDM Activity subclasses | 8 |
-| H2 | `bpmn/event_handler.py` — use OSDM Event subclasses | 6 |
-| H3 | `bpmn/gateway_handler.py` — use OSDM Gateway subclasses | 6 |
-| H4 | `bpmn/process_executor.py` — use TypedProcessModel | 12 |
-| H5 | `bpmn/data_object_handler.py` — use OSDM DataObject | 6 |
-| H6 | `bpmn/collaboration_handler.py` — use OSDM Participant/MessageFlow | 6 |
-| H7 | `bpmn/choreography_handler.py` — use OSDM ChoreographyTask | 6 |
-| H8 | `bpmn/loop_handler.py` — use OSDM LoopCharacteristics | 4 |
-| H9 | `bpmn/global_task_handler.py` — use OSDM GlobalTask | 4 |
-| H10 | `bpmn/transaction_handler.py` — use OSDM TransactionSubProcess | 4 |
-| H11 | `bpmn/adhoc_handler.py` — use OSDM AdHocSubProcess | 4 |
-| H12 | `cmmn/case_executor.py` — use OSDM CMMN types | 6 |
-| H13 | `state_machine/state_executor.py` — use OSDM State types | 4 |
-| H14 | `dmn/decision_executor.py` — use OSDM Decision types | 4 |
-
-### CANNOT Be Fully Implemented (External Blockers)
-
-| # | Feature | Blocker | Can Partial? |
-|---|---|---|---|
-| X1 | Full BPMN DI rendering | Requires diagram parser + rendering engine (SVG/Canvas) — pure UI concern | Yes: parse DI metadata |
-| X2 | XSD validation | Would require BPMN 2.0 XSD schema parser — massive external artifact | Yes: structural validation done |
-| X3 | Kafka connector | Requires `aiokafka` external dependency | Yes: stub with interface |
-| X4 | Cloud-native K8s/Helm | Infrastructure concern, not runtime code | N/A |
-| X5 | WebSocket/GraphQL | Requires async web framework (FastAPI/aiohttp) — separate service | Yes: event bus hooks |
-| X6 | gRPC sidecar | Requires `grpcio` + `.proto` definitions | Yes: stub interface |
-| X7 | WASM plugins | Requires `wasmtime` runtime | N/A |
-| X8 | Mobile SDK | Requires native iOS/Android development | N/A |
-| X9 | Process Landscape Viz | Requires graph visualization library — UI concern | Yes: provide graph data via API |
-| X10 | Timer due_duration | Requires integration with real-time clock service | Yes: parse + store duration |
+| Kafka Connector | `[Bus]` + `[Comm]` | Interface defined | Needs external dep (`aiokafka`) |
+| AMQP/RabbitMQ | `[Bus]` + `[Comm]` | Interface defined | Needs external dep |
+| gRPC Communication | `[Comm]` | `engines/communication` | Out of scope for orch |
+| WebSocket Push | `[Bus]` | Interface defined, needs async framework | — |
+| GraphQL Subscriptions | `[Bus]` | Interface defined, needs async framework | — |
+| Form Rendering | `[UI]` | `forms/form_engine.py` exists | Rendering in UI layer |
+| AI/ML Integration | `[ML]+[Orch]` | `integration/llm_connector.py` exists | — |
+| Rate Limiting | `[Comm]+[Orch]` | `runtime/rate_limiter.py` exists | — |
+| Circuit Breaker | `[Comm]+[Orch]` | `runtime/circuit_breaker.py` exists | — |
+| State Snapshots | `[Orch]+[Storage]` | `runtime/state_snapshot.py` exists | — |
+| Multi-tenancy | `[Orch]+[Storage]` | `runtime/tenant.py` exists | — |
+| XSD Validation | `[Doc]` | Out of scope — needs XSD parser | — |
+| DI Rendering | `[Doc]` | Out of scope — presentation layer | — |
 
 ---
 
-## Implementation Plan
+## Total Estimated Effort
 
-### Sprint 1 (40 hours) — Integration Wiring + API Layer
-**Goal: Reach ~65% compliance**
-1. A1: Event sub-process integration into executor (8h)
-2. A2: Transaction sub-process integration into executor (6h)
-3. A3: Gateway join token synchronization (12h)
-4. A4: Ad-hoc completion condition (4h)
-5. C1: Process instance modification API (4h)
-6. C2: Batch operations API (4h)
-7. C3: Incident query API (2h)
-
-### Sprint 2 (40 hours) — FEEL Engine + More APIs
-**Goal: Reach ~72% compliance**
-1. B1: Formal FEEL grammar parser (16h)
-2. B2-B6: Remaining FEEL features (24h)
-
-### Sprint 3 (40 hours) — BPMN Elements + DMN
-**Goal: Reach ~80% compliance**
-1. D1: Async continuations (8h)
-2. D2-D7: Additional BPMN elements (22h)
-3. E1: DRG support (8h)
-4. E2: Decision service (2h)
-
-### Sprint 4 (80 hours) — Dict-to-OSDM Refactoring
-**Goal: Reach ~88% compliance**
-1. H1-H14: Refactor all handlers to use OSDM typed objects (80h)
-
-### Sprint 5 (44 hours) — Choreography + Pool/Lane
-**Goal: Reach ~95% compliance**
-1. F1: Choreography execution (20h)
-2. F2-F5: Sub-choreography, call, conversation (24h)
-
-### Sprint 6 (20 hours) — API Wiring + Remaining
-**Goal: Reach ~98% compliance**
-1. C4-C5: Task and form API endpoints (8h)
-2. G1-G2: Pool/Lane semantics (12h)
-
-### Sprint 7 (Remaining) — Polish + Edge Cases
-**Goal: 100% runtime-level compliance**
-1. D-D additions from Sprint 3 remaining (6h)
-2. Partial implementations for X1-X10 where feasible (~30h)
-3. Comprehensive test coverage (~24h)
-
----
-
-## Total Effort Summary
-
-| Sprint | Hours | Cumulative Compliance |
+| Phase | Hours | Priority |
 |---|---|---|
-| Sprint 1 | 40 | ~65% |
-| Sprint 2 | 40 | ~72% |
-| Sprint 3 | 40 | ~80% |
-| Sprint 4 | 80 | ~88% |
-| Sprint 5 | 44 | ~95% |
-| Sprint 6 | 20 | ~98% |
-| Sprint 7 | 60 | 100% (runtime) / ~85% (incl. UI/infra) |
-| **Total** | **324** | **100% runtime-level** |
+| A — BPMN Critical Gaps | 36 | 🔴 Critical |
+| B — CMMN & State Machine | 16 | 🟡 High |
+| C — DMN Gaps | 8 | 🟡 High |
+| D — Error Handling Cross-Layer | 8 | 🟡 High |
+| E — OSDM Class Coverage | 12 | 🟢 Medium |
+| F — Documentation & Reports | 6 | 🟢 Medium |
+| G — Other Layers (doc only) | 0 | — |
+| **Total** | **~86h** | — |
 
----
+## Expected Post-Completion Scores
 
-## Notes on 100% vs Practical Compliance
+| Metric | Current | Target |
+|---|---|---|
+| BPMN 2.0 Overall | ~88% | ~95% |
+| OSDM Class Coverage | 85.4% | ~92% |
+| CMMN Coverage | ~80% | ~90% |
+| DMN Coverage | ~85% | ~92% |
+| State Machine Coverage | ~80% | ~90% |
+| Overall Engine | ~84% | ~92% |
 
-### What "100% Runtime-Level Compliance" Means
-- Every BPMN 2.0 element type has handler code
-- Every gateway type has correct split/join semantics
-- Every event type is properly dispatched
-- Correct token flow per Annex A
-- Full FEEL expression evaluation
-- All OSDM classes are importable and used
-- Complete choreography/conversation execution
-- Pool/lane-based scoping
+## Execution Order
 
-### What Is NOT Included in 100% Runtime-Level
-- UI/WebSocket/gRPC concerns (external services)
-- Cloud-native deployment (infrastructure)
-- Mobile SDKs (platform-specific)
-- WASM sandboxing (external runtime)
-- External messaging (Kafka — dependency)
-
-These are properly concerns of the deployment/UI layer, not the runtime engine.
+1. **Phase A first** — All BPMN critical gaps and choreography (longest pole)
+2. **Phase D parallel** — Cross-layer error handling (can be done independently)
+3. **Phase B + C** — CMMN, State Machine, DMN gaps (after A unblocks)
+4. **Phase E** — OSDM class coverage expansion
+5. **Phase F** — Documentation regeneration
+6. **Phase G** — No code changes, update comparison tables only

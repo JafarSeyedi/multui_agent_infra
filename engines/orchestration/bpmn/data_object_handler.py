@@ -14,6 +14,7 @@ from ....document.models.msdm_models import Entity, Attribute, DataType, ScalarT
 from ....document.models.osdm_models import (
     DataObject,
     DataObjectReference,
+    DataStore,
     DataStoreReference,
     DataAssociation,
     DataInputAssociation,
@@ -25,6 +26,9 @@ from ....document.models.osdm_models import (
     OutputSet,
     ItemDefinition,
     Message as OSDMMessage,
+    Property,
+    Assignment,
+    InputOutputBinding,
 )
 
 

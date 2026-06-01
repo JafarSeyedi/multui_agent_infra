@@ -748,23 +748,32 @@ class BPMNProcessExecutor:
         self, instance: ProcessInstance, ctx: _SubProcessContext, model: ProcessModel,
         typed_model: TypedProcessModel | None = None,
     ) -> bool:
-        end_events_reached = False
+        """Check if all end events in a sub-process are completed for proper parallel completion."""
+        end_events = []
+        
+        # Collect end events from dict-based model
         for activity in model.activities:
             atype = str(activity.get("type", "")).lower()
             if "endevent" in atype:
                 parent_id = activity.get("payload", {}).get("parentSubProcessId")
                 if parent_id == ctx.sub_process_id:
-                    status = instance.get_variable(f"activity.{activity.get('id')}.status")
-                    if status == "completed":
-                        end_events_reached = True
-                        break
-        if not end_events_reached and typed_model:
+                    end_events.append(activity.get('id'))
+        
+        # Collect end events from OSDM-typed model
+        if typed_model:
             node = typed_model.get_node(ctx.sub_process_id)
             if isinstance(node, SubProcess) and node.flow_elements:
                 for eid, elem in node.flow_elements.items():
                     if isinstance(elem, EndEvent):
-                        status = instance.get_variable(f"activity.{eid}.status")
-                        if status == "completed":
-                            end_events_reached = True
-                            break
-        return end_events_reached
+                        if eid not in end_events:  # Avoid duplicates
+                            end_events.append(eid)
+        
+        # For parallel completion: require ALL end events to be completed
+        if end_events:
+            completed_count = sum(
+                1 for eid in end_events 
+                if instance.get_variable(f"activity.{eid}.status") == "completed"
+            )
+            return completed_count == len(end_events)
+        
+        return False

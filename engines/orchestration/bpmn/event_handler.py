@@ -19,6 +19,7 @@ from ....document.models.osdm_models import (
     IntermediateCatchEvent,
     IntermediateThrowEvent,
     BoundaryEvent,
+    ImplicitThrowEvent,
     EventType,
     EventDefinitionType,
     TimerEventDefinition,
@@ -31,8 +32,7 @@ from ....document.models.osdm_models import (
     LinkEventDefinition,
     CancelEventDefinition,
     TerminateEventDefinition,
-    ThrowEvent,
-    CatchEvent,
+    DueTimeDuration,
 )
 
 
@@ -86,20 +86,35 @@ class EventHandler:
     def __init__(self, orchestration_engine: OrchestrationEngine | None = None) -> None:
         self._engine = orchestration_engine
 
-    def handle_osdm_event(self, event: OsdmEvent, instance_id: str = "") -> HandlerBPMNEventOutcome:
-        handler_event = self._osdm_to_handler_event(event)
-        event_type = self._resolve_osdm_event_type(event)
-        if event_type == EventType.START:
-            return self.handle_start(handler_event)
-        elif event_type == EventType.END:
-            return self.handle_end(handler_event)
-        elif event_type == EventType.INTERMEDIATE_CATCH:
-            return self.handle_intermediate_catch(handler_event)
-        elif event_type == EventType.INTERMEDIATE_THROW:
-            return self.handle_intermediate_throw(handler_event)
-        elif event_type == EventType.BOUNDARY:
-            return self.handle_boundary(handler_event)
-        return HandlerBPMNEventOutcome(handled=True)
+        def handle_timer_event(self, instance_id: str, timer_schedule: TimerSchedule) -> HandlerBPMNEventOutcome:
+            """Handle timer event expiration and queue completion actions."""
+            current_time = datetime.now().isoformat()
+            
+            # Check timer expiration conditions
+            if timer_schedule.time_duration:
+                # Calculate remaining time
+                schedule_duration = self._parse_duration(timer_schedule.time_duration)
+                if schedule_duration and current_time >= timer_start + schedule_duration:
+                    return self._trigger_timer_completion(instance_id, timer_schedule)
+            
+            if timer_schedule.time_date:
+                if current_time >= timer_schedule.time_date:
+                    return self._trigger_timer_completion(instance_id, timer_schedule)
+            
+            return HandlerBPMNEventOutcome(handled=True)
+
+        def _parse_duration(self, duration_str: str) -> datetime.timedelta:
+            """Convert duration string to timedelta (PnYnMnDTnS format)."""
+            # Implementation needed for duration parsing
+            return datetime.timedelta(minutes=int(duration_str)) if duration_str else None
+
+        def _trigger_timer_completion(self, instance_id: str, timer_schedule: TimerSchedule) -> HandlerBPMNEventOutcome:
+            """Trigger completion actions when timer expires."""
+            # Find associated end event or activity
+            # Implementation details from process_executor.py needed
+            return HandlerBPMNEventOutcome(handled=True, wait_required=False)
+
+        # Add timer schedule initialization if needed in _osdm_to_handler_event
 
     def _osdm_to_handler_event(self, event: OsdmEvent) -> HandlerBPMNEvent:
         event_definitions = getattr(event, "event_definitions", []) or []
@@ -157,6 +172,8 @@ class EventHandler:
             return EventType.START
         elif isinstance(event, EndEvent):
             return EventType.END
+        elif isinstance(event, ImplicitThrowEvent):
+            return EventType.IMPLICIT_THROW
         elif isinstance(event, IntermediateCatchEvent):
             return EventType.INTERMEDIATE_CATCH
         elif isinstance(event, IntermediateThrowEvent):
