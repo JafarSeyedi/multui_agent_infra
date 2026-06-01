@@ -1368,6 +1368,63 @@ class DMNDefinition:
     input_data: list[InputData] = field(default_factory=list)
     knowledge_sources: list[KnowledgeSource] = field(default_factory=list)
 
+
+# ── DMN 1.3 Boxed Expressions (§8.5) ────────────────────────────────
+@dataclass
+class Binding:
+    """DMN invocation binding — maps formal parameter to actual expression."""
+    parameter: str = ""
+    expression: str | None = None
+    formal_parameter: str | None = None
+
+
+@dataclass
+class Invocation:
+    """DMN invocation expression (§8.4) — calls a decision or BKM."""
+    called_element_ref: str = ""
+    called_element_type: str = ""  # "decision" or "bkm"
+    bindings: list[Binding] = field(default_factory=list)
+    expression_id: str = ""
+
+
+@dataclass
+class ContextEntry:
+    """Single entry in a DMN context expression."""
+    key: str = ""
+    value_expression: str | None = None
+    variable_name: str | None = None
+
+
+@dataclass
+class Context:
+    """DMN context expression (§8.5.1) — key-value map of evaluations."""
+    entries: list[ContextEntry] = field(default_factory=list)
+    result_type: str = "string"
+
+
+@dataclass
+class Relation:
+    """DMN relation expression (§8.5.2) — table of column-based rows."""
+    columns: list[str] = field(default_factory=list)
+    rows: list[list[str]] = field(default_factory=list)
+    result_type: str = "list"
+
+
+@dataclass
+class FormalParameter:
+    """Formal parameter for function definition."""
+    name: str = ""
+    type_ref: str = "string"
+
+
+@dataclass
+class FunctionDefinition:
+    """DMN function definition (§8.5.3) — reusable FEEL function."""
+    formal_parameters: list[FormalParameter] = field(default_factory=list)
+    body_expression: str | None = None
+    result_type: str = "string"
+
+
 # ── Cloud‑native extensions for AWS Step Functions / Azure Logic Apps ─
 class ErrorHandlingOperator(str, Enum):
     EQUALS = "Equals"

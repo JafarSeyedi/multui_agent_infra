@@ -22,6 +22,13 @@ from ....document.models.osdm_models import (
     LiteralExpression,
     UnaryTests,
     FormalExpression,
+    Context,
+    ContextEntry,
+    Relation,
+    FunctionDefinition,
+    FormalParameter,
+    Invocation,
+    Binding,
 )
 from .decision_table_evaluator import DecisionTableEvaluator
 from .literal_expression_eval import LiteralExpressionEvaluator
@@ -315,3 +322,93 @@ class DecisionExecutor:
 
     def get_cache_results(self) -> dict[str, DecisionResult]:
         return dict(self._decision_cache)
+
+    # ── Boxed Expression Evaluation (DMN 1.3 §8.5) ────────────────────
+
+    def evaluate_context(self, context: Context, variables: dict[str, Any]) -> dict[str, Any]:
+        """Evaluate a DMN context expression (§8.5.1).
+        Each entry is evaluated in sequence, with previous entries in scope."""
+        result = {}
+        eval_context = dict(variables)
+        for entry in context.entries:
+            if entry.value_expression:
+                value = self._feel.evaluate(entry.value_expression, eval_context)
+            else:
+                value = None
+            key = entry.key or entry.variable_name or f"entry_{len(result)}"
+            result[key] = value
+            eval_context[key] = value
+        return result
+
+    def evaluate_relation(self, relation: Relation, variables: dict[str, Any]) -> list[dict[str, Any]]:
+        """Evaluate a DMN relation expression (§8.5.2).
+        Each row is evaluated as a set of column values."""
+        results = []
+        for row in relation.rows:
+            row_result = {}
+            for i, col_name in enumerate(relation.columns):
+                if i < len(row):
+                    try:
+                        row_result[col_name] = self._feel.evaluate(row[i], variables)
+                    except Exception:
+                        row_result[col_name] = row[i]
+            results.append(row_result)
+        return results
+
+    def evaluate_function_definition(
+        self, func_def: FunctionDefinition, arguments: list[Any], variables: dict[str, Any],
+    ) -> Any:
+        """Evaluate a DMN function definition (§8.5.3).
+        Bind formal parameters to actual arguments, evaluate body."""
+        if not func_def.body_expression:
+            return None
+        bound_context = dict(variables)
+        for i, param in enumerate(func_def.formal_parameters):
+            if i < len(arguments):
+                bound_context[param.name] = arguments[i]
+            elif i < len(arguments) is False:
+                bound_context[param.name] = None
+        return self._feel.evaluate(func_def.body_expression, bound_context)
+
+    def evaluate_invocation(
+        self, invocation: Invocation, variables: dict[str, Any],
+    ) -> Any:
+        """Evaluate a DMN invocation expression (§8.4).
+        Bind actual parameters and call the referenced decision or BKM."""
+        # Evaluate binding expressions
+        bound_vars = dict(variables)
+        for binding in invocation.bindings:
+            param_name = binding.parameter or binding.formal_parameter
+            if param_name and binding.expression:
+                bound_vars[param_name] = self._feel.evaluate(binding.expression, variables)
+        # Delegate to the appropriate handler
+        if invocation.called_element_type == "bkm":
+            return self._invocation_handler.resolve_called_element(
+                invocation.called_element_ref, bound_vars, called_type="bkm",
+            )
+        else:
+            decision_id = invocation.called_element_ref
+            if decision_id in self._decision_cache:
+                return self._decision_cache[decision_id].result
+            return self._invocation_handler.resolve_called_element(
+                decision_id, bound_vars, called_type="decision",
+            )
+
+    def _evaluate_boxed_expression( self, expression: Any, variables: dict[str, Any],
+    ) -> Any:
+        """Dispatch to the appropriate boxed expression evaluator."""
+        if isinstance(expression, DecisionTable):
+            return self.evaluate_table(expression, variables)
+        elif isinstance(expression, LiteralExpression):
+            return self._literal_eval.evaluate(expression, variables)
+        elif isinstance(expression, Context):
+            return self.evaluate_context(expression, variables)
+        elif isinstance(expression, Relation):
+            return self.evaluate_relation(expression, variables)
+        elif isinstance(expression, Invocation):
+            return self.evaluate_invocation(expression, variables)
+        elif isinstance(expression, FunctionDefinition):
+            return self.evaluate_function_definition(expression, [], variables)
+        elif isinstance(expression, str):
+            return self._feel.evaluate(expression, variables)
+        return expression

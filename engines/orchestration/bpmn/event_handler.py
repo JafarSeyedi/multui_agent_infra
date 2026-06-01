@@ -321,6 +321,8 @@ class EventHandler:
             return self.handle_start(event)
         elif event_type == EventType.END:
             return self.handle_end(event)
+        elif event_type == EventType.IMPLICIT_THROW:
+            return self.handle_implicit_throw(event)
         elif event_type == EventType.INTERMEDIATE_CATCH:
             return self.handle_intermediate_catch(event)
         elif event_type == EventType.INTERMEDIATE_THROW:
@@ -328,6 +330,19 @@ class EventHandler:
         elif event_type == EventType.BOUNDARY:
             return self.handle_boundary(event)
         return HandlerBPMNEventOutcome(handled=True)
+
+    def handle_implicit_throw(self, event: HandlerBPMNEvent) -> HandlerBPMNEventOutcome:
+        """Handle ImplicitThrowEvent — intermediate events inside sub-processes
+        that are neither start nor end. Dispatches to the appropriate handler
+        based on event definition type (message, signal, escalation, etc.)."""
+        def_type = event.event_definition_type
+        if def_type == EventDefinitionType.LINK:
+            return HandlerBPMNEventOutcome(handled=True, link_navigation=event.link_source)
+        elif def_type == EventDefinitionType.ESCALATION:
+            return HandlerBPMNEventOutcome(handled=True, escalation_raised=event.escalation_code)
+        elif def_type == EventDefinitionType.COMPENSATION:
+            return HandlerBPMNEventOutcome(handled=True, compensation_triggered=event.payload.get("activity_ref"))
+        return self.handle_intermediate_throw(event)
 
     def start(self, event: HandlerBPMNEvent) -> HandlerBPMNEventOutcome:
         return self.handle_start(event)

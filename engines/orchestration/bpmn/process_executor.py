@@ -142,6 +142,8 @@ class BPMNProcessExecutor:
         visited: set[str] = set()
         guard_steps = 0
         active_tokens: dict[str, Token] = {token.token_id: token}
+        # Track activated branches from inclusive gateway forks for proper join semantics
+        activated_branches: dict[str, set[str]] = {}
 
         while current and guard_steps < 200:
             guard_steps += 1
@@ -215,9 +217,21 @@ class BPMNProcessExecutor:
             next_nodes = self._compute_next(current, model, typed_model)
 
             if not next_nodes:
+                # End event reached — complete tokens at this node
                 for t in tokens_at_node:
                     t.complete()
                 await self._persist_tokens(active_tokens)
+                # Parallel end event aggregation: check if ALL active tokens are completed
+                remaining_active = [t for t in active_tokens.values() if t.state == TokenState.ACTIVE]
+                if not remaining_active:
+                    # All tokens completed — process is done
+                    if sub_process_stack:
+                        # We're inside a sub-process; let the parent handle completion
+                        pass
+                    else:
+                        # Top-level process completion
+                        return ProcessExecutionOutcome(completed=True)
+                # Some tokens still active — continue the loop (they're on other branches)
                 if sub_process_stack:
                     ctx = sub_process_stack[-1]
                     if ctx.is_adhoc:
@@ -225,6 +239,12 @@ class BPMNProcessExecutor:
                             sub_process_stack.pop()
                     elif self._check_sub_process_completion(instance, ctx, model, typed_model):
                         sub_process_stack.pop()
+                # Find the next active token to continue execution
+                next_active = [t for t in active_tokens.values() if t.state == TokenState.ACTIVE]
+                if next_active:
+                    current = next_active[0].current_element_id
+                else:
+                    current = None
                 continue
 
             gateway_type = self._classify_gateway_typed(current, typed_model)
@@ -241,11 +261,26 @@ class BPMNProcessExecutor:
                         active_tokens[new_token.token_id] = new_token
                 await self._persist_tokens(active_tokens)
                 current = next_nodes[0] if next_nodes else None
-            elif gateway_type in ("exclusive", "inclusive"):
+            elif gateway_type == "inclusive":
                 if len(next_nodes) > 1:
                     selected = self._evaluate_gateway_split_typed(current, next_nodes, instance.get_all_variables(), gateway_type, typed_model)
                 else:
-                    selected = next_nodes
+                    selected = next_nodes if next_nodes else []
+                # Track activated branches for inclusive join semantics
+                if current and selected and len(selected) > 1:
+                    activated_branches[current] = set(selected)
+                elif current and selected and len(selected) == 1:
+                    activated_branches[current] = set(selected)
+                for t in tokens_at_node:
+                    if selected:
+                        t.move_to(selected[0], "flow")
+                await self._persist_tokens(active_tokens)
+                current = selected[0] if selected else None
+            elif gateway_type in ("exclusive",):
+                if len(next_nodes) > 1:
+                    selected = self._evaluate_gateway_split_typed(current, next_nodes, instance.get_all_variables(), gateway_type, typed_model)
+                else:
+                    selected = next_nodes if next_nodes else []
                 for t in tokens_at_node:
                     if selected:
                         t.move_to(selected[0], "flow")
@@ -263,10 +298,24 @@ class BPMNProcessExecutor:
                 if converging:
                     arrived = [t for t in active_tokens.values()
                               if t.current_element_id == current and t.state == TokenState.ACTIVE]
-                    incoming_flows = self._get_incoming_flows(current, model, typed_model)
-                    if len(arrived) < len(incoming_flows):
-                        current = None
-                        break
+                    converging_gw_type = self._classify_gateway_typed(current, typed_model)
+                    if converging_gw_type == "inclusive":
+                        # Inclusive join: wait only for tokens on ACTIVATED branches
+                        fork_gw = self._find_fork_for_converging(current, model, typed_model)
+                        if fork_gw and fork_gw in activated_branches:
+                            expected_count = len(activated_branches[fork_gw])
+                        else:
+                            incoming_flows = self._get_incoming_flows(current, model, typed_model)
+                            expected_count = len(incoming_flows)
+                        if len(arrived) < expected_count:
+                            current = None
+                            break
+                    else:
+                        # Other converging gateways: wait for all incoming flows
+                        incoming_flows = self._get_incoming_flows(current, model, typed_model)
+                        if len(arrived) < len(incoming_flows):
+                            current = None
+                            break
 
         if current and guard_steps >= 200:
             raise RuntimeError("BPMN process execution exceeded step limit")
@@ -496,6 +545,34 @@ class BPMNProcessExecutor:
         if node is None:
             return False
         return isinstance(node, (ParallelGateway, InclusiveGateway))
+
+    def _find_fork_for_converging(
+        self, converging_node: str, model: ProcessModel, typed_model: TypedProcessModel,
+    ) -> str | None:
+        """Find the diverging gateway that corresponds to this converging gateway.
+        Used for inclusive gateway join semantics — join must know which branches
+        were activated at the corresponding fork."""
+        # Look backward through incoming sequence flows to find the matching diverging gateway
+        incoming = self._get_incoming_flows(converging_node, model, typed_model)
+        for flow_id in incoming:
+            source = self._get_flow_source(flow_id, model, typed_model)
+            if source and self._classify_gateway_typed(source, typed_model) in ("inclusive", "parallel"):
+                return source
+            # One more hop for nested flows
+            if source:
+                incoming2 = self._get_incoming_flows(source, model, typed_model)
+                for flow_id2 in incoming2:
+                    source2 = self._get_flow_source(flow_id2, model, typed_model)
+                    if source2 and self._classify_gateway_typed(source2, typed_model) in ("inclusive", "parallel"):
+                        return source2
+        return None
+
+    def _get_flow_source(self, flow_id: str, model: ProcessModel, typed_model: TypedProcessModel) -> str | None:
+        """Get the source node ID for a given sequence flow."""
+        for f in model.sequence_flows:
+            if f.get("id") == flow_id:
+                return f.get("sourceRef") or f.get("source")
+        return None
 
     # ── Gateway condition evaluation (typed) ─────────────────────────
 

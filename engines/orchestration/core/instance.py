@@ -23,11 +23,14 @@ logger = logging.getLogger(__name__)
 
 
 class InstanceState(Enum):
-    """Process instance states"""
+    """Process instance states — includes BPMN, CMMN, and State Machine states."""
     ACTIVE = "active"  # Instance is running
     SUSPENDED = "suspended"  # Instance is paused
     COMPLETED = "completed"  # Instance completed successfully
     TERMINATED = "terminated"  # Instance was terminated
+    FAILED = "failed"  # Instance failed
+    DRAFT = "draft"  # CMMN: Case created but not yet active (§5.2)
+    CLOSED = "closed"  # CMMN: Case archived after completion/termination (§5.2)
     FAILED = "failed"  # Instance failed with error
     COMPENSATING = "compensating"  # Instance is compensating
     MIGRATING = "migrating"  # Instance is being migrated
