@@ -20,6 +20,13 @@ from ....document.models.osdm_models import (
     GatewayType,
     GatewayDirection,
     EventBasedGatewayType,
+    Gateway,
+    ExclusiveGateway,
+    InclusiveGateway,
+    ParallelGateway,
+    EventBasedGateway,
+    ComplexGateway,
+    SequenceFlow,
 )
 
 
@@ -75,6 +82,76 @@ class GatewayHandler:
             return self._choose_complex(gateway_id, gateway, context)
         else:
             return self._choose_exclusive(gateway_id, branches, gateway.get("default"))
+
+    def choose_osdm(self, *, gateway: Gateway, outgoing_flows: list[SequenceFlow], context: dict[str, Any]) -> GatewayDecision:
+        """Choose gateway path using OSDM-typed Gateway and SequenceFlow objects."""
+        gateway_id = gateway.id
+        if isinstance(gateway, ExclusiveGateway):
+            gw_type = GatewayType.EXCLUSIVE
+        elif isinstance(gateway, InclusiveGateway):
+            gw_type = GatewayType.INCLUSIVE
+        elif isinstance(gateway, ParallelGateway):
+            gw_type = GatewayType.PARALLEL
+        elif isinstance(gateway, EventBasedGateway):
+            gw_type = GatewayType.EVENT_BASED
+        elif isinstance(gateway, ComplexGateway):
+            gw_type = GatewayType.COMPLEX
+        else:
+            gw_type = GatewayType.EXCLUSIVE
+        default_flow = getattr(gateway, "default_sequence_flow", None)
+        default_id = default_flow.target_ref if default_flow and hasattr(default_flow, "target_ref") else None
+        branches = self._parse_osdm_branches(outgoing_flows)
+        if gw_type == GatewayType.EXCLUSIVE:
+            return self._choose_exclusive(gateway_id, branches, default_id)
+        elif gw_type == GatewayType.INCLUSIVE:
+            return self._choose_inclusive(gateway_id, branches, default_id)
+        elif gw_type == GatewayType.PARALLEL:
+            return self._choose_parallel(gateway_id, branches)
+        elif gw_type == GatewayType.EVENT_BASED:
+            return self._choose_event_based_osdm(gateway_id, gateway, outgoing_flows, context)
+        elif gw_type == GatewayType.COMPLEX:
+            activation_cond = getattr(gateway, "activation_condition", None)
+            if activation_cond and not self._evaluate_condition(str(activation_cond), context):
+                return GatewayDecision(gateway_id=gateway_id, next_targets=[default_id] if default_id else [], gateway_type=GatewayType.COMPLEX, activation_condition_met=False, default_used=bool(default_id))
+            return GatewayDecision(gateway_id=gateway_id, next_targets=[b.target for b in branches], gateway_type=GatewayType.COMPLEX, activation_condition_met=True)
+        return self._choose_exclusive(gateway_id, branches, default_id)
+
+    def _parse_osdm_branches(self, outgoing_flows: list[SequenceFlow]) -> list[GatewayBranch]:
+        branches = []
+        for i, flow in enumerate(outgoing_flows):
+            target = flow.target_ref if hasattr(flow, "target_ref") else None
+            if not target:
+                continue
+            condition = getattr(flow, "condition_expression", None)
+            is_default = getattr(flow, "is_default", False)
+            priority = getattr(flow, "priority", i)
+            branches.append(GatewayBranch(target=target, condition=condition, priority=priority, is_default=is_default))
+        return branches
+
+    def _choose_event_based_osdm(self, gateway_id: str, gateway: EventBasedGateway, outgoing_flows: list[SequenceFlow], context: dict[str, Any]) -> GatewayDecision:
+        is_parallel = getattr(gateway, "parallel_multiple", False)
+        triggered_event = context.get(f"{gateway_id}.triggered_event")
+        if triggered_event:
+            for flow in outgoing_flows:
+                target = flow.target_ref if hasattr(flow, "target_ref") else None
+                flow_events = getattr(flow, "event_types", []) or []
+                if triggered_event in [str(e) for e in flow_events]:
+                    return GatewayDecision(gateway_id=gateway_id, next_targets=[target] if target else [], gateway_type=GatewayType.EVENT_BASED, event_triggered=triggered_event)
+        if is_parallel:
+            triggered_events = context.get(f"{gateway_id}.triggered_events") or []
+            selected = []
+            all_present = True
+            for flow in outgoing_flows:
+                target = flow.target_ref if hasattr(flow, "target_ref") else None
+                flow_events = [str(e) for e in getattr(flow, "event_types", []) or []]
+                if flow_events and any(e in triggered_events for e in flow_events):
+                    if target:
+                        selected.append(target)
+                elif flow_events:
+                    all_present = False
+            if selected and all_present:
+                return GatewayDecision(gateway_id=gateway_id, next_targets=selected, gateway_type=GatewayType.EVENT_BASED)
+        return GatewayDecision(gateway_id=gateway_id, next_targets=[], gateway_type=GatewayType.EVENT_BASED)
 
     def _to_gateway_type(self, value: str) -> GatewayType:
         try:

@@ -1,44 +1,78 @@
 """Activity handling for BPMN tasks, sub-processes, and call activities.
 
-Supports all BPMN activity kinds at Camunda-level semantics:
-- Task (None, Service, User, Manual, Script, BusinessRule, Send, Receive)
-- SubProcess (Embedded, Event, Transaction, AdHoc)
-- CallActivity (Process, GlobalTask)
-- Boundary behavior, IO mapping, async/await, compensation markers
+Supports all BPMN activity kinds at Camunda-level semantics with
+OSDM-typed object interfaces instead of raw dictionaries.
+
+Uses OSDM model classes directly:
+- Activity, Task, ServiceTask, UserTask, ManualTask, ScriptTask, BusinessRuleTask, SendTask, ReceiveTask
+- SubProcess, TransactionSubProcess, AdHocSubProcess, CallActivity
+- LoopCharacteristics, StandardLoopCharacteristics, MultiInstanceLoopCharacteristics
+- InputOutputSpecification, DataInput, DataOutput, DataAssociation
+- ResourceRole, HumanPerformer, PotentialOwner
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Union
 
 from ..core.context import ExecutionContext
 from ..core.engine import OrchestrationEngine
 from ..core.instance import ProcessInstance
 
 from ....document.models.osdm_models import (
+    Activity,
+    Task,
+    ServiceTask,
+    UserTask,
+    ManualTask,
+    ScriptTask,
+    BusinessRuleTask,
+    SendTask,
+    ReceiveTask,
+    SubProcess,
+    TransactionSubProcess,
+    AdHocSubProcess,
+    CallActivity,
+    GlobalTask,
     ActivityType,
     TaskType,
     SubProcessType,
     LoopType,
     MultiInstanceBehavior,
     CallActivityType,
+    LoopCharacteristics,
+    StandardLoopCharacteristics,
+    MultiInstanceLoopCharacteristics,
+    InputOutputSpecification,
+    DataInput,
+    DataOutput,
+    DataAssociation,
+    DataInputAssociation,
+    DataOutputAssociation,
+    InputSet,
+    OutputSet,
+    ResourceRole,
+    HumanPerformer,
+    Performer,
+    PotentialOwner,
+    ResourceRendering,
 )
 
 
 @dataclass
 class ActivityIOSpecification:
-    data_inputs: list[dict[str, Any]] = field(default_factory=list)
-    data_outputs: list[dict[str, Any]] = field(default_factory=list)
-    input_sets: list[dict[str, Any]] = field(default_factory=list)
-    output_sets: list[dict[str, Any]] = field(default_factory=list)
-    data_input_associations: list[dict[str, Any]] = field(default_factory=list)
-    data_output_associations: list[dict[str, Any]] = field(default_factory=list)
+    data_inputs: list[DataInput] = field(default_factory=list)
+    data_outputs: list[DataOutput] = field(default_factory=list)
+    input_sets: list[InputSet] = field(default_factory=list)
+    output_sets: list[OutputSet] = field(default_factory=list)
+    data_input_associations: list[DataInputAssociation] = field(default_factory=list)
+    data_output_associations: list[DataOutputAssociation] = field(default_factory=list)
 
 
 @dataclass
 class ActivityLoopCharacteristics:
-    loop_type: str = LoopType.NONE
+    loop_type: LoopType = LoopType.NONE
     is_sequential: bool = False
     cardinality_value: str | None = None
     completion_condition: str | None = None
@@ -72,351 +106,376 @@ class ActivityExecutionResult:
 
 
 class ActivityHandler:
-    """Executes BPMN activities with full semantics."""
+    """Executes BPMN activities using OSDM-typed objects.
+
+    All handler methods accept OSDM Activity subclasses directly instead of
+    raw dictionaries, providing type safety and IDE autocompletion.
+    """
 
     def __init__(self, orchestration_engine: OrchestrationEngine) -> None:
         self._orchestration_engine = orchestration_engine
 
-    def execute(
+    def execute_osdm(
         self,
         instance: ProcessInstance,
-        activity: dict[str, Any],
+        activity: Activity,
         *,
         context: ExecutionContext,
     ) -> ActivityExecutionResult:
-        activity_id = str(activity.get("id"))
-        activity_type = str(activity.get("type", "task")).lower()
+        """Execute an OSDM-typed activity object."""
+        activity_id = activity.id
         instance.current_activity_id = activity_id
-        payload = dict(activity.get("payload", {}))
 
+        activity_type = self._resolve_osdm_activity_type(activity)
+        name = getattr(activity, "name", None) or activity_id
+
+        handler_method = self._resolve_osdm_handler(activity)
         try:
-            handler_method = self._resolve_handler(activity_type)
-            return handler_method(instance, activity_id, activity_type, payload, activity, context)
+            return handler_method(instance, activity, activity_type, context)
         except Exception as exc:
             return ActivityExecutionResult(success=False, error=exc)
 
-    def _resolve_handler(self, activity_type: str):
-        handlers = {
-            "task": self._execute_none_task,
-            "none": self._execute_none_task,
-            "servicetask": self._execute_service_task,
-            "service": self._execute_service_task,
-            "usertask": self._execute_user_task,
-            "humantask": self._execute_user_task,
-            "manualtask": self._execute_manual_task,
-            "manual": self._execute_manual_task,
-            "scripttask": self._execute_script_task,
-            "script": self._execute_script_task,
-            "businessruletask": self._execute_business_rule_task,
-            "businessrule": self._execute_business_rule_task,
-            "sendtask": self._execute_send_task,
-            "send": self._execute_send_task,
-            "receivetask": self._execute_receive_task,
-            "receive": self._execute_receive_task,
-            "subprocess": self._execute_sub_process,
-            "subprocess(embedded)": self._execute_sub_process,
-            "event": self._execute_sub_process,
-            "callactivity": self._execute_call_activity,
-            "call": self._execute_call_activity,
-            "boundaryevent": self._execute_boundary_event,
-            "boundary": self._execute_boundary_event,
-            "intermediatecatch": self._execute_intermediate_catch,
-            "intermediatecatchevent": self._execute_intermediate_catch,
-            "intermediatethrow": self._execute_intermediate_throw,
-            "intermediatethrowevent": self._execute_intermediate_throw,
-            "startevent": self._execute_start_event,
-            "start": self._execute_start_event,
-            "endevent": self._execute_end_event,
-            "end": self._execute_end_event,
-        }
-        return handlers.get(activity_type, self._execute_generic)
+    def _resolve_osdm_activity_type(self, activity: Activity) -> str:
+        """Resolve the activity type string from an OSDM Activity object."""
+        if isinstance(activity, ServiceTask):
+            return "serviceTask"
+        elif isinstance(activity, UserTask):
+            return "userTask"
+        elif isinstance(activity, ManualTask):
+            return "manualTask"
+        elif isinstance(activity, ScriptTask):
+            return "scriptTask"
+        elif isinstance(activity, BusinessRuleTask):
+            return "businessRuleTask"
+        elif isinstance(activity, SendTask):
+            return "sendTask"
+        elif isinstance(activity, ReceiveTask):
+            return "receiveTask"
+        elif isinstance(activity, CallActivity):
+            return "callActivity"
+        elif isinstance(activity, AdHocSubProcess):
+            return "adHocSubProcess"
+        elif isinstance(activity, TransactionSubProcess):
+            return "transactionSubProcess"
+        elif isinstance(activity, SubProcess):
+            return "subProcess"
+        elif isinstance(activity, GlobalTask):
+            return "globalTask"
+        elif isinstance(activity, Task):
+            return "task"
+        elif isinstance(activity, Activity):
+            atype = getattr(activity, "activity_type", None)
+            if atype:
+                if isinstance(atype, ActivityType):
+                    return atype.value
+                return str(atype)
+            return "activity"
+        return "unknown"
 
-    def _execute_none_task(self, instance, activity_id, activity_type, payload, activity, context):
-        self._apply_io_mappings(instance, activity, context)
-        instance.set_variable(f"{activity_id}.output", payload)
-        return ActivityExecutionResult(success=True, output=payload, io_mappings_applied=True)
+    def _resolve_osdm_handler(self, activity: Activity):
+        """Resolve the correct handler method for an OSDM Activity type."""
+        if isinstance(activity, ServiceTask):
+            return self._execute_service_task_osdm
+        elif isinstance(activity, UserTask):
+            return self._execute_user_task_osdm
+        elif isinstance(activity, ManualTask):
+            return self._execute_manual_task_osdm
+        elif isinstance(activity, ScriptTask):
+            return self._execute_script_task_osdm
+        elif isinstance(activity, BusinessRuleTask):
+            return self._execute_business_rule_task_osdm
+        elif isinstance(activity, SendTask):
+            return self._execute_send_task_osdm
+        elif isinstance(activity, ReceiveTask):
+            return self._execute_receive_task_osdm
+        elif isinstance(activity, CallActivity):
+            return self._execute_call_activity_osdm
+        elif isinstance(activity, AdHocSubProcess):
+            return self._execute_adhoc_sub_process_osdm
+        elif isinstance(activity, TransactionSubProcess):
+            return self._execute_transaction_sub_process_osdm
+        elif isinstance(activity, SubProcess):
+            return self._execute_sub_process_osdm
+        elif isinstance(activity, GlobalTask):
+            return self._execute_global_task_osdm
+        elif isinstance(activity, Task):
+            return self._execute_none_task_osdm
+        else:
+            return self._execute_generic_osdm
 
-    def _execute_service_task(self, instance, activity_id, activity_type, payload, activity, context):
-        self._apply_io_mappings(instance, activity, context)
-        implementation = payload.get("implementation", "")
-        result_variable = payload.get("resultVariable", f"{activity_id}.result")
-        output = {"implementation": implementation, "called_element": payload.get("calledElement"), "operation_ref": payload.get("operationRef")}
-        instance.set_variable(result_variable, output)
-        instance.set_variable(f"{activity_id}.output", output)
+    def _execute_none_task_osdm(
+        self, instance: ProcessInstance, activity: Task, activity_type: str, context: ExecutionContext,
+    ) -> ActivityExecutionResult:
+        self._apply_io_mappings_osdm(activity, instance, context)
+        output = {"type": "none", "name": getattr(activity, "name", None)}
+        instance.set_variable(f"{activity.id}.output", output)
         return ActivityExecutionResult(success=True, output=output, io_mappings_applied=True)
 
-    def _execute_user_task(self, instance, activity_id, activity_type, payload, activity, context):
-        self._apply_io_mappings(instance, context)
-        assignee = payload.get("assignee")
-        candidate_groups = payload.get("candidateGroups", [])
-        candidate_users = payload.get("candidateUsers", [])
-        form_key = payload.get("formKey")
-        due_date = payload.get("dueDate")
-        follow_up_date = payload.get("followUpDate")
-        priority = payload.get("priority")
-        escalation_code = payload.get("escalationCode")
-        deadline_duration = payload.get("deadlineDuration")
-        escalation_duration = payload.get("escalationDuration")
-        repeat_count = payload.get("repeatCount", 0)
-        end_date = payload.get("endDate")
-        instance.set_variable(f"{activity_id}.assignee", assignee)
-        instance.set_variable(f"{activity_id}.candidateGroups", candidate_groups)
-        instance.set_variable(f"{activity_id}.candidateUsers", candidate_users)
+    def _execute_service_task_osdm(
+        self, instance: ProcessInstance, activity: ServiceTask, activity_type: str, context: ExecutionContext,
+    ) -> ActivityExecutionResult:
+        self._apply_io_mappings_osdm(activity, instance, context)
+        implementation = getattr(activity, "implementation", "") or ""
+        operation_ref = getattr(activity, "operation_ref", None)
+        result_variable = f"{activity.id}.result"
+        output = {"implementation": str(implementation), "operation_ref": str(operation_ref) if operation_ref else None}
+        instance.set_variable(result_variable, output)
+        instance.set_variable(f"{activity.id}.output", output)
+        return ActivityExecutionResult(success=True, output=output, io_mappings_applied=True)
+
+    def _execute_user_task_osdm(
+        self, instance: ProcessInstance, activity: UserTask, activity_type: str, context: ExecutionContext,
+    ) -> ActivityExecutionResult:
+        self._apply_io_mappings_osdm(activity, instance, context)
+        assignee = getattr(activity, "assignee", None)
+        candidate_groups = list(getattr(activity, "candidate_groups", []) or [])
+        candidate_users = list(getattr(activity, "candidate_users", []) or [])
+        form_key = getattr(activity, "form_key", None)
+        due_date = getattr(activity, "due_date", None)
+        follow_up_date = getattr(activity, "follow_up_date", None)
+        priority = getattr(activity, "priority", None)
+        escalation_code = getattr(activity, "escalation_code", None)
+        deadline_duration = getattr(activity, "deadline_duration", None)
+        escalation_duration = getattr(activity, "escalation_duration", None)
+        repeat_count = getattr(activity, "repeat_count", 0)
+        end_date = getattr(activity, "end_date", None)
+        instance.set_variable(f"{activity.id}.assignee", assignee)
+        instance.set_variable(f"{activity.id}.candidateGroups", candidate_groups)
+        instance.set_variable(f"{activity.id}.candidateUsers", candidate_users)
         if form_key:
-            instance.set_variable(f"{activity_id}.formKey", form_key)
+            instance.set_variable(f"{activity.id}.formKey", form_key)
         if due_date:
-            instance.set_variable(f"{activity_id}.dueDate", due_date)
+            instance.set_variable(f"{activity.id}.dueDate", due_date)
         if follow_up_date:
-            instance.set_variable(f"{activity_id}.followUpDate", follow_up_date)
+            instance.set_variable(f"{activity.id}.followUpDate", follow_up_date)
         if priority is not None:
-            instance.set_variable(f"{activity_id}.priority", priority)
+            instance.set_variable(f"{activity.id}.priority", priority)
         if escalation_code:
-            instance.set_variable(f"{activity_id}.escalationCode", escalation_code)
+            instance.set_variable(f"{activity.id}.escalationCode", escalation_code)
         if deadline_duration:
-            instance.set_variable(f"{activity_id}.deadlineDuration", deadline_duration)
-            instance.set_variable(f"{activity_id}.deadlineActive", True)
+            instance.set_variable(f"{activity.id}.deadlineDuration", deadline_duration)
+            instance.set_variable(f"{activity.id}.deadlineActive", True)
         if escalation_duration:
-            instance.set_variable(f"{activity_id}.escalationDuration", escalation_duration)
-            instance.set_variable(f"{activity_id}.escalationActive", True)
-        if repeat_count > 0:
-            instance.set_variable(f"{activity_id}.repeatCount", repeat_count)
+            instance.set_variable(f"{activity.id}.escalationDuration", escalation_duration)
+            instance.set_variable(f"{activity.id}.escalationActive", True)
+        if repeat_count and repeat_count > 0:
+            instance.set_variable(f"{activity.id}.repeatCount", repeat_count)
         if end_date:
-            instance.set_variable(f"{activity_id}.endDate", end_date)
+            instance.set_variable(f"{activity.id}.endDate", end_date)
         output = {
             "assignee": assignee, "candidateGroups": candidate_groups,
             "candidateUsers": candidate_users, "formKey": form_key,
-            "dueDate": due_date, "followUpDate": follow_up_date,
-            "escalationCode": escalation_code, "deadlineActive": bool(deadline_duration),
-            "escalationActive": bool(escalation_duration),
+            "dueDate": due_date, "escalationCode": escalation_code,
+            "deadlineActive": bool(deadline_duration), "escalationActive": bool(escalation_duration),
         }
-        instance.set_variable(f"{activity_id}.output", output)
+        instance.set_variable(f"{activity.id}.output", output)
         return ActivityExecutionResult(success=True, output=output, io_mappings_applied=True)
 
-    def _execute_manual_task(self, instance, activity_id, activity_type, payload, activity, context):
-        self._apply_io_mappings(instance, activity, context)
-        instance.set_variable(f"{activity_id}.output", payload)
-        return ActivityExecutionResult(success=True, output=payload, io_mappings_applied=True)
+    def _execute_manual_task_osdm(
+        self, instance: ProcessInstance, activity: ManualTask, activity_type: str, context: ExecutionContext,
+    ) -> ActivityExecutionResult:
+        self._apply_io_mappings_osdm(activity, instance, context)
+        output = {"type": "manual", "name": getattr(activity, "name", None)}
+        instance.set_variable(f"{activity.id}.output", output)
+        return ActivityExecutionResult(success=True, output=output, io_mappings_applied=True)
 
-    def _execute_script_task(self, instance, activity_id, activity_type, payload, activity, context):
-        self._apply_io_mappings(instance, activity, context)
-        script = payload.get("script", "")
-        script_format = payload.get("scriptFormat", "")
-        result_variable = payload.get("resultVariable", f"{activity_id}.result")
-        output = {"script": script, "scriptFormat": script_format, "executed": True}
+    def _execute_script_task_osdm(
+        self, instance: ProcessInstance, activity: ScriptTask, activity_type: str, context: ExecutionContext,
+    ) -> ActivityExecutionResult:
+        self._apply_io_mappings_osdm(activity, instance, context)
+        script = getattr(activity, "script", "") or ""
+        script_format = getattr(activity, "script_format", "") or ""
+        result_variable = f"{activity.id}.result"
+        output = {"script": str(script), "scriptFormat": str(script_format), "executed": True}
         instance.set_variable(result_variable, output)
-        instance.set_variable(f"{activity_id}.output", output)
+        instance.set_variable(f"{activity.id}.output", output)
         return ActivityExecutionResult(success=True, output=output, io_mappings_applied=True)
 
-    def _execute_business_rule_task(self, instance, activity_id, activity_type, payload, activity, context):
-        self._apply_io_mappings(instance, activity, context)
-        decision_ref = payload.get("calledDecision") or payload.get("decisionRef", "")
-        result_variable = payload.get("resultVariable", f"{activity_id}.result")
-        output = {"decisionRef": decision_ref, "decisionResult": {}}
+    def _execute_business_rule_task_osdm(
+        self, instance: ProcessInstance, activity: BusinessRuleTask, activity_type: str, context: ExecutionContext,
+    ) -> ActivityExecutionResult:
+        self._apply_io_mappings_osdm(activity, instance, context)
+        decision_ref = getattr(activity, "called_decision", "") or ""
+        result_variable = f"{activity.id}.result"
+        output = {"decisionRef": str(decision_ref), "decisionResult": {}}
         instance.set_variable(result_variable, output)
-        instance.set_variable(f"{activity_id}.output", output)
+        instance.set_variable(f"{activity.id}.output", output)
         return ActivityExecutionResult(success=True, output=output, io_mappings_applied=True)
 
-    def _execute_send_task(self, instance, activity_id, activity_type, payload, activity, context):
-        self._apply_io_mappings(instance, activity, context)
-        message_name = payload.get("message_name") or payload.get("messageRef")
-        correlation_keys = dict(payload.get("correlation_keys") or {})
+    def _execute_send_task_osdm(
+        self, instance: ProcessInstance, activity: SendTask, activity_type: str, context: ExecutionContext,
+    ) -> ActivityExecutionResult:
+        self._apply_io_mappings_osdm(activity, instance, context)
+        message_name = getattr(activity, "message_name", None) or getattr(activity, "message_ref", None)
+        correlation_keys = dict(getattr(activity, "correlation_keys", {}) or {})
         if message_name:
-            return ActivityExecutionResult(success=True, output=payload, waiting=True, wait_kind="message", wait_name=str(message_name), correlation_keys=correlation_keys, io_mappings_applied=True)
-        instance.set_variable(f"{activity_id}.output", payload)
-        return ActivityExecutionResult(success=True, output=payload, io_mappings_applied=True)
+            return ActivityExecutionResult(
+                success=True, output={"type": "send", "message": str(message_name)},
+                waiting=True, wait_kind="message", wait_name=str(message_name),
+                correlation_keys=correlation_keys, io_mappings_applied=True,
+            )
+        output = {"type": "send", "message": str(message_name) if message_name else None}
+        instance.set_variable(f"{activity.id}.output", output)
+        return ActivityExecutionResult(success=True, output=output, io_mappings_applied=True)
 
-    def _execute_receive_task(self, instance, activity_id, activity_type, payload, activity, context):
-        self._apply_io_mappings(instance, activity, context)
-        message_name = payload.get("message_name") or payload.get("messageRef")
-        correlation_keys = dict(payload.get("correlation_keys") or {})
+    def _execute_receive_task_osdm(
+        self, instance: ProcessInstance, activity: ReceiveTask, activity_type: str, context: ExecutionContext,
+    ) -> ActivityExecutionResult:
+        self._apply_io_mappings_osdm(activity, instance, context)
+        message_name = getattr(activity, "message_name", None) or getattr(activity, "message_ref", None)
+        correlation_keys = dict(getattr(activity, "correlation_keys", {}) or {})
         if message_name:
-            return ActivityExecutionResult(success=True, output=payload, waiting=True, wait_kind="message", wait_name=str(message_name), correlation_keys=correlation_keys, io_mappings_applied=True)
-        instance.set_variable(f"{activity_id}.output", payload)
-        return ActivityExecutionResult(success=True, output=payload, io_mappings_applied=True)
+            return ActivityExecutionResult(
+                success=True, output={"type": "receive", "message": str(message_name)},
+                waiting=True, wait_kind="message", wait_name=str(message_name),
+                correlation_keys=correlation_keys, io_mappings_applied=True,
+            )
+        output = {"type": "receive", "message": str(message_name) if message_name else None}
+        instance.set_variable(f"{activity.id}.output", output)
+        return ActivityExecutionResult(success=True, output=output, io_mappings_applied=True)
 
-    def _execute_sub_process(self, instance, activity_id, activity_type, payload, activity, context):
-        self._apply_io_mappings(instance, activity, context)
-        is_triggered_by_event = payload.get("triggeredByEvent", False)
-        sub_process_type = payload.get("subProcessType", "embedded")
-        children = payload.get("children", [])
-        compensation_marker = payload.get("isForCompensation", False)
-        loop_char = activity.get("loop_characteristics", {})
+    def _execute_call_activity_osdm(
+        self, instance: ProcessInstance, activity: CallActivity, activity_type: str, context: ExecutionContext,
+    ) -> ActivityExecutionResult:
+        self._apply_io_mappings_osdm(activity, instance, context)
+        called_element = getattr(activity, "called_element", None)
+        call_type = getattr(activity, "call_activity_type", CallActivityType.PROCESS)
+        io_binding = list(getattr(activity, "io_binding", []) or [])
+        output = {
+            "calledElement": str(called_element) if called_element else None,
+            "callActivityType": call_type.value if isinstance(call_type, CallActivityType) else str(call_type),
+            "inputOutputBindings": len(io_binding),
+        }
+        instance.set_variable(f"{activity.id}.output", output)
+        return ActivityExecutionResult(success=True, output=output, io_mappings_applied=True)
+
+    def _execute_sub_process_osdm(
+        self, instance: ProcessInstance, activity: SubProcess, activity_type: str, context: ExecutionContext,
+    ) -> ActivityExecutionResult:
+        self._apply_io_mappings_osdm(activity, instance, context)
+        sp_type = getattr(activity, "sub_process_type", SubProcessType.EMBEDDED)
+        triggered_by = getattr(activity, "triggered_by_event", False)
+        is_for_comp = getattr(activity, "is_for_compensation", False)
+        loop_char = getattr(activity, "loop_characteristics", None)
+        children = list(getattr(activity, "flow_elements", {}).keys()) if hasattr(activity, "flow_elements") and activity.flow_elements else []
         if loop_char:
-            loop_result = self._handle_loop(instance, activity_id, loop_char, children)
+            loop_result = self._handle_loop_osdm(activity, loop_char, children, instance)
             if loop_result is not None:
                 return loop_result
-        instance.set_variable(f"{activity_id}.children", children)
-        instance.set_variable(f"{activity_id}.subProcessType", sub_process_type)
-        instance.set_variable(f"{activity_id}.triggeredByEvent", is_triggered_by_event)
-        instance.set_variable(f"{activity_id}.compensation", compensation_marker)
-        instance.set_variable(f"{activity_id}.output", payload)
-        return ActivityExecutionResult(success=True, output=payload, io_mappings_applied=True)
+        instance.set_variable(f"{activity.id}.subProcessType", sp_type.value if isinstance(sp_type, SubProcessType) else str(sp_type))
+        instance.set_variable(f"{activity.id}.triggeredByEvent", triggered_by)
+        instance.set_variable(f"{activity.id}.compensation", is_for_comp)
+        instance.set_variable(f"{activity.id}.children", children)
+        instance.set_variable(f"{activity.id}.output", {"type": "subProcess", "children": len(children)})
+        return ActivityExecutionResult(success=True, output={"type": "subProcess", "children": len(children)}, io_mappings_applied=True)
 
-    def _execute_call_activity(self, instance, activity_id, activity_type, payload, activity, context):
-        self._apply_io_mappings(instance, activity, context)
-        called_element = payload.get("calledElement") or payload.get("called_element")
-        call_activity_type = payload.get("callActivityType", "process")
-        case_ref = payload.get("caseRef")
-        global_task_id = payload.get("global_task_id")
-        io_binding = payload.get("ioBinding", [])
-        for binding in io_binding:
-            source = binding.get("source")
-            target = binding.get("target")
-            if source and target:
-                value = instance.get_variable(source)
-                if value is not None:
-                    instance.set_variable(target, value)
-        output = {"calledElement": called_element, "callActivityType": call_activity_type, "caseRef": case_ref, "globalTaskId": global_task_id, "inputOutputBindings": io_binding}
-        instance.set_variable(f"{activity_id}.output", output)
+    def _execute_adhoc_sub_process_osdm(
+        self, instance: ProcessInstance, activity: AdHocSubProcess, activity_type: str, context: ExecutionContext,
+    ) -> ActivityExecutionResult:
+        self._apply_io_mappings_osdm(activity, instance, context)
+        ordering = getattr(activity, "ordering", None)
+        completion_cond = getattr(activity, "completion_condition", None)
+        cancel_remaining = getattr(activity, "cancel_remaining_instances", True)
+        children = list(getattr(activity, "flow_elements", {}).keys()) if hasattr(activity, "flow_elements") and activity.flow_elements else []
+        instance.set_variable(f"{activity.id}.ordering", ordering.value if ordering else "Parallel")
+        instance.set_variable(f"{activity.id}.completionCondition", completion_cond)
+        instance.set_variable(f"{activity.id}.cancelRemainingInstances", cancel_remaining)
+        instance.set_variable(f"{activity.id}.children", children)
+        instance.set_variable(f"{activity.id}.output", {"type": "adHocSubProcess", "children": len(children)})
+        return ActivityExecutionResult(success=True, output={"type": "adHocSubProcess"}, io_mappings_applied=True)
+
+    def _execute_transaction_sub_process_osdm(
+        self, instance: ProcessInstance, activity: TransactionSubProcess, activity_type: str, context: ExecutionContext,
+    ) -> ActivityExecutionResult:
+        self._apply_io_mappings_osdm(activity, instance, context)
+        method = getattr(activity, "method", TransactionMethod.COMPENSATE)
+        children = list(getattr(activity, "flow_elements", {}).keys()) if hasattr(activity, "flow_elements") and activity.flow_elements else []
+        instance.set_variable(f"{activity.id}.transactionMethod", method.value if isinstance(method, TransactionMethod) else str(method))
+        instance.set_variable(f"{activity.id}.children", children)
+        instance.set_variable(f"{activity.id}.output", {"type": "transactionSubProcess", "children": len(children)})
+        return ActivityExecutionResult(success=True, output={"type": "transactionSubProcess"}, io_mappings_applied=True)
+
+    def _execute_global_task_osdm(
+        self, instance: ProcessInstance, activity: GlobalTask, activity_type: str, context: ExecutionContext,
+    ) -> ActivityExecutionResult:
+        self._apply_io_mappings_osdm(activity, instance, context)
+        task_type = getattr(activity, "task_type", None)
+        resources = list(getattr(activity, "resources", []) or [])
+        output = {
+            "type": "globalTask",
+            "taskType": str(task_type) if task_type else None,
+            "resources": len(resources),
+        }
+        instance.set_variable(f"{activity.id}.output", output)
         return ActivityExecutionResult(success=True, output=output, io_mappings_applied=True)
 
-    def _execute_boundary_event(self, instance, activity_id, activity_type, payload, activity, context):
-        is_interrupting = payload.get("cancelActivity", True)
-        event_type = payload.get("eventDefinition", {}).get("type", "timer")
-        if event_type == "message":
-            message_name = payload.get("messageName") or payload.get("eventDefinition", {}).get("messageRef")
-            correlation_keys = dict(payload.get("correlation_keys") or {})
-            if message_name:
-                return ActivityExecutionResult(success=True, output=payload, waiting=True, wait_kind="message", wait_name=str(message_name), correlation_keys=correlation_keys)
-        elif event_type == "timer":
-            timer_duration = payload.get("timerDuration") or payload.get("eventDefinition", {}).get("timeDuration")
-            if timer_duration:
-                return ActivityExecutionResult(success=True, output=payload, waiting=True, wait_kind="timer", wait_name=str(timer_duration))
-        elif event_type == "error":
-            error_code = payload.get("errorCode") or payload.get("eventDefinition", {}).get("errorRef")
-            if error_code:
-                return ActivityExecutionResult(success=True, output=payload, waiting=True, wait_kind="error", wait_name=str(error_code))
-        elif event_type == "signal":
-            signal_name = payload.get("signalName") or payload.get("eventDefinition", {}).get("signalRef")
-            if signal_name:
-                return ActivityExecutionResult(success=True, output=payload, waiting=True, wait_kind="event", wait_name=str(signal_name))
-        elif event_type == "escalation":
-            escalation_code = payload.get("escalationCode") or payload.get("eventDefinition", {}).get("escalationRef")
-            if escalation_code:
-                return ActivityExecutionResult(success=True, output=payload, waiting=True, wait_kind="escalation", wait_name=str(escalation_code))
-        instance.set_variable(f"{activity_id}.output", payload)
-        return ActivityExecutionResult(success=True, output=payload)
+    def _execute_generic_osdm(
+        self, instance: ProcessInstance, activity: Activity, activity_type: str, context: ExecutionContext,
+    ) -> ActivityExecutionResult:
+        self._apply_io_mappings_osdm(activity, instance, context)
+        output = {"type": activity_type, "name": getattr(activity, "name", None)}
+        instance.set_variable(f"{activity.id}.output", output)
+        return ActivityExecutionResult(success=True, output=output, io_mappings_applied=True)
 
-    def _execute_intermediate_catch(self, instance, activity_id, activity_type, payload, activity, context):
-        message_name = payload.get("message_name")
-        event_name = payload.get("event_name")
-        signal_name = payload.get("signal_name")
-        timer_duration = payload.get("timer_duration")
-        error_code = payload.get("error_code")
-        compensation = payload.get("compensation")
-        correlation_keys = dict(payload.get("correlation_keys") or {})
-        if message_name:
-            return ActivityExecutionResult(success=True, output=payload, waiting=True, wait_kind="message", wait_name=str(message_name), correlation_keys=correlation_keys)
-        if signal_name:
-            return ActivityExecutionResult(success=True, output=payload, waiting=True, wait_kind="event", wait_name=str(signal_name))
-        if event_name:
-            return ActivityExecutionResult(success=True, output=payload, waiting=True, wait_kind="event", wait_name=str(event_name))
-        if timer_duration:
-            return ActivityExecutionResult(success=True, output=payload, waiting=True, wait_kind="timer", wait_name=str(timer_duration))
-        if error_code:
-            return ActivityExecutionResult(success=True, output=payload, waiting=True, wait_kind="error", wait_name=str(error_code))
-        if compensation:
-            return ActivityExecutionResult(success=True, output=payload, waiting=True, wait_kind="compensation", wait_name=str(compensation))
-        instance.set_variable(f"{activity_id}.output", payload)
-        return ActivityExecutionResult(success=True, output=payload)
-
-    def _execute_intermediate_throw(self, instance, activity_id, activity_type, payload, activity, context):
-        signal_name = payload.get("signal_name")
-        escalation_code = payload.get("escalation_code")
-        compensation = payload.get("compensation")
-        link_name = payload.get("link_name")
-        if signal_name:
-            instance.set_variable(f"{activity_id}.signal", signal_name)
-        if escalation_code:
-            instance.set_variable(f"{activity_id}.escalation", escalation_code)
-        if compensation:
-            instance.set_variable(f"{activity_id}.compensation", compensation)
-        if link_name:
-            instance.set_variable(f"{activity_id}.link", link_name)
-        instance.set_variable(f"{activity_id}.output", payload)
-        return ActivityExecutionResult(success=True, output=payload)
-
-    def _execute_start_event(self, instance, activity_id, activity_type, payload, activity, context):
-        is_interrupting = payload.get("isInterrupting", True)
-        form_key = payload.get("formKey")
-        initiator = payload.get("initiator")
-        if form_key:
-            instance.set_variable(f"{activity_id}.formKey", form_key)
-        if initiator:
-            instance.set_variable(f"{activity_id}.initiator", initiator)
-        instance.set_variable(f"{activity_id}.output", payload)
-        return ActivityExecutionResult(success=True, output=payload)
-
-    def _execute_end_event(self, instance, activity_id, activity_type, payload, activity, context):
-        error_code = payload.get("error_code")
-        escalation_code = payload.get("escalation_code")
-        signal_name = payload.get("signal_name")
-        terminate = payload.get("terminate", False)
-        compensation = payload.get("compensation", False)
-        if error_code:
-            instance.set_variable(f"{activity_id}.error", error_code)
-        if escalation_code:
-            instance.set_variable(f"{activity_id}.escalation", escalation_code)
-        if signal_name:
-            instance.set_variable(f"{activity_id}.signal", signal_name)
-        if terminate:
-            instance.set_variable(f"{activity_id}.terminate", True)
-        if compensation:
-            instance.set_variable(f"{activity_id}.compensation", True)
-        instance.set_variable(f"{activity_id}.output", payload)
-        return ActivityExecutionResult(success=True, output=payload)
-
-    def _execute_generic(self, instance, activity_id, activity_type, payload, activity, context):
-        self._apply_io_mappings(instance, activity, context)
-        instance.set_variable(f"{activity_id}.output", payload)
-        return ActivityExecutionResult(success=True, output=payload, io_mappings_applied=True)
-
-    def _apply_io_mappings(self, instance, activity, context):
-        io_spec = activity.get("io_specification", {})
-        if not io_spec:
+    def _apply_io_mappings_osdm(self, activity: Activity, instance: ProcessInstance, context: ExecutionContext) -> None:
+        io_spec = getattr(activity, "io_specification", None)
+        if not io_spec or not isinstance(io_spec, InputOutputSpecification):
             return
-        data_inputs = io_spec.get("data_inputs", [])
-        for data_input in data_inputs:
-            name = data_input.get("name")
-            if name and name not in instance.get_all_variables():
-                default_value = data_input.get("default_value")
-                if default_value is not None:
-                    instance.set_variable(name, default_value)
-        data_associations = io_spec.get("data_associations", [])
-        for association in data_associations:
-            source = association.get("source_ref")
-            target = association.get("target_ref")
-            if source and target:
-                value = instance.get_variable(source)
-                if value is not None:
-                    instance.set_variable(target, value)
+        if io_spec.data_inputs:
+            for di in io_spec.data_inputs:
+                name = di.name if hasattr(di, "name") else str(di.id)
+                if name and name not in instance.get_all_variables():
+                    default_value = getattr(di, "default_value", None)
+                    if default_value is not None:
+                        instance.set_variable(name, default_value)
+        if io_spec.data_associations:
+            for da in io_spec.data_associations:
+                source = getattr(da, "source_ref", None)
+                target = getattr(da, "target_ref", None)
+                if source and target:
+                    value = instance.get_variable(str(source))
+                    if value is not None:
+                        instance.set_variable(str(target), value)
 
-    def _handle_loop(self, instance, activity_id, loop_char, children):
-        loop_type_str = loop_char.get("type", "")
-        if "MultiInstanceLoopCharacteristics" in loop_type_str:
-            is_sequential = loop_char.get("isSequential", False)
-            cardinality = loop_char.get("loopCardinality", 1)
-            completion_condition = loop_char.get("completionCondition")
-            if is_sequential:
-                instance.set_variable(f"{activity_id}.loop.sequential", True)
-                instance.set_variable(f"{activity_id}.loop.index", 0)
-                instance.set_variable(f"{activity_id}.loop.size", cardinality)
+    def _handle_loop_osdm(
+        self, activity: Activity, loop_char: LoopCharacteristics, children: list[str], instance: ProcessInstance,
+    ) -> ActivityExecutionResult | None:
+        if isinstance(loop_char, MultiInstanceLoopCharacteristics):
+            is_seq = loop_char.is_sequential
+            cardinality = getattr(loop_char, "loop_cardinality", None)
+            completion_cond = getattr(loop_char, "completion_condition", None)
+            if is_seq:
+                instance.set_variable(f"{activity.id}.loop.sequential", True)
+                instance.set_variable(f"{activity.id}.loop.index", 0)
+                size = self._evaluate_cardinality(cardinality) if cardinality else 1
+                instance.set_variable(f"{activity.id}.loop.size", size)
             else:
-                instance.set_variable(f"{activity_id}.loop.parallel", True)
-                instance.set_variable(f"{activity_id}.loop.size", cardinality)
-            if completion_condition:
-                instance.set_variable(f"{activity_id}.loop.completionCondition", completion_condition)
-            instance.set_variable(f"{activity_id}.loop.children", children)
-            return ActivityExecutionResult(success=True, output={"loop": loop_char, "children": children})
-        if "StandardLoopCharacteristics" in loop_type_str:
-            loop_condition = loop_char.get("loopCondition")
-            loop_maximum = loop_char.get("loopMaximum")
-            test_before = loop_char.get("testBefore", False)
-            instance.set_variable(f"{activity_id}.loop.standard", True)
-            if loop_condition:
-                instance.set_variable(f"{activity_id}.loop.condition", loop_condition)
-            if loop_maximum:
-                instance.set_variable(f"{activity_id}.loop.maximum", loop_maximum)
-            instance.set_variable(f"{activity_id}.loop.testBefore", test_before)
-            return ActivityExecutionResult(success=True, output={"loop": loop_char})
+                instance.set_variable(f"{activity.id}.loop.parallel", True)
+                size = self._evaluate_cardinality(cardinality) if cardinality else 1
+                instance.set_variable(f"{activity.id}.loop.size", size)
+            if completion_cond:
+                instance.set_variable(f"{activity.id}.loop.completionCondition", str(completion_cond))
+            instance.set_variable(f"{activity.id}.loop.children", children)
+            return ActivityExecutionResult(success=True, output={"loop": "multiInstance", "children": children})
+        elif isinstance(loop_char, StandardLoopCharacteristics):
+            condition = getattr(loop_char, "loop_condition", None)
+            maximum = getattr(loop_char, "loop_maximum", None)
+            test_before = getattr(loop_char, "test_before", False)
+            instance.set_variable(f"{activity.id}.loop.standard", True)
+            if condition:
+                instance.set_variable(f"{activity.id}.loop.condition", str(condition))
+            if maximum:
+                instance.set_variable(f"{activity.id}.loop.maximum", maximum)
+            instance.set_variable(f"{activity.id}.loop.testBefore", test_before)
+            return ActivityExecutionResult(success=True, output={"loop": "standard"})
         return None
+
+    def _evaluate_cardinality(self, cardinality: Any) -> int:
+        if isinstance(cardinality, int):
+            return max(1, cardinality)
+        if isinstance(cardinality, str):
+            try:
+                return max(1, int(cardinality))
+            except ValueError:
+                return 1
+        return 1

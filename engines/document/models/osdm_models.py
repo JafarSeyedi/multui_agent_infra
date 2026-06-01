@@ -1304,10 +1304,43 @@ class DecisionService(BaseElement):
     input_data: list[InputData] = field(default_factory=list)
 
 @dataclass
+class LiteralExpression(BaseElement):
+    body: str | None = None
+
+@dataclass
+class UnaryTests(BaseElement):
+    body: str | None = None
+
+@dataclass
+class InputClause(BaseElement):
+    input_expression: FormalExpression | LiteralExpression | None = None
+    input_values: list[Any] | None = None
+
+@dataclass
+class OutputClause(BaseElement):
+    name: str | None = None
+    output_values: list[Any] | None = None
+    default_output: LiteralExpression | None = None
+
+@dataclass
+class DecisionRule(BaseElement):
+    input_entries: list[UnaryTests | FormalExpression] = field(default_factory=list)
+    output_entries: list[LiteralExpression | FormalExpression] = field(default_factory=list)
+
+@dataclass
+class DecisionTable(BaseElement):
+    hit_policy: str = "UNIQUE"
+    aggregation: str | None = None
+    inputs: list[InputClause] = field(default_factory=list)
+    outputs: list[OutputClause] = field(default_factory=list)
+    rules: list[DecisionRule] = field(default_factory=list)
+
+@dataclass
 class Decision(FlowNode):
     logic: DecisionLogicType = DecisionLogicType.DECISION_TABLE
     expression: Script | None = None
     table_data: DecisionTable | None = None
+    decision_table: DecisionTable | None = None
     information_requirements: list[InformationRequirement] = field(default_factory=list)
     knowledge_requirements: list[KnowledgeRequirement] = field(default_factory=list)
     authority_requirements: list[AuthorityRequirement] = field(default_factory=list)

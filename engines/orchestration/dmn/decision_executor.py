@@ -1,7 +1,8 @@
 """DMN decision executor with decision graph traversal and dependency resolution.
 
 Supports decision tables, literal expressions, invocations, and BKM calls
-at DMN 1.3 specification level.
+at DMN 1.3 specification level. Works with both dict-based and OSDM-typed
+Decision objects.
 """
 
 from __future__ import annotations
@@ -12,6 +13,16 @@ from typing import Any
 
 from ...core.instance import ProcessInstance
 from ...core.engine import OrchestrationEngine
+from ....document.models.osdm_models import (
+    Decision,
+    DecisionTable,
+    InputClause,
+    OutputClause,
+    DecisionRule,
+    LiteralExpression,
+    UnaryTests,
+    FormalExpression,
+)
 from .decision_table_evaluator import DecisionTableEvaluator
 from .literal_expression_eval import LiteralExpressionEvaluator
 from .invocation_handler import InvocationHandler
@@ -43,6 +54,20 @@ class DecisionResult:
     rule_results: list[dict[str, Any]] = field(default_factory=list)
     hit_policy_applied: str | None = None
     evaluation_time_ms: float = 0.0
+
+
+def _get_body(value: Any) -> str | None:
+    if value is None:
+        return None
+    if isinstance(value, FormalExpression):
+        return value.body
+    if isinstance(value, LiteralExpression):
+        return value.body
+    if isinstance(value, UnaryTests):
+        return value.body
+    if isinstance(value, str):
+        return value
+    return str(value)
 
 
 class DecisionExecutor:
@@ -121,6 +146,108 @@ class DecisionExecutor:
             logger.error("DMN decision %s failed: %s", decision_id, e)
             self._decision_cache[decision_id] = result
             raise
+
+    async def evaluate_osdm(
+        self,
+        decision: Decision,
+        context: dict[str, Any],
+    ) -> Any:
+        decision_id = decision.id
+        name = decision.name or decision_id
+
+        logger.debug("Evaluating OSDM DMN decision: %s (%s)", name, decision_id)
+
+        if decision_id in self._decision_cache:
+            cached = self._decision_cache[decision_id]
+            if cached.status == "completed" and not cached.errors:
+                return cached.result
+
+        result = DecisionResult(decision_id=decision_id)
+
+        try:
+            table = decision.decision_table or decision.table_data
+            if table:
+                table_result = self._evaluate_osdm_decision_table(table, context, decision_id)
+                result.result = table_result
+                result.status = "completed"
+                self._decision_cache[decision_id] = result
+                return result.result
+
+            if decision.expression:
+                expr_body = _get_body(decision.expression)
+                if expr_body:
+                    result.result = self.literal_evaluator.evaluate(expr_body, context)
+                    self._decision_cache[decision_id] = result
+                    return result.result
+
+            logger.info("OSDM Decision %s evaluated with no table or expression", decision_id)
+            result.result = None
+            result.status = "completed"
+            self._decision_cache[decision_id] = result
+            return result.result
+
+        except Exception as e:
+            result.status = "failed"
+            result.errors.append(str(e))
+            logger.error("OSDM DMN decision %s failed: %s", decision_id, e)
+            self._decision_cache[decision_id] = result
+            raise
+
+    def _evaluate_osdm_decision_table(
+        self,
+        table: DecisionTable,
+        context: dict[str, Any],
+        decision_id: str,
+    ) -> Any:
+        hit_policy_str = table.hit_policy or "UNIQUE"
+        hit_policy = self.hit_policy_handler.parse(hit_policy_str)
+
+        input_values: list[Any] = []
+        for inp in table.inputs:
+            expr = inp.input_expression
+            text = _get_body(expr) if expr else ""
+            variable_name = text
+            value = context.get(variable_name)
+            if inp.input_values is not None:
+                if value not in inp.input_values:
+                    value = None
+            input_values.append(value)
+
+        matched_rules: list[dict[str, Any]] = []
+        for rule in table.rules:
+            entry_matches = True
+            j = 0
+            for inp_entry in rule.input_entries:
+                if j < len(input_values):
+                    test = _get_body(inp_entry) or "-"
+                    if test != "-" and test != "*":
+                        if input_values[j] is not None:
+                            try:
+                                if str(input_values[j]) != eval(test, {"__builtins__": {}}, {}):
+                                    entry_matches = False
+                                    break
+                            except Exception:
+                                if str(input_values[j]) != test:
+                                    entry_matches = False
+                                    break
+                    j += 1
+            if entry_matches:
+                output_values: dict[str, Any] = {}
+                for k, out_entry in enumerate(rule.output_entries):
+                    if k < len(table.outputs):
+                        out_name = table.outputs[k].name or f"output_{k}"
+                        text = _get_body(out_entry) or ""
+                        if text:
+                            try:
+                                output_values[out_name] = eval(text, {"__builtins__": {}}, context)
+                            except Exception:
+                                output_values[out_name] = text
+                matched_rules.append({"rule_id": rule.id, "output": output_values})
+
+        if not matched_rules:
+            return None
+
+        return self.hit_policy_handler.apply(hit_policy, matched_rules)
 
     def _evaluate_decision_table(
         self,

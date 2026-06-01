@@ -6,6 +6,9 @@ Implements BPMN 2.0 Annex A execution semantics including:
 - Transaction sub-process handling with compensation
 - Ad-hoc sub-process completion condition evaluation
 - Boundary event activation and token management
+
+Uses OSDM-typed objects (Activity, Task, Event, Gateway, SequenceFlow, etc.)
+instead of raw dictionaries for type-safe model traversal.
 """
 
 from __future__ import annotations
@@ -28,6 +31,31 @@ from .bpmn_execution_semantics import (
     BpmnTransactionHandler,
     BpmnBoundaryEventHandler,
     BpmnGatewaySemantics,
+)
+from .process_model import TypedProcessModel, classify_node
+from ....document.models.osdm_models import (
+    Activity,
+    Task,
+    Event,
+    Gateway,
+    SequenceFlow,
+    SubProcess,
+    StartEvent,
+    EndEvent,
+    CatchEvent,
+    ThrowEvent,
+    BoundaryEvent,
+    IntermediateCatchEvent,
+    IntermediateThrowEvent,
+    ExclusiveGateway,
+    InclusiveGateway,
+    ParallelGateway,
+    EventBasedGateway,
+    ComplexGateway,
+    FlowNode,
+    FlowElement,
+    LoopCharacteristics,
+    ActivityType,
 )
 
 
@@ -58,7 +86,7 @@ class _SubProcessContext:
     is_transaction: bool = False
     is_adhoc: bool = False
     parent_token_id: str | None = None
-    boundary_events: list[dict[str, Any]] = field(default_factory=list)
+    boundary_events: list[BoundaryEvent] = field(default_factory=list)
 
 
 class BPMNProcessExecutor:
@@ -70,6 +98,10 @@ class BPMNProcessExecutor:
     - Transaction sub-process with compensation
     - Ad-hoc sub-process with completion conditions
     - Boundary event activation (interrupting and non-interrupting)
+
+    Supports two model input paths:
+    1. Legacy dict-based payload via _normalize_model (backward compatible)
+    2. OSDM-typed process definitions via _normalize_model_osdm (preferred)
     """
 
     def __init__(
@@ -90,6 +122,8 @@ class BPMNProcessExecutor:
 
     async def execute(self, instance: ProcessInstance, definition_payload: dict[str, Any]) -> ProcessExecutionOutcome:
         model = self._normalize_model(definition_payload)
+        typed_model = self._normalize_model_osdm(definition_payload, model.definition_id)
+
         context = self._context_manager.get_context(instance.id)
         if context is None:
             context = self._context_manager.create_context(ContextScope.PROCESS, instance.id)
@@ -97,13 +131,14 @@ class BPMNProcessExecutor:
         if model.start_node is None:
             return ProcessExecutionOutcome(completed=True)
 
-        token = self._ensure_runtime_token(instance, model.start_node)
+        start_node_id = model.start_node
+        token = self._ensure_runtime_token(instance, start_node_id)
 
         sub_process_stack: list[_SubProcessContext] = []
         self._register_event_sub_processes(instance.id, model)
         self._register_transactions(instance.id, model)
 
-        current = model.start_node
+        current = start_node_id
         visited: set[str] = set()
         guard_steps = 0
         active_tokens: dict[str, Token] = {token.token_id: token}
@@ -111,19 +146,21 @@ class BPMNProcessExecutor:
         while current and guard_steps < 200:
             guard_steps += 1
 
-            if current in visited and not self._is_gateway(current, model):
+            if current in visited and not self._is_gateway_typed(current, typed_model):
                 break
             visited.add(current)
 
-            activity = self._find_activity(model, current)
-            if not activity:
+            activity = typed_model.get_node(current)
+            if activity is None:
+                activity = self._find_activity(model, current)
+            if activity is None:
                 break
 
-            activity_id = str(activity.get("id", current))
-            activity_type = str(activity.get("type", "task"))
+            activity_id = self._resolve_node_id(activity)
+            activity_type = self._resolve_activity_type(activity)
             before_variables = instance.get_all_variables()
 
-            instance.start_activity(activity_id, str(activity.get("name", activity_id)), activity_type)
+            instance.start_activity(activity_id, self._resolve_node_name(activity, activity_id), activity_type)
 
             tokens_at_node = [t for t in active_tokens.values()
                              if t.current_element_id == current and t.state == TokenState.ACTIVE]
@@ -142,7 +179,7 @@ class BPMNProcessExecutor:
                       data={"instance_id": instance.id, "activity_id": activity_id, "activity_type": activity_type}),
             )
 
-            execution_result = self._activity_handler.execute(instance, activity, context=context)
+            execution_result = await self._execute_activity(instance, activity, context)
 
             if not execution_result.success:
                 instance.fail_activity(activity_id, str(execution_result.error))
@@ -175,7 +212,7 @@ class BPMNProcessExecutor:
                       data={"instance_id": instance.id, "activity_id": activity_id, "activity_type": activity_type}),
             )
 
-            next_nodes = compute_next_nodes(model.flows, current)
+            next_nodes = self._compute_next(current, model, typed_model)
 
             if not next_nodes:
                 for t in tokens_at_node:
@@ -184,13 +221,13 @@ class BPMNProcessExecutor:
                 if sub_process_stack:
                     ctx = sub_process_stack[-1]
                     if ctx.is_adhoc:
-                        if self._check_adhoc_completion(instance, ctx, model):
+                        if self._check_adhoc_completion(instance, ctx, model, typed_model):
                             sub_process_stack.pop()
-                    elif self._check_sub_process_completion(instance, ctx, model):
+                    elif self._check_sub_process_completion(instance, ctx, model, typed_model):
                         sub_process_stack.pop()
                 continue
 
-            gateway_type = self._classify_gateway(current, model)
+            gateway_type = self._classify_gateway_typed(current, typed_model)
             if gateway_type == "parallel":
                 new_tokens = []
                 for target in next_nodes:
@@ -206,7 +243,7 @@ class BPMNProcessExecutor:
                 current = next_nodes[0] if next_nodes else None
             elif gateway_type in ("exclusive", "inclusive"):
                 if len(next_nodes) > 1:
-                    selected = self._evaluate_gateway_split(current, next_nodes, instance.get_all_variables(), gateway_type)
+                    selected = self._evaluate_gateway_split_typed(current, next_nodes, instance.get_all_variables(), gateway_type, typed_model)
                 else:
                     selected = next_nodes
                 for t in tokens_at_node:
@@ -222,12 +259,11 @@ class BPMNProcessExecutor:
                 current = next_nodes[0] if next_nodes else None
 
             if current:
-                converging = self._is_converging_gateway(current, model)
+                converging = self._is_converging_gateway_typed(current, typed_model)
                 if converging:
                     arrived = [t for t in active_tokens.values()
                               if t.current_element_id == current and t.state == TokenState.ACTIVE]
-                    incoming_flows = [f for f in model.flows
-                                     if (f.get("target") or f.get("targetRef")) == current]
+                    incoming_flows = self._get_incoming_flows(current, model, typed_model)
                     if len(arrived) < len(incoming_flows):
                         current = None
                         break
@@ -235,6 +271,89 @@ class BPMNProcessExecutor:
         if current and guard_steps >= 200:
             raise RuntimeError("BPMN process execution exceeded step limit")
         return ProcessExecutionOutcome(completed=False, current_node=current)
+
+    async def _execute_activity(
+        self, instance: ProcessInstance, activity: FlowNode | dict[str, Any], context: ExecutionContext,
+    ) -> ActivityExecutionResult:
+        """Execute an activity, dispatching to the OSDM handler for typed objects."""
+        if isinstance(activity, Activity):
+            return self._activity_handler.execute_osdm(instance, activity, context=context)
+        if isinstance(activity, dict):
+            return self._activity_handler.execute(instance, activity, context=context)
+        if isinstance(activity, FlowNode):
+            return self._activity_handler.execute_osdm(instance, activity, context=context)
+        return ActivityExecutionResult(success=True, output={"type": "unknown"})
+
+    def _compute_next(
+        self, current: str, model: ProcessModel, typed_model: TypedProcessModel,
+    ) -> list[str]:
+        """Compute next nodes, trying typed flows first, then falling back to dict flows."""
+        outgoing_osdm = typed_model.get_outgoing_flows(current)
+        if outgoing_osdm:
+            results = []
+            for flow in outgoing_osdm:
+                target = self._resolve_ref_id(flow.target_ref)
+                if target:
+                    results.append(target)
+            if results:
+                return results
+        typed_result = compute_next_nodes(model.flows, current)
+        return typed_result.selected_targets
+
+    def _get_incoming_flows(
+        self, node_id: str, model: ProcessModel, typed_model: TypedProcessModel,
+    ) -> list[Any]:
+        """Get all incoming flows for a node from either typed or dict sources."""
+        all_outgoing = []
+        for flows in typed_model._flow_index.values():
+            for flow in flows:
+                target = self._resolve_ref_id(flow.target_ref)
+                if target == node_id:
+                    all_outgoing.append(flow)
+        if all_outgoing:
+            return all_outgoing
+        return [f for f in model.flows
+                if (f.get("target") or f.get("targetRef")) == node_id]
+
+    def _resolve_ref_id(self, ref: Any) -> str | None:
+        if ref is None:
+            return None
+        if isinstance(ref, str):
+            return ref
+        return getattr(ref, "id", None)
+
+    def _resolve_node_id(self, node: Any) -> str:
+        if isinstance(node, str):
+            return node
+        node_id = getattr(node, "id", None)
+        return str(node_id) if node_id is not None else ""
+
+    def _resolve_node_name(self, node: Any, fallback: str) -> str:
+        if isinstance(node, str):
+            return fallback
+        name = getattr(node, "name", None)
+        return str(name) if name else fallback
+
+    def _resolve_activity_type(self, node: Any) -> str:
+        if isinstance(node, str):
+            return "task"
+        classified = classify_node(node)
+        if classified != "unknown":
+            return classified
+        if isinstance(node, Activity):
+            atype = getattr(node, "activity_type", None)
+            if atype:
+                if isinstance(atype, ActivityType):
+                    return atype.value
+                return str(atype)
+            return "task"
+        if isinstance(node, Task):
+            return "task"
+        if isinstance(node, Event):
+            return "event"
+        if isinstance(node, Gateway):
+            return "gateway"
+        return "task"
 
     def _normalize_model(self, payload: dict[str, Any]) -> ProcessModel:
         activities = list(payload.get("activities", []))
@@ -245,16 +364,200 @@ class BPMNProcessExecutor:
                 if str(item.get("type", "")).lower() in {"startevent", "start"}:
                     start_node = item.get("id")
                     break
+        if not start_node:
+            flow_elements = payload.get("flow_elements", payload.get("elements", {}))
+            if isinstance(flow_elements, dict):
+                for eid, elem in flow_elements.items():
+                    if isinstance(elem, StartEvent):
+                        start_node = eid
+                        break
+                    if isinstance(elem, dict) and str(elem.get("type", "")).lower() in {"startevent", "start"}:
+                        start_node = eid
+                        break
         return ProcessModel(
             definition_id=str(payload.get("id", "process")),
             start_node=start_node, activities=activities, flows=flows,
         )
+
+    def _normalize_model_osdm(self, definition_xml: dict[str, Any], definition_id: str) -> TypedProcessModel:
+        """Build a TypedProcessModel from a definition payload containing OSDM flow elements.
+
+        Accepts a dict payload that may include an OSDM Process object or a
+        ``flow_elements`` mapping of FlowElement instances.
+        """
+        typed_model = TypedProcessModel(definition_id=definition_id)
+
+        flow_elements = definition_xml.get("flow_elements", definition_xml.get("elements", {}))
+        if isinstance(flow_elements, dict):
+            for element_id, element in flow_elements.items():
+                if isinstance(element, FlowNode):
+                    typed_model._node_index[element_id] = element
+                    if isinstance(element, SequenceFlow):
+                        src = self._resolve_ref_id(element.source_ref)
+                        if src:
+                            if src not in typed_model._flow_index:
+                                typed_model._flow_index[src] = []
+                            typed_model._flow_index[src].append(element)
+                    if isinstance(element, BoundaryEvent):
+                        attached_id = None
+                        if element.attached_to_ref:
+                            attached_id = self._resolve_ref_id(element.attached_to_ref)
+                        if attached_id and isinstance(attached_id, str):
+                            if attached_id not in typed_model._boundary_events:
+                                typed_model._boundary_events[attached_id] = []
+                            typed_model._boundary_events[attached_id].append(element)
+
+        processes = definition_xml.get("processes", [])
+        if isinstance(processes, list):
+            for proc in processes:
+                if hasattr(proc, "flow_elements") and proc.flow_elements:
+                    for element_id, element in proc.flow_elements.items():
+                        if isinstance(element, FlowNode):
+                            typed_model._node_index[element_id] = element
+                    for element_id, element in proc.flow_elements.items():
+                        if isinstance(element, SequenceFlow):
+                            src = self._resolve_ref_id(element.source_ref)
+                            if src:
+                                if src not in typed_model._flow_index:
+                                    typed_model._flow_index[src] = []
+                                typed_model._flow_index[src].append(element)
+                    for element_id, element in proc.flow_elements.items():
+                        if isinstance(element, BoundaryEvent):
+                            attached_id = None
+                            if element.attached_to_ref:
+                                attached_id = self._resolve_ref_id(element.attached_to_ref)
+                            if attached_id and isinstance(attached_id, str):
+                                if attached_id not in typed_model._boundary_events:
+                                    typed_model._boundary_events[attached_id] = []
+                                typed_model._boundary_events[attached_id].append(element)
+                    typed_model.process = proc
+                    break
+
+        if not typed_model.start_node_id:
+            typed_model.start_node_id = definition_xml.get("start_event_id")
+        if not typed_model.start_node_id:
+            for eid, elem in typed_model._node_index.items():
+                if isinstance(elem, StartEvent):
+                    typed_model.start_node_id = eid
+                    break
+
+        return typed_model
+
+    def _convert_flow_elements_to_activities_and_flows(
+        self, flow_elements: dict[str, FlowElement],
+    ) -> tuple[list[FlowNode], list[SequenceFlow]]:
+        """Convert OSDM flow elements to typed activities and flows lists.
+
+        Returns typed FlowNode objects and SequenceFlow objects instead of raw dicts.
+        """
+        activities: list[FlowNode] = []
+        flows: list[SequenceFlow] = []
+
+        for element_id, element in flow_elements.items():
+            if isinstance(element, SequenceFlow):
+                flows.append(element)
+            elif isinstance(element, FlowNode):
+                activities.append(element)
+
+        return activities, flows
 
     def _find_activity(self, model: ProcessModel, activity_id: str) -> dict[str, Any] | None:
         for item in model.activities:
             if item.get("id") == activity_id:
                 return item
         return None
+
+    # ── Typed gateway / node classification ──────────────────────────
+
+    def _is_gateway_typed(self, node_id: str, typed_model: TypedProcessModel) -> bool:
+        node = typed_model.get_node(node_id)
+        if node is not None:
+            return isinstance(node, Gateway)
+        return False
+
+    def _classify_gateway_typed(self, node_id: str, typed_model: TypedProcessModel) -> str:
+        node = typed_model.get_node(node_id)
+        if node is None:
+            return "none"
+        if isinstance(node, ExclusiveGateway):
+            return "exclusive"
+        if isinstance(node, InclusiveGateway):
+            return "inclusive"
+        if isinstance(node, ParallelGateway):
+            return "parallel"
+        if isinstance(node, EventBasedGateway):
+            return "eventBased"
+        if isinstance(node, ComplexGateway):
+            return "complex"
+        return "none"
+
+    def _is_converging_gateway_typed(self, node_id: str, typed_model: TypedProcessModel) -> bool:
+        node = typed_model.get_node(node_id)
+        if node is None:
+            return False
+        return isinstance(node, (ParallelGateway, InclusiveGateway))
+
+    # ── Gateway condition evaluation (typed) ─────────────────────────
+
+    def _evaluate_gateway_split_typed(
+        self, gateway_id: str, targets: list[str], context: dict[str, Any], gateway_type: str,
+        typed_model: TypedProcessModel,
+    ) -> list[str]:
+        from ..expression.evaluator import EvaluationContext
+        from ..expression.python_evaluator import PythonEvaluator
+        evaluator = PythonEvaluator()
+
+        outgoing = typed_model.get_outgoing_flows(gateway_id)
+
+        if gateway_type == "exclusive":
+            for target in targets:
+                flow = self._find_flow_to_target_typed(gateway_id, target, typed_model)
+                condition = self._extract_flow_condition(flow) if flow else None
+                if condition:
+                    try:
+                        if bool(evaluator.evaluate(condition, EvaluationContext(variables=context))):
+                            return [target]
+                    except Exception:
+                        continue
+                else:
+                    return [target]
+            return [targets[-1]] if targets else []
+
+        elif gateway_type == "inclusive":
+            selected = []
+            for target in targets:
+                flow = self._find_flow_to_target_typed(gateway_id, target, typed_model)
+                condition = self._extract_flow_condition(flow) if flow else None
+                if condition:
+                    try:
+                        if bool(evaluator.evaluate(condition, EvaluationContext(variables=context))):
+                            selected.append(target)
+                    except Exception:
+                        continue
+                else:
+                    selected.append(target)
+            return selected if selected else ([targets[-1]] if targets else [])
+
+        return targets
+
+    def _find_flow_to_target_typed(
+        self, source_id: str, target_id: str, typed_model: TypedProcessModel,
+    ) -> SequenceFlow | None:
+        for flow in typed_model.get_outgoing_flows(source_id):
+            target = self._resolve_ref_id(flow.target_ref)
+            if target == target_id:
+                return flow
+        return None
+
+    def _extract_flow_condition(self, flow: SequenceFlow | None) -> str | None:
+        if flow is None:
+            return None
+        if flow.condition_expression is None:
+            return None
+        body = getattr(flow.condition_expression, "body", None)
+        return body if body else None
+
+    # ── Legacy dict-based helpers (kept for backward compat) ─────────
 
     def _is_gateway(self, node_id: str, model: ProcessModel) -> bool:
         activity = self._find_activity(model, node_id)
@@ -322,6 +625,8 @@ class BPMNProcessExecutor:
     def _find_flow_to_target(self, source_id: str, target_id: str) -> dict[str, Any] | None:
         return None
 
+    # ── Token and variable persistence ───────────────────────────────
+
     def _ensure_runtime_token(self, instance: ProcessInstance, start_node: str) -> Token:
         tokens = self._orchestration_engine.token_manager.get_instance_tokens(instance.id)
         for token in tokens:
@@ -357,6 +662,8 @@ class BPMNProcessExecutor:
             await self._orchestration_engine.correlation_engine.subscribe_event_persisted(
                 execution_result.wait_name, instance.id, activity_id,
             )
+
+    # ── Event sub-process and transaction registration ───────────────
 
     def _register_event_sub_processes(self, instance_id: str, model: ProcessModel) -> None:
         for activity in model.activities:
@@ -396,14 +703,24 @@ class BPMNProcessExecutor:
                               data={"instance_id": instance.id, "activity_id": comp_id, "compensated": True}),
                     )
 
+    # ── Sub-process completion checks ────────────────────────────────
+
     def _check_adhoc_completion(
         self, instance: ProcessInstance, ctx: _SubProcessContext, model: ProcessModel,
+        typed_model: TypedProcessModel | None = None,
     ) -> bool:
         completion_condition = None
+        sub_process_node = None
         for activity in model.activities:
             if activity.get("id") == ctx.sub_process_id:
                 completion_condition = activity.get("payload", {}).get("completionCondition")
                 break
+        if typed_model:
+            node = typed_model.get_node(ctx.sub_process_id)
+            if isinstance(node, SubProcess):
+                sub_process_node = node
+                if node.completion_condition:
+                    completion_condition = getattr(node.completion_condition, "body", None) or str(node.completion_condition)
         if completion_condition:
             try:
                 from ..expression.evaluator import EvaluationContext
@@ -413,10 +730,13 @@ class BPMNProcessExecutor:
                 ))
             except Exception:
                 return False
-        children = []
-        for activity in model.activities:
-            if activity.get("payload", {}).get("parentSubProcessId") == ctx.sub_process_id:
-                children.append(activity.get("id"))
+        children: list[str] = []
+        if sub_process_node and sub_process_node.flow_elements:
+            children = [eid for eid in sub_process_node.flow_elements]
+        else:
+            for activity in model.activities:
+                if activity.get("payload", {}).get("parentSubProcessId") == ctx.sub_process_id:
+                    children.append(activity.get("id"))
         if not children:
             return True
         all_completed = all(
@@ -426,6 +746,7 @@ class BPMNProcessExecutor:
 
     def _check_sub_process_completion(
         self, instance: ProcessInstance, ctx: _SubProcessContext, model: ProcessModel,
+        typed_model: TypedProcessModel | None = None,
     ) -> bool:
         end_events_reached = False
         for activity in model.activities:
@@ -437,4 +758,13 @@ class BPMNProcessExecutor:
                     if status == "completed":
                         end_events_reached = True
                         break
+        if not end_events_reached and typed_model:
+            node = typed_model.get_node(ctx.sub_process_id)
+            if isinstance(node, SubProcess) and node.flow_elements:
+                for eid, elem in node.flow_elements.items():
+                    if isinstance(elem, EndEvent):
+                        status = instance.get_variable(f"activity.{eid}.status")
+                        if status == "completed":
+                            end_events_reached = True
+                            break
         return end_events_reached

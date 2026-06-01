@@ -1,6 +1,8 @@
 """Transaction subprocess and compensation handling for BPMN.
 
 Supports BPMN transaction subprocess and cancellation/compensation semantics.
+Provides OSDM-typed TransactionSubProcess support alongside backward-compatible
+dict-based methods.
 """
 
 from __future__ import annotations
@@ -9,11 +11,19 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
+from enum import Enum
+
 from ..runtime.compensation import CompensationManager, CompensationStep
 from ...core.event_bus import Event, EventType
 from ...core.engine import OrchestrationEngine
 
-from ....document.models.osdm_models import TransactionMethod
+from ....document.models.osdm_models import (
+    Artifact,
+    FlowElement,
+    LaneSet,
+    TransactionMethod,
+    TransactionSubProcess,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -29,9 +39,6 @@ class TransactionState(str, Enum):
     COMPLETED = "completed"
 
 
-from enum import Enum
-
-
 @dataclass(frozen=True)
 class HandlerTransactionBoundary:
     transaction_id: str
@@ -39,6 +46,29 @@ class HandlerTransactionBoundary:
     cancel_content: bool = True
     process_ref: str | None = None
     method: TransactionMethod = TransactionMethod.COMPENSATE
+    transaction: TransactionSubProcess | None = None
+
+    @classmethod
+    def from_osdm(cls, transaction: TransactionSubProcess) -> HandlerTransactionBoundary:
+        return cls(
+            transaction_id=transaction.id,
+            compensate=True,
+            cancel_content=True,
+            process_ref=None,
+            method=cls.get_transaction_method(transaction),
+            transaction=transaction,
+        )
+
+    @staticmethod
+    def get_transaction_method(transaction: TransactionSubProcess) -> TransactionMethod:
+        method = getattr(transaction, "method", None)
+        if isinstance(method, TransactionMethod):
+            return method
+        if isinstance(method, str):
+            for candidate in TransactionMethod:
+                if candidate.value == method:
+                    return candidate
+        return TransactionMethod.COMPENSATE
 
 
 @dataclass
@@ -65,6 +95,14 @@ class TransactionHandler:
         self._compensation.register(
             CompensationStep(name=f"rollback:{boundary.transaction_id}", action=lambda: self._do_compensate(boundary.transaction_id))
         )
+        return ctx
+
+    def begin_from_osdm(self, transaction: TransactionSubProcess) -> HandlerTransactionContext:
+        boundary = HandlerTransactionBoundary.from_osdm(transaction)
+        ctx = self.begin(boundary)
+        children = list(transaction.flow_elements.keys()) if transaction.flow_elements else []
+        for child_id in children:
+            ctx.children.append(child_id)
         return ctx
 
     def get_context(self, transaction_id: str) -> HandlerTransactionContext | None:

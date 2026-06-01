@@ -1,6 +1,7 @@
 """Global task execution helper for BPMN global tasks.
 
 Supports global tasks/callable behavior and reuse across call activities.
+Provides both OSDM-typed and backward-compatible dict-based interfaces.
 """
 
 from __future__ import annotations
@@ -20,6 +21,7 @@ class HandlerGlobalTask:
     task_type: str = "task"
     payload: dict[str, Any] = field(default_factory=dict)
     name: str | None = None
+    osdm_task: OSDMGlobalTask | None = None
 
 
 @dataclass
@@ -92,3 +94,28 @@ class GlobalTaskHandler:
         before = len(self._execution_history)
         self._execution_history = [r for r in self._execution_history if r.task_id != task_id]
         return before - len(self._execution_history)
+
+    def register_osdm(self, task: OSDMGlobalTask) -> HandlerGlobalTask:
+        handler_task = HandlerGlobalTask(
+            task_id=task.id,
+            task_type=task.task_type.value if hasattr(task.task_type, "value") else str(task.task_type),
+            name=task.name,
+            osdm_task=task,
+            payload={
+                "resources": [r.id for r in task.resources] if task.resources else [],
+                "supported_interface_refs": [iface.id for iface in task.supported_interface_refs] if task.supported_interface_refs else [],
+                "io_specification": task.io_specification is not None,
+                "io_binding_count": len(task.io_binding) if task.io_binding else 0,
+            },
+        )
+        self.register(handler_task)
+        return handler_task
+
+    def execute_osdm(self, task: OSDMGlobalTask, context: dict[str, Any] | None = None) -> GlobalTaskExecutionResult:
+        handler_task = self.register_osdm(task)
+        result = self.execute(handler_task, context)
+        result.output["osdm"] = True
+        result.output["task_type"] = task.task_type.value if hasattr(task.task_type, "value") else str(task.task_type)
+        result.output["resources"] = [r.id for r in task.resources] if task.resources else []
+        result.output["supports"] = [iface.id for iface in task.supported_interface_refs] if task.supported_interface_refs else []
+        return result

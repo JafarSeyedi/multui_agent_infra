@@ -8,6 +8,7 @@ Supports CMMN 1.1 semantics including:
 - Sentry evaluation for entry/exit criteria
 - Planning table and discretionary items
 - Case file item management
+- OSDM-typed document models (CMMNDocument, Stage, etc.)
 """
 
 from __future__ import annotations
@@ -20,6 +21,23 @@ from typing import Any
 from ...core.instance import ProcessInstance
 from ...core.event_bus import Event, EventType
 from ...core.engine import OrchestrationEngine
+from ...document.models.osdm_models import (
+    CaseFileItem,
+    CaseTask,
+    CMMNDefinition,
+    CMMNDocument,
+    DiscretionaryItem,
+    EntryCriterion,
+    ExitCriterion,
+    FormalExpression,
+    HumanTask,
+    Milestone,
+    PlanItem,
+    ProcessTask,
+    Sentry,
+    SentryExpression,
+    Stage,
+)
 from .sentry_evaluator import SentryEvaluator
 
 
@@ -68,7 +86,7 @@ class MilestoneContext:
     milestone_id: str
     name: str | None = None
     is_achieved: bool = False
-    entry_criteria: list[dict[str, Any]] = field(default_factory=list)
+    entry_criteria: list[Sentry] = field(default_factory=list)
 
 
 @dataclass
@@ -185,7 +203,251 @@ class CaseExecutor:
                 )
 
         self._evaluate_milestones(instance)
-        self._check_case_completion(instance, plan_model)
+        self._check_case_completion(instance)
+
+    async def execute_osdm(self, document: CMMNDocument, instance: ProcessInstance) -> None:
+        for cmmn_def in document.cmmn_definitions:
+            case_plan_model = cmmn_def.case
+            await self._execute_osdm_case(instance, cmmn_def, case_plan_model)
+
+    async def _execute_osdm_case(
+        self,
+        instance: ProcessInstance,
+        cmmn_def: CMMNDefinition,
+        case_plan_model: Stage,
+    ) -> None:
+        case_file_items: list[CaseFileItem] = cmmn_def.case_file_items
+        for item in case_file_items:
+            name = item.name if item.name else item.id
+            instance.set_variable(f"caseFile.{name}", None)
+
+        sentries: list[Sentry] = case_plan_model.sentries
+        for sentry in sentries:
+            sentry_dict = self._sentry_to_dict(sentry)
+            self.sentry_evaluator.register(sentry_dict)
+
+        plan_items: list[PlanItem] = cmmn_def.plan_items
+        discretionary_items: list[DiscretionaryItem] = cmmn_def.discretionary_items
+
+        milestone_items: list[Milestone] = []
+        stage_items: list[Stage] = []
+        task_items: list[PlanItem] = []
+        self._collect_plan_items(case_plan_model, plan_items, milestone_items, stage_items, task_items)
+
+        for milestone in milestone_items:
+            ctx = MilestoneContext(
+                milestone_id=milestone.id,
+                name=milestone.name,
+            )
+            self._milestones[ctx.milestone_id] = ctx
+            instance.set_variable(f"milestone.{ctx.milestone_id}", {
+                "name": ctx.name,
+                "achieved": False,
+            })
+
+        for stage in stage_items:
+            ctx = StageContext(
+                stage_id=stage.id,
+                name=stage.name,
+                auto_complete=True,
+            )
+            self._stages[ctx.stage_id] = ctx
+
+        for item in task_items:
+            entry_criteria = self._resolve_entry_criteria(item)
+            if entry_criteria:
+                criteria_dicts = [self._sentry_to_dict(ec) for ec in entry_criteria]
+                if not self.sentry_evaluator.evaluate_entry_criteria(criteria_dicts, instance):
+                    continue
+
+            definition = item.definition_ref
+            task_id = definition.id if definition else item.id
+            task_name = definition.name if definition and definition.name else task_id
+
+            instance.set_variable(f"task.{task_id}", {
+                "name": task_name,
+                "status": "active",
+                "required": "optional",
+            })
+
+            if self.orchestration_engine is not None:
+                self.orchestration_engine.event_bus.publish(
+                    Event(
+                        type=EventType.ACTIVITY_STARTED,
+                        data={
+                            "instance_id": instance.id,
+                            "activity_id": task_id,
+                            "activity_type": type(definition).__name__ if definition else "unknown",
+                            "engine_type": "cmmn",
+                        },
+                    )
+                )
+
+            result = await self._execute_osdm_task(instance, item, definition)
+
+            if result and self.orchestration_engine is not None:
+                self.orchestration_engine.event_bus.publish(
+                    Event(
+                        type=EventType.ACTIVITY_COMPLETED,
+                        data={
+                            "instance_id": instance.id,
+                            "activity_id": task_id,
+                            "activity_type": type(definition).__name__ if definition else "unknown",
+                            "engine_type": "cmmn",
+                        },
+                    )
+                )
+
+        for disc_item in discretionary_items:
+            if disc_item.definition_ref:
+                definition = disc_item.definition_ref
+                task_id = definition.id
+                task_name = definition.name if definition.name else task_id
+                instance.set_variable(f"task.{task_id}", {
+                    "name": task_name,
+                    "status": "available",
+                    "required": "discretionary",
+                })
+
+        self._evaluate_osdm_milestones(instance, milestone_items, plan_items)
+        self._check_osdm_case_completion(instance)
+
+    async def _execute_osdm_task(
+        self,
+        instance: ProcessInstance,
+        plan_item: PlanItem,
+        definition: Any,
+    ) -> dict[str, Any] | None:
+        task_id = definition.id
+        task_name = definition.name if definition.name else task_id
+
+        result: dict[str, Any] = {
+            "task_id": task_id,
+            "task_name": task_name,
+            "task_type": type(definition).__name__,
+            "status": "completed",
+        }
+
+        if isinstance(definition, HumanTask):
+            role_ref = definition.role_ref
+            performer = role_ref.name if role_ref and role_ref.name else role_ref.id if role_ref else None
+            result["performer"] = performer
+            if performer:
+                instance.set_variable(f"task.{task_id}.performer", performer)
+
+        elif isinstance(definition, ProcessTask):
+            process_ref = definition.process_ref
+            called_element = process_ref.id if process_ref else None
+            result["called_element"] = called_element
+            if called_element:
+                instance.set_variable(f"task.{task_id}.calledElement", called_element)
+
+        elif isinstance(definition, CaseTask):
+            case_ref = definition.case_ref
+            case_ref_id = case_ref.id if case_ref and hasattr(case_ref, "id") else str(case_ref) if case_ref else None
+            result["case_ref"] = case_ref_id
+            if case_ref_id:
+                instance.set_variable(f"task.{task_id}.caseRef", case_ref_id)
+
+        else:
+            result["output"] = {}
+
+        instance.set_variable(f"task.{task_id}.output", result)
+        instance.set_variable(f"task.{task_id}.status", "completed")
+
+        return result
+
+    def _collect_plan_items(
+        self,
+        case_plan_model: Stage,
+        plan_items: list[PlanItem],
+        milestone_items: list[Milestone],
+        stage_items: list[Stage],
+        task_items: list[PlanItem],
+    ) -> None:
+        flow_elements = case_plan_model.flow_elements
+        for element in flow_elements.values():
+            if isinstance(element, Milestone):
+                milestone_items.append(element)
+            elif isinstance(element, Stage):
+                stage_items.append(element)
+                nested = element.flow_elements
+                for nested_elem in nested.values():
+                    if isinstance(nested_elem, Milestone):
+                        milestone_items.append(nested_elem)
+                    elif isinstance(nested_elem, Stage):
+                        stage_items.append(nested_elem)
+
+        for plan_item in plan_items:
+            definition = plan_item.definition_ref
+            if definition is None:
+                continue
+            if isinstance(definition, Milestone):
+                milestone_items.append(definition)
+            elif isinstance(definition, Stage):
+                stage_items.append(definition)
+            else:
+                task_items.append(plan_item)
+
+    def _resolve_entry_criteria(self, plan_item: PlanItem) -> list[Sentry]:
+        criteria: list[Sentry] = []
+        for entry_criterion in plan_item.entry_criteria:
+            if entry_criterion.sentry_ref:
+                criteria.append(entry_criterion.sentry_ref)
+        return criteria
+
+    def _sentry_to_dict(self, sentry: Sentry) -> dict[str, Any]:
+        sentry_dict: dict[str, Any] = {
+            "id": sentry.id,
+            "name": sentry.name,
+        }
+        if sentry.on_part is not None:
+            if isinstance(sentry.on_part, FormalExpression):
+                sentry_dict["on"] = [{"source": sentry.on_part.body}]
+            else:
+                sentry_dict["on"] = [str(sentry.on_part)]
+        else:
+            sentry_dict["on"] = []
+        if sentry.if_part is not None:
+            if isinstance(sentry.if_part, FormalExpression):
+                sentry_dict["condition"] = sentry.if_part.body
+            else:
+                sentry_dict["condition"] = str(sentry.if_part)
+        return sentry_dict
+
+    def _evaluate_osdm_milestones(
+        self,
+        instance: ProcessInstance,
+        milestones: list[Milestone],
+        plan_items: list[PlanItem],
+    ) -> None:
+        for milestone in milestones:
+            ctx = self._milestones.get(milestone.id)
+            if ctx is None or ctx.is_achieved:
+                continue
+            entry_criteria: list[Sentry] = []
+            for pi in plan_items:
+                if isinstance(pi.definition_ref, Milestone) and pi.definition_ref.id == milestone.id:
+                    for ec in pi.entry_criteria:
+                        if ec.sentry_ref:
+                            entry_criteria.append(ec.sentry_ref)
+            if entry_criteria:
+                criteria_dicts = [self._sentry_to_dict(s) for s in entry_criteria]
+                if self.sentry_evaluator.evaluate_entry_criteria(criteria_dicts, instance):
+                    ctx.is_achieved = True
+                    instance.set_variable(f"milestone.{milestone.id}.achieved", True)
+            else:
+                ctx.is_achieved = True
+                instance.set_variable(f"milestone.{milestone.id}.achieved", True)
+
+    def _check_osdm_case_completion(self, instance: ProcessInstance) -> None:
+        all_milestones_achieved = all(ctx.is_achieved for ctx in self._milestones.values())
+        all_stages_done = all(
+            ctx.is_completed for ctx in self._stages.values()
+        ) if self._stages else True
+
+        if all_milestones_achieved and all_stages_done:
+            instance.complete()
 
     async def _execute_task(
         self,
@@ -277,8 +539,6 @@ class CaseExecutor:
                 continue
 
             required_rule = task.get("requiredRule", "optional")
-            repetition_rule = task.get("repetitionRule")
-
             available.append(task)
 
         for item in plan_model.discretionary_items:
@@ -300,18 +560,15 @@ class CaseExecutor:
             if ctx.is_achieved:
                 continue
             if ctx.entry_criteria:
-                if self.sentry_evaluator.evaluate_entry_criteria(ctx.entry_criteria, instance):
+                criteria_dicts = [self._sentry_to_dict(ec) for ec in ctx.entry_criteria]
+                if self.sentry_evaluator.evaluate_entry_criteria(criteria_dicts, instance):
                     ctx.is_achieved = True
                     instance.set_variable(f"milestone.{milestone_id}.achieved", True)
             else:
                 ctx.is_achieved = True
                 instance.set_variable(f"milestone.{milestone_id}.achieved", True)
 
-    def _check_case_completion(
-        self,
-        instance: ProcessInstance,
-        plan_model: CasePlanModel,
-    ) -> None:
+    def _check_case_completion(self, instance: ProcessInstance) -> None:
         all_milestones_achieved = all(ctx.is_achieved for ctx in self._milestones.values())
         all_stages_done = all(
             ctx.is_completed for ctx in self._stages.values()

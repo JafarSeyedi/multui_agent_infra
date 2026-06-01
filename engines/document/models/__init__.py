@@ -24,6 +24,8 @@ from .msdm_capabilities import AnnotationSupport, CompositeSupport, ConstraintCa
 
 from .msdm_models import Annotation, Attribute, Cardinality, CompositionType, Constraint, ConstraintType, DataType, Entity, EntityComposition, EntityKind, EntityRelationship, Index, IndexMethod, MSDMDocument, Namespace, ScalarType, VersionStatus, VisibilityKind
 
+from .osdm_models import DecisionRule
+from .osdm_models import InputClause, LiteralExpression, OutputClause, UnaryTests
 from .osdm_models import ActionList, Activity, ActivityType, AdHocOrdering, AdHocSubProcess, AlignmentKind, ApplicabilityRule, Arc, Artifact, Assignment, Association, AssociationDirection, Auditing, AuthorityRequirement, BPMNDiagram, BPMNDocument, BPMNEdge, BPMNLabel, BPMNPlane, BPMNShape, BaseElement, BaseOSDMDocument, BoundaryEvent, Bounds, BpmnExpression, BusinessKnowledgeModel, BusinessRuleTask, CEPDefinition, CEPDocument, CEPOperator, CEPRule, CMMNDefinition, CMMNDocument, CallActivity, CallActivityType, CallChoreography, CallConversation, CancelEventDefinition, CaseFileItem, CaseFileMultiplicity, CaseTask, CatchEvent, Category, CategoryValue, Choreography, ChoreographyActivity, ChoreographyLoopType, ChoreographyTask, CloudResourceBinding, Collaboration, CompensateEventDefinition, ComplexBehaviorDefinition, ComplexGateway, ConditionalEventDefinition, Conversation, ConversationAssociation, ConversationLink, ConversationNode, CorrelationKey, CorrelationProperty, CorrelationPropertyBinding, CorrelationPropertyRetrievalExpression, CorrelationPropertyType, CorrelationSubscription, DMNDefinition, DMNDocument, DataAssociation, DataElement, DataFlowElement, DataInput, DataInputAssociation, DataInputRef, DataObject, DataObjectReference, DataOutput, DataOutputAssociation, DataOutputRef, DataState, DataStore, DataStoreReference, Decision, DecisionLogicType, DecisionService, DecisionTable, DiagramElement, DiscretionaryItem, DueTimeDuration, DurationResolution, Edge, EndEvent, EndPoint, EntryCriterion, Error, ErrorEventDefinition, ErrorHandlingConfig, ErrorHandlingOperator, Escalation, EscalationEventDefinition, EscapeType, Event, EventBasedGateway, EventBasedGatewayType, EventDefinition, EventDefinitionType, EventListener, EventListenerType, EventStream, EventType, ExclusiveGateway, ExitCriterion, Extension, ExtensionAttributeDefinition, ExtensionAttributeValue, ExtensionDefinition, FlowElement, FlowNode, FormalExpression, Gateway, GatewayDirection, GatewayType, GlobalBusinessRuleTask, GlobalChoreographyTask, GlobalConversation, GlobalManualTask, GlobalScriptTask, GlobalTask, GlobalUserTask, Group, HumanPerformer, HumanTask, ImplicitThrowEvent, InclusiveGateway, InformationRequirement, InputData, InputOutputBinding, InputOutputSpecification, InputSet, InteractionModel, InteractionNode, InteractionNodeType, InteractionProtocol, InteractionStrategy, Interface, IntermediateCatchEvent, IntermediateThrowEvent, ItemDefinition, ItemKind, KnowledgeRequirement, KnowledgeSource, Lane, LaneSet, LinkEventDefinition, Locator, LoopCharacteristics, LoopType, ManualTask, Message, MessageEventDefinition, MessageFlow, MessageFlowAssociation, MessageVisibleKind, Milestone, Monitoring, MultiAgentInteractionDocument, MultiInstanceBehavior, MultiInstanceLoopCharacteristics, OSDMModel, Operation, OutputSet, ParallelGateway, Participant, ParticipantAssociation, ParticipantBandKind, ParticipantMultiplicity, PartnerEntity, PartnerRole, Performer, Place, PlanItem, PnTransition, PotentialOwner, PotentialOwnerType, Process, ProcessTask, ProcessType, Property, PseudoState, PseudoStateKind, ReceiveTask, RelationshipDirection, Rendering, RenderingForm, Resource, ResourceAssignmentExpression, ResourceParameter, ResourceParameterBinding, ResourceParameterType, ResourceRole, ResourceRoleType, RetryBackoffRate, RetryConfig, RootElement, Script, ScriptLanguage, ScriptTask, SendTask, Sentry, SentryExpression, SequenceFlow, ServiceTask, Shape, Signal, SignalEventDefinition, Stage, StandardLoopCharacteristics, StartEvent, State, StateInvoke, StateMachineDocument, StateMachineModel, StateMachineRegion, StateNode, StateTransition, SubChoreography, SubConversation, SubProcess, SubProcessType, Task, TaskType, TerminateEventDefinition, TextAnnotation, ThrowEvent, TimeReference, TimeoutConfig, TimerCalculationType, TimerEventDefinition, TimerEventType, TransactionMethod, TransactionSubProcess, Transition, UserTask, WorkflowStateType
 
 from .psdm_models import Animation, AnimationType, ConnectorContent, GroupShapeContent, HyperlinkAction, MediaReference, NotesSlide, PSDMDocument, Placeholder, PlaceholderType, PresentationProperties, PresentationSection, PresentationTransition, ShowType, Slide, SlideComment, SlideLayout, SlideMaster, Theme, TransitionType, TriggerType
@@ -408,6 +410,7 @@ __all__ = [
     "IndexCapability",
     "IndexMethod",
     "InformationRequirement",
+    "InputClause",
     "IngressRule",
     "InheritanceSupport",
     "InputData",
@@ -449,6 +452,7 @@ __all__ = [
     "Link",
     "LinkContent",
     "LinkEventDefinition",
+    "LiteralExpression",
     "ListContent",
     "ListItemContent",
     "ListStyle",
@@ -530,6 +534,7 @@ __all__ = [
     "OperationType",
     "Orientation",
     "OutputSet",
+    "OutputClause",
     "PDFInfo",
     "PDFTextRun",
     "PDFVectorPath",
@@ -748,6 +753,7 @@ __all__ = [
     "UnderlayTable",
     "UnderlayType",
     "UnsupportedFormatError",
+    "UnaryTests",
     "UserTask",
     "VPortRecord",
     "VPortTable",
