@@ -6,7 +6,7 @@ from typing import Any
 
 from ...document.models.dsdm_models import DataDocument, DataSchemaReference, SchemaBinding
 from ...document.models.msdm_models import Entity
-from ..runtime.runtime_records import VARIABLE_RECORD
+from .runtime_records import VARIABLE_RECORD
 from .repository import PersistentRuntimeRepository
 
 
@@ -93,12 +93,12 @@ class VariableRepository(PersistentRuntimeRepository):
             }
             
             expected_type = type_map.get(value_type)
-            if expected_type:
-                if isinstance(expected_type, tuple):
-                    # Handle types that accept multiple Python types (like double accepting int)
-                    if not any(isinstance(value, t) for t in expected_type):
+            if expected_type is not None:
+                et: Any = expected_type
+                if isinstance(et, tuple):
+                    if not any(isinstance(value, t) for t in et):
                         errors.append(f"Variable value type mismatch: expected {value_type}, got {type(value).__name__}")
-                elif not isinstance(value, expected_type):
+                elif not isinstance(value, et):
                     errors.append(f"Variable value type mismatch: expected {value_type}, got {type(value).__name__}")
         
         return errors

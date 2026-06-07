@@ -164,7 +164,7 @@ class PDFOptimizer:
                 # فشرده‌سازی با zlib
                 compressed = zlib.compress(stream_data, level=zlib.Z_BEST_COMPRESSION)
                 return b'stream\n' + compressed + b'\nendstream'
-            except:
+            except Exception:
                 return match.group(0)
 
         compressed_data = re.sub(pattern, compress_stream, objects_data, flags=re.DOTALL)
@@ -287,7 +287,7 @@ class PDFOptimizer:
                 return '/Subtype /Image' in value or '/Filter /DCTDecode' in value
 
             return False
-        except:
+        except Exception:
             return False
 
 
@@ -320,7 +320,7 @@ class PDFOptimizer:
 
             # اندازه تقریبی
             return len(str(obj).encode('utf-8'))
-        except:
+        except Exception:
             return 0
 
 
@@ -692,7 +692,7 @@ class PDFOptimizer:
                 return compressed
 
             return image_data
-        except:
+        except Exception:
             return image_data
 
 

@@ -59,7 +59,7 @@ class MongoDBWriter(BaseDSDMWriter):
     def _dsdm_to_mongo_value(self, dv: DataValue) -> Any:
         if dv is None:
             return None
-        st = dv.scalar_type
+        _st = dv.scalar_type
         val = dv.value
         # We rely on the driver to serialize Python types correctly; no bson specific conversions needed
         return val

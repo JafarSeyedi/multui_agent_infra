@@ -1,10 +1,8 @@
 from .chart_ref_parser import NS, resolve_chart
 
-from .diagram_parser import DiagramNode, NS, resolve_diagram
+from .diagram_parser import DiagramNode, resolve_diagram
 
-from .image_parser import NS, resolve_image
-
-from .shape_parser import NS
+from .image_parser import resolve_image
 
 __all__ = [
     "DiagramNode",

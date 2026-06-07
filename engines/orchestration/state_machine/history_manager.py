@@ -6,15 +6,13 @@ Supports shallow/deep history persistence and restoration.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Any
 
 
 class HistoryKind(str, Enum):
     SHALLOW = "shallowHistory"
     DEEP = "deepHistory"
-
-
-from enum import Enum
 
 
 @dataclass

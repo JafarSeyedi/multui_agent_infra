@@ -11,14 +11,14 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
-from ....document.models.osdm_models import (
+from ...document.models.osdm_models import (
     Sentry,
     EntryCriterion,
     ExitCriterion,
     SentryExpression,
 )
-from ...expression.evaluator import EvaluationContext
-from ...expression.python_evaluator import PythonEvaluator
+from ..expression.evaluator import EvaluationContext
+from ..expression.python_evaluator import PythonEvaluator
 
 
 logger = logging.getLogger(__name__)
@@ -70,12 +70,16 @@ class SentryEvaluator:
     def register(self, sentry: dict[str, Any] | Sentry) -> None:
         if isinstance(sentry, dict):
             sentry_id = sentry.get("id", "")
+            on_parts_raw = sentry.get("onParts", sentry.get("on", []))
+            on_parts: list[dict[str, Any]] = on_parts_raw if isinstance(on_parts_raw, list) else []
+            references_raw = sentry.get("planItemRefs", sentry.get("sentryRefs", []))
+            references: list[str] = references_raw if isinstance(references_raw, list) else []
             rule = SentryRule(
                 sentry_id=sentry_id,
                 name=sentry.get("name"),
-                on_parts=sentry.get("onParts", sentry.get("on", [])),
+                on_parts=on_parts,
                 if_part=sentry.get("ifPart") or sentry.get("condition"),
-                references=sentry.get("planItemRefs", sentry.get("sentryRefs", [])),
+                references=references,
                 is_entry_criterion=sentry.get("isEntryCriterion", True),
             )
         elif isinstance(sentry, Sentry):

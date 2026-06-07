@@ -21,6 +21,7 @@ from typing import Any, Set, cast
 from uuid import uuid4
 
 from ...document.models.dsdm_models import DataDocument, DataSchemaReference, SchemaBinding
+from ...document.models.media_types import MEDIA_TYPES
 from ...document.models.msdm_models import Attribute, DataType, Entity, ScalarType
 from ...document.parsers.dsdm_parsers.dsdm_utils import build_node_from_python
 from ...document.writers.dsdm_writers.json_writer import JSONWriter
@@ -137,7 +138,7 @@ class Variable:
         return DataDocument(
             title=f"Variable {self.name}",
             document_id=f"variable:{instance_id}:{context_id}:{self.name}",
-            media_type=None,
+            media_type=MEDIA_TYPES["json"],
             root=node,
         )
 
@@ -375,7 +376,7 @@ scope=var.scope,
         return DataDocument(
             title=f"Context {self.context_id}",
             document_id=f"context:{instance_id}:{self.context_id}",
-            media_type=None,
+            media_type=MEDIA_TYPES["json"],
             root=node,
         )
 

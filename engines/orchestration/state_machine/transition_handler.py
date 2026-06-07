@@ -81,18 +81,18 @@ class TransitionHandler:
                 t for t in outgoing if not t.get("guard") and not t.get("trigger")
             ]
             if unconditional:
-                best = max(unconditional, key=lambda t: t.get("priority", 0))
-                return best
+                best_unconditional: dict[str, Any] = max(unconditional, key=lambda t: t.get("priority", 0))
+                return best_unconditional
             return None
 
-        best = max(candidates, key=lambda c: c.priority)
+        best_candidate: TriggerMatch = max(candidates, key=lambda c: c.priority)
         return {
-            "id": best.transition.transition_id,
+            "id": best_candidate.transition.transition_id,
             "source": current_state,
-            "target": best.transition.target,
-            "trigger": best.transition.trigger,
-            "actions": best.transition.actions,
-            "kind": best.transition.kind,
+            "target": best_candidate.transition.target,
+            "trigger": best_candidate.transition.trigger,
+            "actions": best_candidate.transition.actions,
+            "kind": best_candidate.transition.kind,
         }
 
     def _get_outgoing_transitions(
@@ -122,8 +122,8 @@ class TransitionHandler:
         if guard in {"false", "False", "0"}:
             return False
         try:
-            from ...expression.evaluator import EvaluationContext
-            from ...expression.python_evaluator import PythonEvaluator
+            from ..expression.evaluator import EvaluationContext
+            from ..expression.python_evaluator import PythonEvaluator
             result = PythonEvaluator().evaluate(guard, EvaluationContext(variables=context))
             return bool(result)
         except Exception:

@@ -17,8 +17,8 @@ from .conversation_executor import ConversationExecutor
 from .pool_lane_executor import PoolLaneExecutor
 
 # OSDM BPMN model imports
-from ....document.parsers.osdm_parsers.bpmn_xml_parser import BPMNXMLParser
-from ....document.models.osdm_models import (
+from ...document.parsers.osdm_parsers.bpmn_xml_parser import BPMNXMLParser
+from ...document.models.osdm_models import (
     BPMNDocument, Process, FlowElement, FlowNode, Activity, SequenceFlow,
     Event, Gateway, EventType, Choreography, Collaboration,
 )
@@ -109,19 +109,17 @@ class BPMNEngine:
                 activities.append(activity_dict)
                 
             elif isinstance(element, SequenceFlow):
-                # Convert SequenceFlow to dict format expected by executor
                 flow_dict = {
                     "id": element.id,
-                    "source": getattr(element, 'source_ref_id', None) or (getattr(element, 'source_ref', None).id if getattr(element, 'source_ref', None) else None),
-                    "target": getattr(element, 'target_ref_id', None) or (getattr(element, 'target_ref', None).id if getattr(element, 'target_ref', None) else None),
-                    "sourceRef": getattr(element, 'source_ref_id', None) or (getattr(element, 'source_ref', None).id if getattr(element, 'source_ref', None) else None),
-                    "targetRef": getattr(element, 'target_ref_id', None) or (getattr(element, 'target_ref', None).id if getattr(element, 'target_ref', None) else None),
+                    "source": element.source_ref_id or (element.source_ref.id if element.source_ref else None),
+                    "target": element.target_ref_id or (element.target_ref.id if element.target_ref else None),
+                    "sourceRef": element.source_ref_id or (element.source_ref.id if element.source_ref else None),
+                    "targetRef": element.target_ref_id or (element.target_ref.id if element.target_ref else None),
                 }
                 
-                # Add condition expression if present
-                if hasattr(element, 'condition_expression') and element.condition_expression:
+                if element.condition_expression:
                     cond_expr = element.condition_expression
-                    flow_dict["condition"] = getattr(cond_expr, 'body', None) if hasattr(cond_expr, 'body') else str(cond_expr)
+                    flow_dict["condition"] = cond_expr.body if cond_expr.body else str(cond_expr)
                     flow_dict["conditionExpression"] = flow_dict["condition"]
                 
                 flows.append(flow_dict)
@@ -156,16 +154,21 @@ class BPMNEngine:
         # Parse the BPMN XML to get the OSDM model
         # The definition_xml field contains the raw BPMN XML string
         bpmn_xml = definition.definition_xml.encode('utf-8')
-        from ....document.models import ParseOptions
+        from ...document.parsers.base import ParseOptions
         
         parse_options = ParseOptions()
-        bpmn_document = await self._bpmn_parser.parse(
-            bpmn_xml, 
+        bpmn_document = await self._bpmn_parser.parse_bytes(
+            bpmn_xml,
+            document_id=definition.id,
             source_name=definition.resource_name or "unknown",
             options=parse_options
         )
         
-        # Cache the parsed document
+        if not isinstance(bpmn_document, BPMNDocument):
+            raise BPMNExecutionError(
+                f"Parser returned {type(bpmn_document).__name__}, expected BPMNDocument"
+            )
+        
         self._parsed_documents[definition.id] = bpmn_document
         
         return bpmn_document

@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Callable
 
-from ....document.models.osdm_models import (
+from ...document.models.osdm_models import (
     ErrorEventDefinition,
     Error,
     EscalationEventDefinition,

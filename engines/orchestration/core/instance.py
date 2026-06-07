@@ -15,8 +15,11 @@ from enum import Enum
 from typing import Any, TYPE_CHECKING, Set, cast
 from uuid import uuid4
 
+from ...document.models.media_types import MEDIA_TYPES
+
 if TYPE_CHECKING:
     from ...document.models.osdm_models import Process, Stage, Decision, StateMachineModel
+    from engines.document.models.dsdm_models import DataDocument
 
 
 logger = logging.getLogger(__name__)
@@ -31,7 +34,6 @@ class InstanceState(Enum):
     FAILED = "failed"  # Instance failed
     DRAFT = "draft"  # CMMN: Case created but not yet active (§5.2)
     CLOSED = "closed"  # CMMN: Case archived after completion/termination (§5.2)
-    FAILED = "failed"  # Instance failed with error
     COMPENSATING = "compensating"  # Instance is compensating
     MIGRATING = "migrating"  # Instance is being migrated
 
@@ -496,7 +498,7 @@ class ProcessInstance:
         return DataDocument(
             title=f"Process Instance {self.id}",
             document_id=f"instance:{self.id}",
-            media_type=None,
+            media_type=MEDIA_TYPES["json"],
             root=node,
         )
 

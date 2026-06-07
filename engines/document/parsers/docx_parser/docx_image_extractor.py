@@ -469,7 +469,7 @@ class DOCXImageExtractor:
             if isinstance(value, bytes):
                 try:
                     value = value.decode('utf-8', errors='ignore').strip('\x00')
-                except:
+                except Exception:
                     value = value.hex()
 
             parsed[tag_name] = value

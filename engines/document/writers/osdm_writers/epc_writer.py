@@ -88,7 +88,7 @@ class EPCWriter(BaseOSDMWriter):
                 })
                 # Optionally write resources (roles) inside
                 for role in lane.resources:
-                    role_elem = SubElement(ou, f"{{{EPC_NS}}}role", {
+                    _role_elem = SubElement(ou, f"{{{EPC_NS}}}role", {
                         "id": role.id,
                         "name": role.name or role.id,
                         "type": role.type.value if role.type else "",

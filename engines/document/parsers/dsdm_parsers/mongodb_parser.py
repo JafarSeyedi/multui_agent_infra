@@ -96,33 +96,33 @@ class MongoDBParser(BSONParser):
             if attr.default_value is not None:
                 return self._coerce_default_value(attr)
             return None
-        dt = attr.data_type.base
+        data_type = attr.data_type.base
         try:
-            if dt == ScalarType.INT:
+            if data_type == ScalarType.INT:
                 if isinstance(raw, bool):
                     return DataValue(scalar_type=ScalarType.BOOLEAN, value=raw, lexical_value=str(raw))
                 return DataValue(scalar_type=ScalarType.INT, value=int(raw), lexical_value=str(raw))
-            if dt == ScalarType.FLOAT or dt == ScalarType.DOUBLE:
+            if data_type == ScalarType.FLOAT or data_type == ScalarType.DOUBLE:
                 return DataValue(scalar_type=ScalarType.FLOAT, value=float(raw), lexical_value=str(raw))
-            if dt == ScalarType.BOOLEAN:
+            if data_type == ScalarType.BOOLEAN:
                 return DataValue(scalar_type=ScalarType.BOOLEAN, value=bool(raw), lexical_value=str(raw))
-            if dt == ScalarType.DATETIME:
+            if data_type == ScalarType.DATETIME:
                 if isinstance(raw, dt.datetime):
                     return DataValue(scalar_type=ScalarType.DATETIME, value=raw.isoformat(), lexical_value=raw.isoformat())
                 return DataValue(scalar_type=ScalarType.DATETIME, value=str(raw), lexical_value=str(raw))
-            if dt == ScalarType.DATE:
+            if data_type == ScalarType.DATE:
                 if isinstance(raw, dt.date):
                     return DataValue(scalar_type=ScalarType.DATE, value=raw.isoformat(), lexical_value=raw.isoformat())
                 return DataValue(scalar_type=ScalarType.DATE, value=str(raw), lexical_value=str(raw))
-            if dt == ScalarType.TIME:
+            if data_type == ScalarType.TIME:
                 if isinstance(raw, dt.time):
                     return DataValue(scalar_type=ScalarType.TIME, value=raw.isoformat(), lexical_value=raw.isoformat())
                 return DataValue(scalar_type=ScalarType.TIME, value=str(raw), lexical_value=str(raw))
-            if dt == ScalarType.UUID:
+            if data_type == ScalarType.UUID:
                 if isinstance(raw, UUID):
                     return DataValue(scalar_type=ScalarType.UUID, value=str(raw), lexical_value=str(raw))
                 return DataValue(scalar_type=ScalarType.UUID, value=str(raw), lexical_value=str(raw))
-            if dt == ScalarType.BINARY:
+            if data_type == ScalarType.BINARY:
                 if isinstance(raw, bytes):
                     b64 = base64.b64encode(raw).decode()
                     return DataValue(scalar_type=ScalarType.BINARY, value=raw, lexical_value=b64)

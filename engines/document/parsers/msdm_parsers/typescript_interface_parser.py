@@ -494,8 +494,8 @@ class TypeScriptInterfaceParser(BaseMSDMParser):
             self._advance()
             right = self._parse_intersection()
             dt = DataType(base=ScalarType.ANY)
-            dt_union = {"union": [self._type_to_dict(left), self._type_to_dict(right)]}
-            # dt.annotations.append(Annotation(key="union_type", value=json.dumps(dt_union)))
+            _dt_union = {"union": [self._type_to_dict(left), self._type_to_dict(right)]}
+            # dt.annotations.append(Annotation(key="union_type", value=json.dumps(_dt_union)))
             left = dt
         return left
 
@@ -505,8 +505,8 @@ class TypeScriptInterfaceParser(BaseMSDMParser):
             self._advance()
             right = self._parse_array_or_primary()
             dt = DataType(base=ScalarType.ANY)
-            dt_intersection = {"intersection": [self._type_to_dict(left), self._type_to_dict(right)]}
-            # dt.annotations.append(Annotation(key="intersection_type", value=json.dumps(dt_intersection)))
+            _dt_intersection = {"intersection": [self._type_to_dict(left), self._type_to_dict(right)]}
+            # dt.annotations.append(Annotation(key="intersection_type", value=json.dumps(_dt_intersection)))
             left = dt
         return left
 
@@ -525,8 +525,8 @@ class TypeScriptInterfaceParser(BaseMSDMParser):
                         self._advance()
                 self._expect("PUNCTUATION", "]")
                 dt = DataType(base=ScalarType.ANY)
-                dt_tuple = {"tuple": [self._type_to_dict(tt) for tt in tuple_types]}
-                # dt.annotations.append(Annotation(key="tuple_type", value=json.dumps(dt_tuple)))
+                _dt_tuple = {"tuple": [self._type_to_dict(tt) for tt in tuple_types]}
+                # dt.annotations.append(Annotation(key="tuple_type", value=json.dumps(_dt_tuple)))
         return dt
 
     def _parse_primary_type(self) -> DataType:

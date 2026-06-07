@@ -9,8 +9,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
-from ...core.instance import ProcessInstance
-from ...core.engine import OrchestrationEngine
+from ..core.instance import ProcessInstance
+from ..core.engine import OrchestrationEngine
 
 
 class CMMNTaskState(str, Enum):

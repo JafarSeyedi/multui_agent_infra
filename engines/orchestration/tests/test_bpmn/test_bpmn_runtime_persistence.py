@@ -17,7 +17,7 @@ from engines.orchestration.persistence.variable_repository import VariableReposi
 def _definition(
     *,
     key: str,
-    definition_xml: dict,
+    definition_xml: str,
 ) -> ProcessDefinition:
     return ProcessDefinition(
         id=f"{key}-id",
@@ -53,14 +53,14 @@ async def test_bpmn_completed_path_persists_token_variable_and_events() -> None:
 
     definition = _definition(
         key="simple-process",
-        definition_xml={
+        definition_xml=str({
             "id": "simple-process",
             "start_event_id": "task_1",
             "activities": [
                 {"id": "task_1", "type": "serviceTask", "payload": {"result": "ok"}},
             ],
             "flows": [],
-        },
+        }),
     )
     engine.definitions[definition.key] = definition
     engine.definition_versions[definition.key] = [definition]
@@ -93,7 +93,7 @@ async def test_bpmn_message_wait_path_persists_waiting_token_and_subscription() 
 
     definition = _definition(
         key="message-wait-process",
-        definition_xml={
+        definition_xml=str({
             "id": "message-wait-process",
             "start_event_id": "wait_1",
             "activities": [
@@ -107,7 +107,7 @@ async def test_bpmn_message_wait_path_persists_waiting_token_and_subscription() 
                 }
             ],
             "flows": [],
-        },
+        }),
     )
     engine.definitions[definition.key] = definition
     engine.definition_versions[definition.key] = [definition]

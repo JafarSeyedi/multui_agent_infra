@@ -8,8 +8,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from ...core.instance import ProcessInstance
-from ...core.engine import OrchestrationEngine
+from ..core.instance import ProcessInstance
+from ..core.engine import OrchestrationEngine
 from .discretionary_handler import DiscretionaryItem, PlanningTableTable
 
 
@@ -81,8 +81,8 @@ class PlanningTableHandler:
         for rule in rules:
             condition = rule.get("condition") or rule.get("body")
             if condition:
-                from ...expression.evaluator import EvaluationContext
-                from ...expression.python_evaluator import PythonEvaluator
+                from ..expression.evaluator import EvaluationContext
+                from ..expression.python_evaluator import PythonEvaluator
                 try:
                     result = PythonEvaluator().evaluate(condition, EvaluationContext(variables=context))
                     if not result:
@@ -102,8 +102,8 @@ class PlanningTableHandler:
         for criterion in criteria:
             expression = criterion.get("condition") or criterion.get("body")
             if expression:
-                from ...expression.evaluator import EvaluationContext
-                from ...expression.python_evaluator import PythonEvaluator
+                from ..expression.evaluator import EvaluationContext
+                from ..expression.python_evaluator import PythonEvaluator
                 try:
                     result = PythonEvaluator().evaluate(expression, EvaluationContext(variables=context))
                     if not result:

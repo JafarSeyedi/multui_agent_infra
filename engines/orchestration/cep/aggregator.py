@@ -6,7 +6,7 @@ Supports aggregate functions and grouped aggregations.
 from __future__ import annotations
 
 import statistics
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
@@ -85,7 +85,7 @@ class Aggregator:
             return None
 
         numeric = [float(v) for v in data if isinstance(v, (int, float))]
-        non_numeric = [v for v in data if not isinstance(v, (int, float))]
+        _non_numeric = [v for v in data if not isinstance(v, (int, float))]
 
         if func == "count":
             return len(data)

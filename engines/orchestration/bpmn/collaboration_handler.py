@@ -9,10 +9,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from ...core.event_bus import Event, EventType
-from ...core.engine import OrchestrationEngine
+from ..core.event_bus import Event, EventType
+from ..core.engine import OrchestrationEngine
 
-from ....document.models.osdm_models import (
+from ...document.models.osdm_models import (
     Collaboration as OSDMCollaboration,
     ConversationLink as OSDMConversationLink,
     Lane as OSDMLane,
@@ -32,7 +32,7 @@ class HandlerCollaborationContext:
     pools: dict[str, dict[str, Any]] = field(default_factory=dict)
     participants: dict[str, dict[str, Any]] = field(default_factory=dict)
     message_flows: list[dict[str, Any]] = field(default_factory=list)
-    conversation_links: list[dict[str, Any]] = field(default_factory=dict)
+    conversation_links: list[dict[str, Any]] = field(default_factory=list)
 
 
 @dataclass
@@ -155,6 +155,8 @@ class CollaborationHandler:
             source = message_flow.get("source")
             target = message_flow.get("target")
             message_ref = message_flow.get("message_ref")
+        if source is None or target is None:
+            return MessageRoutingResult(routed=False, errors=["Invalid source/target in message flow"])
         for ctx in self._contexts.values():
             source_pool = self._find_pool_for_element(ctx, source)
             target_pool = self._find_pool_for_element(ctx, target)
@@ -185,7 +187,7 @@ class CollaborationHandler:
             errors.append(f"Collaboration {collaboration_id} has no pools")
         return errors
 
-    def send_message(self, collaboration_id: str, message_flow: dict[str, Any] | OSDMMessageFlow) -> MessageRoutingResult:
+    async def send_message(self, collaboration_id: str, message_flow: dict[str, Any] | OSDMMessageFlow) -> MessageRoutingResult:
         if not self.validate(message_flow):
             return MessageRoutingResult(routed=False, errors=["Invalid message flow"])
         ctx = self._contexts.get(collaboration_id)
@@ -203,7 +205,7 @@ class CollaborationHandler:
                 target_val = message_flow.get("target")
                 message_ref_val = message_flow.get("message_ref")
                 payload = message_flow.get("payload", {})
-            self._engine.event_bus.publish(
+            await self._engine.event_bus.publish(
                 Event(type=EventType.MESSAGE_SENT, data={
                     "collaboration_id": collaboration_id, "source": source_val,
                     "target": target_val, "message_ref": message_ref_val,

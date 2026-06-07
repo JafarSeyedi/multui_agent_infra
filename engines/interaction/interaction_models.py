@@ -9,8 +9,11 @@ from typing import Literal
 from pydantic import BaseModel
 from pydantic import Field
 
+from engines.buses.message_models import AgentMessage
+
 from ..agents.base_agents.base_agent import BaseAgent
 from ..agents.models import AgentOutput
+
 
 class InteractionRequest(BaseModel):
     """ورودی اصلی به InteractionAgent"""
@@ -45,12 +48,3 @@ class InteractionResult(BaseModel):
     notes: list[str] = Field(default_factory=list)
 
     metadata: dict[str, Any] = Field(default_factory=dict)
-
-class AgentMessage(BaseModel):
-    message_id: str
-    sender: str
-    recipient: str
-    message_type: str
-    payload: dict[str, Any] = Field(default_factory=dict)
-    correlation_id: str | None = None
-    timestamp: datetime = Field(default_factory=datetime.utcnow)

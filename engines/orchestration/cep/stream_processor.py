@@ -7,9 +7,10 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Any, Callable
 
-from ...core.instance import ProcessInstance
+from ..core.instance import ProcessInstance
 from .event_store import CEPEventStore
 from .pattern_matcher import PatternMatcher
 from .rule_evaluator import RuleEvaluator
@@ -24,9 +25,6 @@ class WatermarkPolicy(str, Enum):
     EVENT_TIME = "eventTime"
     INGESTION_TIME = "ingestionTime"
     PROCESSING_TIME = "processingTime"
-
-
-from enum import Enum
 
 
 @dataclass
@@ -73,7 +71,7 @@ class StreamProcessor:
             )
 
         if instance:
-            await instance.set_variable(f"cep.event.{event_type}", {
+            instance.set_variable(f"cep.event.{event_type}", {
                 "id": event_id,
                 "timestamp": timestamp,
             })

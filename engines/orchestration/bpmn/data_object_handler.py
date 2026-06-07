@@ -9,9 +9,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from ....document.models.dsdm_models import DataDocument, DataSchemaReference, SchemaBinding
-from ....document.models.msdm_models import Entity, Attribute, DataType, ScalarType
-from ....document.models.osdm_models import (
+from ...document.models.dsdm_models import DataDocument, DataSchemaReference, SchemaBinding
+from ...document.models.msdm_models import Entity, Attribute, DataType, ScalarType
+from ...document.models.osdm_models import (
     DataObject,
     DataObjectReference,
     DataStore,

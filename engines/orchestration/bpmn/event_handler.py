@@ -6,21 +6,21 @@ Uses OSDM Event subclasses directly instead of raw dictionaries.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta
 from typing import Any
 
 from ..core.correlation import CorrelationKeySet
-from ..core.event_bus import Event, EventType
 from ..core.engine import OrchestrationEngine
 
-from ....document.models.osdm_models import (
+from engines.document.models.osdm_models import (
     Event as OsdmEvent,
+    EventType,
     StartEvent,
     EndEvent,
     IntermediateCatchEvent,
     IntermediateThrowEvent,
     BoundaryEvent,
     ImplicitThrowEvent,
-    EventType,
     EventDefinitionType,
     TimerEventDefinition,
     MessageEventDefinition,
@@ -89,24 +89,15 @@ class EventHandler:
         def handle_timer_event(self, instance_id: str, timer_schedule: TimerSchedule) -> HandlerBPMNEventOutcome:
             """Handle timer event expiration and queue completion actions."""
             current_time = datetime.now().isoformat()
-            
-            # Check timer expiration conditions
-            if timer_schedule.time_duration:
-                # Calculate remaining time
-                schedule_duration = self._parse_duration(timer_schedule.time_duration)
-                if schedule_duration and current_time >= timer_start + schedule_duration:
-                    return self._trigger_timer_completion(instance_id, timer_schedule)
-            
+
             if timer_schedule.time_date:
                 if current_time >= timer_schedule.time_date:
                     return self._trigger_timer_completion(instance_id, timer_schedule)
-            
+
             return HandlerBPMNEventOutcome(handled=True)
 
-        def _parse_duration(self, duration_str: str) -> datetime.timedelta:
-            """Convert duration string to timedelta (PnYnMnDTnS format)."""
-            # Implementation needed for duration parsing
-            return datetime.timedelta(minutes=int(duration_str)) if duration_str else None
+        def _parse_duration(self, duration_str: str) -> timedelta | None:
+            return timedelta(minutes=int(duration_str)) if duration_str else None
 
         def _trigger_timer_completion(self, instance_id: str, timer_schedule: TimerSchedule) -> HandlerBPMNEventOutcome:
             """Trigger completion actions when timer expires."""
@@ -210,12 +201,17 @@ class EventHandler:
         wait_name = None
         for d in definitions:
             if d == EventDefinitionType.MESSAGE:
-                any_wait = True; wait_kind = "message"; wait_name = event.message_name
+                any_wait = True
+                wait_kind = "message"
+                wait_name = event.message_name
             elif d == EventDefinitionType.TIMER:
-                any_wait = True; wait_kind = "timer"
+                any_wait = True
+                wait_kind = "timer"
                 wait_name = event.timer_schedule.time_duration if event.timer_schedule else None
             elif d == EventDefinitionType.SIGNAL:
-                any_wait = True; wait_kind = "event"; wait_name = event.signal_name
+                any_wait = True
+                wait_kind = "event"
+                wait_name = event.signal_name
             elif d == EventDefinitionType.CONDITIONAL:
                 pass
             else:

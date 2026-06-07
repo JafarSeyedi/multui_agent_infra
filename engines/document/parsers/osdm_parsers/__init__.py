@@ -4,23 +4,23 @@ from .bpmn_xml_parser import BPMNXMLParser, BPMN_DI_NS, BPMN_NS, DC_NS, DI_NS, E
 
 from .cep_parser import CEPParser
 
-from .cmmn_xml_parser import CMMNXMLParser, CMMN_NS, NS
+from .cmmn_xml_parser import CMMNXMLParser, CMMN_NS
 
-from .dmn_xml_parser import DMNXMLParser, DMN_NS, NS
+from .dmn_xml_parser import DMNXMLParser, DMN_NS
 
-from .epc_parser import EPCParser, EPC_NS, EPML_NS, NS
+from .epc_parser import EPCParser, EPC_NS, EPML_NS
 
-from .graphml_xml_parser import GRAPHML_NS, GraphMLXMLParser, NS
+from .graphml_xml_parser import GRAPHML_NS, GraphMLXMLParser
 
-from .pnml_xml_parser import NS, PNMLXMLParser, PNML_NS
+from .pnml_xml_parser import PNMLXMLParser, PNML_NS
 
 from .prefect_dag_parser import PrefectDAGParser
 
-from .scxml_parser import NS, SCXMLParser, SCXML_NS
+from .scxml_parser import SCXMLParser, SCXML_NS
 
-from .uml_state_machine_parser import NS, UMLStateMachineParser, UML_NS, XMI_NS
+from .uml_state_machine_parser import UMLStateMachineParser, UML_NS, XMI_NS
 
-from .xpd_parser import NS, XPDLParser, XPDL_NS
+from .xpd_parser import XPDLParser, XPDL_NS
 
 __all__ = [
     "BPMNXMLParser",

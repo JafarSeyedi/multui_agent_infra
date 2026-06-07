@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from ..core.engine import OrchestrationEngine
+from ..core.instance import InstanceState
 
 
 @dataclass
@@ -34,7 +35,7 @@ class TaskAPI:
     ) -> list[TaskInfo]:
         tasks: list[TaskInfo] = []
         for instance_id, instance in self.engine.instances.items():
-            if instance.is_suspended:
+            if instance.state == InstanceState.SUSPENDED:
                 continue
             current_activity = instance.current_activity_id
             if current_activity:

@@ -346,7 +346,6 @@ class EntityRelationship:
 # Top‑level MSDM Document
 # ============================================================
 
-@dataclass
 class MSDMDocument(BaseDocument):
     """
     A document holding one or more data structure definitions.

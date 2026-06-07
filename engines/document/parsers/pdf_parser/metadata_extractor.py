@@ -1282,9 +1282,9 @@ class MetadataExtractor:
             'pdf_version', 'page_count', 'file_size', 'encrypted'
         ]
 
-        for field in fields_to_compare:
-            value1 = getattr(metadata1, field)
-            value2 = getattr(metadata2, field)
+        for field_name in fields_to_compare:
+            value1 = getattr(metadata1, field_name)
+            value2 = getattr(metadata2, field_name)
 
             if value1 != value2:
                 comparison["differences"][field] = {

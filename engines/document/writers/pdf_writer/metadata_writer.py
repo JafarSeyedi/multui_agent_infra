@@ -196,7 +196,7 @@ class MetadataWriter:
             elif isinstance(creation_date, str):
                 try:
                     return datetime.fromisoformat(creation_date.replace('Z', '+00:00'))
-                except:
+                except Exception:
                     pass
         return datetime.now()
 
@@ -387,27 +387,27 @@ class MetadataWriter:
 
         # بررسی فیلدهای اجباری
         required_fields = ['Title', 'Author', 'Creator', 'Producer']
-        for field in required_fields:
-            if field not in metadata_dict or not metadata_dict[field]:
-                warnings.append(f"فیلد {field} خالی است")
+        for required_field in required_fields:
+            if required_field not in metadata_dict or not metadata_dict[required_field]:
+                warnings.append(f"فیلد {required_field} خالی است")
 
         # بررسی تاریخ‌ها
         date_fields = ['CreationDate', 'ModDate']
-        for field in date_fields:
-            if field in metadata_dict:
-                value = metadata_dict[field]
+        for date_field in date_fields:
+            if date_field in metadata_dict:
+                value = metadata_dict[date_field]
                 if isinstance(value, str):
                     try:
                         datetime.fromisoformat(value.replace('Z', '+00:00'))
                     except ValueError:
-                        warnings.append(f"فرمت تاریخ {field} نامعتبر است: {value}")
+                        warnings.append(f"فرمت تاریخ {date_field} نامعتبر است: {value}")
 
         # بررسی طول رشته‌ها
         string_fields = ['Title', 'Author', 'Subject', 'Keywords']
-        for field in string_fields:
-            if field in metadata_dict and metadata_dict[field]:
-                value = str(metadata_dict[field])
+        for string_field in string_fields:
+            if string_field in metadata_dict and metadata_dict[string_field]:
+                value = str(metadata_dict[string_field])
                 if len(value) > 255:
-                    warnings.append(f"فیلد {field} بیش از حد طولانی است ({len(value)} کاراکتر)")
+                    warnings.append(f"فیلد {string_field} بیش از حد طولانی است ({len(value)} کاراکتر)")
 
         return warnings

@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
-from ...core.instance import ProcessInstance
+from ..core.instance import ProcessInstance
 
 
 class MilestoneState(str, Enum):

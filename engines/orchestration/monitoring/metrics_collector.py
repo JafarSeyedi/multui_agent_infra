@@ -202,7 +202,7 @@ class MetricsCollector:
             im.incidents_count += 1
 
     def record_health_check(self, check: HealthCheck) -> None:
-        key = f"{check.component_type}:{check.component}"
+        key = f"{check.check_type}:{check.component}"
         self._health_checks[key] = check
 
     def get_process_metrics(self, definition_key: str) -> ProcessMetrics | None:
@@ -240,6 +240,25 @@ class MetricsCollector:
             "completed_instances": completed_instances,
             "failed_instances": failed_instances,
             "health": self.get_overall_health(),
+        }
+
+    def observe(self, name: str, value: float) -> None:
+        self._observations: dict[str, list[float]] = getattr(self, '_observations', {})
+        if name not in self._observations:
+            self._observations[name] = []
+        self._observations[name].append(value)
+
+    def snapshot(self) -> dict[str, object]:
+        obs = getattr(self, '_observations', {})
+        return {
+            name: {
+                "count": len(values),
+                "sum": sum(values),
+                "avg": sum(values) / len(values) if values else 0.0,
+                "min": min(values) if values else 0.0,
+                "max": max(values) if values else 0.0,
+            }
+            for name, values in obs.items()
         }
 
     def _get_or_create_process_metrics(self, definition_key: str) -> ProcessMetrics:

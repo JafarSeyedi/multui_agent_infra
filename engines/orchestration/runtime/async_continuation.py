@@ -12,6 +12,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime
+from enum import Enum
 from typing import Any, Callable
 from uuid import uuid4
 
@@ -27,9 +28,6 @@ class AsyncJobState(str, Enum):
     FAILED = "failed"
     TIMED_OUT = "timed_out"
     CANCELLED = "cancelled"
-
-
-from enum import Enum
 
 
 @dataclass

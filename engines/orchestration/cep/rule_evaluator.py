@@ -9,9 +9,9 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
-from ...expression.evaluator import EvaluationContext
-from ...expression.python_evaluator import PythonEvaluator
-from ...core.instance import ProcessInstance
+from ..expression.evaluator import EvaluationContext
+from ..expression.python_evaluator import PythonEvaluator
+from ..core.instance import ProcessInstance
 
 
 logger = logging.getLogger(__name__)
@@ -158,22 +158,22 @@ class RuleEvaluator:
             return field_value != condition.comparison_value
         elif condition.operator == "gt":
             try:
-                return float(field_value) > float(condition.comparison_value)
+                return float(field_value or 0) > float(condition.comparison_value or 0)
             except (ValueError, TypeError):
                 return False
         elif condition.operator == "gte":
             try:
-                return float(field_value) >= float(condition.comparison_value)
+                return float(field_value or 0) >= float(condition.comparison_value or 0)
             except (ValueError, TypeError):
                 return False
         elif condition.operator == "lt":
             try:
-                return float(field_value) < float(condition.comparison_value)
+                return float(field_value or 0) < float(condition.comparison_value or 0)
             except (ValueError, TypeError):
                 return False
         elif condition.operator == "lte":
             try:
-                return float(field_value) <= float(condition.comparison_value)
+                return float(field_value or 0) <= float(condition.comparison_value or 0)
             except (ValueError, TypeError):
                 return False
         elif condition.operator == "in":

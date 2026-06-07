@@ -1,3 +1,17 @@
 [tool.mypy]
-exclude = [
+exclude = []
+mypy_path = ["."]
+namespace_packages = true
+explicit_package_bases = false
+
+[[tool.mypy.overrides]]
+module = [
+    "engines.core.*",
+    "engines.expression.*",
+    "engines.dmn.*",
+    "cassandra.*",
 ]
+ignore_missing_imports = true
+
+[tool.ruff]
+lint.ignore = ["F401", "E402"]

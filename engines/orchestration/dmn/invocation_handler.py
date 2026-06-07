@@ -8,7 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from ...core.engine import OrchestrationEngine
+from ..core.engine import OrchestrationEngine
 from .feel_engine import FEELEngine
 
 

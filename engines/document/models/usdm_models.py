@@ -4,6 +4,7 @@ from __future__ import annotations
 from abc import ABC
 from abc import abstractmethod
 from collections.abc import Callable
+from collections.abc import Sequence
 from dataclasses import dataclass
 from dataclasses import field
 from datetime import datetime
@@ -22,7 +23,7 @@ class USDMDocument(BaseDocument):
 # elements: لایه‌ی منطقی (Logical tree) → محتوای واقعی سند
 # sections: لایه‌ی سازمانی/سرفصلی → ساختار معنایی سند
 # pages: لایه‌ی فیزیکی/صفحه‌بندی → خروجی صفحه‌بندی شده (PDF-like)
-    elements: list[DocumentElement] = field(default_factory=list)
+    elements: Sequence[DocumentElement | LogicalElement] = field(default_factory=list)
     logical_elements: list[LogicalElement] = field(default_factory=list)
     stylesheet: "StyleSheet" = field(default_factory=lambda: StyleSheet())
 
@@ -37,7 +38,7 @@ class DocumentElement:
 class Section:
     section_id: str = ""
     title: HeadingContent | None = None
-    elements: list[DocumentElement] = field(default_factory=list)
+    elements: list[DocumentElement | LogicalElement] = field(default_factory=list)
     section_type: str | None = None  # e.g. "body", "header", "footer"
     metadata: dict[str, Any] = field(default_factory=dict)
 
@@ -72,28 +73,88 @@ class LogicalElement:
 @dataclass
 class RichTextSpan:
     text: str = ""
-    character_style: str | None = None  # key into StyleSheet.character_styles
+    character_style: str | None = None
     code: bool = False
     background: str | None = None
     href: str | None = None
-    math: str | None = None  # inline math
+    math: str | None = None
     display_math: bool = False
-
-    # New fields for inline formatting (Excel rich text)
     bold: bool = False
     italic: bool = False
     underline: bool = False
-    color: str | None = None      # e.g. "#FF0000"
-    font: str | None = None       # font name
-    
+    color: str | None = None
+    font: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+
 @dataclass
 class RichTextContent:
     spans: list[RichTextSpan] = field(default_factory=list)
 
 
-# ============================================================
-# LOGICAL CONTENT TYPES
-# ============================================================
+@dataclass
+class ParagraphStyle:
+    name: str
+    alignment: str | None = None
+    spacing_before: float | None = None
+    spacing_after: float | None = None
+    line_spacing: float | None = None
+    indent_left: float | None = None
+    indent_right: float | None = None
+    first_line_indent: float | None = None
+    line_spacing_rule: str | None = None
+    indent_hanging: float | None = None
+    keep_lines_together: bool | None = None
+    keep_with_next: bool | None = None
+    page_break_before: bool | None = None
+    widow_control: bool | None = None
+    borders: dict[str, Any] | None = None
+    shading: dict[str, Any] | None = None
+    outline_level: int | None = None
+    text_direction: str | None = None
+    tabs: list[dict[str, Any]] | None = None
+    frame_properties: dict[str, Any] | None = None
+    style_id: str | None = None
+    based_on: str | None = None
+    next_style: str | None = None
+
+
+@dataclass
+class TableStyle:
+    name: str
+    border_color: str | None = None
+    border_width: float | None = None
+    cell_spacing: float | None = None
+    header_row: bool | None = None
+    banded_rows: bool | None = None
+    banded_columns: bool | None = None
+
+    alignment: str | None = None               # "left", "center", "right"
+    indent_left: float | None = None
+    width: float | None = None
+    layout_type: str | None = None             # "fixed", "auto"
+    borders: dict[str, Any] | None = None
+    cell_margins: dict[str, float] | None = None
+    shading: dict[str, Any] | None = None
+    first_row: bool | None = None              # special formatting for first row
+    last_row: bool | None = None
+    first_column: bool | None = None
+    last_column: bool | None = None
+    style_id: str | None = None
+    based_on: str | None = None
+
+@dataclass
+class ListStyle:
+    name: str
+    level_styles: dict[int, dict[str, Any]] = field(default_factory=dict)
+
+@dataclass
+class StyleSheet:
+    character_styles: dict[str, CharacterStyle] = field(default_factory=dict)
+    paragraph_styles: dict[str, ParagraphStyle] = field(default_factory=dict)
+    table_styles: dict[str, TableStyle] = field(default_factory=dict)
+    list_styles: dict[str, ListStyle] = field(default_factory=dict)
+
 
 @dataclass
 class ParagraphContent:
@@ -125,6 +186,7 @@ class ImageContent:
     width: float | None = None
     height: float | None = None
     alt: str | None = None
+    caption: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
 
@@ -139,14 +201,13 @@ class ListContent:
     items: list[ListItemContent]
 
 
-# TABLES
 @dataclass
 class TableCell:
     content: list[LogicalElement]
     row_span: int = 1
     col_span: int = 1
     is_header: bool = False
-    metadata: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] | None = None
 
 
 @dataclass
@@ -159,7 +220,7 @@ class TableRow:
 @dataclass
 class TableContent:
     rows: list[TableRow]
-    grid: list[int] | None = None     # Word-style table grid definition
+    grid: list[int] | None = None
     caption: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
@@ -174,10 +235,6 @@ class BinaryContent:
     data: bytes
 
 
-# ============================================================
-# LEVEL 2 — PAGE & LAYOUT (PDF-LIKE)
-# ============================================================
-
 @dataclass
 class TextRun:
     text: str
@@ -190,6 +247,7 @@ class TextRun:
     bbox: dict[str, float] | None = None
     language: str | None = None
 
+
 @dataclass
 class ImageObject:
     src: str
@@ -199,6 +257,7 @@ class ImageObject:
     height: float
     format: str = 'jpg'
     bbox: dict[str, float] | None = None
+
 
 @dataclass
 class VectorPath:
@@ -226,11 +285,6 @@ class Page:
     height: float
     elements: list[TextRun | ImageObject | VectorPath | AnnotationObject] = field(default_factory=list)
 
-
-
-# ============================================================
-# LEVEL 3 — STYLES
-# ============================================================
 
 @dataclass
 class CharacterStyle:
@@ -270,86 +324,6 @@ class CharacterStyle:
     next_style: str | None = None
     linked_style: str | None = None
     _meta: dict[str, Any] = field(default_factory=dict)
-    
-@dataclass
-class ParagraphStyle:
-    name: str
-    alignment: str | None = None  # "left", "right", "center", "justify"
-    spacing_before: float | None = None
-    spacing_after: float | None = None
-    line_spacing: float | None = None
-    indent_left: float | None = None
-    indent_right: float | None = None
-    first_line_indent: float | None = None
-
-    line_spacing_rule: str | None = None
-    indent_hanging: float | None = None
-    keep_lines_together: bool | None = None
-    keep_with_next: bool | None = None
-    page_break_before: bool | None = None
-    widow_control: bool | None = None
-    borders: dict[str, Any] | None = None
-    shading: dict[str, Any] | None = None
-    outline_level: int | None = None
-    text_direction: str | None = None   # "ltr", "rtl", etc.
-    tabs: list[dict[str, Any]] | None = None
-    frame_properties: dict[str, Any] | None = None
-    style_id: str | None = None
-    based_on: str | None = None
-    next_style: str | None = None
-
-@dataclass
-class TableStyle:
-    name: str
-    border_color: str | None = None
-    border_width: float | None = None
-    cell_spacing: float | None = None
-    header_row: bool | None = None
-    banded_rows: bool | None = None
-    banded_columns: bool | None = None
-
-    alignment: str | None = None               # "left", "center", "right"
-    indent_left: float | None = None
-    width: float | None = None
-    layout_type: str | None = None             # "fixed", "auto"
-    borders: dict[str, Any] | None = None
-    cell_margins: dict[str, float] | None = None
-    shading: dict[str, Any] | None = None
-    first_row: bool | None = None              # special formatting for first row
-    last_row: bool | None = None
-    first_column: bool | None = None
-    last_column: bool | None = None
-    style_id: str | None = None
-    based_on: str | None = None
-
-@dataclass
-class ListStyle:
-    name: str
-    level_styles: dict[int, dict[str, Any]] = field(default_factory=dict)
-
-@dataclass
-class StyleSheet:
-    character_styles: dict[str, CharacterStyle] = field(default_factory=dict)
-    paragraph_styles: dict[str, ParagraphStyle] = field(default_factory=dict)
-    table_styles: dict[str, TableStyle] = field(default_factory=dict)
-    list_styles: dict[str, ListStyle] = field(default_factory=dict)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 @dataclass
@@ -357,10 +331,29 @@ class FormulaContent:
     latex: str
     display: bool = True
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 @dataclass
 class LinkContent:
     url: str
     text: RichTextContent
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -655,24 +648,26 @@ class ChartAxisContent:
 @dataclass
 class ChartContent:
     """Complete chart description – extended with semantic fields."""
-    chart_type: str = "unknown"              # "bar", "line", "pie", etc.
-    grouping: str | None = None           # "clustered", "stacked", etc.
-    direction: str | None = None          # "bar" or "col" for bar charts
+    chart_type: str = "unknown"
+    grouping: str | None = None
+    direction: str | None = None
     title: str | None = None
     series: list[ChartSeriesContent] = field(default_factory=list)
     category_axis: ChartAxisContent | None = None
     value_axis: ChartAxisContent | None = None
     width: float | None = None
     height: float | None = None
-    _chart_rId: str | None = None   # transient, for linking
+    vector_data: str | None = None
+    _chart_rId: str | None = None
     _meta: dict[str, Any] = field(default_factory=dict)
         
 @dataclass
 class DataContent:
     """Content for data fields (PAGE, DATE, etc.)."""
-    field_type: str  # "PAGE", "DATE", "NUMPAGES", etc.
+    field_type: str
     value: str | None = None
     format: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -714,3 +709,85 @@ LogicalContent = Union[
     ShapeContent,
     ChartContent,
 ]
+
+
+@dataclass
+class TOCContent:
+    label: str = ""
+    level: int = 1
+    anchor_id: str = ""
+
+
+@dataclass
+class CaptionContent:
+    text: str = ""
+    label: str = ""
+    number: str = ""
+
+
+@dataclass
+class HeaderContent:
+    elements: list[LogicalElement] = field(default_factory=list)
+    section_id: str = ""
+    page_type: str = "default"
+
+
+@dataclass
+class FooterContent:
+    elements: list[LogicalElement] = field(default_factory=list)
+    section_id: str = ""
+    page_type: str = "default"
+
+
+@dataclass
+class FormFieldContent:
+    name: str = ""
+    value: str = ""
+    field_type: str = "text"
+    field_name: str = ""
+    default_value: str = ""
+    placeholder: str = ""
+    required: bool = False
+    read_only: bool = False
+    max_length: int | None = None
+    tooltip: str = ""
+    options: list[str] = field(default_factory=list)
+
+
+@dataclass
+class IndexContent:
+    pass
+
+
+@dataclass
+class MacroContent:
+    name: str = ""
+    arguments: list[str] = field(default_factory=list)
+
+
+@dataclass
+class StructuredDocumentTagContent:
+    tag_type: str = ""
+    text: str = ""
+
+
+@dataclass
+class WatermarkContent:
+    text: str = ""
+    image_src: str | None = None
+    opacity: float = 0.5
+    angle: float = 45.0
+    font: str = "Arial"
+    font_size: float = 48.0
+    color: str = "#808080"
+
+
+@dataclass
+class PageReferenceContent:
+    target_id: str = ""
+    display_text: str = ""
+
+
+@dataclass
+class SectionBreakContent:
+    break_type: str = "nextPage"

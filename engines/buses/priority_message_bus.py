@@ -9,7 +9,7 @@ from typing import Any
 
 from .base_message_bus import HandlerType
 from .base_message_bus import MessageBus
-from engines.interaction.interaction_models import AgentMessage
+from engines.buses.message_models import AgentMessage
 
 logger = logging.getLogger(__name__)
 

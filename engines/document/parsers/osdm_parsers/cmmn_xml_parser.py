@@ -287,7 +287,7 @@ class CMMNXMLParser(BaseOSDMParser):
         all_plan_items: Dict[str, PlanItem] = {}
         all_discretionary_items: Dict[str, DiscretionaryItem] = {}
         all_case_file_items: Dict[str, CaseFileItem] = {}
-        all_item_definitions: Dict[str, ItemDefinition] = {}   # may come from an external registry; empty here
+        _all_item_definitions: Dict[str, ItemDefinition] = {}   # may come from an external registry; empty here
 
         def collect_from_stage(stage: Stage):
             all_stages[stage.id] = stage

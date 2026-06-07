@@ -7,7 +7,7 @@ from collections.abc import Awaitable
 from collections.abc import Callable
 from typing import Optional
 
-from engines.interaction.interaction_models import AgentMessage
+from engines.buses.message_models import AgentMessage
 
 HandlerType = Callable[[AgentMessage], Awaitable[Optional[AgentMessage]]]
 

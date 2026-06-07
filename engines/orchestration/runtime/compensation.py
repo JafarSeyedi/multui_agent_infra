@@ -27,6 +27,11 @@ class CompensationManager:
     def clear(self) -> None:
         self._steps.clear()
 
+    def unregister(self, name: str) -> bool:
+        before = len(self._steps)
+        self._steps = [s for s in self._steps if s.name != name]
+        return len(self._steps) < before
+
     def rollback(self) -> list[str]:
         errors: list[str] = []
         for step in reversed(self._steps):

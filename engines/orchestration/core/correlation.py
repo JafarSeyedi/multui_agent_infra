@@ -692,12 +692,12 @@ class CorrelationEngine:
             elif action == "correlation.message_subscription.deleted":
                 self.unsubscribe_message(str(payload.get("subscription_id", "")))
             elif action == "correlation.event_subscription.created":
-                subscription = EventSubscription.from_dict(payload)
+                event_sub = EventSubscription.from_dict(payload)
                 self.subscribe_event(
-                    subscription.event_name,
-                    subscription.instance_id,
-                    subscription.activity_id,
-                    subscription.subscription_id,
+                    event_sub.event_name,
+                    event_sub.instance_id,
+                    event_sub.activity_id,
+                    event_sub.subscription_id,
                 )
             elif action == "correlation.event_subscription.deleted":
                 self.unsubscribe_event(str(payload.get("subscription_id", "")))

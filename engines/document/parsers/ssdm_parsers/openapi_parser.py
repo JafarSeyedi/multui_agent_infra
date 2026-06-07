@@ -489,7 +489,6 @@ class OpenAPIV3Parser(BaseSSDMParser):
             return DataType(base=ScalarType.REF, ref_entity_id=ref_name)
 
         type_ = schema.get("type", "string")
-        format_ = schema.get("format")
 
         # Scalar mapping
         scalar_map = {

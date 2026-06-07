@@ -5,6 +5,8 @@ Manages transactional boundaries for process execution.
 Supports ACID properties, compensation, and distributed transactions.
 """
 
+from __future__ import annotations
+
 import asyncio
 import logging
 from datetime import datetime

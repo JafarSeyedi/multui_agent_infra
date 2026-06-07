@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 from typing import Any, Callable
 from uuid import uuid4
 
-from ....document.models.osdm_models import TimerEventDefinition, DueTimeDuration
+from ...document.models.osdm_models import TimerEventDefinition, DueTimeDuration
 from ..utils.time_utils import parse_duration, utc_now
 
 
@@ -36,7 +36,7 @@ class OsDmTimerDefinition:
     timer_type: str  # "date", "cycle", "duration"
     time_date: datetime | None = None
     time_cycle: str | None = None
-    time_duration: str | float | int | None = None
+    time_duration: str | float | int | timedelta | None = None
 
     @classmethod
     def from_duration(cls, duration: str | int | float | timedelta) -> OsDmTimerDefinition:

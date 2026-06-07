@@ -16,6 +16,29 @@ from ..models.media_types import MediaType
 
 
 # -------------------------------------------------------------------
+# ENUMS
+# -------------------------------------------------------------------
+
+class IngestionStatus(str, Enum):
+    PENDING = "pending"
+    EXTRACTED = "extracted"
+    PARSED = "parsed"
+    CHUNKED = "chunked"
+    EMBEDDED = "embedded"
+    STORED = "stored"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class StorageLocation(str, Enum):
+    VECTOR_DB = "vector_db"
+    DOCUMENT_DB = "document_db"
+    CHUNK_DB = "chunk_db"
+    OBJECT_STORAGE = "object_storage"
+    TEMP_STORAGE = "temp_storage"
+
+
+# -------------------------------------------------------------------
 # DOCUMENT + PARSED MODELS
 # -------------------------------------------------------------------
 @dataclass
@@ -86,31 +109,10 @@ class ChunkRecord(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
-# -------------------------------------------------------------------
-# ENUMS
-# -------------------------------------------------------------------
-
-class IngestionStatus(str, Enum):
-    PENDING = "pending"
-    EXTRACTED = "extracted"
-    PARSED = "parsed"
-    CHUNKED = "chunked"
-    EMBEDDED = "embedded"
-    STORED = "stored"
-    COMPLETED = "completed"
-    FAILED = "failed"
-
 
 # -------------------------------------------------------------------
 # BASIC SUPPORT MODELS
 # -------------------------------------------------------------------
-
-class StorageLocation(str, Enum):
-    VECTOR_DB = "vector_db"
-    DOCUMENT_DB = "document_db"
-    CHUNK_DB = "chunk_db"
-    OBJECT_STORAGE = "object_storage"
-    TEMP_STORAGE = "temp_storage"
 
 
 @dataclass

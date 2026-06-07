@@ -12,7 +12,7 @@ from engines.storage.event_log.base import LogStorage
 from engines.storage.key_value.base import KeyValueStorage
 from engines.storage.timeseries.base import TimeSeriesStorage
 
-from ..runtime.runtime_records import deserialize_runtime_record, normalize_runtime_payload, serialize_runtime_record
+from .runtime_records import deserialize_runtime_record, normalize_runtime_payload, serialize_runtime_record
 
 PredicateFn = Callable[[dict[str, Any]], bool]
 FilterFn = PredicateFn

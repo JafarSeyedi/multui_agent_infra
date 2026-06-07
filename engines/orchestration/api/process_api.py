@@ -10,6 +10,7 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any
 
+from ..core.correlation import CorrelationKeySet
 from ..core.engine import OrchestrationEngine
 from ..core.instance import ProcessInstance
 
@@ -86,8 +87,9 @@ class ProcessAPI:
         variables: dict[str, Any] | None = None,
     ) -> SignalResult:
         try:
-            if self.engine.signal_manager:
-                await self.engine.signal_manager.broadcast(signal_name, instance_id, variables or {})
+            signal_manager = getattr(self.engine, "signal_manager", None)
+            if signal_manager is not None:
+                await signal_manager.broadcast(signal_name, instance_id, variables or {})
             return SignalResult(instance_id=instance_id, signal_name=signal_name, success=True)
         except Exception as e:
             logger.error("Signal failed for %s: %s", instance_id, e)
@@ -101,9 +103,13 @@ class ProcessAPI:
         variables: dict[str, Any] | None = None,
     ) -> bool:
         try:
+            ck_set = CorrelationKeySet()
+            if correlation_keys:
+                for name, value in correlation_keys.items():
+                    ck_set.add_key(name, value)
             await self.engine.correlation_engine.correlate_message(
                 message_name=message_name,
-                keys=None,
+                correlation_keys=ck_set,
                 payload=variables or {},
                 ttl_seconds=60,
             )

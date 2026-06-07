@@ -30,9 +30,9 @@ from .thrift_idl_writer import ThriftIDLWriter, _SCALAR_TO_THRIFT
 
 from .typescript_interface_writer import TypeScriptInterfaceWriter
 
-from .uml_xmi_writer import NS_MAP, NS_UML, NS_XMI, NS_XSI, UMLXmiWriter, XMI_ATTRIB
+from .uml_xmi_writer import NS_UML, NS_XMI, NS_XSI, UMLXmiWriter, XMI_ATTRIB
 
-from .xsd_writer import XSDWriter, XSD_FACET_KEYS, XSD_NS
+from .xsd_writer import XSDWriter, XSD_FACET_KEYS
 
 __all__ = [
     "BaseMSDMWriter",

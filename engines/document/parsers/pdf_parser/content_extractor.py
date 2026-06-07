@@ -961,7 +961,7 @@ class ContentExtractor:
         try:
             image = Image.open(io.BytesIO(image_data))
             return image.format or 'UNKNOWN'
-        except:
+        except Exception:
             return 'UNKNOWN'
 
     def get_summary(self) -> dict[str, Any]:

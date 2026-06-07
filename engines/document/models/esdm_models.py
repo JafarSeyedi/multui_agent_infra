@@ -32,14 +32,12 @@ from .usdm_models import ImageContent
 from .usdm_models import RichTextContent
 from .usdm_models import ShapeContent
 from .usdm_models import StyleSheet
-from .usdm_models import RichTextContent
 from .base import BaseDocument
 from .standard import DocumentStandard
 # ============================================================
 # USDM imports (reused without modification)
 # ============================================================
 
-@dataclass
 class ESDMDocument(BaseDocument):
     """ESDM document that wraps a full Excel Workbook model."""
     kind: DocumentStandard = DocumentStandard.ESDM

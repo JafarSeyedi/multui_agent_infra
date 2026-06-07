@@ -18,11 +18,12 @@ Full DMN 1.3 FEEL specification coverage including:
 from __future__ import annotations
 
 import re
+
+from ..expression.evaluator import EvaluationContext
 import datetime
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Any
-
-from ...expression.evaluator import EvaluationContext
 
 
 class FEELError(Exception):
@@ -162,55 +163,80 @@ class FEELParser:
                     self._tokens.append(Token(TokenType.IDENTIFIER, word, pos))
                     pos = end
             elif ch == '(':
-                self._tokens.append(Token(TokenType.LPAREN, '(', pos)); pos += 1
+                self._tokens.append(Token(TokenType.LPAREN, '(', pos))
+                pos += 1
             elif ch == ')':
-                self._tokens.append(Token(TokenType.RPAREN, ')', pos)); pos += 1
+                self._tokens.append(Token(TokenType.RPAREN, ')', pos))
+                pos += 1
             elif ch == '[':
-                self._tokens.append(Token(TokenType.LBRACKET, '[', pos)); pos += 1
+                self._tokens.append(Token(TokenType.LBRACKET, '[', pos))
+                pos += 1
             elif ch == ']':
-                self._tokens.append(Token(TokenType.RBRACKET, ']', pos)); pos += 1
+                self._tokens.append(Token(TokenType.RBRACKET, ']', pos))
+                pos += 1
             elif ch == '{':
-                self._tokens.append(Token(TokenType.LBRACE, '{', pos)); pos += 1
+                self._tokens.append(Token(TokenType.LBRACE, '{', pos))
+                pos += 1
             elif ch == '}':
-                self._tokens.append(Token(TokenType.RBRACE, '}', pos)); pos += 1
+                self._tokens.append(Token(TokenType.RBRACE, '}', pos))
+                pos += 1
             elif ch == ',':
-                self._tokens.append(Token(TokenType.COMMA, ',', pos)); pos += 1
+                self._tokens.append(Token(TokenType.COMMA, ',', pos))
+                pos += 1
             elif ch == '.':
-                self._tokens.append(Token(TokenType.DOT, '.', pos)); pos += 1
+                self._tokens.append(Token(TokenType.DOT, '.', pos))
+                pos += 1
             elif ch == ':':
-                self._tokens.append(Token(TokenType.COLON, ':', pos)); pos += 1
+                self._tokens.append(Token(TokenType.COLON, ':', pos))
+                pos += 1
             elif ch == ';':
-                self._tokens.append(Token(TokenType.SEMICOLON, ';', pos)); pos += 1
+                self._tokens.append(Token(TokenType.SEMICOLON, ';', pos))
+                pos += 1
             elif ch == '+' and pos + 1 < len(text) and text[pos + 1] == '..':
-                self._tokens.append(Token(TokenType.RANGE_OP, '+..', pos)); pos += 3
+                self._tokens.append(Token(TokenType.RANGE_OP, '+..', pos))
+                pos += 3
             elif ch == '.' and pos + 1 < len(text) and text[pos + 1] == '.':
-                self._tokens.append(Token(TokenType.RANGE_OP, '..', pos)); pos += 2
+                self._tokens.append(Token(TokenType.RANGE_OP, '..', pos))
+                pos += 2
             elif ch == '=':
-                self._tokens.append(Token(TokenType.EQ, '=', pos)); pos += 1
+                self._tokens.append(Token(TokenType.EQ, '=', pos))
+                pos += 1
             elif ch == '<' and pos + 1 < len(text) and text[pos + 1] == '=':
-                self._tokens.append(Token(TokenType.LTE, '<=', pos)); pos += 2
+                self._tokens.append(Token(TokenType.LTE, '<=', pos))
+                pos += 2
             elif ch == '>' and pos + 1 < len(text) and text[pos + 1] == '=':
-                self._tokens.append(Token(TokenType.GTE, '>=', pos)); pos += 2
+                self._tokens.append(Token(TokenType.GTE, '>=', pos))
+                pos += 2
             elif ch == '<' and pos + 1 < len(text) and text[pos + 1] == '>':
-                self._tokens.append(Token(TokenType.NEQ, '<>', pos)); pos += 2
+                self._tokens.append(Token(TokenType.NEQ, '<>', pos))
+                pos += 2
             elif ch == '!' and pos + 1 < len(text) and text[pos + 1] == '=':
-                self._tokens.append(Token(TokenType.NEQ, '!=', pos)); pos += 2
+                self._tokens.append(Token(TokenType.NEQ, '!=', pos))
+                pos += 2
             elif ch == '<':
-                self._tokens.append(Token(TokenType.LT, '<', pos)); pos += 1
+                self._tokens.append(Token(TokenType.LT, '<', pos))
+                pos += 1
             elif ch == '>':
-                self._tokens.append(Token(TokenType.GT, '>', pos)); pos += 1
+                self._tokens.append(Token(TokenType.GT, '>', pos))
+                pos += 1
             elif ch == '+':
-                self._tokens.append(Token(TokenType.PLUS, '+', pos)); pos += 1
+                self._tokens.append(Token(TokenType.PLUS, '+', pos))
+                pos += 1
             elif ch == '-':
-                self._tokens.append(Token(TokenType.MINUS, '-', pos)); pos += 1
+                self._tokens.append(Token(TokenType.MINUS, '-', pos))
+                pos += 1
             elif ch == '*':
-                self._tokens.append(Token(TokenType.MULT, '*', pos)); pos += 1
+                self._tokens.append(Token(TokenType.MULT, '*', pos))
+                pos += 1
             elif ch == '/':
-                self._tokens.append(Token(TokenType.DIV, '/', pos)); pos += 1
+                self._tokens.append(Token(TokenType.DIV, '/', pos))
+                pos += 1
             elif ch == '%':
-                self._tokens.append(Token(TokenType.MOD, '%', pos)); pos += 1
+                self._tokens.append(Token(TokenType.MOD, '%', pos))
+                pos += 1
             elif ch == '→' or (ch == '-' and pos + 1 < len(text) and text[pos + 1] == '>'):
-                self._tokens.append(Token(TokenType.ARROW, '->', pos)); pos += 2
+                self._tokens.append(Token(TokenType.ARROW, '->', pos))
+                pos += 2
             else:
                 pos += 1
         self._tokens.append(Token(TokenType.EOF, None, pos))
@@ -267,17 +293,29 @@ class FEELParser:
         left = self._parse_addition()
         tok = self._peek()
         if tok.type == TokenType.EQ:
-            self._advance(); right = self._parse_addition(); return ("eq", left, right)
+            self._advance()
+            right = self._parse_addition()
+            return ("eq", left, right)
         elif tok.type == TokenType.NEQ:
-            self._advance(); right = self._parse_addition(); return ("neq", left, right)
+            self._advance()
+            right = self._parse_addition()
+            return ("neq", left, right)
         elif tok.type == TokenType.LT:
-            self._advance(); right = self._parse_addition(); return ("lt", left, right)
+            self._advance()
+            right = self._parse_addition()
+            return ("lt", left, right)
         elif tok.type == TokenType.GT:
-            self._advance(); right = self._parse_addition(); return ("gt", left, right)
+            self._advance()
+            right = self._parse_addition()
+            return ("gt", left, right)
         elif tok.type == TokenType.LTE:
-            self._advance(); right = self._parse_addition(); return ("lte", left, right)
+            self._advance()
+            right = self._parse_addition()
+            return ("lte", left, right)
         elif tok.type == TokenType.GTE:
-            self._advance(); right = self._parse_addition(); return ("gte", left, right)
+            self._advance()
+            right = self._parse_addition()
+            return ("gte", left, right)
         elif tok.type == TokenType.BETWEEN:
             self._advance()
             low = self._parse_addition()
@@ -578,13 +616,13 @@ class FEELEngine:
         elif op == "instance_of":
             val = self._eval_ast(node[1], variables)
             type_name = node[2]
-            type_map = {
+            type_map: dict[str, type | tuple[type, ...]] = {
                 "string": str, "number": (int, float), "boolean": bool,
                 "list": list, "context": dict, "date": str, "time": str,
                 "date and time": str, "duration": str, "range": tuple,
             }
             expected = type_map.get(type_name.lower())
-            if expected:
+            if expected is not None:
                 return isinstance(val, expected)
             return False
         elif op == "add":
@@ -673,12 +711,18 @@ class FEELEngine:
         result: dict[str, Any] = {"years": 0, "months": 0, "days": 0, "hours": 0, "minutes": 0, "seconds": 0}
         m = re.match(r"P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?)?", value)
         if m:
-            if m.group(1): result["years"] = int(m.group(1))
-            if m.group(2): result["months"] = int(m.group(2))
-            if m.group(3): result["days"] = int(m.group(3))
-            if m.group(4): result["hours"] = int(m.group(4))
-            if m.group(5): result["minutes"] = int(m.group(5))
-            if m.group(6): result["seconds"] = float(m.group(6))
+            if m.group(1):
+                result["years"] = int(m.group(1))
+            if m.group(2):
+                result["months"] = int(m.group(2))
+            if m.group(3):
+                result["days"] = int(m.group(3))
+            if m.group(4):
+                result["hours"] = int(m.group(4))
+            if m.group(5):
+                result["minutes"] = int(m.group(5))
+            if m.group(6):
+                result["seconds"] = float(m.group(6))
         return result
 
     def register_function(self, feel_func: FEELFunction) -> None:
@@ -691,7 +735,7 @@ class FEELEngine:
             FEELFunction("ceil", ["n"], lambda n: math.ceil(n)),
             FEELFunction("floor", ["n"], lambda n: math.floor(n)),
             FEELFunction("round", ["n"], lambda n: round(n)),
-            FEELFunction("modulo", ["a", "b"], lambda a, b: a % b),
+            FEELFunction("modulo", ["a", "b"], lambda a_val, b_val: a_val % b_val),
             FEELFunction("sqrt", ["n"], lambda n: math.sqrt(n) if n >= 0 else None),
             FEELFunction("max", ["list"], lambda lst: max(lst) if lst else None),
             FEELFunction("min", ["list"], lambda lst: min(lst) if lst else None),
@@ -733,7 +777,7 @@ class FEELEngine:
             FEELFunction("sort", ["list", "precedes"], lambda lst, p: sorted(lst, key=lambda x: (p(x), x)) if lst and callable(p) else sorted(lst) if lst else []),
             FEELFunction("distinct values", ["list"], lambda lst: list(dict.fromkeys(lst)) if lst else []),
             FEELFunction("flatten", ["list"], lambda lst: [item for sublist in lst for item in (sublist if isinstance(sublist, list) else [sublist])] if lst else []),
-            FEELFunction("sublist", ["list", "start", "length"], lambda lst, s, l: lst[s-1:s-1+l] if lst else []),
+            FEELFunction("sublist", ["list", "start", "length"], lambda lst, s, length: lst[s-1:s-1+length] if lst else []),
             FEELFunction("decimal", ["n", "scale"], lambda n, s: round(n, s) if n is not None else None),
             FEELFunction("number", ["from", "grouping separator", "decimal separator"], lambda f, g, d: float(f.replace(g, "").replace(d, ".")) if f else None),
         ]

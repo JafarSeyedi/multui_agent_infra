@@ -38,7 +38,7 @@ def write_master(master: SlideMaster) -> Element:
             set_solid_color(bgPr, master.background_color)
         if master.background_image:
             blipFill = SubElement(bgPr, f"{A}blipFill")
-            blip = SubElement(blipFill, f"{A}blip", {f"{R}embed": master.background_image.src})
+            _blip = SubElement(blipFill, f"{A}blip", {f"{R}embed": master.background_image.src})
             stretch = SubElement(blipFill, f"{A}stretch")
             SubElement(stretch, f"{A}fillRect")
 

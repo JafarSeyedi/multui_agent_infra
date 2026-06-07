@@ -182,7 +182,7 @@ class ContentWriter:
             obj_id = self._next_obj_id
             self._next_obj_id += 1
             # ایجاد دیکشنری تصویر
-            image_dict = PDFDictionary(obj_id=obj_id, entries={
+            _image_dict = PDFDictionary(obj_id=obj_id, entries={
                 'Type': '/XObject',
                 'Subtype': '/Image',
                 'Width': width,

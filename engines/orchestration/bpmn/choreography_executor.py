@@ -10,7 +10,7 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
-from ....document.models.osdm_models import (
+from ...document.models.osdm_models import (
     Choreography,
     ChoreographyTask,
     SubChoreography,
@@ -53,10 +53,10 @@ class ChoreographyExecutor:
         if collaboration:
             ctx.collaboration_id = collaboration.id
             if collaboration.participants:
-                for pid, participant in collaboration.participants.items():
-                    ctx.participants[pid] = {
+                for participant in collaboration.participants:
+                    ctx.participants[participant.id] = {
                         "id": participant.id,
-                        "name": getattr(participant, "name", None),
+                        "name": participant.name,
                         "process_ref": getattr(participant, "process_ref", None),
                     }
             if collaboration.message_flows:

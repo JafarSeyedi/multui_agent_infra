@@ -5,12 +5,26 @@ Supports stage activation, completion, reentry, and nesting semantics.
 
 from __future__ import annotations
 
+import asyncio
+import logging
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from enum import Enum
+from typing import Any
 
-from ...core.instance import ProcessInstance
-from ...core.event_bus import Event, EventType
-from ...core.engine import OrchestrationEngine
+from ..core.instance import ProcessInstance
+from ..core.event_bus import Event, EventType
+from ..core.engine import OrchestrationEngine
+from ...document.models.osdm_models import (
+    PlanItem,
+    Milestone,
+    DiscretionaryItem,
+    EntryCriterion,
+    ExitCriterion,
+    FormalExpression,
+    HumanTask,
+    CaseTask,
+    ProcessTask,
+)
 
 
 class StageState(str, Enum):
@@ -59,12 +73,12 @@ class StageHandler:
                 instance.set_variable(f"task.{task_id}.state", "enabled")
 
         if self._engine is not None:
-            self._engine.event_bus.publish(
+            asyncio.ensure_future(self._engine.event_bus.publish(
                 Event(
                     type=EventType.PROCESS_INSTANCE_STARTED,
                     data={"stage_id": stage.stage_id, "action": "activated"},
                 )
-            )
+            ))
 
         return {"stage_id": stage.stage_id, "status": "active", "tasks": stage.tasks}
 

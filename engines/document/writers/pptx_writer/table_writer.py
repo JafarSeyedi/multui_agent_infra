@@ -26,7 +26,7 @@ def write_table(table: TableContent) -> Element:
     # (additional tblPr like borders, shading would go here – not yet captured by parser)
 
     # Grid
-    grid_cols = table.metadata.get("grid", [])
+    grid_cols = (table.metadata or {}).get("grid", [])
     if grid_cols:
         tblGrid = SubElement(tbl, f"{P}tblGrid")
         for width in grid_cols:
@@ -38,7 +38,7 @@ def write_table(table: TableContent) -> Element:
         trPr = SubElement(tr, f"{P}trPr")    # always create trPr (PPTX requires it when children exist)
         if row.is_header:
             SubElement(trPr, f"{A}header")
-        height = row.metadata.get("height")
+        height = (row.metadata or {}).get("height")
         if height is not None:
             SubElement(trPr, f"{A}h", {"val": str(height)})
 
@@ -47,10 +47,10 @@ def write_table(table: TableContent) -> Element:
             tcPr = SubElement(tc, f"{P}tcPr")
             if cell.col_span > 1:
                 SubElement(tcPr, f"{A}gridSpan", {"val": str(cell.col_span)})
-            vmerge = cell.metadata.get("vMerge")
+            vmerge = (cell.metadata or {}).get("vMerge")
             if vmerge:
                 SubElement(tcPr, f"{A}vMerge", {"val": vmerge})
-            if cell.metadata.get("hMerge"):
+            if (cell.metadata or {}).get("hMerge"):
                 SubElement(tcPr, f"{A}hMerge", {"val": "1"})
 
             # Cell content: must have exactly one <a:txBody>

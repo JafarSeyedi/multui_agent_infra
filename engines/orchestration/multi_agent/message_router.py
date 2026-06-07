@@ -5,12 +5,13 @@ Supports addressing, routing, broadcast, and persistent delivery/audit.
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass, field
 from typing import Any
 
-from ...core.engine import OrchestrationEngine
-from ...core.event_bus import Event, EventType
-from ...core.instance import ProcessInstance
+from ..core.engine import OrchestrationEngine
+from ..core.event_bus import Event, EventType
+from ..core.instance import ProcessInstance
 
 
 @dataclass
@@ -56,16 +57,18 @@ class MessageRouter:
             )
 
         if self._engine is not None and instance:
-            self._engine.event_bus.publish(
-                Event(
-                    type=EventType.MESSAGE_SENT,
-                    data={
-                        "message_id": message.message_id,
-                        "sender": message.sender,
-                        "receiver": message.receiver,
-                        "type": message.message_type,
-                        "protocol": message.protocol,
-                    },
+            asyncio.ensure_future(
+                self._engine.event_bus.publish(
+                    Event(
+                        type=EventType.MESSAGE_SENT,
+                        data={
+                            "message_id": message.message_id,
+                            "sender": message.sender,
+                            "receiver": message.receiver,
+                            "type": message.message_type,
+                            "protocol": message.protocol,
+                        },
+                    )
                 )
             )
 

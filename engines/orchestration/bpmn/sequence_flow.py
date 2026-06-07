@@ -12,7 +12,7 @@ from typing import Any, overload
 from ..expression.evaluator import EvaluationContext
 from ..expression.python_evaluator import PythonEvaluator
 
-from ....document.models.osdm_models import SequenceFlow
+from ...document.models.osdm_models import SequenceFlow
 
 
 def _resolve_ref_id(ref: Any) -> str | None:

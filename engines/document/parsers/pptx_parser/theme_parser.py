@@ -116,8 +116,8 @@ def _serialize_format_scheme(fmt_scheme: Element) -> dict[str, Any]:
             data["fill_styles"] = fill_list
         elif tag == "lnStyleLst":
             line_list = []
-            for l in child:
-                line_list.append(_serialize_line(l))
+            for line_el in child:
+                line_list.append(_serialize_line(line_el))
             data["line_styles"] = line_list
         elif tag == "effectStyleLst":
             effect_list = []

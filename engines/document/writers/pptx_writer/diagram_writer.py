@@ -101,7 +101,7 @@ def _build_connections(parent: Element, node: dict | None, id_map: dict[str, str
     for child in node.get("children", []):
         dst_unique = id_map.get(child.get("id"))
         if dst_unique:
-            cxn = SubElement(parent, f"{{{DGM}}}cxn", {
+            _cxn = SubElement(parent, f"{{{DGM}}}cxn", {
                 "srcId": src_unique,
                 "destId": dst_unique,
             })

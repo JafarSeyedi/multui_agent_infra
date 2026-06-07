@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from ..runtime.runtime_records import EVENT_RECORD
+from .runtime_records import EVENT_RECORD
 from .repository import PersistentRuntimeRepository
 
 

@@ -226,7 +226,7 @@ class HTMLDocumentParser(HTMLParser):
                 self.current_text.append(f"&{name};")
             else:
                 self.current_text.append(char)
-        except:
+        except Exception:
             self.current_text.append(f"&{name};")
 
     def handle_charref(self, name: str) -> None:
@@ -237,7 +237,7 @@ class HTMLDocumentParser(HTMLParser):
             else:
                 char = chr(int(name))
             self.current_text.append(char)
-        except:
+        except Exception:
             self.current_text.append(f"&#{name};")
 
     def _handle_heading_start(self, tag: str, attrs: dict[str, Any]) -> None:

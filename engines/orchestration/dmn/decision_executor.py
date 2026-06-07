@@ -11,9 +11,9 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
-from ...core.instance import ProcessInstance
-from ...core.engine import OrchestrationEngine
-from ....document.models.osdm_models import (
+from ..core.instance import ProcessInstance
+from ..core.engine import OrchestrationEngine
+from ...document.models.osdm_models import (
     Decision,
     DecisionTable,
     InputClause,
@@ -95,7 +95,7 @@ class DecisionExecutor:
     ) -> Any:
         decision_id = decision.get("id", "unknown")
         name = decision.get("name", decision_id)
-        variable_name = decision.get("variable", {}).get("name", "decision_result")
+        _variable_name = decision.get("variable", {}).get("name", "decision_result")
 
         logger.debug("Evaluating DMN decision: %s (%s)", name, decision_id)
 
@@ -214,7 +214,7 @@ class DecisionExecutor:
             expr = inp.input_expression
             text = _get_body(expr) if expr else ""
             variable_name = text
-            value = context.get(variable_name)
+            value = context.get(variable_name) if variable_name is not None else None
             if inp.input_values is not None:
                 if value not in inp.input_values:
                     value = None
@@ -328,11 +328,11 @@ class DecisionExecutor:
     def evaluate_context(self, context: Context, variables: dict[str, Any]) -> dict[str, Any]:
         """Evaluate a DMN context expression (§8.5.1).
         Each entry is evaluated in sequence, with previous entries in scope."""
-        result = {}
+        result: dict[str, Any] = {}
         eval_context = dict(variables)
         for entry in context.entries:
             if entry.value_expression:
-                value = self._feel.evaluate(entry.value_expression, eval_context)
+                value = self.feel_engine.evaluate(entry.value_expression, eval_context)
             else:
                 value = None
             key = entry.key or entry.variable_name or f"entry_{len(result)}"
@@ -349,7 +349,7 @@ class DecisionExecutor:
             for i, col_name in enumerate(relation.columns):
                 if i < len(row):
                     try:
-                        row_result[col_name] = self._feel.evaluate(row[i], variables)
+                        row_result[col_name] = self.feel_engine.evaluate(row[i], variables)
                     except Exception:
                         row_result[col_name] = row[i]
             results.append(row_result)
@@ -368,7 +368,7 @@ class DecisionExecutor:
                 bound_context[param.name] = arguments[i]
             elif i < len(arguments) is False:
                 bound_context[param.name] = None
-        return self._feel.evaluate(func_def.body_expression, bound_context)
+        return self.feel_engine.evaluate(func_def.body_expression, bound_context)
 
     def evaluate_invocation(
         self, invocation: Invocation, variables: dict[str, Any],
@@ -380,27 +380,27 @@ class DecisionExecutor:
         for binding in invocation.bindings:
             param_name = binding.parameter or binding.formal_parameter
             if param_name and binding.expression:
-                bound_vars[param_name] = self._feel.evaluate(binding.expression, variables)
+                bound_vars[param_name] = self.feel_engine.evaluate(binding.expression, variables)
         # Delegate to the appropriate handler
         if invocation.called_element_type == "bkm":
-            return self._invocation_handler.resolve_called_element(
-                invocation.called_element_ref, bound_vars, called_type="bkm",
+            return self.invocation_handler._resolve_called_element(
+                invocation.called_element_ref, bound_vars,
             )
         else:
             decision_id = invocation.called_element_ref
             if decision_id in self._decision_cache:
                 return self._decision_cache[decision_id].result
-            return self._invocation_handler.resolve_called_element(
-                decision_id, bound_vars, called_type="decision",
+            return self.invocation_handler._resolve_called_element(
+                decision_id, bound_vars,
             )
 
     def _evaluate_boxed_expression( self, expression: Any, variables: dict[str, Any],
     ) -> Any:
         """Dispatch to the appropriate boxed expression evaluator."""
         if isinstance(expression, DecisionTable):
-            return self.evaluate_table(expression, variables)
+            return self._evaluate_osdm_decision_table(expression, variables, "boxed")
         elif isinstance(expression, LiteralExpression):
-            return self._literal_eval.evaluate(expression, variables)
+            return self.literal_evaluator.evaluate(expression.body or "", variables)
         elif isinstance(expression, Context):
             return self.evaluate_context(expression, variables)
         elif isinstance(expression, Relation):
@@ -410,5 +410,5 @@ class DecisionExecutor:
         elif isinstance(expression, FunctionDefinition):
             return self.evaluate_function_definition(expression, [], variables)
         elif isinstance(expression, str):
-            return self._feel.evaluate(expression, variables)
+            return self.feel_engine.evaluate(expression, variables)
         return expression

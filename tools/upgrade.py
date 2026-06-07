@@ -656,7 +656,7 @@ class LibCSTInferencer:
         module = cst.parse_module(code)
         wrapper = metadata.MetadataWrapper(module)
 
-        return_collectors: dict[str, ReturnTypeCollector] = {}
+        _return_collectors: dict[str, ReturnTypeCollector] = {}
         optional_detector = OptionalAssignmentDetector()
         isinstance_detector = IsInstanceUnionDetector()
         param_usage = ParamUsageInferer()
@@ -754,7 +754,7 @@ class ImportGraph:
         """Return list of cycles (simple Tarjan's SCC)."""
         # Basic DFS-based cycle detection
         visited = set()
-        stack: list[str] = []
+        _stack: list[str] = []
         cycles = []
 
         def dfs(node, path):
@@ -1961,7 +1961,7 @@ class PipelineSupervisor:
         prev_path = self.config.report_dir / "api_previous.json"
         curr_path = self.config.report_dir / "api_current.json"
         APISurfaceAnalyser.dump_api(self.config.project_root, curr_path)
-        extra: dict[str, Any] = {}
+        _extra: dict[str, Any] = {}
         issues = []
 
         if prev_path.exists():

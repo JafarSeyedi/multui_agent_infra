@@ -156,7 +156,7 @@ class WorksheetWriter:
 
         # 12. AutoFilter (if present)
         if hasattr(worksheet, 'auto_filter') and worksheet.auto_filter and worksheet.auto_filter.ref:
-            af = ET.SubElement(root, 'autoFilter', {'ref': worksheet.auto_filter.ref})
+            _af = ET.SubElement(root, 'autoFilter', {'ref': worksheet.auto_filter.ref})
 
         # 13. Page setup
         if worksheet.page_setup:

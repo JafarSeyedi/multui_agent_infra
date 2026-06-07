@@ -29,8 +29,8 @@ from .base_msdm_writer import SoftDeleteStrategy
 from .base_msdm_writer import WriteTarget
 
 try:
-    from cassandra.cluster import Cluster  # type: ignore[import-untyped]
-    from cassandra.auth import PlainTextAuthProvider  # type: ignore[import-untyped]
+    from cassandra.cluster import Cluster  # type: ignore[import-not-found]
+    from cassandra.auth import PlainTextAuthProvider  # type: ignore[import-not-found]
     CASSANDRA_AVAILABLE = True
 except ImportError:
     CASSANDRA_AVAILABLE = False
@@ -116,7 +116,7 @@ class CQLWriter(BaseMSDMWriter):
         # Separate partition keys, clustering columns, and regular columns
         partition_keys: list[str] = []
         clustering_cols: list[tuple[str, str]] = []  # (name, direction)
-        regular_cols: list[str] = []
+        _regular_cols: list[str] = []
         static_cols: set[str] = set()
 
         # Determine PK configuration from constraints and attribute flags

@@ -10,7 +10,7 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
-from ....document.models.osdm_models import (
+from ...document.models.osdm_models import (
     Pool,
     Lane,
     LaneSet,
@@ -66,10 +66,9 @@ class PoolLaneExecutor:
             for lane_set in pool.lane_sets:
                 for lane in lane_set.lanes:
                     child_refs = []
-                    if lane.child_lane_sets:
-                        for cls in lane.child_lane_sets:
-                            for child_lane in cls.lanes:
-                                child_refs.append(child_lane.id)
+                    if lane.child_lane_set:
+                        for child_lane in lane.child_lane_set.lanes:
+                            child_refs.append(child_lane.id)
                     ctx.lane_hierarchy[lane.id] = child_refs
                     self._activity_lanes[lane.id] = lane.id
         self._pool_contexts[pool.id] = ctx

@@ -11,9 +11,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import time
 from dataclasses import dataclass, field
 from datetime import datetime
+from enum import Enum
 from typing import Any, Callable
 from uuid import uuid4
 
@@ -28,9 +28,6 @@ class ExternalTaskState(str, Enum):
     FAILED = "failed"
     TIMED_OUT = "timed_out"
     CANCELLED = "cancelled"
-
-
-from enum import Enum
 
 
 @dataclass

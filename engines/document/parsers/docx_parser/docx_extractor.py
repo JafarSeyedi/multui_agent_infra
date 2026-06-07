@@ -850,7 +850,7 @@ class DOCXExtractor:
 
         comments: dict[str, DOCXComment] = {}
 
-        ns_map = {'w': NS['w']}
+        _ns_map = {'w': NS['w']}
 
         for comment_elem in safe_findall(comments_xml, './/w:comment'):
             comment_id = comment_elem.get(f'{{{NS["w"]}}}id')

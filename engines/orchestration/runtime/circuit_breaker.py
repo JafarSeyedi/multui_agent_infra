@@ -125,15 +125,15 @@ class RetryHandler:
                 if kwargs:
                     return await operation(*args, **kwargs)
                 return await operation(*args)
-            except tuple(config.abort_on_exceptions) as e:
+            except tuple(config.abort_on_exceptions) as _e:
                 raise
-            except tuple(config.retry_on_exceptions) as e:
-                last_error = e
+            except tuple(config.retry_on_exceptions) as _e:
+                last_error = _e
                 if attempt >= config.max_attempts:
                     break
                 delay = config.get_delay(attempt)
                 logger.warning("Retry %d/%d after %.1fs error: %s",
-                               attempt + 1, config.max_attempts, delay, str(e))
+                               attempt + 1, config.max_attempts, delay, str(_e))
                 import asyncio
                 await asyncio.sleep(delay)
 
@@ -152,15 +152,15 @@ class RetryHandler:
         for attempt in range(config.max_attempts + 1):
             try:
                 return operation(*args, **kwargs)
-            except tuple(config.abort_on_exceptions) as e:
+            except tuple(config.abort_on_exceptions) as _e:
                 raise
-            except tuple(config.retry_on_exceptions) as e:
-                last_error = e
+            except tuple(config.retry_on_exceptions) as _e:
+                last_error = _e
                 if attempt >= config.max_attempts:
                     break
                 delay = config.get_delay(attempt)
                 logger.warning("Retry %d/%d after %.1fs error: %s",
-                               attempt + 1, config.max_attempts, delay, str(e))
+                               attempt + 1, config.max_attempts, delay, str(_e))
                 time.sleep(delay)
 
         raise last_error  # type: ignore[misc]

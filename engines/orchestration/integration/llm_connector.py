@@ -10,6 +10,7 @@ import json
 import logging
 import time
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Any
 
 
@@ -23,9 +24,6 @@ class LlmProvider(str, Enum):
     DEEPSEEK = "deepseek"
     OLLAMA = "ollama"
     CUSTOM = "custom"
-
-
-from enum import Enum
 
 
 @dataclass

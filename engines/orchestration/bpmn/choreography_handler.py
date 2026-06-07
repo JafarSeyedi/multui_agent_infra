@@ -5,14 +5,15 @@ Supports choreography tasks, loop types, and participant/message coordination.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from dataclasses import dataclass, field
 from typing import Any
 
-from ...core.event_bus import Event, EventType
-from ...core.engine import OrchestrationEngine
+from ..core.event_bus import Event, EventType
+from ..core.engine import OrchestrationEngine
 
-from ....document.models.osdm_models import (
+from ...document.models.osdm_models import (
     ChoreographyLoopType,
     ChoreographyTask as OSDMChoreographyTask,
 )
@@ -84,11 +85,11 @@ class ChoreographyHandler:
                 messages_sent.append({"source": source, "target": target, "message_name": message_name})
                 participants_notified.extend([source, target])
                 if self._engine:
-                    self._engine.event_bus.publish(
+                    asyncio.ensure_future(self._engine.event_bus.publish(
                         Event(type=EventType.MESSAGE_SENT, data={
                             "choreography_id": step.choreography_id, "source": source, "target": target, "message_name": message_name,
                         })
-                    )
+                    ))
 
         loop_remaining = 0
         if step.loop_type != ChoreographyLoopType.NONE:

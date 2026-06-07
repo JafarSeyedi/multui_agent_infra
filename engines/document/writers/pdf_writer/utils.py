@@ -352,7 +352,7 @@ class ImageProcessor:
             try:
                 image: Image.Image = Image.open(io.BytesIO(image_data))
                 mime_type = f'image/{image.format.lower()}' if image.format else 'image/jpeg'
-            except:
+            except Exception:
                 mime_type = 'image/jpeg'
 
         base64_data = base64.b64encode(image_data).decode('utf-8')

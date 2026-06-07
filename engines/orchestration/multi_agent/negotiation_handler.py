@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
-from ...core.instance import ProcessInstance
+from ..core.instance import ProcessInstance
 
 
 class NegotiationPhase(str, Enum):
@@ -72,7 +72,7 @@ class NegotiationHandler:
         state.rounds = min(max_rounds, 1)
 
         offer = NegotiationOffer(
-            offer_id=f"offer_0",
+            offer_id="offer_0",
             proposer=state.participants[0] if state.participants else "",
             accepter=state.participants[1] if len(state.participants) > 1 else "",
             content={"topic": topic, "round": 0},

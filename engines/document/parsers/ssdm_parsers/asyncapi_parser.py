@@ -227,7 +227,7 @@ class AsyncAPIParser(BaseSSDMParser):
         op_type = OperationType.PUBLISH if kind == "publish" else OperationType.SUBSCRIBE
         operation_id = op_def.get("operationId", f"{kind}_{channel_name}")
         description = op_def.get("description") or op_def.get("summary", "")
-        tags = op_def.get("tags", [])
+        _tags = op_def.get("tags", [])
 
         # Parameters
         params = []

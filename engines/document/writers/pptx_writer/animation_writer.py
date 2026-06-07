@@ -72,7 +72,7 @@ def _build_animation_node(anim: Animation) -> Element:
     cbvr = SubElement(anim_elem, f"{P}cBhvr")
     # Target element (the shape)
     tgt_el = SubElement(cbvr, f"{P}tgtEl")
-    sp_tgt = SubElement(tgt_el, f"{P}spTgt", {"spid": anim.target_shape_id})
+    _sp_tgt = SubElement(tgt_el, f"{P}spTgt", {"spid": anim.target_shape_id})
 
     # Duration and delay
     if anim.duration_ms:

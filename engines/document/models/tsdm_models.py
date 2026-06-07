@@ -245,8 +245,7 @@ class CompositeTool(Tool):
 
 
 # ── Top‑level TSDM Document ──────────────────────────────────────
-@dataclass
 class TSDMDocument(BaseDocument):
     """A document describing a set of tools (for discovery / configuration)."""
-    kind: DocumentStandard = DocumentStandard.TSDM    # add TSDM to your enum
+    kind: DocumentStandard = DocumentStandard.TSDM
     tools: list[Tool] = field(default_factory=list)

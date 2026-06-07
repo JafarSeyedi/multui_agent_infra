@@ -102,14 +102,14 @@ class DecisionTableEvaluator:
             result.inputs.append(clause)
 
         for out in table.get("outputs", table.get("output", [])):
-            clause = OutputClause(
+            out_clause = OutputClause(
                 name=out.get("name", ""),
                 output_values=out.get("outputValues", []),
                 default_output=out.get("defaultOutputEntry"),
                 label=out.get("label"),
                 type_ref=out.get("typeRef", "string"),
             )
-            result.outputs.append(clause)
+            result.outputs.append(out_clause)
 
         for rule_data in table.get("rules", table.get("rows", [])):
             rule = DecisionRule(

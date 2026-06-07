@@ -15,10 +15,10 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, cast
 
 from ..core.correlation import CorrelationKeySet
-from ..core.event_bus import Event, EventType
+from ..core.event_bus import Event as BusEvent, EventType
 from ..core.context import ContextManager, ContextScope, ExecutionContext
 from ..core.engine import OrchestrationEngine, ProcessDefinition
 from ..core.instance import ProcessInstance
@@ -33,10 +33,10 @@ from .bpmn_execution_semantics import (
     BpmnGatewaySemantics,
 )
 from .process_model import TypedProcessModel, classify_node
-from ....document.models.osdm_models import (
+from ...document.models.osdm_models import (
     Activity,
     Task,
-    Event,
+    Event as OsdmEvent,
     Gateway,
     SequenceFlow,
     SubProcess,
@@ -138,7 +138,7 @@ class BPMNProcessExecutor:
         self._register_event_sub_processes(instance.id, model)
         self._register_transactions(instance.id, model)
 
-        current = start_node_id
+        current: str | None = start_node_id
         visited: set[str] = set()
         guard_steps = 0
         active_tokens: dict[str, Token] = {token.token_id: token}
@@ -177,7 +177,7 @@ class BPMNProcessExecutor:
             await self._persist_tokens(active_tokens)
             await self._orchestration_engine.instance_manager.persist_instance(instance.id)
             await self._orchestration_engine.event_bus.publish(
-                Event(type=EventType.ACTIVITY_STARTED,
+                BusEvent(type=EventType.ACTIVITY_STARTED,
                       data={"instance_id": instance.id, "activity_id": activity_id, "activity_type": activity_type}),
             )
 
@@ -210,7 +210,7 @@ class BPMNProcessExecutor:
             await self._persist_tokens(active_tokens)
             await self._orchestration_engine.instance_manager.persist_instance(instance.id)
             await self._orchestration_engine.event_bus.publish(
-                Event(type=EventType.ACTIVITY_COMPLETED,
+                BusEvent(type=EventType.ACTIVITY_COMPLETED,
                       data={"instance_id": instance.id, "activity_id": activity_id, "activity_type": activity_type}),
             )
 
@@ -324,13 +324,12 @@ class BPMNProcessExecutor:
     async def _execute_activity(
         self, instance: ProcessInstance, activity: FlowNode | dict[str, Any], context: ExecutionContext,
     ) -> ActivityExecutionResult:
-        """Execute an activity, dispatching to the OSDM handler for typed objects."""
         if isinstance(activity, Activity):
             return self._activity_handler.execute_osdm(instance, activity, context=context)
         if isinstance(activity, dict):
-            return self._activity_handler.execute(instance, activity, context=context)
+            return self._activity_handler.execute_osdm(instance, cast(Activity, activity), context=context)
         if isinstance(activity, FlowNode):
-            return self._activity_handler.execute_osdm(instance, activity, context=context)
+            return self._activity_handler.execute_osdm(instance, cast(Activity, activity), context=context)
         return ActivityExecutionResult(success=True, output={"type": "unknown"})
 
     def _compute_next(
@@ -398,7 +397,7 @@ class BPMNProcessExecutor:
             return "task"
         if isinstance(node, Task):
             return "task"
-        if isinstance(node, Event):
+        if isinstance(node, OsdmEvent):
             return "event"
         if isinstance(node, Gateway):
             return "gateway"
@@ -569,7 +568,7 @@ class BPMNProcessExecutor:
 
     def _get_flow_source(self, flow_id: str, model: ProcessModel, typed_model: TypedProcessModel) -> str | None:
         """Get the source node ID for a given sequence flow."""
-        for f in model.sequence_flows:
+        for f in model.flows:
             if f.get("id") == flow_id:
                 return f.get("sourceRef") or f.get("source")
         return None
@@ -584,7 +583,7 @@ class BPMNProcessExecutor:
         from ..expression.python_evaluator import PythonEvaluator
         evaluator = PythonEvaluator()
 
-        outgoing = typed_model.get_outgoing_flows(gateway_id)
+        _outgoing = typed_model.get_outgoing_flows(gateway_id)
 
         if gateway_type == "exclusive":
             for target in targets:
@@ -776,7 +775,7 @@ class BPMNProcessExecutor:
                 for comp_id in compensated:
                     instance.set_variable(f"compensated.{comp_id}", True)
                     await self._orchestration_engine.event_bus.publish(
-                        Event(type=EventType.ACTIVITY_COMPLETED,
+                        BusEvent(type=EventType.ACTIVITY_COMPLETED,
                               data={"instance_id": instance.id, "activity_id": comp_id, "compensated": True}),
                     )
 
@@ -796,8 +795,9 @@ class BPMNProcessExecutor:
             node = typed_model.get_node(ctx.sub_process_id)
             if isinstance(node, SubProcess):
                 sub_process_node = node
-                if node.completion_condition:
-                    completion_condition = getattr(node.completion_condition, "body", None) or str(node.completion_condition)
+                completion_cond = getattr(node, "completion_condition", None)
+                if completion_cond:
+                    completion_condition = getattr(completion_cond, "body", None) or str(completion_cond)
         if completion_condition:
             try:
                 from ..expression.evaluator import EvaluationContext
@@ -813,7 +813,7 @@ class BPMNProcessExecutor:
         else:
             for activity in model.activities:
                 if activity.get("payload", {}).get("parentSubProcessId") == ctx.sub_process_id:
-                    children.append(activity.get("id"))
+                    children.append(activity.get("id", ""))
         if not children:
             return True
         all_completed = all(

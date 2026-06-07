@@ -140,7 +140,7 @@ class PPTXParser(BaseDocumentParser):
 
             # 5. Parse theme (theme1.xml)
             theme_xml = None
-            theme_rel_target = get_target_for_id(pres_rels, list(pres_rels.keys())[0])  # find theme relationship
+            _theme_rel_target = get_target_for_id(pres_rels, list(pres_rels.keys())[0])  # find theme relationship
             # Usually the first relationship of type "theme" in pres_rels.
             theme_rels = get_targets_by_type(pres_rels, REL_TYPE["theme"])
             if theme_rels:
@@ -334,7 +334,7 @@ class PPTXParser(BaseDocumentParser):
         if sec_lst is not None:
             for sec_elem in sec_lst.findall("p:section", NS):
                 name = sec_elem.get("name", "")
-                first_slide_rId = sec_elem.get(f"{{{NS['r']}}}id")  # actually the attribute is "firstSlide" which is a relationship ID
+                _first_slide_rId = sec_elem.get(f"{{{NS['r']}}}id")  # actually the attribute is "firstSlide" which is a relationship ID
                 # The attribute is named "firstSlide" without namespace – we'll use that.
                 # Let's just use sec_elem.get("firstSlide")
                 first = sec_elem.get("firstSlide") or sec_elem.get(f"{{{NS['r']}}}id")

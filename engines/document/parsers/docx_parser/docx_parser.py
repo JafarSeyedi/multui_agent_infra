@@ -361,12 +361,12 @@ class DOCXParser:
             if elem.element_type == ElementType.HEADING and getattr(elem.metadata, 'level', 0) == 1:
                 # Save previous section if any
                 if current_section_elements:
-                    sections.append(Section(title=current_title, elements=current_section_elements))
+                    sections.append(Section(title=current_title, elements=current_section_elements))  # type: ignore[arg-type]
                     current_section_elements = []
                 current_title = cast(HeadingContent, elem.content) if isinstance(elem.content, HeadingContent) else None
             elif elem.element_type in (ElementType.PAGE_BREAK, ElementType.SECTION_BREAK):
                 if current_section_elements:
-                    sections.append(Section(title=current_title, elements=current_section_elements))
+                    sections.append(Section(title=current_title, elements=current_section_elements))  # type: ignore[arg-type]
                     current_section_elements = []
                 current_title = None
             else:
@@ -374,7 +374,7 @@ class DOCXParser:
 
         # Final section
         if current_section_elements:
-            sections.append(Section(title=current_title, elements=current_section_elements))
+            sections.append(Section(title=current_title, elements=current_section_elements))  # type: ignore[arg-type]
 
         return sections
 
@@ -1656,7 +1656,8 @@ class DOCXParser:
     def _convert_shape_drawing(self, drawing: DOCXDrawing) -> LogicalElement | None:
         # Extract shape data
         content = drawing.shape
-        if content is None: return None
+        if content is None:
+            return None
 
         if drawing.width:
             content.width = int(self._convert_emu_to_pixels(drawing.width))

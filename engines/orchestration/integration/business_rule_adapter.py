@@ -8,8 +8,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from ...core.instance import ProcessInstance
-from ...core.engine import OrchestrationEngine
+from ..core.instance import ProcessInstance
+from ..core.engine import OrchestrationEngine
 
 
 @dataclass

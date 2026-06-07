@@ -8,7 +8,7 @@ from .erd_parser import ERDParser
 
 from .graphql_schema_parser import GraphQLSchemaParser, KEYWORDS, TOKEN_PATTERN, TokenType
 
-from .influxdb_schema_parser import InfluxDBSchemaParser, RE_CREATE_DATABASE, RE_CREATE_MEASUREMENT, RE_CREATE_RETENTION, RE_FIELD_DEF, RE_OPTION, RE_TAG_DEF
+from .influxdb_schema_parser import InfluxDBSchemaParser, RE_CREATE_DATABASE, RE_CREATE_MEASUREMENT, RE_CREATE_RETENTION, RE_FIELD_DEF, RE_TAG_DEF
 
 from .json_schema_parser import JSON_TYPE_TO_SCALAR, JsonSchemaParser
 
@@ -24,15 +24,15 @@ from .proto_msdm_parser import PROTO_SCALAR_MAP, ProtoParser
 
 from .python_model_parser import PYTHON_SCALAR_MAP, PythonModelParser
 
-from .sql_ddl_parser import RE_COLUMN, RE_CONSTRAINT, RE_CREATE_INDEX, RE_CREATE_TABLE, RE_CREATE_VIEW, SQL_TYPE_TO_SCALAR, SqlDDLParser
+from .sql_ddl_parser import RE_CONSTRAINT, RE_CREATE_VIEW, SQL_TYPE_TO_SCALAR, SqlDDLParser
 
-from .thrift_idl_parser import RE_BLOCK_COMMENT, RE_CONST, RE_CPP_INCLUDE, RE_ENUM, RE_FIELD, RE_INCLUDE, RE_NAMESPACE, RE_PHP_NAMESPACE, RE_SERVICE, RE_SINGLE_LINE_COMMENT, RE_STRUCT, RE_TYPEDEF, THRIFT_TYPE_MAP, ThriftIDLParser
+from .thrift_idl_parser import RE_BLOCK_COMMENT, RE_CONST, RE_CPP_INCLUDE, RE_ENUM, RE_INCLUDE, RE_NAMESPACE, RE_PHP_NAMESPACE, RE_SERVICE, RE_SINGLE_LINE_COMMENT, RE_STRUCT, RE_TYPEDEF, THRIFT_TYPE_MAP, ThriftIDLParser
 
 from .typescript_interface_parser import TOKEN_RE, TOKEN_SPEC, TS_PRIMITIVE_MAP, TypeScriptInterfaceParser
 
 from .uml_xmi_parser import NS_ALL, NS_UML, NS_XMI, NS_XSI, UMLXmiParser
 
-from .xsd_parser import NS, XSDParser, XSD_BUILTIN_MAP, XSD_NS
+from .xsd_parser import XSDParser, XSD_BUILTIN_MAP, XSD_NS
 
 __all__ = [
     "BSON_TYPE_TO_SCALAR",

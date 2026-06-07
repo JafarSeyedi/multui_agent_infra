@@ -14,13 +14,13 @@ Uses OSDM model classes directly:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Union
+from typing import Any, Union, cast
 
 from ..core.context import ExecutionContext
 from ..core.engine import OrchestrationEngine
 from ..core.instance import ProcessInstance
 
-from ....document.models.osdm_models import (
+from ...document.models.osdm_models import (
     Activity,
     Task,
     ServiceTask,
@@ -57,6 +57,7 @@ from ....document.models.osdm_models import (
     Performer,
     PotentialOwner,
     ResourceRendering,
+    TransactionMethod,
 )
 
 
@@ -127,7 +128,7 @@ class ActivityHandler:
         instance.current_activity_id = activity_id
 
         activity_type = self._resolve_osdm_activity_type(activity)
-        name = getattr(activity, "name", None) or activity_id
+        _name = getattr(activity, "name", None) or activity_id
 
         handler_method = self._resolve_osdm_handler(activity)
         try:
@@ -398,7 +399,7 @@ class ActivityHandler:
     def _execute_global_task_osdm(
         self, instance: ProcessInstance, activity: GlobalTask, activity_type: str, context: ExecutionContext,
     ) -> ActivityExecutionResult:
-        self._apply_io_mappings_osdm(activity, instance, context)
+        self._apply_io_mappings_osdm(cast(Activity, activity), instance, context)
         task_type = getattr(activity, "task_type", None)
         resources = list(getattr(activity, "resources", []) or [])
         output = {

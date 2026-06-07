@@ -8,7 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from ....document.models.msdm_models import Entity, Attribute, DataType, ScalarType
+from ...document.models.msdm_models import Entity, Attribute, DataType, ScalarType
 
 
 @dataclass

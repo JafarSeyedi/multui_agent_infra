@@ -13,7 +13,7 @@ from enum import Enum
 from typing import Any, Callable, Optional
 from uuid import uuid4
 
-from ...core.instance import InstanceState
+from ..core.instance import InstanceState
 
 
 logger = logging.getLogger(__name__)

@@ -92,7 +92,7 @@ class FormField:
             elif rule.type == FormFieldValidation.PATTERN and isinstance(value, str):
                 pattern = str(rule.value)
                 if not re.match(pattern, value):
-                    errors.append(rule.error_message or f"Value does not match pattern")
+                    errors.append(rule.error_message or "Value does not match pattern")
             elif rule.type == FormFieldValidation.EMAIL and isinstance(value, str):
                 if value and not re.match(r'^[^@]+@[^@]+\.[^@]+$', value):
                     errors.append(rule.error_message or "Invalid email address")
@@ -145,8 +145,8 @@ class FormDefinition:
         if not condition:
             return True
         try:
-            from ...expression.evaluator import EvaluationContext
-            from ...expression.python_evaluator import PythonEvaluator
+            from ..expression.evaluator import EvaluationContext
+            from ..expression.python_evaluator import PythonEvaluator
             return bool(PythonEvaluator().evaluate(condition, EvaluationContext(variables=data)))
         except Exception:
             return True

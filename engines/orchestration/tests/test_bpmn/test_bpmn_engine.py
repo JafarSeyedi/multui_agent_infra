@@ -6,7 +6,8 @@ from datetime import datetime
 
 import pytest
 
-from engines.orchestration.bpmn.engine import BPMNEngine, FlowNode
+from engines.orchestration.bpmn.engine import BPMNEngine
+from engines.orchestration.document.models.osdm_models import FlowNode
 from engines.orchestration.bpmn.bpmn_execution_semantics import (
     BpmnGatewaySemantics,
     BpmnEventSubProcessHandler,
@@ -22,7 +23,7 @@ from engines.orchestration.persistence.token_repository import TokenRepository
 from engines.orchestration.persistence.variable_repository import VariableRepository
 
 
-def _definition(*, key: str, definition_xml: dict, def_type: str = "bpmn") -> ProcessDefinition:
+def _definition(*, key: str, definition_xml: str, def_type: str = "bpmn") -> ProcessDefinition:
     return ProcessDefinition(
         id=f"{key}-id", key=key, name=key, version=1,
         deployment_id=f"{key}-deployment", resource_name=f"{key}.{def_type}",
@@ -61,10 +62,10 @@ class TestBpmnEngineLifecycle:
         engine, _ = _make_engine()
         deployment = await engine.deploy("test", {"test.bpmn": "<bpmn></bpmn>"})
         assert deployment.id in engine.deployments
-        definition = _definition(key="proc1", definition_xml={
+        definition = _definition(key="proc1", definition_xml=str({
             "id": "proc1", "start_event_id": "start1",
             "activities": [{"id": "start1", "type": "startEvent", "payload": {}}],
-        })
+        }))
         engine.definitions["proc1"] = definition
         instance = await engine.start_process_instance("proc1", variables={"x": 1})
         assert instance.state == InstanceState.ACTIVE

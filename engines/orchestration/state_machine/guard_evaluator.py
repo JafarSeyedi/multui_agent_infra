@@ -8,8 +8,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from ...expression.evaluator import EvaluationContext
-from ...expression.python_evaluator import PythonEvaluator
+from ..expression.evaluator import EvaluationContext
+from ..expression.python_evaluator import PythonEvaluator
 
 
 @dataclass

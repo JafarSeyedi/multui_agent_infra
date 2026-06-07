@@ -6,9 +6,10 @@ Supports coordination/consensus/orchestration patterns at production level.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Any
 
-from ...core.instance import ProcessInstance
+from ..core.instance import ProcessInstance
 
 
 class CoordinationPattern(str, Enum):
@@ -18,10 +19,6 @@ class CoordinationPattern(str, Enum):
     LEADER_ELECTION = "leader_election"
     AUCTION = "auction"
     VOTING = "voting"
-
-
-from enum import Enum
-from typing import Any
 
 
 @dataclass

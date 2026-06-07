@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from xml.etree.ElementTree import Element
 
+from ...models.base import ElementType
 from ...models.usdm_models import OLEObjectContent
 from .constants import NAMESPACES
 

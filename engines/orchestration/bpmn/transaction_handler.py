@@ -14,10 +14,10 @@ from typing import Any, Callable
 from enum import Enum
 
 from ..runtime.compensation import CompensationManager, CompensationStep
-from ...core.event_bus import Event, EventType
-from ...core.engine import OrchestrationEngine
+from ..core.event_bus import Event, EventType
+from ..core.engine import OrchestrationEngine
 
-from ....document.models.osdm_models import (
+from ...document.models.osdm_models import (
     Artifact,
     FlowElement,
     LaneSet,

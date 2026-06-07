@@ -361,14 +361,13 @@ class ServiceOperation:
 # Top‑level SSDM Document
 # ============================================================
 
-@dataclass
-class SSDMDocument (BaseDocument):
+class SSDMDocument(BaseDocument):
     """
     A service definition document, supporting OpenAPI, REST, SOAP, AsyncAPI,
     YANG, MIB, GraphQL, and more.
     """
     version_status: VersionStatus | None = None
-    
+
     kind: DocumentStandard = DocumentStandard.SSDM
     source_file: str | None = None
     description: str | None = None

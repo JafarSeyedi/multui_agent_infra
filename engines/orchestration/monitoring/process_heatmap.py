@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, cast
 
 from .metrics_collector import ProcessMetrics, ActivityMetrics
 
@@ -109,7 +109,7 @@ class BottleneckDetection:
                     "max_duration_ms": am.max_duration_ms,
                     "execution_count": am.execution_count,
                 })
-        bottlenecks.sort(key=lambda b: b["failure_rate"], reverse=True)
+        bottlenecks.sort(key=lambda b: cast(float, b["failure_rate"]), reverse=True)
         return bottlenecks
 
 
@@ -143,13 +143,13 @@ class KpiTracker:
                 name="completion_rate",
                 value=process_metrics.completed_instances / total * 100,
                 unit="%",
-                warning=80, critical=50,
+                threshold_warning=80, threshold_critical=50,
             ))
             kpis.append(KpiMetric(
                 name="failure_rate",
                 value=process_metrics.failed_instances / total * 100,
                 unit="%",
-                warning=10, critical=30,
+                threshold_warning=10, threshold_critical=30,
             ))
             kpis.append(KpiMetric(
                 name="avg_completion_time_seconds",

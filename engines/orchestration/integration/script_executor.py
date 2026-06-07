@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
-from ...core.instance import ProcessInstance
+from ..core.instance import ProcessInstance
 
 
 logger = logging.getLogger(__name__)
@@ -95,7 +95,7 @@ class ScriptExecutor:
 
     def _evaluate(self, script: str, context: dict[str, Any], language: str) -> Any:
         if language == "FEEL":
-            from ...dmn.feel_engine import FEELEngine
+            from ..dmn.feel_engine import FEELEngine
             return FEELEngine().evaluate(script, context)
         else:
             safe_globals = {"__builtins__": self.ALLOWED_BUILTINS}

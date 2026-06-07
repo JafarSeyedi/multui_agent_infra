@@ -11,7 +11,7 @@ from engines.storage.event_log.base import LogStorage
 from engines.storage.key_value.base import KeyValueStorage
 from engines.storage.timeseries.base import TimeSeriesStorage
 
-from .runtime_records import (
+from ..persistence.runtime_records import (
     STATE_SNAPSHOT_RECORD,
     RuntimeRecordEnvelope,
     deserialize_runtime_record,

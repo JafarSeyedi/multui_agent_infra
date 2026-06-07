@@ -1,11 +1,11 @@
 """Execution history persistence with time-series aggregation and audit trail reconstruction."""
 
-from __future import annotations
+from __future__ import annotations
 
 from datetime import datetime
 from typing import Any, Dict, List, Tuple
 
-from ..runtime.runtime_records import AUDIT_RECORD
+from .runtime_records import AUDIT_RECORD
 from .repository import PersistentRuntimeRepository
 
 
@@ -92,11 +92,10 @@ class HistoryRepository(PersistentRuntimeRepository):
         # Perform aggregation for each time bucket
         results = []
         for time_bucket, bucket_records in sorted(grouped_records.items()):
+            aggregated_value: int | float = 0
             if aggregation == "count":
-                # Count records in bucket
                 aggregated_value = len(bucket_records)
             elif aggregation == "sum":
-                # Sum numeric values of the metric
                 values = []
                 for record in bucket_records:
                     value = record.get(metric)
@@ -104,33 +103,29 @@ class HistoryRepository(PersistentRuntimeRepository):
                         values.append(value)
                 aggregated_value = sum(values) if values else 0
             elif aggregation == "avg":
-                # Average numeric values of the metric
-                values = []
+                values_avg = []
                 for record in bucket_records:
                     value = record.get(metric)
                     if isinstance(value, (int, float)):
-                        values.append(value)
-                aggregated_value = sum(values) / len(values) if values else 0
+                        values_avg.append(value)
+                aggregated_value = sum(values_avg) / len(values_avg) if values_avg else 0
             elif aggregation == "min":
-                # Minimum numeric value of the metric
-                values = []
+                values_min = []
                 for record in bucket_records:
                     value = record.get(metric)
                     if isinstance(value, (int, float)):
-                        values.append(value)
-                aggregated_value = min(values) if values else 0
+                        values_min.append(value)
+                aggregated_value = min(values_min) if values_min else 0
             elif aggregation == "max":
-                # Maximum numeric value of the metric
-                values = []
+                values_max = []
                 for record in bucket_records:
                     value = record.get(metric)
                     if isinstance(value, (int, float)):
-                        values.append(value)
-                aggregated_value = max(values) if values else 0
+                        values_max.append(value)
+                aggregated_value = max(values_max) if values_max else 0
             else:
-                # Default to count
                 aggregated_value = len(bucket_records)
-                
+
             results.append({
                 "time_bucket": time_bucket,
                 "metric": metric,

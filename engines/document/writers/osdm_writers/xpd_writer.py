@@ -129,7 +129,7 @@ class XPDLWriter(BaseOSDMWriter):
         if process.properties:
             data_fields = SubElement(elem, f"{{{XPDL_NS}}}DataFields")
             for prop in process.properties:
-                df = SubElement(data_fields, f"{{{XPDL_NS}}}DataField", {
+                _df = SubElement(data_fields, f"{{{XPDL_NS}}}DataField", {
                     "Id": prop.id,
                     "Name": prop.name or prop.id,
                     "DataType": "STRING",
@@ -146,7 +146,7 @@ class XPDLWriter(BaseOSDMWriter):
                 tag = "EndEvent"
             else:
                 tag = "IntermediateEvent"
-        activity = SubElement(parent, f"{{{XPDL_NS}}}{tag}", {
+        _activity = SubElement(parent, f"{{{XPDL_NS}}}{tag}", {
             "Id": flow.id,
             "Name": flow.name or flow.id,
         })

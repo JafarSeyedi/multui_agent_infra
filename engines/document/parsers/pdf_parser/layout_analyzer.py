@@ -126,7 +126,7 @@ class LayoutAnalyzer:
                         )
                         blocks.append(layout_block)
                         break
-            except:
+            except Exception:
                 pass
 
         # استخراج جداول (با استفاده از pdfplumber)
@@ -151,7 +151,7 @@ class LayoutAnalyzer:
                         }
                     )
                     blocks.append(layout_block)
-        except:
+        except Exception:
             pass
 
         return blocks

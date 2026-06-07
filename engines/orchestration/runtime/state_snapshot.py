@@ -33,7 +33,8 @@ class StateSnapshot:
             self.created_at = datetime.utcnow().isoformat()
 
     def compute_hash(self) -> str:
-        import hashlib, json
+        import hashlib
+        import json
         data = json.dumps({"vars": self.variables, "tokens": self.tokens, "activity": self.current_activity_id}, sort_keys=True)
         self.state_hash = hashlib.sha256(data.encode()).hexdigest()
         return self.state_hash

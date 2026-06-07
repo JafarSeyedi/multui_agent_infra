@@ -63,7 +63,6 @@ def _parse_anchor(
 ):
     # Position (from/to)
     from_el = xml_find(anchor, "xdr:from", NS)
-    to_el   = xml_find(anchor, "xdr:to", NS)
     from_col, from_row, from_col_off, from_row_off = 0, 0, 0, 0
     if from_el is not None:
         from_col = xml_int(from_el, "xdr:col", 0)

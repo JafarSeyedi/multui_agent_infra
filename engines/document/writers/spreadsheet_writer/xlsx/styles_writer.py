@@ -154,7 +154,7 @@ class StylesWriter:
         """
         # Excel requires at least one cell style XF
         cell_style_xfs = ET.SubElement(root, 'cellStyleXfs', {'count': '1'})
-        xf = ET.SubElement(cell_style_xfs, 'xf', {
+        _xf = ET.SubElement(cell_style_xfs, 'xf', {
             'numFmtId': '0',
             'fontId': '0',
             'fillId': '0',

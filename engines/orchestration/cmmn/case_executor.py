@@ -18,9 +18,9 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
-from ...core.instance import ProcessInstance
-from ...core.event_bus import Event, EventType
-from ...core.engine import OrchestrationEngine
+from ..core.instance import ProcessInstance
+from ..core.event_bus import Event, EventType
+from ..core.engine import OrchestrationEngine
 from ...document.models.osdm_models import (
     CaseFileItem,
     CaseTask,
@@ -135,24 +135,24 @@ class CaseExecutor:
             self.sentry_evaluator.register(sentry)
 
         for milestone in plan_model.milestones:
-            ctx = MilestoneContext(
+            mctx = MilestoneContext(
                 milestone_id=milestone.get("id", ""),
                 name=milestone.get("name"),
                 entry_criteria=milestone.get("entryCriteria", []),
             )
-            self._milestones[ctx.milestone_id] = ctx
-            instance.set_variable(f"milestone.{ctx.milestone_id}", {
-                "name": ctx.name,
+            self._milestones[mctx.milestone_id] = mctx
+            instance.set_variable(f"milestone.{mctx.milestone_id}", {
+                "name": mctx.name,
                 "achieved": False,
             })
 
         for stage in plan_model.stages:
-            ctx = StageContext(
+            sctx = StageContext(
                 stage_id=stage.get("id", ""),
                 name=stage.get("name"),
                 auto_complete=stage.get("autoComplete", True),
             )
-            self._stages[ctx.stage_id] = ctx
+            self._stages[sctx.stage_id] = sctx
 
         available_tasks = self._get_available_tasks(plan_model)
 
@@ -175,7 +175,7 @@ class CaseExecutor:
             })
 
             if self.orchestration_engine is not None:
-                self.orchestration_engine.event_bus.publish(
+                await self.orchestration_engine.event_bus.publish(
                     Event(
                         type=EventType.ACTIVITY_STARTED,
                         data={
@@ -186,11 +186,11 @@ class CaseExecutor:
                         },
                     )
                 )
-
+            
             result = await self._execute_task(instance, task, plan_model, required)
-
+            
             if result and self.orchestration_engine is not None:
-                self.orchestration_engine.event_bus.publish(
+                await self.orchestration_engine.event_bus.publish(
                     Event(
                         type=EventType.ACTIVITY_COMPLETED,
                         data={
@@ -201,10 +201,10 @@ class CaseExecutor:
                         },
                     )
                 )
-
+        
         self._evaluate_milestones(instance)
         self._check_case_completion(instance)
-
+    
     async def execute_osdm(self, document: CMMNDocument, instance: ProcessInstance) -> None:
         for cmmn_def in document.cmmn_definitions:
             case_plan_model = cmmn_def.case
@@ -235,33 +235,33 @@ class CaseExecutor:
         self._collect_plan_items(case_plan_model, plan_items, milestone_items, stage_items, task_items)
 
         for milestone in milestone_items:
-            ctx = MilestoneContext(
+            mctx = MilestoneContext(
                 milestone_id=milestone.id,
                 name=milestone.name,
             )
-            self._milestones[ctx.milestone_id] = ctx
-            instance.set_variable(f"milestone.{ctx.milestone_id}", {
-                "name": ctx.name,
+            self._milestones[mctx.milestone_id] = mctx
+            instance.set_variable(f"milestone.{mctx.milestone_id}", {
+                "name": mctx.name,
                 "achieved": False,
             })
 
         for stage in stage_items:
-            ctx = StageContext(
+            sctx = StageContext(
                 stage_id=stage.id,
                 name=stage.name,
                 auto_complete=True,
             )
-            self._stages[ctx.stage_id] = ctx
+            self._stages[sctx.stage_id] = sctx
 
-        for item in task_items:
-            entry_criteria = self._resolve_entry_criteria(item)
+        for task_item in task_items:
+            entry_criteria = self._resolve_entry_criteria(task_item)
             if entry_criteria:
                 criteria_dicts = [self._sentry_to_dict(ec) for ec in entry_criteria]
                 if not self.sentry_evaluator.evaluate_entry_criteria(criteria_dicts, instance):
                     continue
 
-            definition = item.definition_ref
-            task_id = definition.id if definition else item.id
+            definition = task_item.definition_ref
+            task_id = definition.id if definition else task_item.id
             task_name = definition.name if definition and definition.name else task_id
 
             instance.set_variable(f"task.{task_id}", {
@@ -271,7 +271,7 @@ class CaseExecutor:
             })
 
             if self.orchestration_engine is not None:
-                self.orchestration_engine.event_bus.publish(
+                await self.orchestration_engine.event_bus.publish(
                     Event(
                         type=EventType.ACTIVITY_STARTED,
                         data={
@@ -283,10 +283,10 @@ class CaseExecutor:
                     )
                 )
 
-            result = await self._execute_osdm_task(instance, item, definition)
+            result = await self._execute_osdm_task(instance, task_item, definition)
 
             if result and self.orchestration_engine is not None:
-                self.orchestration_engine.event_bus.publish(
+                await self.orchestration_engine.event_bus.publish(
                     Event(
                         type=EventType.ACTIVITY_COMPLETED,
                         data={
@@ -538,7 +538,7 @@ class CaseExecutor:
             if activation_rule == "manual":
                 continue
 
-            required_rule = task.get("requiredRule", "optional")
+            _required_rule = task.get("requiredRule", "optional")
             available.append(task)
 
         for item in plan_model.discretionary_items:

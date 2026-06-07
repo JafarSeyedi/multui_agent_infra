@@ -219,12 +219,12 @@ class WSDLWriter(BaseSSDMWriter):
             "name": binding_name,
             "type": f"tns:{service_name}PortType",
         })
-        soap_bind = SubElement(bind, f"{{{SOAP_NS}}}binding", {
+        _soap_bind = SubElement(bind, f"{{{SOAP_NS}}}binding", {
             "transport": "http://schemas.xmlsoap.org/soap/http",
         })
         for op in operations:
             oper = SubElement(bind, f"{{{WSDL_NS}}}operation", {"name": op.name})
-            soap_op = SubElement(oper, f"{{{SOAP_NS}}}operation", {
+            _soap_op = SubElement(oper, f"{{{SOAP_NS}}}operation", {
                 "soapAction": op.soap_action or f"{self._tns}{op.name}",
                 "style": "document",
             })

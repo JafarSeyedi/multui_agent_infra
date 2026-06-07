@@ -11,12 +11,13 @@ Supports all BPMN gateway types at Camunda-level:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, cast
 
 from ..expression.evaluator import EvaluationContext
 from ..expression.python_evaluator import PythonEvaluator
 
-from ....document.models.osdm_models import (
+from ...document.models.osdm_models import (
+    FlowNode,
     GatewayType,
     GatewayDirection,
     EventBasedGatewayType,
@@ -67,7 +68,7 @@ class GatewayHandler:
         gateway_id = str(gateway.get("id", ""))
         gateway_type_str = gateway.get("gateway_type") or gateway.get("type", "Exclusive")
         gateway_type = self._to_gateway_type(gateway_type_str)
-        gateway_direction = self._to_gateway_direction(gateway.get("direction", ""))
+        _gateway_direction = self._to_gateway_direction(gateway.get("direction", ""))
         branches = self._parse_branches(gateway, context)
 
         if gateway_type == GatewayType.EXCLUSIVE:
@@ -108,7 +109,7 @@ class GatewayHandler:
         elif gw_type == GatewayType.PARALLEL:
             return self._choose_parallel(gateway_id, branches)
         elif gw_type == GatewayType.EVENT_BASED:
-            return self._choose_event_based_osdm(gateway_id, gateway, outgoing_flows, context)
+            return self._choose_event_based_osdm(gateway_id, cast(EventBasedGateway, gateway), outgoing_flows, context)
         elif gw_type == GatewayType.COMPLEX:
             activation_cond = getattr(gateway, "activation_condition", None)
             if activation_cond and not self._evaluate_condition(str(activation_cond), context):
@@ -122,10 +123,11 @@ class GatewayHandler:
             target = flow.target_ref if hasattr(flow, "target_ref") else None
             if not target:
                 continue
+            target_id = target.id if isinstance(target, FlowNode) else str(target)
             condition = getattr(flow, "condition_expression", None)
             is_default = getattr(flow, "is_default", False)
             priority = getattr(flow, "priority", i)
-            branches.append(GatewayBranch(target=target, condition=condition, priority=priority, is_default=is_default))
+            branches.append(GatewayBranch(target=target_id, condition=condition, priority=priority, is_default=is_default))
         return branches
 
     def _choose_event_based_osdm(self, gateway_id: str, gateway: EventBasedGateway, outgoing_flows: list[SequenceFlow], context: dict[str, Any]) -> GatewayDecision:
@@ -134,26 +136,28 @@ class GatewayHandler:
         if triggered_event:
             for flow in outgoing_flows:
                 target = flow.target_ref if hasattr(flow, "target_ref") else None
+                target_id = target.id if isinstance(target, FlowNode) else str(target) if target else None
                 flow_events = getattr(flow, "event_types", []) or []
                 if triggered_event in [str(e) for e in flow_events]:
-                    return GatewayDecision(gateway_id=gateway_id, next_targets=[target] if target else [], gateway_type=GatewayType.EVENT_BASED, event_triggered=triggered_event)
+                    return GatewayDecision(gateway_id=gateway_id, next_targets=[target_id] if target_id else [], gateway_type=GatewayType.EVENT_BASED, event_triggered=triggered_event)
         if is_parallel:
             triggered_events = context.get(f"{gateway_id}.triggered_events") or []
             flows_with_events = []
             flows_without_events = []
             for flow in outgoing_flows:
                 target = flow.target_ref if hasattr(flow, "target_ref") else None
+                target_id = target.id if isinstance(target, FlowNode) else str(target) if target else None
                 flow_events = [str(e) for e in getattr(flow, "event_types", []) or []]
                 if flow_events:
-                    flows_with_events.append((target, flow_events))
+                    flows_with_events.append((target_id, flow_events))
                 else:
-                    flows_without_events.append(target)
-            selected = []
+                    flows_without_events.append(target_id)
+            selected: list[str] = []
             all_present = True
-            for target, flow_events in flows_with_events:
+            for target_id, flow_events in flows_with_events:
                 if any(e in triggered_events for e in flow_events):
-                    if target:
-                        selected.append(target)
+                    if target_id:
+                        selected.append(target_id)
                 else:
                     all_present = False
             if selected and all_present:

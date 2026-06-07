@@ -848,6 +848,67 @@ MEDIA_TYPES: dict[str, MediaType] = {
 }
 
 
+class KnowledgeMediaType(BaseModel):
+    name: str = ""
+    format: str = ""
+    mime: str = ""
+    extensions: list[str] = []
+    description: str = ""
+
+
+KNOWLEDGE_MEDIA_TYPES: dict[str, KnowledgeMediaType] = {
+    "xmla_discover_xml": KnowledgeMediaType(
+        name="XML/A Discover",
+        format="xmla_discover_xml",
+        mime="application/xml",
+        extensions=[".xml"],
+        description="XML/A Discover Response",
+    ),
+    "mondrian_schema": KnowledgeMediaType(
+        name="Mondrian Schema",
+        format="mondrian_schema",
+        mime="application/xml",
+        extensions=[".mondrian.xml"],
+        description="Mondrian OLAP Schema",
+    ),
+    "cwm_xmi": KnowledgeMediaType(
+        name="CWM XMI",
+        format="cwm_xmi",
+        mime="application/xmi+xml",
+        extensions=[".xmi", ".cwm"],
+        description="Common Warehouse Metamodel (XMI)",
+    ),
+    "pmml_xml": KnowledgeMediaType(
+        name="PMML Model",
+        format="pmml_xml",
+        mime="application/xml",
+        extensions=[".pmml"],
+        description="Predictive Model Markup Language",
+    ),
+    "onnx_protobuf": KnowledgeMediaType(
+        name="ONNX Model",
+        format="onnx_protobuf",
+        mime="application/octet-stream",
+        extensions=[".onnx"],
+        description="Open Neural Network Exchange",
+    ),
+    "xes_xml": KnowledgeMediaType(
+        name="XES Event Log",
+        format="xes_xml",
+        mime="application/xml",
+        extensions=[".xes"],
+        description="Extensible Event Stream",
+    ),
+    "rdf_turtle": KnowledgeMediaType(
+        name="RDF Turtle",
+        format="rdf_turtle",
+        mime="text/turtle",
+        extensions=[".ttl"],
+        description="Terse RDF Triple Language",
+    ),
+}
+
+
 class MediaTypeRegistry:
     """Logical wrapper around MEDIA_TYPES data."""
 
@@ -862,7 +923,8 @@ class MediaTypeRegistry:
 
     @classmethod
     def get_by_extension(cls, ext: str) -> MediaType | None:
-        if not ext.startswith("."): ext = f".{ext}"
+        if not ext.startswith("."):
+            ext = f".{ext}"
         for mt in cls._items.values():
             if ext.lower() in [e.lower() for e in mt.extensions]:
                 return mt

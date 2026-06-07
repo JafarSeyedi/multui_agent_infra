@@ -11,10 +11,10 @@ from .adhoc_handler import (
     AdhocHandler,
     HandlerAdHocActivity,
     HandlerAdHocExecutionState,
-    HandlerAdHocOrdering,
     HandlerAdHocOutcome,
     HandlerAdHocProcess,
 )
+from ...document.models.osdm_models import HandlerAdHocOrdering
 from .choreography_handler import (
     ChoreographyHandler,
     HandlerChoreographyOutcome,

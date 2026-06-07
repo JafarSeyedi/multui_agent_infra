@@ -119,9 +119,9 @@ class DMNXMLWriter(BaseOSDMWriter):
     def _write_information_requirement(self, parent: Element, ir: InformationRequirement):
         elem = self._add_dmn_element(parent, "informationRequirement", ir)
         if ir.required_decision:
-            req_dec = self._add_dmn_element(elem, "requiredDecision", None, href=f"#{self._obj_id(ir.required_decision)}")
+            _req_dec = self._add_dmn_element(elem, "requiredDecision", None, href=f"#{self._obj_id(ir.required_decision)}")
         if ir.required_input:
-            req_input = self._add_dmn_element(elem, "requiredInput", None, href=f"#{self._obj_id(ir.required_input)}")
+            _req_input = self._add_dmn_element(elem, "requiredInput", None, href=f"#{self._obj_id(ir.required_input)}")
 
     def _write_knowledge_requirement(self, parent: Element, kr: KnowledgeRequirement):
         elem = self._add_dmn_element(parent, "knowledgeRequirement", kr)
@@ -143,8 +143,8 @@ class DMNXMLWriter(BaseOSDMWriter):
                 SubElement(dt_elem, f"{{{DMN_NS}}}input", {"label": col_name})
         for row in table.rows:
             rule_elem = SubElement(dt_elem, f"{{{DMN_NS}}}rule")
-            for col_name in table.columns:
-                val = row.get(col_name, "")
+            for idx, col_name in enumerate(table.columns):
+                val = row[idx] if idx < len(row) else ""
                 if col_name.startswith("output"):
                     out_elem = SubElement(rule_elem, f"{{{DMN_NS}}}outputEntry")
                     text_elem = SubElement(out_elem, f"{{{DMN_NS}}}text")

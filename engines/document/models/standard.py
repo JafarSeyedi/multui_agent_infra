@@ -14,6 +14,8 @@ class DocumentStandard(str, Enum):
     SSDM = "ssdm"  # Service Structured Definition Model
     TSDM = "tsdm"   # Tools Standard Definition Model
     OSDM = "osdm"   # Orchestration Standard Definition Model
+    KSDM = "ksdm"   # Knowledge Structured Definition Model
+    ISDM = "isdm"   # Insights Standard Definition Model
     GENERIC = "generic"
     UNKNOWN = "unknown"
 

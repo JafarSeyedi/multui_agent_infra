@@ -7,7 +7,15 @@ Professional mypy + ruff fixer using the FREE DeepSeek Chat web interface.
 - Iterative process; most‑erroneous files first.
 """
 
-import os, re, sys, json, shutil, tempfile, subprocess, time, random
+import os
+import re
+import sys
+import json
+import shutil
+import tempfile
+import subprocess
+import time
+import random
 from pathlib import Path
 from collections import defaultdict
 from typing import Dict, List, Optional, Tuple

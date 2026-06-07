@@ -523,7 +523,7 @@ class PDFStream(PDFObject):
         EOD = 257
         INITIAL_BITS = 9
         MAX_BITS = 12
-        EARLY_CHANGE = 1  # PDF default
+        _EARLY_CHANGE = 1  # PDF default
 
         # Convert bytes to a list of ints for easier bit reading
         data_bytes = list(data)

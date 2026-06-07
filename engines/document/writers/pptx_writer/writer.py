@@ -159,7 +159,7 @@ class PPTXWriter(BaseDocumentWriter):
 
             # Write notes if present
             if slide.notes:
-                notes_rid = f"rId{self._next_id()}"
+                _notes_rid = f"rId{self._next_id()}"
                 notes_file = f"notesSlide{idx+1}.xml"
                 notes_xml = write_notes_slide(slide.notes, slide_rid=None)
                 zf.writestr(f"ppt/notesSlides/{notes_file}", self._to_xml(notes_xml))
@@ -194,7 +194,7 @@ class PPTXWriter(BaseDocumentWriter):
             pres.set(attr, str(val))
 
         # Slide size
-        sldSz = SubElement(pres, f"{P}sldSz", {
+        _sldSz = SubElement(pres, f"{P}sldSz", {
             "cx": str(doc.presentation_properties.slide_width or 9144000),
             "cy": str(doc.presentation_properties.slide_height or 6858000),
         })

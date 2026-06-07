@@ -8,8 +8,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from ...core.instance import ProcessInstance
-from ...core.engine import OrchestrationEngine
+from ..core.instance import ProcessInstance
+from ..core.engine import OrchestrationEngine
 
 
 @dataclass
@@ -46,7 +46,7 @@ class DiscretionaryTaskHandler:
 
     def register_planning_table(self, table: PlanningTableTable) -> None:
         self._planning_tables[table.table_id] = table
-        for item in item in table.discretionary_items:
+        for item in table.discretionary_items:
             self._items[item.item_id] = item
 
     def get_item(self, item_id: str) -> DiscretionaryItem | None:
@@ -116,8 +116,8 @@ class DiscretionaryTaskHandler:
         for criterion in criteria:
             expression = criterion.get("condition") or criterion.get("body")
             if expression:
-                from ...expression.evaluator import EvaluationContext
-                from ...expression.python_evaluator import PythonEvaluator
+                from ..expression.evaluator import EvaluationContext
+                from ..expression.python_evaluator import PythonEvaluator
                 try:
                     result = PythonEvaluator().evaluate(expression, EvaluationContext(variables=context))
                     if not result:

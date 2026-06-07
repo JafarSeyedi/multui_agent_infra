@@ -100,7 +100,7 @@ class PivotWriter:
 
         # Cache fields (must match number of columns in source range)
         # For completeness, assume 0 fields if not provided; user should populate.
-        cache_fields = ET.SubElement(root, 'cacheFields', {'count': '0'})
+        _cache_fields = ET.SubElement(root, 'cacheFields', {'count': '0'})
 
         return ET.tostring(root, encoding='unicode', xml_declaration=True)
 

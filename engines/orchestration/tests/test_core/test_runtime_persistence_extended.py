@@ -14,7 +14,7 @@ from engines.orchestration.persistence.instance_repository import InstanceReposi
 from engines.orchestration.persistence.token_repository import TokenRepository
 from engines.orchestration.persistence.variable_repository import VariableRepository
 from engines.orchestration.runtime.incident_manager import IncidentManager, IncidentType, IncidentState
-from engines.orchestration.runtime.tenant import TenantManager, TenantContext
+from engines.orchestration.runtime.tenant import TenantManager, TenantContext, TenantInfo
 from engines.orchestration.runtime.circuit_breaker import CircuitBreakerRegistry, RetryConfig
 from engines.orchestration.runtime.rate_limiter import RateLimiter, RateLimitConfig
 from engines.orchestration.forms.form_engine import FormDefinition, FormField, FormFieldType, FormEngine
@@ -213,7 +213,7 @@ class TestFormEngine:
 class TestMultiTenancyIntegration:
     @pytest.mark.asyncio
     async def test_tenant_aware_engine_operations(self):
-        engine = _make_engine()
+        _engine = _make_engine()
         mgr = TenantManager()
         mgr.register_tenant(TenantInfo(tenant_id="tenant-a", name="Tenant A"))
         assert mgr.is_tenant_active("tenant-a") is True

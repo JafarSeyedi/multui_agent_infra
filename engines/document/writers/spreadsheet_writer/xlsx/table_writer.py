@@ -41,7 +41,7 @@ class TableWriter:
 
         # AutoFilter (if present)
         if table.auto_filter and table.auto_filter.ref:
-            af = ET.SubElement(root, 'autoFilter', {'ref': table.auto_filter.ref})
+            _af = ET.SubElement(root, 'autoFilter', {'ref': table.auto_filter.ref})
 
         # Table columns
         table_columns = ET.SubElement(root, 'tableColumns', {'count': str(len(table.columns))})

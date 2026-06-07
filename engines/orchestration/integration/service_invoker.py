@@ -6,15 +6,16 @@ timeout, and circuit breaker semantics.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
-from ...core.instance import ProcessInstance
-from ...core.engine import OrchestrationEngine
-from ...core.event_bus import Event, EventType
+from ..core.instance import ProcessInstance
+from ..core.engine import OrchestrationEngine
+from ..core.event_bus import Event, EventType
 
 
 logger = logging.getLogger(__name__)
@@ -101,7 +102,8 @@ class ServiceInvoker:
                     instance.set_variable(f"service.{endpoint_id}.status", "success")
 
                 if self._engine is not None and instance:
-                    self._engine.event_bus.publish(
+                    import asyncio
+                    asyncio.ensure_future(self._engine.event_bus.publish(
                         Event(
                             type=EventType.ACTIVITY_COMPLETED,
                             data={
@@ -111,7 +113,7 @@ class ServiceInvoker:
                                 "duration_ms": duration,
                             },
                         )
-                    )
+                    ))
 
                 return result
 

@@ -145,6 +145,9 @@ class AdHocOrdering(str, Enum):
     PARALLEL = "Parallel"
     SEQUENTIAL = "Sequential"
 
+
+HandlerAdHocOrdering = AdHocOrdering
+
 class ScriptLanguage(str, Enum):
     JS = "JS"
     PYTHON = "Python"
@@ -586,7 +589,18 @@ class GlobalBusinessRuleTask(GlobalTask):
     implementation: DecisionService = field(default_factory=lambda: DecisionService(id="", decisions=[]))
 
 @dataclass
+class Pool(BaseElement):
+    participants: list[Participant] = field(default_factory=list)
+    lane_sets: list[LaneSet] = field(default_factory=list)
+
+
+@dataclass
 class Rendering(BaseElement):
+    pass
+
+
+@dataclass
+class ResourceRendering(BaseElement):
     pass
 
 @dataclass
@@ -1261,6 +1275,18 @@ class Stage(FlowNode):
 class Milestone(FlowNode):
     pass
 
+
+class MilestoneKind(str, Enum):
+    ACHIEVEMENT = "achievement"
+    DEADLINE = "deadline"
+    CONDITIONAL = "conditional"
+
+
+@dataclass
+class DecisionTask(Activity):
+    decision_ref: str | None = None
+
+
 @dataclass
 class EventListener(FlowNode):
     event_type: EventListenerType = EventListenerType.USER
@@ -1335,6 +1361,8 @@ class DecisionTable(BaseElement):
     inputs: list[InputClause] = field(default_factory=list)
     outputs: list[OutputClause] = field(default_factory=list)
     rules: list[DecisionRule] = field(default_factory=list)
+    columns: list[str] = field(default_factory=list)
+    rows: list[list[str]] = field(default_factory=list)
 
 @dataclass
 class Decision(FlowNode):
@@ -1579,7 +1607,6 @@ class InteractionModel:
 # ═══════════════════════════════════════════════════════════════
 # Top‑level OSDM Document
 # ═══════════════════════════════════════════════════════════════
-@dataclass
 class BaseOSDMDocument(BaseDocument):
     kind: DocumentStandard = DocumentStandard.OSDM
     source_format: DocumentFormat | None = None
@@ -1598,23 +1625,18 @@ class BPMNDocument(BaseOSDMDocument):
     choreographies: list[Choreography] = field(default_factory=list)
     global_tasks: list[GlobalTask] = field(default_factory=list)
 
-@dataclass
 class CMMNDocument(BaseOSDMDocument):
     cmmn_definitions: list[CMMNDefinition] = field(default_factory=list)
 
-@dataclass
 class StateMachineDocument(BaseOSDMDocument):
     state_machines: list[StateMachineModel] = field(default_factory=list)
 
-@dataclass
 class DMNDocument(BaseOSDMDocument):
     dmn_definitions: list[DMNDefinition] = field(default_factory=list)
 
-@dataclass
 class CEPDocument(BaseOSDMDocument):
     cep_definitions: list[CEPDefinition] = field(default_factory=list)
 
-@dataclass
 class MultiAgentInteractionDocument(BaseOSDMDocument):
     interaction_models: list[InteractionModel] = field(default_factory=list)
 
@@ -1640,11 +1662,6 @@ class OSDMModel:
 @dataclass
 class SentryExpression(FormalExpression):
     pass
-
-@dataclass
-class DecisionTable(BaseElement):
-    columns: list[str] = field(default_factory=list)
-    rows: list[dict[str, str]] = field(default_factory=list)
 
 @dataclass
 class ActionList(BaseElement):

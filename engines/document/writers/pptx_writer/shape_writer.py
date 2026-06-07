@@ -132,7 +132,7 @@ def write_picture(img: ImageContent, element_id: str = "1") -> Element:
     SubElement(nvPicPr, f"{P}nvPr")
 
     blipFill = SubElement(pic, f"{P}blipFill")
-    blip = SubElement(blipFill, f"{A}blip", {f"{R}embed": img.src})
+    _blip = SubElement(blipFill, f"{A}blip", {f"{R}embed": img.src})
     stretch = SubElement(blipFill, f"{A}stretch")
     SubElement(stretch, f"{A}fillRect")
 

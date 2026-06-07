@@ -14,7 +14,7 @@ from ..core.context import ContextManager, ContextScope
 from ..core.engine import OrchestrationEngine, ProcessDefinition
 from ..core.instance import ProcessInstance
 from .decision_requirements_graph import DmnDecisionServiceExecutor
-from ....document.models.osdm_models import DecisionService
+from ...document.models.osdm_models import DecisionService
 from ..core.event_bus import Event, EventType
 from .decision_executor import DecisionExecutor
 
@@ -58,7 +58,7 @@ class DMNEngine:
                 instance.set_variable("decision_status", "completed")
 
             if self.orchestration_engine is not None:
-                self.orchestration_engine.event_bus.publish(
+                await self.orchestration_engine.event_bus.publish(
                     Event(
                         type=EventType.PROCESS_INSTANCE_COMPLETED,
                         data={

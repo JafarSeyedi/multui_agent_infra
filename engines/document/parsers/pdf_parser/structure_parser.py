@@ -125,7 +125,7 @@ class StructureParser:
                     "page": page,
                     "type": "toc_entry"
                 })
-        except:
+        except Exception:
             logger.warning("Could not extract TOC from PDF")
 
         return toc

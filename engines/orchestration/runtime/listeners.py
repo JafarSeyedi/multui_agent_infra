@@ -98,7 +98,7 @@ class TaskListenerManager:
         if task_definition_key not in self._listeners:
             self._listeners[task_definition_key] = []
         self._listeners[task_definition_key].append(listener)
-        self._listeners[task_definition_key].sort(key=lambda l: l.priority, reverse=True)
+        self._listeners[task_definition_key].sort(key=lambda listener: listener.priority, reverse=True)
 
     def register_callback(
         self,
@@ -153,8 +153,8 @@ class TaskListenerManager:
             return await callback(invocation)
 
         if listener.expression:
-            from ...expression.evaluator import EvaluationContext
-            from ...expression.python_evaluator import PythonEvaluator
+            from ..expression.evaluator import EvaluationContext
+            from ..expression.python_evaluator import PythonEvaluator
             context = dict(invocation.variables)
             context["eventType"] = invocation.event_type
             context["instanceId"] = invocation.instance_id
@@ -162,7 +162,7 @@ class TaskListenerManager:
             return PythonEvaluator().evaluate(listener.expression, EvaluationContext(variables=context))
 
         if listener.script:
-            from ...dmn.feel_engine import FEELEngine
+            from ..dmn.feel_engine import FEELEngine
             context = dict(invocation.variables)
             context["eventType"] = invocation.event_type
             return FEELEngine().evaluate(listener.script, context)
@@ -208,7 +208,7 @@ class ExecutionListenerManager:
         if activity_id not in self._listeners:
             self._listeners[activity_id] = []
         self._listeners[activity_id].append(listener)
-        self._listeners[activity_id].sort(key=lambda l: l.priority, reverse=True)
+        self._listeners[activity_id].sort(key=lambda listener: listener.priority, reverse=True)
 
     def register_callback(
         self,
@@ -257,13 +257,15 @@ class ExecutionListenerManager:
             callback = self._callbacks[listener.listener_id]
             return await callback(invocation)
         if listener.expression:
-            from ...expression.evaluator import EvaluationContext
-            from ...expression.python_evaluator import PythonEvaluator
+            from ..expression.evaluator import EvaluationContext
+            from ..expression.python_evaluator import PythonEvaluator
             context = dict(invocation.variables)
             context["eventType"] = invocation.event_type
+            context["activityId"] = invocation.activity_id
             return PythonEvaluator().evaluate(listener.expression, EvaluationContext(variables=context))
+
         if listener.script:
-            from ...dmn.feel_engine import FEELEngine
+            from ..dmn.feel_engine import FEELEngine
             return FEELEngine().evaluate(listener.script, dict(invocation.variables))
         return None
 

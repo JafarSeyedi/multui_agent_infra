@@ -5,12 +5,13 @@ Binds messages, signals, events to communication and storage layers.
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
-from ...core.event_bus import Event, EventType
-from ...core.engine import OrchestrationEngine
+from ..core.event_bus import Event, EventType
+from ..core.engine import OrchestrationEngine
 
 
 class MessageDeliveryPolicy(str, Enum):
@@ -71,7 +72,7 @@ class MessageAdapter:
 
         try:
             if self._engine is not None:
-                self._engine.event_bus.publish(
+                asyncio.ensure_future(self._engine.event_bus.publish(
                     Event(
                         type=EventType.MESSAGE_SENT,
                         data={
@@ -83,6 +84,7 @@ class MessageAdapter:
                             "instance_id": instance_id,
                         },
                     )
+                )
                 )
         except Exception as e:
             delivered = False

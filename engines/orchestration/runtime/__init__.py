@@ -4,7 +4,7 @@ from .compensation import CompensationManager, CompensationStep
 from .error_handler import ExecutionError, ErrorLevel, ErrorRecord, ErrorRecoveryContext, ErrorResolver
 from .executor import ExecutionOutcome, RuntimeExecutor, RuntimeTaskError
 from .resource_manager import ResourceContext, ResourceManager
-from .runtime_records import (
+from ..persistence.runtime_records import (
     AUDIT_RECORD,
     EVENT_RECORD,
     INSTANCE_RECORD,

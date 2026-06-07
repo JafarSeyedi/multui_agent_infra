@@ -8,8 +8,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from ...core.instance import ProcessInstance
-from ...core.engine import OrchestrationEngine
+from ..core.instance import ProcessInstance
+from ..core.engine import OrchestrationEngine
 
 
 @dataclass
@@ -83,8 +83,8 @@ class ActionExecutor:
         result: dict[str, Any] = {"action_id": action.action_id, "type": action.action_type}
 
         if action.expression:
-            from ...expression.evaluator import EvaluationContext
-            from ...expression.python_evaluator import PythonEvaluator
+            from ..expression.evaluator import EvaluationContext
+            from ..expression.python_evaluator import PythonEvaluator
             try:
                 value = PythonEvaluator().evaluate(action.expression, EvaluationContext(variables=instance.get_all_variables()))
                 result["result"] = value

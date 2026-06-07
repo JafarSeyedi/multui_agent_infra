@@ -1,6 +1,6 @@
 from .docx_chart_extractor import A, C, NS
 
-from .docx_diagram_extractor import A, DGM, NS_DGM, R
+from .docx_diagram_extractor import DGM, NS_DGM, R
 
 from .docx_extractor import DOCXExtractor
 
@@ -16,7 +16,7 @@ from .docx_style_parser import DocxStyleParser
 
 from .docx_table_parser import DocxTableParser
 
-from .docx_utils import DocxNumberingInfo, DocxStyleInfo, DocxUtils, NS, OOXML_NAMESPACES, extract_text_from_run, get_attribute, get_element_text, safe_find, safe_findall, xml_to_text
+from .docx_utils import DocxNumberingInfo, DocxStyleInfo, DocxUtils, OOXML_NAMESPACES, extract_text_from_run, get_attribute, get_element_text, safe_find, safe_findall, xml_to_text
 
 __all__ = [
     "A",

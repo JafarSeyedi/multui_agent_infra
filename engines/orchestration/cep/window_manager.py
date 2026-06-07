@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
-from ...core.instance import ProcessInstance
+from ..core.instance import ProcessInstance
 
 
 class WindowType(str, Enum):
@@ -74,9 +74,9 @@ class WindowManager:
         state.events.append(event)
         state.version += 1
 
-        definition = self._definitions.get(window_id)
-        if definition and definition.max_count and len(state.events) > definition.max_count:
-            state.events = state.events[-definition.max_count:]
+        existing = self._definitions.get(window_id)
+        if existing is not None and existing.max_count is not None and len(state.events) > existing.max_count:
+            state.events = state.events[-existing.max_count:]
 
         return list(state.events)
 

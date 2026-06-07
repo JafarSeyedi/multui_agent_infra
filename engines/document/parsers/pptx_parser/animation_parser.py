@@ -155,7 +155,7 @@ def _parse_anim_effect(
         dur_str = ctn.get("dur")
         if dur_str:
             duration = _parse_duration_ms(dur_str)
-        delay_str = ctn.get("stCondLst/p:cond/delay")  # not exactly; need to parse
+        _delay_str = ctn.get("stCondLst/p:cond/delay")  # not exactly; need to parse
         # Simpler: get "st" attribute or child conditions
     # Fallback: use the elem's own duration/delay from cBhvr
     if cbvr is not None:

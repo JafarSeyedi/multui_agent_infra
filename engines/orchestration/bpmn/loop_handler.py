@@ -17,9 +17,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
-from ...core.engine import OrchestrationEngine
+from ..core.engine import OrchestrationEngine
 
-from ....document.models.osdm_models import (
+from ...document.models.osdm_models import (
     Activity,
     LoopCharacteristics,
     StandardLoopCharacteristics,
@@ -291,8 +291,8 @@ class LoopHandler:
         if condition in {"false", "False", "0"}:
             return False
         try:
-            from ...expression.evaluator import EvaluationContext
-            from ...expression.python_evaluator import PythonEvaluator
+            from ..expression.evaluator import EvaluationContext
+            from ..expression.python_evaluator import PythonEvaluator
 
             return bool(
                 PythonEvaluator().evaluate(condition, EvaluationContext(variables=context))

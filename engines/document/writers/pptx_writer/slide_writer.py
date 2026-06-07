@@ -54,7 +54,7 @@ def write_slide(slide: Slide) -> Element:
         if slide.background_image:
             # blipFill
             blipFill = SubElement(bgPr, f"{A}blipFill")
-            blip = SubElement(blipFill, f"{A}blip", {f"{R}embed": slide.background_image.src})
+            _blip = SubElement(blipFill, f"{A}blip", {f"{R}embed": slide.background_image.src})
             stretch = SubElement(blipFill, f"{A}stretch")
             SubElement(stretch, f"{A}fillRect")
 

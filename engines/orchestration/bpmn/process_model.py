@@ -10,7 +10,7 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
-from ....document.models.osdm_models import (
+from ...document.models.osdm_models import (
     Process,
     FlowElement,
     FlowNode,
@@ -55,9 +55,6 @@ from ....document.models.osdm_models import (
     EventType,
     EventDefinitionType,
     GatewayType,
-    SubProcess,
-    AdHocSubProcess,
-    TransactionSubProcess,
     SubProcess,
     AdHocSubProcess,
     TransactionSubProcess,
@@ -111,9 +108,10 @@ class TypedProcessModel:
                     if isinstance(element, BoundaryEvent):
                         attached = element.attached_to_ref
                         if attached:
-                            if attached not in self._boundary_events:
-                                self._boundary_events[attached] = []
-                            self._boundary_events[attached].append(element)
+                            attached_id = attached.id if isinstance(attached, Activity) else str(attached)
+                            if attached_id not in self._boundary_events:
+                                self._boundary_events[attached_id] = []
+                            self._boundary_events[attached_id].append(element)
 
     def _find_start_node(self) -> None:
         if self.process and self.process.flow_elements:
@@ -147,7 +145,11 @@ class TypedProcessModel:
         return self._flow_index.get(node_id, [])
 
     def get_outgoing_targets(self, node_id: str) -> list[str]:
-        return [f.target_ref for f in self.get_outgoing_flows(node_id) if f.target_ref]
+        result: list[str] = []
+        for f in self.get_outgoing_flows(node_id):
+            if f.target_ref:
+                result.append(f.target_ref.id if isinstance(f.target_ref, FlowNode) else str(f.target_ref))
+        return result
 
     def get_boundary_events(self, activity_id: str) -> list[BoundaryEvent]:
         return self._boundary_events.get(activity_id, [])

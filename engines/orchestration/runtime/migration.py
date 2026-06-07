@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
-from ...core.instance import InstanceState
+from ..core.instance import InstanceState
 
 
 logger = logging.getLogger(__name__)
@@ -53,6 +53,7 @@ class MigrationResult:
     started_at: str = ""
     completed_at: str | None = None
     status: str = "pending"
+    total_count: int = 0
 
 
 @dataclass
@@ -81,7 +82,7 @@ class ProcessInstanceMigrator:
         source_version: int,
         target_definition_key: str,
         target_version: int,
-        activity_mappings: list[dict[str, str]] | None = None,
+                activity_mappings: list[dict[str, Any]] | None = None,
     ) -> MigrationPlan:
         mappings = []
         if activity_mappings:
@@ -89,7 +90,7 @@ class ProcessInstanceMigrator:
                 mappings.append(MigrationMapping(
                     source_activity_id=m["source"],
                     target_activity_id=m["target"],
-                    update_event_trigger=m.get("update_event_trigger", False),
+                    update_event_trigger=bool(m.get("update_event_trigger", False)),
                 ))
 
         return MigrationPlan(

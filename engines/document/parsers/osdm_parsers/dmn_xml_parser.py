@@ -204,21 +204,18 @@ class DMNXMLParser(BaseOSDMParser):
             dt.columns.append(f"output:{label}")
         # Parse rules
         for rule_elem in elem.findall("dmn:rule", NS):
-            row: dict[str, str] = {}
+            row: list[str] = []
             # input entries
             in_entries = rule_elem.findall("dmn:inputEntry", NS)
             for idx, entry in enumerate(in_entries):
-                col_name = dt.columns[idx] if idx < len(dt.columns) else f"input{idx}"
                 text_elem = entry.find("dmn:text", NS)
                 value = text_elem.text if text_elem is not None and text_elem.text is not None else ""
-                row[col_name] = value
+                row.append(value)
             out_entries = rule_elem.findall("dmn:outputEntry", NS)
-            out_offset = len(in_entries)
             for idx, entry in enumerate(out_entries):
-                col_name = dt.columns[out_offset + idx] if (out_offset + idx) < len(dt.columns) else f"output{idx}"
                 text_elem = entry.find("dmn:text", NS)
                 value = text_elem.text if text_elem is not None and text_elem.text is not None else ""
-                row[col_name] = value
+                row.append(value)
             dt.rows.append(row)
         return dt
 

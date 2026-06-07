@@ -1,32 +1,32 @@
 from .animation_writer import A, NS, P, write_animations, write_transition
 
-from .charts_writer import NS, write_chart_xml
+from .charts_writer import write_chart_xml
 
-from .comments_writer import A, P, write_comments
+from .comments_writer import write_comments
 
 from .constants import NAMESPACES, PSDM_TO_PPTX_ANIM, PSDM_TO_PPTX_PLACEHOLDER, PSDM_TO_PPTX_TRANSITION, REL_TYPE
 
-from .diagram_writer import A, DGM, NSMAP, R, write_diagram
+from .diagram_writer import DGM, NSMAP, R, write_diagram
 
-from .master_writer import A, P, R, write_layout, write_master
+from .master_writer import write_layout, write_master
 
 from .media_writer import collect_media_files
 
-from .notes_writer import A, P, R, write_notes_slide
+from .notes_writer import write_notes_slide
 
-from .ole_writer import P, R, collect_ole_binaries, write_ole_element
+from .ole_writer import collect_ole_binaries, write_ole_element
 
 from .relationship_utils import REL_NS, rels_to_xml
 
-from .shape_writer import A, P, R, write_group_shape, write_picture, write_shape
+from .shape_writer import write_group_shape, write_picture, write_shape
 
-from .slide_writer import A, C, DGM, P, R, write_slide
+from .slide_writer import C, write_slide
 
-from .style_writer import A, P, write_tx_styles
+from .style_writer import write_tx_styles
 
-from .table_writer import A, P, write_table
+from .table_writer import write_table
 
-from .theme_writer import A, write_theme
+from .theme_writer import write_theme
 
 from .utils import dict_to_element
 

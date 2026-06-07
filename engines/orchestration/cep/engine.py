@@ -79,14 +79,14 @@ class CEPEngine:
 
             for event_data in events:
                 processed = await self.stream_processor.process(event_data, instance)
-                self.event_store.store(instance.id, processed)
+                self.event_store.store(instance.id, processed.event_id, processed.event_type, {"data": event_data})
 
             for pattern in patterns:
                 match_result = self.pattern_matcher.evaluate(pattern, instance.get_all_variables(), instance.id)
                 if match_result.get("matched"):
                     instance.set_variable(f"pattern.{pattern.get('id', 'unknown')}", match_result)
                     if self.orchestration_engine is not None:
-                        self.orchestration_engine.event_bus.publish(
+                        await self.orchestration_engine.event_bus.publish(
                             Event(
                                 type=EventType.ACTIVITY_COMPLETED,
                                 data={

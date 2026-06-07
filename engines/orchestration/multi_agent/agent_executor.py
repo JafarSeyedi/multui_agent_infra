@@ -9,9 +9,9 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
-from ...core.instance import ProcessInstance
-from ...core.engine import OrchestrationEngine
-from ...core.event_bus import Event, EventType
+from ..core.instance import ProcessInstance
+from ..core.engine import OrchestrationEngine
+from ..core.event_bus import Event, EventType
 
 
 class AgentState(str, Enum):
@@ -74,7 +74,7 @@ class AgentExecutor:
             instance.set_variable(f"agent.{agent_id}", result.result)
 
         if self._engine is not None:
-            self._engine.event_bus.publish(
+            await self._engine.event_bus.publish(
                 Event(
                     type=EventType.ACTIVITY_COMPLETED,
                     data={

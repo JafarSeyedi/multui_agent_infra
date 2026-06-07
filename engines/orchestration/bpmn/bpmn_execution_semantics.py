@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
-from ....document.models.osdm_models import (
+from ...document.models.osdm_models import (
     Process,
     FlowNode,
     Activity,
@@ -37,7 +37,8 @@ from ....document.models.osdm_models import (
     GatewayType,
 )
 
-from ...core.token import Token, TokenState
+from ..core.token import Token, TokenState
+from ..dmn.feel_engine import EvaluationContext
 
 
 logger = logging.getLogger(__name__)
@@ -52,7 +53,7 @@ class TokenPlacement:
     """Represents a token at a specific node in the process."""
     token_id: str
     current_node_id: str
-    state: str = TokenState.ACTIVE
+    state: TokenState = TokenState.ACTIVE
     parent_token_id: str | None = None
     scope_id: str | None = None
 
@@ -123,8 +124,8 @@ class BpmnGatewaySemantics:
         outgoing_flows: list[SequenceFlow],
         context: dict[str, Any],
     ) -> GatewaySplit:
-        from ...expression.evaluator import EvaluationContext
-        from ...expression.python_evaluator import PythonEvaluator
+        from ..expression.evaluator import EvaluationContext
+        from ..expression.python_evaluator import PythonEvaluator
 
         if isinstance(gateway, ExclusiveGateway):
             return BpmnGatewaySemantics._split_exclusive(gateway, outgoing_flows, context, PythonEvaluator)
@@ -204,8 +205,8 @@ class BpmnGatewaySemantics:
         activation_condition = getattr(gateway, 'activation_condition', None)
         if activation_condition:
             try:
-                from ...expression.evaluator import EvaluationContext
-                from ...expression.python_evaluator import PythonEvaluator
+                from ..expression.evaluator import EvaluationContext
+                from ..expression.python_evaluator import PythonEvaluator
                 if not bool(PythonEvaluator().evaluate(str(activation_condition), EvaluationContext(variables=context))):
                     return GatewaySplit(target_node_ids=[], gateway_id=gateway.id, gateway_type="complex")
             except Exception:

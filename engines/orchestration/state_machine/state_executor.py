@@ -14,8 +14,10 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
-from ...core.instance import ProcessInstance
-from ...core.engine import OrchestrationEngine
+from ..core.event_bus import Event as BusEvent
+from ..core.event_bus import EventType as BusEventType
+from ..core.instance import ProcessInstance
+from ..core.engine import OrchestrationEngine
 from ...document.models.osdm_models import (
     PseudoState,
     PseudoStateKind,
@@ -156,13 +158,12 @@ class StateMachineExecutor:
                 instance.set_variable(f"state.{current_state_id}.active", True)
 
                 if self.orchestration_engine is not None:
-                    self.orchestration_engine.event_bus.publish(
-                        type="ACTIVITY_STARTED",
-                        data={
+                    await self.orchestration_engine.event_bus.publish(
+                        BusEvent(type=BusEventType.ACTIVITY_STARTED, data={
                             "instance_id": instance.id,
                             "state_id": current_state_id,
                             "engine_type": "state_machine",
-                        },
+                        }),
                     )
 
                 is_final = state_obj.is_final
@@ -206,7 +207,7 @@ class StateMachineExecutor:
                 return
 
             trigger = self._get_trigger(transition)
-            trigger_body = trigger.body if hasattr(trigger, "body") and trigger.body is not None else None
+            trigger_body = trigger.body if trigger is not None and hasattr(trigger, "body") and trigger.body is not None else None
             self.history_manager.push(
                 instance.id, current_state_id, target_id, trigger_body,
             )
@@ -273,13 +274,12 @@ class StateMachineExecutor:
             instance.set_variable(f"state.{current_state_id}.active", True)
 
             if self.orchestration_engine is not None:
-                self.orchestration_engine.event_bus.publish(
-                    type="ACTIVITY_STARTED",
-                    data={
+                await self.orchestration_engine.event_bus.publish(
+                    BusEvent(type=BusEventType.ACTIVITY_STARTED, data={
                         "instance_id": instance.id,
                         "state_id": current_state_id,
                         "engine_type": "state_machine",
-                    },
+                    }),
                 )
 
             transition = self.transition_handler.resolve(
@@ -503,8 +503,8 @@ class StateMachineExecutor:
         if guard in {"false", "False", "0"}:
             return False
         try:
-            from ...expression.evaluator import EvaluationContext
-            from ...expression.python_evaluator import PythonEvaluator
+            from ..expression.evaluator import EvaluationContext
+            from ..expression.python_evaluator import PythonEvaluator
             result = PythonEvaluator().evaluate(guard, EvaluationContext(variables=context))
             return bool(result)
         except Exception:

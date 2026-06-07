@@ -56,7 +56,7 @@ def _detect_zip_sub_type(data: bytes) -> MediaType:
         with zipfile.ZipFile(io.BytesIO(data), "r") as zf:
             ct_xml = zf.read("[Content_Types].xml")
             root = ET.fromstring(ct_xml)
-            ns = {"ct": "http://schemas.openxmlformats.org/package/2006/content-types"}
+            _ns = {"ct": "http://schemas.openxmlformats.org/package/2006/content-types"}
             for elem in root.iter():
                 tag = elem.tag.split("}")[-1]
                 if tag == "Default":
@@ -321,19 +321,25 @@ def _is_cep_json(text: str) -> bool:
     try:
         data = json.loads(text)
         return isinstance(data, dict) and ('streams' in data or 'rules' in data)
-    except: return False
+    except Exception:
+        return False
+
+
 def _is_uml_state_machine(text: str) -> bool:
     try:
         root = ET.fromstring(text)
         ns = root.tag.split("}")[0][1:] if root.tag.startswith("{") else ""
         return 'uml' in ns and 'StateMachine' in text  # heuristic
-    except: return False
+    except Exception:
+        return False
+
 
 def _is_scxml(text: str) -> bool:
     try:
         root = ET.fromstring(text)
         return root.tag.endswith('scxml') or root.tag == 'scxml'
-    except: return False
+    except Exception:
+        return False
 
 def _is_epc(text: str) -> bool:
     return '<epc' in text or 'epml' in text  # needs precise detection
@@ -346,7 +352,8 @@ def _is_xpd(text: str) -> bool:
         root = ET.fromstring(text)
         ns = root.tag.split("}")[0][1:] if root.tag.startswith("{") else ""
         return 'xpdl' in ns or root.tag.endswith('Package')
-    except: return False
+    except Exception:
+        return False
 # ------------------------------------------------------
 # MAIN CONTENT DETECTOR (strictly ordered)
 # ------------------------------------------------------

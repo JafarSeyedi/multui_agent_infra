@@ -1,6 +1,8 @@
 # engines/document/writers/base.py
 from __future__ import annotations
 
+from __future__ import annotations
+
 from abc import ABC
 from abc import abstractmethod
 from collections.abc import AsyncIterator
@@ -14,7 +16,6 @@ from ..models.base import BaseDocument
 class WriteOptions(BaseModel):
     """Options for document writing across all standards."""
 
-    # General options
     encoding: str = "utf-8"
 
     # USDM-specific options
@@ -22,22 +23,28 @@ class WriteOptions(BaseModel):
     pretty_print: bool = False
 
     # Markdown-specific options
-    heading_style: str = "atx"  # "atx" or "setext"
-    bullet_style: str = "-"     # "-", "*", or "+"
-    code_block_style: str = "```"  # "```" or "~~~"
+    heading_style: str = "atx"
+    bullet_style: str = "-"
+    code_block_style: str = "```"
 
     # Custom extensions
     custom: dict[str, Any] = {}
 
 
+class WriteResult(BaseModel):
+    success: bool = True
+    data: bytes = b""
+    metadata: dict[str, Any] = {}
+
+
 class BaseDocumentWriter(ABC):
     """Base class for all document writers."""
     def __init__(self, options: WriteOptions | None = None):
-        self.options=options
+        self.options = options or WriteOptions()
 
     @abstractmethod
     async def write_stream(self, document: BaseDocument) -> AsyncIterator[bytes]:
-        yield b""  # این فقط برای جلوگیری از خطای abstract است
+        yield b""
 
     @abstractmethod
     async def write(self, document: BaseDocument) -> bytes:
@@ -59,3 +66,9 @@ class BaseDocumentWriter(ABC):
     @abstractmethod
     def get_supported_extensions(self) -> list[str]:
         """Get list of supported file extensions."""
+
+
+class BaseKnowledgeWriter(ABC):
+    @abstractmethod
+    async def write_knowledge(self, document: BaseDocument) -> "WriteResult":
+        pass

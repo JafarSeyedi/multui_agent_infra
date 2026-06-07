@@ -10,6 +10,7 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
+from ...document.models.media_types import MEDIA_TYPES
 from ...document.models.osdm_models import (
     BPMNDocument,
     CMMNDocument,
@@ -216,6 +217,7 @@ class OsdmSerializer:
                 title=process.name or process.id,
                 document_id=ctx.document_id or process.id,
                 processes=[process],
+                media_type=MEDIA_TYPES["bpmn_xml"],
             )
             return SerializationResult(
                 document=doc,
@@ -236,6 +238,7 @@ class OsdmSerializer:
             doc = CMMNDocument(
                 title=case_data.get("name", "Case"),
                 document_id=ctx.document_id or case_data.get("id", ""),
+                media_type=MEDIA_TYPES["cmmn_xml"],
             )
             return SerializationResult(document=doc, format="osdm", content_type="application/json")
         except Exception as e:
@@ -252,6 +255,7 @@ class OsdmSerializer:
             doc = StateMachineDocument(
                 title=sm_data.get("name", "StateMachine"),
                 document_id=ctx.document_id or sm_data.get("id", ""),
+                media_type=MEDIA_TYPES["uml_state_machine_xml"],
             )
             return SerializationResult(document=doc, format="osdm", content_type="application/json")
         except Exception as e:
@@ -268,6 +272,7 @@ class OsdmSerializer:
             doc = DMNDocument(
                 title=dmn_data.get("name", "Decision"),
                 document_id=ctx.document_id or dmn_data.get("id", ""),
+                media_type=MEDIA_TYPES["dmn_xml"],
             )
             return SerializationResult(document=doc, format="osdm", content_type="application/json")
         except Exception as e:
@@ -302,7 +307,7 @@ class OsdmSerializer:
                         flow_node_refs=l_data.get("flow_node_refs", []),
                     ))
                 process.lane_sets.append(LaneSet(
-                    lane_set_id=ls_data.get("id"),
+                    id=ls_data.get("id", ""),
                     lanes=lanes,
                 ))
         return process

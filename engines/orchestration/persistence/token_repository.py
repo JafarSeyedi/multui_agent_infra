@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..runtime.runtime_records import TOKEN_RECORD
+from .runtime_records import TOKEN_RECORD
 from .repository import PersistentRuntimeRepository
 
 

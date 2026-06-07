@@ -6,13 +6,14 @@ Provides both OSDM-typed and backward-compatible dict-based interfaces.
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
-from ...core.engine import OrchestrationEngine
-from ...core.event_bus import Event, EventType
+from ..core.engine import OrchestrationEngine
+from ..core.event_bus import Event, EventType
 
-from ....document.models.osdm_models import (
+from ...document.models.osdm_models import (
     GlobalTask as OSDMGlobalTask,
     GlobalUserTask,
     GlobalScriptTask,
@@ -77,9 +78,9 @@ class GlobalTaskHandler:
         self._execution_history.append(exec_result)
 
         if self._engine is not None:
-            self._engine.event_bus.publish(
+            asyncio.ensure_future(self._engine.event_bus.publish(
                 Event(type=EventType.ACTIVITY_COMPLETED, data={"global_task": True, "task_id": task_id, "task_type": task.task_type, "success": exec_result.success})
-            )
+            ))
 
         return exec_result
 

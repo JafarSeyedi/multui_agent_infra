@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
-from ...core.instance import ProcessInstance
+from ..core.instance import ProcessInstance
 
 
 class MappingType(str, Enum):
@@ -88,8 +88,8 @@ class DataMapper:
             return source_data.get(mapping.source, mapping.default_value)
         elif mapping.mapping_type == "expression" and mapping.expression:
             try:
-                from ...expression.evaluator import EvaluationContext
-                from ...expression.python_evaluator import PythonEvaluator
+                from ..expression.evaluator import EvaluationContext
+                from ..expression.python_evaluator import PythonEvaluator
                 return PythonEvaluator().evaluate(mapping.expression, EvaluationContext(variables=source_data))
             except Exception:
                 return mapping.default_value
@@ -103,8 +103,8 @@ class DataMapper:
 
     def _evaluate_condition(self, condition: str, context: dict[str, Any]) -> bool:
         try:
-            from ...expression.evaluator import EvaluationContext
-            from ...expression.python_evaluator import PythonEvaluator
+            from ..expression.evaluator import EvaluationContext
+            from ..expression.python_evaluator import PythonEvaluator
             return bool(PythonEvaluator().evaluate(condition, EvaluationContext(variables=context)))
         except Exception:
             return False

@@ -67,7 +67,7 @@ class SQLDataParser(BaseDSDMParser):
             obj_node = DataNode(node_id=f"node:$[{idx}]", kind=DataNodeKind.OBJECT,
                                 path=f"$[{idx}]", name=str(idx))
             if entity:
-                attr_map = {attr.name.lower(): attr for attr in entity.attributes}
+                _attr_map = {attr.name.lower(): attr for attr in entity.attributes}
                 for attr in entity.attributes:
                     raw_val = row.get(attr.name) or row.get(attr.name.lower())
                     value = self._coerce_value_from_db(raw_val, attr)
