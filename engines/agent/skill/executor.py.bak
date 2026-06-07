@@ -1,0 +1,212 @@
+from typing import List, Dict, Any
+from .skill import SkillLoader
+import json
+
+# We'll assume we have an LLM client that we can call.
+# For the purpose of this library, we'll define an interface for the LLM client.
+# In practice, the user would inject their own LLM client (e.g., using OpenAI, Anthropic, etc.)
+class LLMClient:
+    def __init__(self):
+        pass
+
+    def generate_structured_output(
+        self,
+        prompt: str,
+        output_schema: Dict[str, Any],
+        **kwargs
+    ) -> Any:
+        """
+        Generate a structured output from the LLM given a prompt and an output schema.
+        This method should be implemented by the user to use their preferred LLM.
+        """
+        raise NotImplementedError("LLMClient.generate_structured_output must be implemented")
+
+    def generate_text(
+        self,
+        prompt: str,
+        **kwargs
+    ) -> str:
+        """
+        Generate a text output from the LLM given a prompt.
+        This method should be implemented by the user.
+        """
+        raise NotImplementedError("LLMClient.generate_text must be implemented")
+
+
+class BatchSkillExecutor:
+    def __init__(self, llm_client: LLMClient, skill_loader: SkillLoader):
+        self.llm_client = llm_client
+        self.skill_loader = skill_loader
+
+    def execute(
+        self,
+        skill_identifier: str,
+        inputs: Dict[str, Any],
+        **kwargs
+    ) -> Any:
+        """
+        Execute a skill in batch mode: load the entire skill context and call the LLM once.
+        """
+        skill = self.skill_loader.get_skill(skill_identifier)
+        if not skill:
+            raise ValueError(f"Skill not found: {skill_identifier}")
+
+        base_path = self.skill_loader.get_skill_base_path(skill_identifier)
+        if base_path is None:
+            raise ValueError(f"Could not determine base path for skill: {skill_identifier}")
+
+        # Load reference contents
+        try:
+            reference_contents = skill.get_reference_content(base_path)
+        except FileNotFoundError as e:
+            raise ValueError(f"Failed to load skill references: {e}")
+
+        # Build the context for the LLM
+        context_parts = [
+            f"Skill Name: {skill.name}",
+            f"Skill Description: {skill.description}",
+            f"Skill Version: {skill.version}",
+            f"\nSkill Content:\n{skill.content}",
+        ]
+
+        if reference_contents:
+            context_parts.append("\nReferences:")
+            for ref_name, ref_content in reference_contents.items():
+                context_parts.append(f"\n--- {ref_name} ---\n{ref_content}")
+
+        # Add instructions for the LLM about the expected output
+        # We'll build an output schema from the skill's outputs
+        output_schema = {
+            "type": "object",
+            "properties": {},
+            "required": []
+        }
+        for output in skill.outputs:
+            output_schema["properties"][output.name] = {
+                "type": output.type.lower(),  # assuming type is a string like "string", "number", etc.
+                "description": output.description
+            }
+            # We'll consider all outputs as required for the schema? 
+            # The skill's outputs are what the skill is expected to produce.
+            output_schema["required"].append(output.name)
+
+        # Build the prompt
+        prompt_parts = [
+            "You are an AI assistant tasked with executing a skill.",
+            "Use the provided skill context to generate the expected output.",
+            "\nSkill Context:",
+            "\n".join(context_parts),
+            "\n\nInputs:",
+            json.dumps(inputs, indent=2),
+            "\n\nPlease generate the output according to the skill's output specification."
+        ]
+
+        prompt = "\n".join(prompt_parts)
+
+        # Call the LLM with structured output
+        try:
+            result = self.llm_client.generate_structured_output(
+                prompt=prompt,
+                output_schema=output_schema,
+                **kwargs
+            )
+        except Exception as e:
+            raise RuntimeError(f"LLM call failed during batch skill execution: {e}")
+
+        return result
+
+
+class StepWiseSkillExecutor:
+    def __init__(self, llm_client: LLMClient, skill_loader: SkillLoader):
+        self.llm_client = llm_client
+        self.skill_loader = skill_loader
+
+    def execute(
+        self,
+        skill_identifier: str,
+        inputs: Dict[str, Any],
+        **kwargs
+    ) -> List[Any]:
+        """
+        Execute a skill in step-wise mode: break the skill into steps and call the LLM for each step.
+        """
+        skill = self.skill_loader.get_skill(skill_identifier)
+        if not skill:
+            raise ValueError(f"Skill not found: {skill_identifier}")
+
+        base_path = self.skill_loader.get_skill_base_path(skill_identifier)
+        if base_path is None:
+            raise ValueError(f"Could not determine base path for skill: {skill_identifier}")
+
+        if not skill.steps:
+            # If no steps are defined, we fall back to batch execution? 
+            # Or we treat the entire skill as one step.
+            batch_executor = BatchSkillExecutor(self.llm_client, self.skill_loader)
+            return [batch_executor.execute(skill_identifier, inputs, **kwargs)]
+
+        # Load reference contents once for all steps
+        try:
+            reference_contents = skill.get_reference_content(base_path)
+        except FileNotFoundError as e:
+            raise ValueError(f"Failed to load skill references: {e}")
+
+        step_results = []
+        step_context = inputs.copy()  # We'll accumulate context from previous steps
+
+        for i, step in enumerate(skill.steps):
+            # Build the prompt for this step
+            context_parts = [
+                f"Skill Name: {skill.name}",
+                f"Skill Description: {skill.description}",
+                f"Step {i+1} of {len(skill.steps)}: {step.name}",
+                f"Step Description: {step.description}",
+            ]
+            if step.instructions:
+                context_parts.append(f"Step Instructions:\n{step.instructions}")
+
+            # Add the skill content and references? 
+            # For step-wise, we might only provide the step-specific information and the accumulated context.
+            # But we can also provide the entire skill context if needed.
+            # We'll provide the entire skill content and references for now, but note that this might be redundant.
+            context_parts.append(f"\nSkill Content:\n{skill.content}")
+            if reference_contents:
+                context_parts.append("\nReferences:")
+                for ref_name, ref_content in reference_contents.items():
+                    context_parts.append(f"\n--- {ref_name} ---\n{ref_content}")
+
+            context_parts.append("\nAccumulated Context from Previous Steps:")
+            context_parts.append(json.dumps(step_context, indent=2))
+
+            # Build output schema for this step
+            output_schema = {
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+            if step.output_schema:
+                output_schema = step.output_schema
+            else:
+                # If no output schema is defined for the step, we leave it empty and expect the user to define it in the step.
+                # But we can also use the skill's outputs? We'll leave it empty and let the LLM decide? 
+                # Actually, we must provide a schema for structured output. We'll leave it as an empty object.
+                pass
+
+            # Add the current step's expected output to the prompt
+            context_parts.append("\nPlease generate the output for this step.")
+
+            prompt = "\n".join(context_parts)
+
+            try:
+                step_result = self.llm_client.generate_structured_output(
+                    prompt=prompt,
+                    output_schema=output_schema,
+                    **kwargs
+                )
+            except Exception as e:
+                raise RuntimeError(f"LLM call failed during step {i+1} execution: {e}")
+
+            step_results.append(step_result)
+            # Update the step_context with the result of this step for the next step
+            step_context.update(step_result)
+
+        return step_results
