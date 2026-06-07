@@ -13,6 +13,7 @@ from enum import Enum
 from typing import Any
 
 from .base import BaseDocument
+from .media_types import MediaType
 from .media_types import DocumentStandard
 from .usdm_models import CharacterStyle
 from .usdm_models import ImageContent
@@ -212,6 +213,13 @@ class PresentationProperties:
     show_type: ShowType = ShowType.DEFAULT
     loop: bool = False
     start_with_narration: bool = False
+    paper_size: str | None = None
+    paper_width: str | None = None
+    paper_height: str | None = None
+    scale: str | None = None
+    orientation: str | None = None
+    paper_source: str | None = None
+    first_slide_number: int | None = None
     _meta: dict[str, Any] = field(default_factory=dict)
 
 # Add inside psdm_models.py (additional dataclasses)
@@ -262,6 +270,42 @@ class PresentationSection:
     first_slide_id: str                   # slide id of the first slide in the section
     _meta: dict[str, Any] = field(default_factory=dict)
     
+@dataclass
+class CustomShow:
+    """A custom show definition."""
+    name: str = ""
+    slide_ids: list[str] = field(default_factory=list)
+
+
+@dataclass
+class CustomShowList:
+    """Collection of custom shows."""
+    shows: list[CustomShow] = field(default_factory=list)
+
+
+CustomShowCollection = CustomShowList
+
+
+@dataclass
+class HandoutMaster:
+    """Handout master definition."""
+    name: str = ""
+    background_color: str | None = None
+    background_image: ImageContent | None = None
+    default_text_style: CharacterStyle | None = None
+    _meta: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class NotesMaster:
+    """Notes master definition."""
+    name: str = ""
+    background_color: str | None = None
+    background_image: ImageContent | None = None
+    default_text_style: CharacterStyle | None = None
+    _meta: dict[str, Any] = field(default_factory=dict)
+
+
 # ──────────────────────────────────────────────
 # Top‑level PSDM Document
 # ──────────────────────────────────────────────
@@ -269,14 +313,22 @@ class PresentationSection:
 @dataclass
 class PSDMDocument(BaseDocument):
     """Complete presentation document model."""
+    title: str = ""
+    document_id: str = ""
+    media_type: MediaType | None = None
     kind: DocumentStandard = DocumentStandard.PSDM
     slides: list[Slide] = field(default_factory=list)
-    slide_masters: dict[str, SlideMaster] = field(default_factory=dict)  # master name → master
+    slide_masters: dict[str, SlideMaster] = field(default_factory=dict)
     presentation_properties: PresentationProperties = field(default_factory=PresentationProperties)
-    # Optionally a default style sheet for text
     stylesheet: StyleSheet = field(default_factory=StyleSheet)
-
-    # Inherited from BaseDocument: title, document_id, media_type, raw_binary, etc.
     theme: Theme | None = None
     sections: list[PresentationSection] = field(default_factory=list)
-    _meta: dict[str, Any] = field(default_factory=dict)
+    handout_master: HandoutMaster | None = None
+    notes_master: NotesMaster | None = None
+    custom_shows: CustomShowList | None = None
+    psdm_meta: dict[str, Any] = field(default_factory=dict)
+    file_extension: str | None = None
+
+    @property
+    def _meta(self) -> dict[str, Any]:
+        return self.psdm_meta

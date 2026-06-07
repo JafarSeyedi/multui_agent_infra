@@ -1,0 +1,25 @@
+{
+  "$schema": "https://app.kilo.ai/config.json",
+  "permission": {
+    "read": "allow",
+    "edit": "allow",
+    "glob": "allow",
+    "grep": "allow",
+    "list": "allow",
+    "bash": "allow",
+    "task": "allow",
+    "todowrite": "allow",
+    "webfetch": "allow",
+    "websearch": "allow",
+    "lsp": "allow",
+    "doom_loop": "allow",
+    "skill": "allow",
+    "todoread": "allow",
+    "codesearch": "allow"
+  },
+  "retry": {
+    "enabled": true,     // auto-approve retries on failure
+    "delay": 5           // wait 5 seconds before retrying
+  }
+}
+

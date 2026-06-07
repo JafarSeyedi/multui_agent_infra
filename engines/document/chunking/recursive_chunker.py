@@ -98,7 +98,7 @@ class RecursiveTextChunker(BaseChunker):
             end_char=max(end, 0),
             embeddings=[],   # ← مهم
             metadata={
-                "source_format": document.media_type.format.value,
+                "source_format": document.media_type.format.value if document.media_type else "unknown",
                 "chunker": "recursive",
                 "chunk_size": len(text),
             },

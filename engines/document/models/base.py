@@ -53,6 +53,16 @@ class ElementType(str, Enum):
     CHART = "chart"
     TEXT_BOX = "text_box"
     SECTION_BREAK = "section_break"
+    HEADER = "header"
+    FOOTER = "footer"
+    TOC = "toc"
+    FORM_FIELD = "form_field"
+    CAPTION = "caption"
+    SEMANTIC_HTML = "semantic_html"
+    LATEX_COMMAND = "latex_command"
+    LATEX_ENVIRONMENT = "latex_environment"
+    MACRO = "macro"
+    WATERMARK = "watermark"
 
 class BinaryEncoding(str, Enum):
     BASE64 = "base64"
@@ -98,8 +108,7 @@ class BaseDocument(BaseModel):
     )
     decompressed_size: int | None = None #"حجم اصلی قبل از فشرده‌سازی (بایت)"
 
-    # اطلاعات فرمت
-    media_type: MediaType
+    media_type: MediaType | None = None
     file_extension: str | None = None
 
     # اعتبارسنجی
