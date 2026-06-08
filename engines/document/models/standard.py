@@ -156,6 +156,11 @@ def get_common_formats(standard: DocumentStandard) -> list[str]:
         DocumentStandard.TSDM: ["tsdm_json"],
         DocumentStandard.OSDM: ["bpmn", "cmmn", "dmn", "pnml", "graphml", "serverless_workflow_json", "serverless_workflow_yaml"],
         DocumentStandard.LSDM: ["xes", "syslog", "cef", "es_bulk"],
+        DocumentStandard.KSDM: [
+            "xmla_discover_xml", "mondrian_schema", "cwm_xmi",
+            "pmml_xml", "onnx_protobuf", "rdf_turtle", "rml_yaml",
+            "jprm_json", "yprm_yaml",
+        ],
 
     }
     return formats.get(standard, [])

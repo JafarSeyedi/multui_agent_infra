@@ -325,6 +325,22 @@ def _is_cep_json(text: str) -> bool:
         return False
 
 
+def _is_jprm_json(text: str) -> bool:
+    try:
+        data = json.loads(text)
+        return isinstance(data, dict) and 'processes' in data and 'process_definition_model' not in data
+    except Exception:
+        return False
+
+
+def _is_yprm_yaml(text: str) -> bool:
+    if not _is_yaml(text):
+        return False
+    if 'processes:' in text and 'process_definition_model' not in text:
+        return True
+    return False
+
+
 def _is_uml_state_machine(text: str) -> bool:
     try:
         root = ET.fromstring(text)
@@ -405,6 +421,8 @@ def detect_by_content(data: bytes) -> MediaType:
             return MEDIA_TYPES["tsdm_json"]
         if _is_cep_json(text):
             return MEDIA_TYPES["cep_json"]
+        if _is_jprm_json(text):
+            return MEDIA_TYPES["jprm_json"]
         # All other JSON
         return MEDIA_TYPES["json"]
 
@@ -463,7 +481,8 @@ def detect_by_content(data: bytes) -> MediaType:
     if _is_yaml(text):
         if _is_openapi(text):
             return MEDIA_TYPES["openapi_yaml"]
-        # ERD YAML unlikely, but could be placed before generic YAML
+        if _is_yprm_yaml(text):
+            return MEDIA_TYPES["yprm_yaml"]
         return MEDIA_TYPES["yaml"]
 
     # 8. TOML (broad pattern – after all specific patterns)

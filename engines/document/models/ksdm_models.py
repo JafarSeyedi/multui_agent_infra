@@ -8,7 +8,9 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field, ConfigDict
 
 from .base import BaseDocument, BinaryPayload
-from .media_types import MediaType
+from .lsdm_models import EventLogDocument
+from .media_types import DocumentFormat, MediaType
+from .osdm_models import BusinessRuleTask, CatchEvent, FlowElement, Gateway, Process
 from .standard import DocumentStandard
 
 
@@ -548,6 +550,95 @@ class KSDMMetricsDocument(BaseDocument):
     source_info: dict[str, Any] = Field(default_factory=dict)
 
 
+# ============================================================
+# Process Mining Definition — JPRM / YPRM Model
+# ============================================================
+
+class ClusteringAlgorithm(str, Enum):
+    KMEANS = "kmeans"
+    DBSCAN = "dbscan"
+    HIERARCHICAL = "hierarchical"
+    GMM = "gaussian_mixture"
+    AGGLOMERATIVE = "agglomerative"
+    SPECTRAL = "spectral"
+    BIRCH = "birch"
+    OPTICS = "optics"
+
+
+class MiningAlgorithm(str, Enum):
+    DECISION_TREE_INDUCTION = "decision_tree_induction"
+    RULE_EXTRACTION = "rule_extraction"
+    FREQUENT_PATTERN_MINING = "frequent_pattern_mining"
+    SEQUENCE_PATTERN_MINING = "sequence_pattern_mining"
+    ASSOCIATION_RULE = "association_rule"
+    CLUSTERING_BASED = "clustering_based"
+    DECISION_POINT_ANALYSIS = "decision_point_analysis"
+    FREQUENT_FLOW = "frequent_flow"
+
+
+@dataclass
+class ClusteringConfig:
+    algorithm: ClusteringAlgorithm = ClusteringAlgorithm.KMEANS
+    n_clusters: int | None = None
+    eps: float | None = None
+    dbscan_min_samples: int | None = None
+    linkage: str | None = None
+    affinity: str | None = None
+    max_iter: int | None = None
+    random_state: int | None = None
+    distance_threshold: float | None = None
+
+
+@dataclass
+class DecisionPointDefinition:
+    id: str
+    description: str | None = None
+    flow_element: FlowElement | None = None
+    mining_algorithm: MiningAlgorithm = MiningAlgorithm.DECISION_TREE_INDUCTION
+    clustering_config: ClusteringConfig | None = None
+    min_support: float | None = None
+    min_confidence: float | None = None
+    max_rules: int | None = None
+
+
+@dataclass
+class CatchEventMiningDefinition:
+    id: str
+    description: str | None = None
+    catch_event: CatchEvent | None = None
+    clustering_config: ClusteringConfig | None = None
+    min_events_per_cluster: int | None = None
+    output_pmml_model: bool = True
+
+
+@dataclass
+class MiningProcessDefinition:
+    id: str
+    description: str | None = None
+    process: Process | None = None
+    event_source: EventLogDocument | None = None
+    decision_points: dict[str, DecisionPointDefinition] = field(default_factory=dict)
+    catch_event_definitions: dict[str, CatchEventMiningDefinition] = field(default_factory=dict)
+    mining_name: str | None = None
+
+
+class ProcessMiningDefinitionDocument(BaseDocument):
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        validate_assignment=True,
+        json_encoders={
+            datetime: lambda v: v.isoformat(),
+        }
+    )
+
+    kind: DocumentStandard = Field(default=DocumentStandard.KSDM)
+    title: str = ""
+    document_id: str = ""
+    processes: dict[str, MiningProcessDefinition] = Field(default_factory=dict)
+    default_clustering_config: ClusteringConfig | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
 # Rebuild model
 KSDMDocument.model_rebuild()
 KsdDocument.model_rebuild()
@@ -556,3 +647,4 @@ BIAggregatorModel.model_rebuild()
 BiAggregationDocument.model_rebuild()
 MlMiningDocument.model_rebuild()
 KSDMMetricsDocument.model_rebuild()
+ProcessMiningDefinitionDocument.model_rebuild()

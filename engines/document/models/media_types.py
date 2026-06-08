@@ -107,6 +107,8 @@ class DocumentFormat(str, Enum):
     ONNX_PROTOBUF = "onnx_protobuf"
     RDF_TURTLE = "rdf_turtle"
     RML_YAML = "rml_yaml"
+    JPRM_JSON = "jprm_json"
+    YPRM_YAML = "yprm_yaml"
     
     # LSDM formats
     XES_XML = "xes_xml"
@@ -898,6 +900,24 @@ MEDIA_TYPES: dict[str, MediaType] = {
         kind=MediaContentKind.KNOWLEDGE_EXTRACTION_DEFINITION,
         raw_type=MediaRawType.TEXT,
         description="RDF Mapping Language (YAML)",
+    ),
+    "jprm_json": MediaType(
+        mime="application/json",
+        format=DocumentFormat.JPRM_JSON,
+        standard=DocumentStandard.KSDM,
+        extensions=[".jprm"],
+        kind=MediaContentKind.KNOWLEDGE_EXTRACTION_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="Process Mining Definition (JSON)",
+    ),
+    "yprm_yaml": MediaType(
+        mime="application/x-yaml",
+        format=DocumentFormat.YPRM_YAML,
+        standard=DocumentStandard.KSDM,
+        extensions=[".yprm"],
+        kind=MediaContentKind.KNOWLEDGE_EXTRACTION_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="Process Mining Definition (YAML)",
     ),
     "rdf_turtle": MediaType(
         mime="text/turtle",
