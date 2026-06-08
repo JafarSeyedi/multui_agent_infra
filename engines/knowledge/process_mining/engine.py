@@ -9,9 +9,9 @@ from __future__ import annotations
 import asyncio
 from typing import Any, Dict, List, cast
 
-from engines.document.models.isdm_models import ISDMDocument
-from engines.document.parsers.base import BaseKnowledgeParser
-from engines.document.writers.base import BaseKnowledgeWriter, WriteResult
+from engines.document.models.ksdm_models import KSDMMetricsDocument
+from engines.document.parsers.base import BaseDocumentParser
+from engines.document.writers.base import BaseDocumentWriter, WriteResult
 
 
 class ProcessMiningEngine:
@@ -21,25 +21,25 @@ class ProcessMiningEngine:
     """
 
     def __init__(self) -> None:
-        self._parsers: Dict[str, BaseKnowledgeParser] = {}
-        self._writers: Dict[str, BaseKnowledgeWriter] = {}
+        self._parsers: Dict[str, BaseDocumentParser] = {}
+        self._writers: Dict[str, BaseDocumentWriter] = {}
         self.event_logs: Dict[str, Any] = {}
         self.process_models: Dict[str, Any] = {}
         self.decision_models: Dict[str, Any] = {}
 
-    def register_parser(self, fmt: str, parser: BaseKnowledgeParser) -> None:
+    def register_parser(self, fmt: str, parser: BaseDocumentParser) -> None:
         self._parsers[fmt] = parser
 
-    def register_writer(self, fmt: str, writer: BaseKnowledgeWriter) -> None:
+    def register_writer(self, fmt: str, writer: BaseDocumentWriter) -> None:
         self._writers[fmt] = writer
 
-    async def parse(self, source: str, fmt: str | None = None, **options: Any) -> ISDMDocument:
+    async def parse(self, source: str, fmt: str | None = None, **options: Any) -> KSDMMetricsDocument:
         parser = cast(Any, self._parsers.get(fmt or "xes_xml"))
         if parser is None:
             raise NotImplementedError("No parser registered for the requested format.")
         return parser.parse(source, **options).document
 
-    async def write(self, document: ISDMDocument, destination: str, fmt: str | None = None, **options: Any) -> WriteResult:
+    async def write(self, document: KSDMMetricsDocument, destination: str, fmt: str | None = None, **options: Any) -> WriteResult:
         writer = cast(Any, self._writers.get(fmt or "xes_xml"))
         if writer is None:
             raise NotImplementedError("No writer registered for the requested format.")

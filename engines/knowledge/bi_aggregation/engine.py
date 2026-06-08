@@ -10,10 +10,10 @@ import asyncio
 from datetime import datetime, timedelta
 from typing import Any, Dict, cast
 
-from engines.document.models.isdm_models import ISDMDocument, Metric, MetricType, TimeGranularity
+from engines.document.models.ksdm_models import KSDMMetricsDocument, Metric, MetricType, TimeGranularity
 from engines.document.models.media_types import MEDIA_TYPES, MediaType
-from engines.document.parsers.base import BaseKnowledgeParser
-from engines.document.writers.base import BaseKnowledgeWriter, WriteResult
+from engines.document.parsers.base import BaseDocumentParser
+from engines.document.writers.base import BaseDocumentWriter, WriteResult
 
 
 class BiAggregationEngine:
@@ -24,32 +24,32 @@ class BiAggregationEngine:
 
     def __init__(self, schedule: str = "@daily"):
         self.schedule = schedule
-        self._parsers: Dict[str, BaseKnowledgeParser] = {}
-        self._writers: Dict[str, BaseKnowledgeWriter] = {}
+        self._parsers: Dict[str, BaseDocumentParser] = {}
+        self._writers: Dict[str, BaseDocumentWriter] = {}
         self.data_sources: Dict[str, Any] = {}
 
-    def register_parser(self, fmt: str, parser: BaseKnowledgeParser) -> None:
+    def register_parser(self, fmt: str, parser: BaseDocumentParser) -> None:
         self._parsers[fmt] = parser
 
-    def register_writer(self, fmt: str, writer: BaseKnowledgeWriter) -> None:
+    def register_writer(self, fmt: str, writer: BaseDocumentWriter) -> None:
         self._writers[fmt] = writer
 
-    async def parse(self, source: str, fmt: str | None = None, **options: Any) -> ISDMDocument:
+    async def parse(self, source: str, fmt: str | None = None, **options: Any) -> KSDMMetricsDocument:
         parser = cast(Any, self._parsers.get(fmt or "xmla_discover_xml"))
         if parser is None:
             raise NotImplementedError("No parser registered for the requested format.")
         return parser.parse(source, **options).document
 
-    async def write(self, document: ISDMDocument, destination: str, fmt: str | None = None, **options: Any) -> WriteResult:
+    async def write(self, document: KSDMMetricsDocument, destination: str, fmt: str | None = None, **options: Any) -> WriteResult:
         writer = cast(Any, self._writers.get(fmt or "xmla_discover_xml"))
         if writer is None:
             raise NotImplementedError("No writer registered for the requested format.")
         await writer.write(document, destination, **options)
         return WriteResult(metadata={"destination": destination, "format": fmt})
 
-    async def run_aggregation_job(self) -> ISDMDocument:
+    async def run_aggregation_job(self) -> KSDMMetricsDocument:
         """
-        Run an aggregation job and return an ISDM document with the results.
+        Run an aggregation job and return a metrics document with the results.
         """
         now = datetime.utcnow()
 
@@ -77,7 +77,7 @@ class BiAggregationEngine:
             ),
         ]
 
-        insights_doc = ISDMDocument(
+        insights_doc = KSDMMetricsDocument(
             title=f"BI Aggregation Job - {now.isoformat()}",
             document_id=f"bi_agg_{now.strftime('%Y%m%d_%H%M%S')}",
             start_time=now - timedelta(days=1),

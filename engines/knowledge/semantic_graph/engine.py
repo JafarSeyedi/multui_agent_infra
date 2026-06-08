@@ -15,8 +15,8 @@ from typing import Any, Dict, List
 from engines.document.models.ksdm_models import KSDMDocument, Entity, Relation, EntityType, RelationType
 from engines.document.models.standard import DocumentStandard
 from engines.document.models.media_types import MediaType, DocumentFormat, MediaContentKind, MediaRawType
-from engines.document.parsers.base import BaseKnowledgeParser
-from engines.document.writers.base import BaseKnowledgeWriter, WriteResult
+from engines.document.parsers.base import BaseDocumentParser
+from engines.document.writers.base import BaseDocumentWriter, WriteResult
 from engines.knowledge.graph.protocols import GraphEngineProtocol
 
 
@@ -35,10 +35,10 @@ class SemanticGraphEngine:
             from engines.knowledge.graph.engine import UnifiedGraphEngine
             self.unified_engine = UnifiedGraphEngine()
 
-    def register_parser(self, fmt: str, parser: BaseKnowledgeParser) -> None:
+    def register_parser(self, fmt: str, parser: BaseDocumentParser) -> None:
         self._parsers[fmt] = parser
 
-    def register_writer(self, fmt: str, writer: BaseKnowledgeWriter) -> None:
+    def register_writer(self, fmt: str, writer: BaseDocumentWriter) -> None:
         self._writers[fmt] = writer
 
     async def parse(self, source: str, fmt: str | None = None, **options: Any) -> KSDMDocument:

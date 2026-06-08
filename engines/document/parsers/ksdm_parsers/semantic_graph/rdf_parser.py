@@ -2,14 +2,14 @@ import importlib.util
 from pathlib import Path
 from typing import Any, BinaryIO, TextIO
 
-from engines.document.parsers.base import BaseKnowledgeParser, KnowledgeParseError, ParseResult
+from engines.document.parsers.base import BaseDocumentParser, ParseResult
 from engines.document.models.media_types import MEDIA_TYPES
 from engines.document.models.ksdm_models import KsdDocument, RdfGraph, RdfTriple
 
 RDFLIB_AVAILABLE = importlib.util.find_spec('rdflib') is not None
 
 
-class RdfParser(BaseKnowledgeParser):
+class RdfParser(BaseDocumentParser):
     supported_format = MEDIA_TYPES["rdf_turtle"]
 
     def can_parse(self, source: str | Path) -> bool:
@@ -23,7 +23,7 @@ class RdfParser(BaseKnowledgeParser):
 
     def parse(self, source: str | Path | BinaryIO | TextIO, **options: Any) -> ParseResult:
         if not RDFLIB_AVAILABLE:
-            raise KnowledgeParseError("RDF parsing requires 'rdflib' package. Install with: pip install rdflib")
+            raise Exception("RDF parsing requires 'rdflib' package. Install with: pip install rdflib")
         try:
             from rdflib import Graph as RdfLibGraph
             if isinstance(source, (str, Path)):
@@ -36,7 +36,7 @@ class RdfParser(BaseKnowledgeParser):
                 g = RdfLibGraph()
                 g.parse(data=raw, format='turtle')
             else:
-                raise KnowledgeParseError("Unsupported source type")
+                raise Exception("Unsupported source type")
             triples = []
             for s, p, o in g:
                 triples.append(RdfTriple(subject=str(s), predicate=str(p), object_=str(o)))
@@ -44,6 +44,6 @@ class RdfParser(BaseKnowledgeParser):
             doc = KsdDocument(rdf_graphs=[rdf_graph])
             return ParseResult(document=doc)
         except ImportError:
-            raise KnowledgeParseError("RDF parsing requires 'rdflib' package. Install with: pip install rdflib")
+            raise Exception("RDF parsing requires 'rdflib' package. Install with: pip install rdflib")
         except Exception as e:
-            raise KnowledgeParseError(f"RDF parse failed: {e}")
+            raise Exception(f"RDF parse failed: {e}")

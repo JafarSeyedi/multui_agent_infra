@@ -67,8 +67,3 @@ class BaseDocumentWriter(ABC):
     def get_supported_extensions(self) -> list[str]:
         """Get list of supported file extensions."""
 
-
-class BaseKnowledgeWriter(ABC):
-    @abstractmethod
-    async def write_knowledge(self, document: BaseDocument) -> "WriteResult":
-        pass

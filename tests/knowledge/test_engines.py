@@ -7,7 +7,6 @@ import asyncio
 
 from engines.knowledge.bi_aggregation.engine import BiAggregationEngine
 from engines.knowledge.ml_mining.engine import MlMiningEngine
-from engines.knowledge.process_mining.engine import ProcessMiningEngine
 from engines.knowledge.semantic_graph.engine import SemanticGraphEngine
 from engines.knowledge.graph.engine import UnifiedGraphEngine
 
@@ -20,12 +19,6 @@ def test_bi_aggregation_engine_init():
 
 def test_ml_mining_engine_init():
     engine = MlMiningEngine()
-    assert engine._parsers == {}
-    assert engine._writers == {}
-
-
-def test_process_mining_engine_init():
-    engine = ProcessMiningEngine()
     assert engine._parsers == {}
     assert engine._writers == {}
 

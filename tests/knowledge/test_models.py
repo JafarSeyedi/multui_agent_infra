@@ -1,11 +1,11 @@
 # tests/knowledge/test_models.py
 """
-Tests for knowledge models (ISDM + KSDM).
+Tests for knowledge models (Metrics + KSDM).
 """
 from datetime import datetime
 
-from engines.document.models.isdm_models import (
-    ISDMDocument,
+from engines.document.models.ksdm_models import (
+    KSDMMetricsDocument,
     Metric,
     MetricType,
     TimeGranularity,
@@ -20,15 +20,6 @@ from engines.document.models.isdm_models import (
     PmmlMiningSchema,
     PmmlModel,
     MlMiningDocument,
-    XesExtension,
-    XesClassifier,
-    XesAttribute,
-    XesEvent,
-    XesTrace,
-    XesEventLog,
-    DmnDecisionTable,
-    DdDecisionPoint,
-    ProcessMiningDocument,
 )
 from engines.document.models.ksdm_models import (
     KSDMDocument,
@@ -53,10 +44,10 @@ from engines.document.models.media_types import (
 from engines.document.models.media_types import MEDIA_TYPES
 
 
-def test_isdm_document_creation():
-    doc = ISDMDocument(
+def test_metrics_document_creation():
+    doc = KSDMMetricsDocument(
         title="Test Insights",
-        document_id="isdm-001",
+        document_id="kmd-001",
         start_time=datetime(2024, 1, 1),
         end_time=datetime(2024, 1, 2),
         granularity=TimeGranularity.DAY,
@@ -66,7 +57,7 @@ def test_isdm_document_creation():
         source_info={"database": "analytics"},
         media_type=MEDIA_TYPES.get("json"),
     )
-    assert doc.document_id == "isdm-001"
+    assert doc.document_id == "kmd-001"
     assert len(doc.metrics) == 1
 
 
@@ -101,34 +92,6 @@ def test_ml_mining_document():
     assert doc.model_type == MiningModelType.DECISION_TREE
     assert doc.features == ["age", "income"]
     assert doc.pmml_model is not None
-
-
-def test_process_mining_document():
-    doc = ProcessMiningDocument(
-        title="Process Test",
-        document_id="pm-001",
-        xes_log=XesEventLog(
-            log_id="log-1",
-            extensions=[XesExtension(name="Concept", prefix="concept", uri="http://www.xes-standard.org/concept.xesext")],
-            classifiers=[XesClassifier(name="Activity", keys=["concept:name"])],
-            traces=[XesTrace(
-                id="trace-1",
-                events=[XesEvent(id="ev-1", attributes=[XesAttribute(key="concept:name", value="start")])]
-            )],
-        ),
-        dmn_decision_table=DmnDecisionTable(id="dt-1", name="Loan Approval", hit_policy="UNIQUE"),
-        media_type=MEDIA_TYPES.get("json"),
-    )
-    assert doc.xes_log is not None
-    assert doc.xes_log.traces[0].events[0].attributes[0].value == "start"
-    assert doc.dmn_decision_table.name == "Loan Approval"
-
-
-def test_process_mining_model_classes():
-    e1 = XesExtension(name="Concept", prefix="concept", uri="http://example.org")
-    assert e1.name == "Concept"
-    dp = DdDecisionPoint(id="dp-1", name="Test", confidence=0.9, support=100)
-    assert dp.name == "Test"
 
 
 def test_ksdm_document():

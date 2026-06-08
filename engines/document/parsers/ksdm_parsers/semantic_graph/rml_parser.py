@@ -2,7 +2,7 @@ import yaml
 from pathlib import Path
 from typing import Any, BinaryIO, TextIO
 
-from engines.document.parsers.base import BaseKnowledgeParser, KnowledgeParseError, ParseResult
+from engines.document.parsers.base import BaseDocumentParser, ParseResult
 from engines.document.models.media_types import MEDIA_TYPES
 from engines.document.models.ksdm_models import (
     KsdDocument,
@@ -14,7 +14,7 @@ from engines.document.models.ksdm_models import (
 )
 
 
-class RmlParser(BaseKnowledgeParser):
+class RmlParser(BaseDocumentParser):
     supported_format = MEDIA_TYPES["rml_yaml"]
 
     def can_parse(self, source: str | Path) -> bool:
@@ -36,7 +36,7 @@ class RmlParser(BaseKnowledgeParser):
                 _data: Any = source.read()
                 raw = _data.decode('utf-8') if isinstance(_data, bytes) else str(_data)
             else:
-                raise KnowledgeParseError("Unsupported source type")
+                raise Exception("Unsupported source type")
             data = yaml.safe_load(raw) if isinstance(raw, str) else {}
             if not isinstance(data, dict):
                 data = {}
@@ -85,4 +85,4 @@ class RmlParser(BaseKnowledgeParser):
             doc = KsdDocument(rml_mappings=[mapping])
             return ParseResult(document=doc)
         except Exception as e:
-            raise KnowledgeParseError(f"RML parse failed: {e}")
+            raise Exception(f"RML parse failed: {e}")

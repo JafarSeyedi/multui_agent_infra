@@ -13,12 +13,12 @@
     #     lines.append(f'    <li{attrs}>{item_content}</li>')
     #     return "\n".join(lines)
     # def _quote_to_html(self, content: QuoteContent) -> str:
-    #     """تبدیل نقل قول به HTML"""
+    #     """Convert quote to HTML"""
     #     if not content or not content.elements:
     #         return ""
     #     lines: List[str] = []
     #     lines.append('  <blockquote>')
-    #     # پردازش المنت‌ها
+    #     # Process elements
     #     for elem in content.elements:
     #         if isinstance(elem, LogicalElement):
     #             elem_html = self._element_to_html(elem)
@@ -27,19 +27,19 @@
     #         elif isinstance(elem, str):
     #             escaped_text = self._escape_html(elem)
     #             lines.append(f'    <p>{escaped_text}</p>')
-    #     # افزودن منبع اگر وجود دارد
+    #     # Add source if present
     #     if content.source:
     #         source_escaped = self._escape_html(content.source)
     #         lines.append(f'    <footer>— {source_escaped}</footer>')
     #     lines.append('  </blockquote>')
     #     return "\n".join(lines)
     # def _image_to_html(self, content: ImageContent) -> str:
-    #     """تبدیل تصویر به HTML"""
+    #     """Convert image to HTML"""
     #     if not content or not content.src:
     #         return ""
     #     src_escaped = self._escape_html(content.src)
     #     alt_escaped = self._escape_html(content.alt) if content.alt else ""
-    #     # ساخت ویژگی‌های HTML
+    #     # Build HTML attributes
     #     attrs = f'src="{src_escaped}" alt="{alt_escaped}"'
     #     if content.width:
     #         attrs += f' width="{content.width}"'
@@ -55,7 +55,7 @@
     #         if content.metadata.get("style"):
     #             style_escaped = self._escape_html(content.metadata.get("style", ""))
     #             attrs += f' style="{style_escaped}"'
-    #     # بررسی برای قرار دادن در figure
+    #     # Check whether to wrap in <figure>
     #     if content.caption or (content.metadata and content.metadata.get("use_figure")):
     #         lines: List[str] = []
     #         lines.append('  <figure>')
@@ -68,12 +68,12 @@
     #     else:
     #         return f'  <img {attrs}>'
     # def _link_to_html(self, content: LinkContent) -> str:
-    #     """تبدیل لینک به HTML"""
+    #     """Convert link to HTML"""
     #     if not content or not content.href:
     #         return ""
     #     href_escaped = self._escape_html(content.href)
     #     text_escaped = self._escape_html(content.text) if content.text else href_escaped
-    #     # ساخت ویژگی‌های HTML
+    #     # Build HTML attributes
     #     attrs = f'href="{href_escaped}"'
     #     if content.title:
     #         title_escaped = self._escape_html(content.title)
@@ -90,24 +90,24 @@
     #             attrs += f' class="{class_escaped}"'
     #     return f'  <a {attrs}>{text_escaped}</a>'
     # def _math_to_html(self, content: MathContent) -> str:
-    #     """تبدیل محتوای ریاضی به HTML"""
+    #     """Convert math content to HTML"""
     #     if not content or not content.content:
     #         return ""
     #     math_content = content.content.strip()
     #     if not math_content:
     #         return ""
     #     escaped_content = self._escape_html(math_content)
-    #     # تعیین حالت نمایش
+    #     # Determine display mode
     #     if content.display_mode:
     #         return f'  <div class="math math-display">$${escaped_content}$$</div>'
     #     else:
     #         return f'  <span class="math math-inline">${escaped_content}$</span>'
     # def _table_to_html(self, content: TableContent) -> str:
-    #     """تبدیل جدول به HTML"""
+    #     """Convert table to HTML"""
     #     if not content or not content.rows:
     #         return ""
     #     lines: List[str] = []
-    #     # شروع جدول
+    #     # Start table
     #     table_attrs = ""
     #     if content.metadata:
     #         if content.metadata.get("class"):
@@ -117,7 +117,7 @@
     #             style_escaped = self._escape_html(content.metadata.get("style", ""))
     #             table_attrs += f' style="{style_escaped}"'
     #     lines.append(f'  <table{table_attrs}>')
-    #     # افزودن caption اگر وجود دارد
+    #     # Add caption if present
     #     if content.caption:
     #         caption_escaped = self._escape_html(content.caption)
     #         lines.append(f'    <caption>{caption_escaped}</caption>')
@@ -126,7 +126,7 @@
     #     in_body = False
     #     in_footer = False
     #     for row in content.rows:
-    #         # تعیین بخش جدول
+    #         # Determine table section
     #         if row.is_header and not in_header:
     #             lines.append('    <thead>')
     #             in_header = True
@@ -136,11 +136,11 @@
     #                 in_header = False
     #             lines.append('    <tbody>')
     #             in_body = True
-    #         # پردازش سطر
+    #         # Process row
     #         row_html = self._table_row_to_html(row)
     #         if row_html:
     #             lines.append(row_html)
-    #     # بستن بخش‌ها
+    #     # Close sections
     #     if in_header:
     #         lines.append('    </thead>')
     #     if in_body:
@@ -150,11 +150,11 @@
     #     lines.append('  </table>')
     #     return "\n".join(lines)
     # def _table_row_to_html(self, row: TableRow) -> str:
-    #     """تبدیل سطر جدول به HTML"""
+    #     """Convert table row to HTML"""
     #     if not row or not row.cells:
     #         return ""
     #     lines: List[str] = []
-    #     # ویژگی‌های سطر
+    #     # Row attributes
     #     row_attrs = ""
     #     if row.metadata:
     #         if row.metadata.get("class"):
@@ -164,7 +164,7 @@
     #             style_escaped = self._escape_html(row.metadata.get("style", ""))
     #             row_attrs += f' style="{style_escaped}"'
     #     lines.append(f'      <tr{row_attrs}>')
-    #     # پردازش سلول‌ها
+    #     # Process cells
     #     for cell in row.cells:
     #         cell_html = self._table_cell_to_html(cell, row.is_header)
     #         if cell_html:
@@ -172,12 +172,12 @@
     #     lines.append('      </tr>')
     #     return "\n".join(lines)
     # def _table_cell_to_html(self, cell: TableCell, is_header_row: bool = False) -> str:
-    #     """تبدیل سلول جدول به HTML"""
+    #     """Convert table cell to HTML"""
     #     if not cell:
     #         return ""
-    #     # تعیین تگ سلول
+    #     # Determine cell tag
     #     tag = "th" if (cell.is_header or is_header_row) else "td"
-    #     # ویژگی‌های سلول
+    #     # Cell attributes
     #     attrs = ""
     #     if cell.colspan and cell.colspan > 1:
     #         attrs += f' colspan="{cell.colspan}"'
@@ -190,7 +190,7 @@
     #         if cell.metadata.get("style"):
     #             style_escaped = self._escape_html(cell.metadata.get("style", ""))
     #             attrs += f' style="{style_escaped}"'
-    #     # محتوای سلول
+    #     # Cell content
     #     cell_content = ""
     #     if cell.content:
     #         if isinstance(cell.content, list):
@@ -207,13 +207,13 @@
     #             cell_content = self._escape_html(cell.content)
     #     return f'        <{tag}{attrs}>{cell_content}</{tag}>'
     # def _format_metadata(self, metadata: Dict[str, Any]) -> str:
-    #     """قالب‌بندی metadata For HTML"""
+    #     """Format metadata for HTML"""
     #     if not metadata:
     #         return ""
     #     attrs = []
     #     for key, value in metadata.items():
     #         if key.startswith("html_"):
-    #             attr_name = key[5:]  # حذف پیشوند html_
+    #             attr_name = key[5:]  # Remove html_ prefix
     #             if isinstance(value, bool):
     #                 if value:
     #                     attrs.append(attr_name)

@@ -8,8 +8,8 @@ from __future__ import annotations
 
 from typing import Any, cast
 
-from engines.document.parsers.base import BaseKnowledgeParser
-from engines.document.writers.base import BaseKnowledgeWriter, WriteResult
+from engines.document.parsers.base import BaseDocumentParser
+from engines.document.writers.base import BaseDocumentWriter, WriteResult
 from engines.document.models.ksdm_models import (
     KSDMDocument, Entity, Relation, EntityType, RelationType,
     GraphNode, GraphEdge, KnowledgeGraph
@@ -34,8 +34,8 @@ class UnifiedGraphEngine:
     """
 
     def __init__(self, llm: Any = None) -> None:
-        self._parsers: dict[str, BaseKnowledgeParser] = {}
-        self._writers: dict[str, BaseKnowledgeWriter] = {}
+        self._parsers: dict[str, BaseDocumentParser] = {}
+        self._writers: dict[str, BaseDocumentWriter] = {}
         
         # Core graph storage (shared between RAG and semantic graph)
         self.graph_store = MemoryGraphStore()
@@ -71,10 +71,10 @@ class UnifiedGraphEngine:
         await cast(Any, writer).write(document, destination, **options)
         return WriteResult(metadata={"destination": destination, "format": fmt})
 
-    def register_parser(self, fmt: str, parser: BaseKnowledgeParser) -> None:
+    def register_parser(self, fmt: str, parser: BaseDocumentParser) -> None:
         self._parsers[fmt] = parser
 
-    def register_writer(self, fmt: str, writer: BaseKnowledgeWriter) -> None:
+    def register_writer(self, fmt: str, writer: BaseDocumentWriter) -> None:
         self._writers[fmt] = writer
 
     # ============================================================

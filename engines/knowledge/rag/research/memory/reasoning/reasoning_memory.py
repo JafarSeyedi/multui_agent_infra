@@ -22,7 +22,7 @@ class ReasoningLevel(str, Enum):
 
 class ReasoningPhase(str, Enum):
     """
-    فازهای اصلی چرخه ریسرچ برای طبقه‌بندی ترِیس:
+    Main phases of the research cycle for trace classification:
     """
     QUERY_UNDERSTANDING = "query_understanding"
     RETRIEVAL = "retrieval"
@@ -38,7 +38,7 @@ class ReasoningPhase(str, Enum):
 # @dataclass
 # class ReasoningEvent:
 #     """
-#     یک رویداد واحد در ترِیس استدلال.
+#     A single event in the reasoning trace.
 #     """
 #     id: str
 #     timestamp: float
@@ -53,7 +53,7 @@ class ReasoningPhase(str, Enum):
 
 #     def to_dict(self) -> Dict[str, Any]:
 #         d = asdict(self)
-#         # تضمین JSON-safe بودن meta
+#         # Guarantee that meta is JSON-safe
 #         if not isinstance(d["meta"], dict):
 #             d["meta"] = {"value": str(d["meta"])}
 #         return d
@@ -61,15 +61,15 @@ class ReasoningPhase(str, Enum):
 
 class ReasoningMemory:
     """
-    ذخیره‌ساز حرفه‌ای ترِیس‌های استدلالی برای کل چرخه Research.
+    Professional trace storage for the entire Research cycle.
 
-    ویژگی‌ها:
-    - پشتیبانی multi-session (session_id)
-    - گروه‌بندی منطقی (group)
-    - فازهای استاندارد (ReasoningPhase)
-    - سطح لاگ (ReasoningLevel)
+    Features:
+    - Multi-session support (session_id)
+    - Logical grouping (group)
+    - Standard phases (ReasoningPhase)
+    - Log level (ReasoningLevel)
     - thread-safe
-    - API سریالی برای استفاده در Evaluation / Observability
+    - Serialization API for use in Evaluation / Observability
     """
 
     def __init__(self, max_events: int = 5000) -> None:
@@ -86,7 +86,7 @@ class ReasoningMemory:
 
     def start_session(self, session_id: str | None = None) -> str:
         """
-        شروع یک سشن جدید استدلالی. در صورت عدم ارسال، session_id تولید می‌شود.
+        Start a new reasoning session. If not provided, a session_id is generated.
         """
         with self._lock:
             self._current_session_id = session_id or str(uuid.uuid4())
@@ -105,7 +105,7 @@ class ReasoningMemory:
 
     def end_session(self) -> None:
         """
-        پایان سشن جاری.
+        End the current session.
         """
         with self._lock:
             if self._current_session_id is None:
@@ -124,11 +124,11 @@ class ReasoningMemory:
 
     def start_group(self, group_name: str) -> None:
         """
-        شروع یک گروه استدلالی (مثلاً 'research_session', 'retrieval_round_1' و ...).
+        Start a reasoning group (e.g., 'research_session', 'retrieval_round_1', etc.).
         """
         with self._lock:
             if self._current_session_id is None:
-                # اگر سشن شروع نشده باشد، خودکار یک سشن بساز
+                # If no session has started, auto-create one
                 self.start_session()
 
             self._current_group = group_name
@@ -144,7 +144,7 @@ class ReasoningMemory:
 
     def end_group(self) -> None:
         """
-        پایان گروه جاری.
+        End the current group.
         """
         with self._lock:
             if self._current_group is None:
@@ -172,8 +172,8 @@ class ReasoningMemory:
         level: ReasoningLevel | str = ReasoningLevel.INFO,
     ) -> None:
         """
-        API عمومی برای ثبت رویداد استدلالی.
-        برای سازگاری با کد فعلی، پارامترهای اجباری فقط event_type و message هستند.
+        Public API for recording reasoning events.
+        For compatibility with current code, the only required parameters are event_type and message.
         """
         if isinstance(phase, ReasoningPhase):
             phase = phase.value
@@ -198,7 +198,7 @@ class ReasoningMemory:
     ) -> None:
         with self._lock:
             if self._current_session_id is None:
-                # در صورت نبودن سشن، یک سشن implicit شروع کن
+                # If no session exists, start an implicit session
                 self._current_session_id = str(uuid.uuid4())
                 self._current_group = "implicit"
                 self._step_counter = 0
@@ -218,9 +218,9 @@ class ReasoningMemory:
                 meta=meta,
             )
 
-            # مدیریت ظرفیت
+            # Capacity management
             if len(self._events) >= self._max_events:
-                # استراتژی ساده: قدیمی‌ترین‌ها را حذف کن
+                # Simple strategy: remove oldest ones
                 overflow = len(self._events) + 1 - self._max_events
                 if overflow > 0:
                     self._events = self._events[overflow:]
@@ -239,9 +239,9 @@ class ReasoningMemory:
         levels: list[str] | None = None,
     ) -> list[dict[str, Any]]:
         """
-        دریافت ترِیس‌ها به صورت JSON-serializable dict.
+        Get traces as JSON-serializable dict.
 
-        اگر session_id/group مشخص نشود، کل ایونت‌ها برگردانده می‌شود.
+        If session_id/group is not specified, all events are returned.
         """
         with self._lock:
             result: list[ReasoningEvent] = []
@@ -261,7 +261,7 @@ class ReasoningMemory:
 
     def get_current_session_traces(self) -> list[dict[str, Any]]:
         """
-        شورتکات: ترِیس‌های سشن جاری.
+        Shortcut: current session traces.
         """
         with self._lock:
             if self._current_session_id is None:
@@ -270,7 +270,7 @@ class ReasoningMemory:
 
     def clear(self) -> None:
         """
-        پاک کردن کل ترِیس‌ها.
+        Clear all traces.
         """
         with self._lock:
             self._events.clear()
@@ -282,14 +282,14 @@ class ReasoningMemory:
 
     def export_for_evaluation(self) -> list[dict[str, Any]]:
         """
-        خروجی استاندارد برای EvaluationController:
-        کل ترِیس‌ها با ساختار ثابت.
+        Standard output for EvaluationController:
+        All traces with fixed structure.
         """
         return self.get_traces()
 
     def export_for_observability(self) -> dict[str, Any]:
         """
-        خروجی مناسب برای سیستم Observability (خلاصه + ترِیس خام).
+        Output suitable for Observability system (summary + raw traces).
         """
         with self._lock:
             traces = [e.to_dict() for e in self._events]

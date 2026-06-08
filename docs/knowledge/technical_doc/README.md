@@ -97,7 +97,7 @@ The knowledge layer follows the **MDA2 (Model Driven Architecture)** pattern:
 ### Contract
 
 ```python
-class BaseKnowledgeParser(ABC):
+class BaseDocumentParser(ABC):
     supported_format: KnowledgeMediaType
 
     @abstractmethod
@@ -108,7 +108,7 @@ class BaseKnowledgeParser(ABC):
 ```
 
 ```python
-class BaseKnowledgeWriter(ABC):
+class BaseDocumentWriter(ABC):
     supported_format: KnowledgeMediaType
 
     @abstractmethod
@@ -231,6 +231,6 @@ Memory stores use `UnifiedGraphEngine` as shared graph substrate.
 ### Adding a New Engine
 
 1. Create folder in `engines/knowledge/apps/{engine_name}/`
-2. Implement `BaseKnowledgeParser` and `BaseKnowledgeWriter` subclasses
+2. Implement `BaseDocumentParser` and `BaseDocumentWriter` subclasses
 3. Import in `engines/knowledge/apps/__init__.py`
 4. Add to `engines/knowledge/__init__.py`

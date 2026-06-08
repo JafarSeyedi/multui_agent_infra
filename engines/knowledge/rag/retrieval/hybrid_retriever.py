@@ -14,7 +14,7 @@ class HybridRetriever(BaseRetriever):
     - RRF Fusion (Reciprocal Rank Fusion)
 
     Goal:
-        سرعت بالا، dedup سریع، scoring استاندارد، و output یکنواخت
+        High speed, fast dedup, standard scoring, and uniform output
     """
 
     def __init__(

@@ -1,12 +1,12 @@
 from pathlib import Path
 from typing import Any, BinaryIO, TextIO
 
-from engines.document.writers.base import BaseKnowledgeWriter, BaseDocument
+from engines.document.writers.base import BaseDocumentWriter, BaseDocument
 from engines.document.models.media_types import MEDIA_TYPES
 from engines.document.models.ksdm_models import KsdDocument
 
 
-class GqlWriter(BaseKnowledgeWriter):
+class GqlWriter(BaseDocumentWriter):
     supported_format = MEDIA_TYPES["gql_schema"]
 
     def can_write(self, document) -> bool:

@@ -97,7 +97,7 @@ class RelationBuilder:
         return output
 
     def _deduplicate(self, relations: list[CandidateRelation]) -> list[CandidateRelation]:
-        best: dict[tuple[str, str, str], CandidateRelation] = {}  # ← instance واقعی
+        best: dict[tuple[str, str, str], CandidateRelation] = {}  # ← real instance
         for relation in relations:
             key = (relation.src.casefold(), relation.dst.casefold(), relation.relation.casefold())
             current = best.get(key)

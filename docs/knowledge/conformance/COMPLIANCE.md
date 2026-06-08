@@ -90,14 +90,14 @@ engines/knowledge/
 │   └── media_types.py               # Knowledge media type registry
 ├── parsers/
 │   ├── __init__.py                   # All parser exports
-│   ├── base.py                       # BaseKnowledgeParser
+│   ├── base.py                       # BaseDocumentParser
 │   ├── bi/                           # XMLA, CWM, Mondrian parsers
 │   ├── ml_mining/                    # PMML, ONNX parsers
 │   ├── process_mining/               # XES, DMN, DDF parsers
 │   └── semantic_graph/               # RDF, RML, GQL parsers
 ├── writers/
 │   ├── __init__.py                   # All writer exports
-│   ├── base.py                       # BaseKnowledgeWriter
+│   ├── base.py                       # BaseDocumentWriter
 │   ├── bi/                           # XMLA, CWM, Mondrian writers
 │   ├── ml_mining/                    # PMML, ONNX writers
 │   ├── process_mining/               # XES, DMN, DDF writers
@@ -194,4 +194,4 @@ The knowledge engines follow Model Driver Architecture (MDA2) where:
 - Memory integrates with graph via shared `UnifiedGraphEngine`
 - RAG integration preserved via `KnowledgeRagEngine` re-export
 - Semantic graph merged with RAG graph into unified `UnifiedGraphEngine`
-- All parsers/writers register via `BaseKnowledgeParser`/`BaseKnowledgeWriter` contracts
+- All parsers/writers register via `BaseDocumentParser`/`BaseDocumentWriter` contracts

@@ -8,8 +8,8 @@ import xml.etree.ElementTree as ET
 from datetime import datetime
 
 from engines.document.models.media_types import MEDIA_TYPES
-from engines.document.models.isdm_models import (
-    ISDMDocument,
+from engines.document.models.ksdm_models import (
+    KSDMMetricsDocument,
     Metric,
     MetricType,
     TimeGranularity,
@@ -30,13 +30,6 @@ from engines.document.models.isdm_models import (
     PmmlMiningField,
     PmmlModel,
     MlMiningDocument,
-    ProcessMiningDocument,
-    XesEventLog,
-    XesExtension,
-    XesClassifier,
-    XesAttribute,
-    XesTrace,
-    XesEvent,
 )
 from engines.document.models.ksdm_models import (
     KSDMDocument,
@@ -44,10 +37,10 @@ from engines.document.models.ksdm_models import (
 
 
 @pytest.fixture
-def sample_isdm_doc():
-    return ISDMDocument(
+def sample_metrics_doc():
+    return KSDMMetricsDocument(
         title="Test Insights",
-        document_id="isdm-001",
+        document_id="kmd-001",
         start_time=datetime(2024, 1, 1),
         end_time=datetime(2024, 1, 2),
         granularity=TimeGranularity.DAY,
@@ -124,51 +117,22 @@ def sample_pmml_doc():
     )
 
 
-@pytest.fixture
-def sample_xes_doc():
-    return ProcessMiningDocument(
-        title="XES Test",
-        document_id="xes-001",
-        xes_log=XesEventLog(
-            log_id="log-1",
-            extensions=[XesExtension(name="Concept", prefix="concept", uri="http://www.xes-standard.org/concept.xesext")],
-            classifiers=[XesClassifier(name="Activity", keys=["concept:name"])],
-            traces=[
-                XesTrace(
-                    id="trace-1",
-                    events=[
-                        XesEvent(id="ev-1", attributes=[XesAttribute(key="concept:name", value="Start")]),
-                        XesEvent(id="ev-2", attributes=[XesAttribute(key="concept:name", value="End")]),
-                    ],
-                )
-            ],
-        ),
-        media_type=MEDIA_TYPES.get("xml"),
-    )
-
-
 def test_xmla_writer_can_write(sample_bi_doc):
-    from engines.document.writers.isdm_writers.bi.xmla_writer import XmlaDiscoverWriter
+    from engines.document.writers.ksdm_writers.bi.xmla_writer import XmlaDiscoverWriter
     writer = XmlaDiscoverWriter()
     assert writer.can_write(sample_bi_doc) is False
 
 
 def test_mondrian_writer_can_write(sample_bi_doc):
-    from engines.document.writers.isdm_writers.bi.mondrian_writer import MondrianSchemaWriter
+    from engines.document.writers.ksdm_writers.bi.mondrian_writer import MondrianSchemaWriter
     writer = MondrianSchemaWriter()
     assert writer.can_write(sample_bi_doc)
 
 
 def test_pmml_writer_can_write(sample_pmml_doc):
-    from engines.document.writers.isdm_writers.ml_mining.pmml_writer import PmmlWriter
+    from engines.document.writers.ksdm_writers.ml_mining.pmml_writer import PmmlWriter
     writer = PmmlWriter()
     assert writer.can_write(sample_pmml_doc)
-
-
-def test_xes_writer_can_write(sample_xes_doc):
-    from engines.document.writers.isdm_writers.process_mining.xes_writer import XesWriter
-    writer = XesWriter()
-    assert writer.can_write(sample_xes_doc)
 
 
 def test_rml_writer_can_write():
@@ -179,11 +143,11 @@ def test_rml_writer_can_write():
         document_id="rml-001",
         media_type=MEDIA_TYPES.get("json"),
     )
-    assert writer.can_write(doc) is False  # plain KSDMDocument has no rml_mappings
+    assert writer.can_write(doc) is False
 
 
 def test_mondrian_writer_output():
-    from engines.document.writers.isdm_writers.bi.mondrian_writer import MondrianSchemaWriter
+    from engines.document.writers.ksdm_writers.bi.mondrian_writer import MondrianSchemaWriter
     writer = MondrianSchemaWriter()
 
     direct_doc = BiAggregationDocument(
@@ -217,7 +181,7 @@ def test_mondrian_writer_output():
 
 
 def test_pmml_writer_output():
-    from engines.document.writers.isdm_writers.ml_mining.pmml_writer import PmmlWriter
+    from engines.document.writers.ksdm_writers.ml_mining.pmml_writer import PmmlWriter
     writer = PmmlWriter()
 
     direct_doc = MlMiningDocument(
@@ -245,38 +209,8 @@ def test_pmml_writer_output():
     assert b"directmodel" in xml_bytes.lower() or b"DirectModel" in xml_bytes or b"MiningModel" in xml_bytes
 
 
-def test_xes_writer_output():
-    from engines.document.writers.isdm_writers.process_mining.xes_writer import XesWriter
-    writer = XesWriter()
-
-    direct_doc = ProcessMiningDocument(
-        title="XES Write Test",
-        document_id="write-test",
-        xes_log=XesEventLog(
-            log_id="write-log",
-            extensions=[XesExtension(name="Concept", prefix="concept", uri="http://www.xes-standard.org/concept.xesext")],
-            classifiers=[XesClassifier(name="Activity", keys=["concept:name"])],
-            traces=[
-                XesTrace(
-                    id="t1",
-                    events=[
-                        XesEvent(id="e1", attributes=[XesAttribute(key="concept:name", value="Step1")]),
-                    ],
-                )
-            ],
-        ),
-        media_type=MEDIA_TYPES.get("xml"),
-    )
-
-    buf = io.BytesIO()
-    writer.write(direct_doc, buf)
-    xml_bytes = buf.getvalue()
-    assert b"<log" in xml_bytes or b"<xes:log" in xml_bytes
-    assert b"xes-standard" in xml_bytes
-
-
 def test_cwm_writer_output():
-    from engines.document.writers.isdm_writers.bi.cwm_writer import CwmWriter
+    from engines.document.writers.ksdm_writers.bi.cwm_writer import CwmWriter
     writer = CwmWriter()
     doc = BiAggregationDocument(
         title="CWM",

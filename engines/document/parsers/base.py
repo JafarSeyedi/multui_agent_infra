@@ -58,10 +58,6 @@ class ParseResult(BaseModel):
     metadata: dict[str, Any] = {}
 
 
-class KnowledgeParseError(Exception):
-    pass
-
-
 class BaseDocumentParser(ABC):
     """Shared parser contract for document formats."""
     name: str = "base"
@@ -98,11 +94,3 @@ class BaseDocumentParser(ABC):
 
     def iter_supported_extensions(self) -> Iterable[str]:
         return tuple(self.supported_extensions)
-
-
-class BaseKnowledgeParser(BaseDocumentParser):
-    @abstractmethod
-    async def parse_knowledge(self, data: bytes, document_id: str, source_name: str,
-                              metadata: dict[str, Any] | None = None,
-                              options: ParseOptions | None = None) -> ParseResult:
-        pass

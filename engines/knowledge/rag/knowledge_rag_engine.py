@@ -8,10 +8,10 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from engines.document.models.isdm_models import ISDMDocument
+from engines.document.models.ksdm_models import KSDMMetricsDocument
 from engines.document.models.ksdm_models import KsdDocument
-from engines.document.parsers.base import BaseKnowledgeParser
-from engines.document.writers.base import BaseKnowledgeWriter, WriteResult
+from engines.document.parsers.base import BaseDocumentParser
+from engines.document.writers.base import BaseDocumentWriter, WriteResult
 
 from .retrieval.base_retriever import BaseRetriever
 from .retrieval.vector_retriever import VectorRetriever
@@ -107,8 +107,8 @@ class KnowledgeRagEngine:
         self.reflection_critic: Optional[RetrievalCritic] = None
         
         # Parsers/Writers for model-driven architecture
-        self._parsers: dict[str, BaseKnowledgeParser] = {}
-        self._writers: dict[str, BaseKnowledgeWriter] = {}
+        self._parsers: dict[str, BaseDocumentParser] = {}
+        self._writers: dict[str, BaseDocumentWriter] = {}
         
         # Initialize default components
         self._initialize_defaults()
@@ -307,22 +307,22 @@ class KnowledgeRagEngine:
     # Model-Driven Architecture (Parsers/Writers)
     # ============================================================
     
-    def register_parser(self, fmt: str, parser: BaseKnowledgeParser) -> None:
+    def register_parser(self, fmt: str, parser: BaseDocumentParser) -> None:
         """Register a parser for model-driven parsing."""
         self._parsers[fmt] = parser
     
-    def register_writer(self, fmt: str, writer: BaseKnowledgeWriter) -> None:
+    def register_writer(self, fmt: str, writer: BaseDocumentWriter) -> None:
         """Register a writer for model-driven writing."""
         self._writers[fmt] = writer
     
-    async def parse(self, source: str, fmt: str | None = None, **options: Any) -> ISDMDocument | KsdDocument:
+    async def parse(self, source: str, fmt: str | None = None, **options: Any) -> KSDMMetricsDocument | KsdDocument:
         """Parse using model-driven parser."""
         parser = self._parsers.get(fmt or "default")
         if parser is None:
             raise NotImplementedError(f"No parser registered for format '{fmt}'")
         return parser.parse(source, **options).document  # type: ignore[attr-defined]
     
-    async def write(self, document: ISDMDocument | KsdDocument, destination: str, fmt: str | None = None, **options: Any) -> WriteResult:
+    async def write(self, document: KSDMMetricsDocument | KsdDocument, destination: str, fmt: str | None = None, **options: Any) -> WriteResult:
         """Write using model-driven writer."""
         writer = self._writers.get(fmt or "default")
         if writer is None:

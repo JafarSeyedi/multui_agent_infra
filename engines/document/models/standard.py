@@ -14,9 +14,8 @@ class DocumentStandard(str, Enum):
     SSDM = "ssdm"  # Service Structured Definition Model
     TSDM = "tsdm"   # Tools Standard Definition Model
     OSDM = "osdm"   # Orchestration Standard Definition Model
-    ISDM = "isdm"   # Insights Structured Definition Model
     KSDM = "ksdm"   # Knowledge Structured Definition Model
-    VSDM = "vsdm"   # Event Log Standard Definition Model
+    LSDM = "lsdm"   # Event Log Standard Definition Model
     GENERIC = "generic"
     UNKNOWN = "unknown"
 
@@ -33,7 +32,7 @@ class DocumentStandard(str, Enum):
             "tsdm": "Tools Standard Definition Model",
             "osdm": "Orchestration Standard Definition Model",
             "ksdm": "Knowledge Structured Definition Model",
-            "vsdm": "Event Log Standard Definition Model",
+            "lsdm": "Event Log Standard Definition Model",
             "generic": "Generic Text/Binary",
             "unknown": "Unknown",
         }
@@ -52,7 +51,7 @@ class DocumentStandard(str, Enum):
             "tsdm": "Tools Standard Definition Model",
             "osdm": "Orchestration Standard Definition Model including workflows, orchestrations, decisions, case management, and event processing models",
             "ksdm": "Knowledge Structured Definition Model",
-            "vsdm": "Event Log Standard Definition Model",
+            "lsdm": "Event Log Standard Definition Model",
             "generic": "No specific structure enforced",
             "unknown": "Unknown",
         }
@@ -90,7 +89,7 @@ STANDARD_TO_CATEGORY: dict[DocumentStandard, MediaCategory] = {
     DocumentStandard.TSDM: MediaCategory.TOOLS_DEFINITION,
     DocumentStandard.OSDM: MediaCategory.ORCHESTRATION_DEFINITION,
     DocumentStandard.KSDM: MediaCategory.KNOWLEDGE_EXTRACTION_DEFINITION,
-    DocumentStandard.VSDM: MediaCategory.EVENT_LOG,
+    DocumentStandard.LSDM: MediaCategory.EVENT_LOG,
 }
 
 # Abbreviation definitions for documentation
@@ -106,9 +105,9 @@ ABBREVIATIONS: dict[str, str] = {
     "TSDM": "Tool Standard Definition Model",
     "OSDM": "Orchestration Standard Definition Model",
     "KSDM": "Knowledge Structured Definition Model",
-    "VSDM": "Event Log Standard Definition Model",
+    "LSDM": "Event Log Standard Definition Model",
 
-    # کامپوننت‌ها
+    # Components
     "MIME": "Multipurpose Internet Mail Extensions",
     "API": "Application Programming Interface",
     "JSON": "JavaScript Object Notation",
@@ -120,7 +119,7 @@ ABBREVIATIONS: dict[str, str] = {
     "DOCX": "Microsoft Word Document",
     "XLSX": "Microsoft Excel Spreadsheet",
 
-    # مفاهیم
+    # Concepts
     "AST": "Abstract Syntax Tree",
     "DOM": "Document Object Model",
     "SAX": "Simple API for XML",
@@ -128,7 +127,7 @@ ABBREVIATIONS: dict[str, str] = {
 }
 
 def get_standard_info(standard: DocumentStandard) -> dict[str, Any]:
-    """دریافت اطلاعات کامل یک استاندارد"""
+    """Get complete information for a standard"""
     return {
         "code": standard.value,
         "name": standard.full_name,
@@ -138,7 +137,7 @@ def get_standard_info(standard: DocumentStandard) -> dict[str, Any]:
     }
 
 def get_common_formats(standard: DocumentStandard) -> list[str]:
-    """دریافت فرمت‌های رایج برای هر استاندارد"""
+    """Get common formats for each standard"""
     formats = {
         DocumentStandard.DSDM: ["json", "xml", "yaml", "toml", "csv", "tsv"],
         DocumentStandard.USDM: ["pdf", "docx", "html", "md", "txt", "rtf"],
@@ -154,8 +153,9 @@ def get_common_formats(standard: DocumentStandard) -> list[str]:
             "python_model", "typescript_interface"
         ],
         DocumentStandard.SSDM: ["openapi", "wsdl", "yang", "asyncapi", "proto", "py", "gql", "graphql", "mcp.json"],
-        DocumentStandard.SSDM: ["tsdm_json"],
+        DocumentStandard.TSDM: ["tsdm_json"],
         DocumentStandard.OSDM: ["bpmn", "cmmn", "dmn", "pnml", "graphml", "serverless_workflow_json", "serverless_workflow_yaml"],
+        DocumentStandard.LSDM: ["xes", "syslog", "cef", "es_bulk"],
 
     }
     return formats.get(standard, [])

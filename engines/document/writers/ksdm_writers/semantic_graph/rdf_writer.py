@@ -2,14 +2,14 @@ import importlib.util
 from pathlib import Path
 from typing import Any, BinaryIO, TextIO
 
-from ...base import BaseKnowledgeWriter, BaseDocument
+from ...base import BaseDocumentWriter, BaseDocument
 from ....models.media_types import MEDIA_TYPES
 from ....models.ksdm_models import KsdDocument
 
 RDFLIB_AVAILABLE = importlib.util.find_spec('rdflib') is not None
 
 
-class RdfWriter(BaseKnowledgeWriter):
+class RdfWriter(BaseDocumentWriter):
     supported_format = MEDIA_TYPES["rdf_turtle"]
 
     def can_write(self, document) -> bool:

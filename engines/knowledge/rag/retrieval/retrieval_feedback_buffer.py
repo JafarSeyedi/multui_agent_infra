@@ -4,7 +4,7 @@ from collections import deque
 class RetrievalFeedbackBuffer:
     """
     Replay buffer for gradual learning
-    capacity: تعداد نمونه‌های ذخیره شده
+    capacity: number of stored samples
     """
     def __init__(self, capacity=3000):
         self.capacity = capacity

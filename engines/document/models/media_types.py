@@ -107,8 +107,11 @@ class DocumentFormat(str, Enum):
     ONNX_PROTOBUF = "onnx_protobuf"
     RDF_TURTLE = "rdf_turtle"
     
-    # VSDM formats
+    # LSDM formats
     XES_XML = "xes_xml"
+    SYSLOG = "syslog"
+    CEF = "cef"
+    ES_BULK = "es_bulk"
 
     UNKNOWN = "unknown"
 
@@ -897,16 +900,43 @@ MEDIA_TYPES: dict[str, MediaType] = {
     ),
 
     # ======================
-    # VSDM
+    # LSDM
     # ======================
     "xes_xml": MediaType(
         mime="application/xml",
         format=DocumentFormat.XES_XML,
-        standard=DocumentStandard.VSDM, 
+        standard=DocumentStandard.LSDM, 
         extensions=[".xes"],
         kind=MediaContentKind.EVENT_LOG_DEFINITION,
         raw_type=MediaRawType.TEXT, 
         description="Extensible Event Stream",
+    ),
+    "syslog": MediaType(
+        mime="application/x-syslog",
+        format=DocumentFormat.SYSLOG,
+        standard=DocumentStandard.LSDM, 
+        extensions=[".syslog"],
+        kind=MediaContentKind.EVENT_LOG_DEFINITION,
+        raw_type=MediaRawType.TEXT, 
+        description="Syslog Event Log",
+    ),
+    "cef": MediaType(
+        mime="application/x-cef",
+        format=DocumentFormat.CEF,
+        standard=DocumentStandard.LSDM, 
+        extensions=[".cef"],
+        kind=MediaContentKind.EVENT_LOG_DEFINITION,
+        raw_type=MediaRawType.TEXT, 
+        description="Common Event Format",
+    ),
+    "es_bulk": MediaType(
+        mime="application/x-ndjson",
+        format=DocumentFormat.ES_BULK,
+        standard=DocumentStandard.LSDM, 
+        extensions=[".ndjson", ".es.bulk"],
+        kind=MediaContentKind.EVENT_LOG_DEFINITION,
+        raw_type=MediaRawType.TEXT, 
+        description="Elasticsearch Bulk API Format",
     ),
     
     # ======================
