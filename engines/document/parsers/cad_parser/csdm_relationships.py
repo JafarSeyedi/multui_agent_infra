@@ -29,7 +29,7 @@
 # class CSDMRelationshipResolver:
 #     """
 #     Responsibility:
-#     - resolve تمام Handleها
+#     - resolve all Handles
 #     - owner resolution
 #     - block reference resolution
 #     - nested transforms
@@ -120,8 +120,8 @@
 #     # ======================================================================
 #     def _resolve_block_owners(self):
 #         """
-#         هر Entity یک field block دارد که handle block record را نگه می‌دارد.
-#         اینجا owner_obj را resolve می‌کنیم.
+#         Each Entity has a block field that holds the block record handle.
+#         Here we resolve the owner_obj.
 #         """
 #         blocks = {b.handle: b for b in self.doc.tables.block_records}
 #         for e in self.doc.entities:
@@ -151,11 +151,11 @@
 #     # ======================================================================
 #     def _propagate_insert_transforms(self):
 #         """
-#         Insertهای تودرتو: تبدیل نهایی هر instance.
-#         کاملاً صنعتی و براساس استاندارد DWG.
+#         Nested Inserts: final transform of each instance.
+#         Fully industrial-grade and based on the DWG standard.
 #         """
 #         def accumulate(parent_transform, child_transform):
-#             # ترکیب ماتریس‌ها (مقیاس، چرخش، انتقال)
+#             #             Combine matrices (scale, rotation, translation)
 #             px, py, pz = parent_transform["position"]
 #             sx, sy, sz = parent_transform["scale"]
 #             pr = parent_transform["rotation"]
@@ -167,23 +167,23 @@
 #                 "scale": (sx * csx, sy * csy, sz * csz),
 #                 "rotation": pr + cr,
 #             }
-#         # یک بار کل مدل را traverse می‌کنیم
+#         #         Traverse the entire model once
 #         for e in self.doc.entities:
 #             if not isinstance(e, CSDMInsert):
 #                 continue
-#             # transform خود entity
+#             # entity's own transform
 #             base = {
 #                 "position": e.position,
 #                 "scale": e.scale,
 #                 "rotation": e.rotation,
 #             }
-#             # اگر parent insert دارد (nested block)
+#             # if it has a parent insert (nested block)
 #             if e.owner_block and hasattr(e.owner_block, "parent_insert"):
 #                 parent_tf = e.owner_block.parent_insert
 #                 e.world_transform = accumulate(parent_tf, base)
 #             else:
 #                 e.world_transform = base
-#             # own transform را در block record ذخیره می‌کنیم
+#             # store the transform in the block record
 #             if e.block_obj:
 #                 e.block_obj.parent_insert = e.world_transform
 #     # ======================================================================

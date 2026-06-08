@@ -1,5 +1,5 @@
 """
-ابزارهای کمکی For PDF Writer
+Utility tools for PDF Writer
 """
 import base64
 import io
@@ -11,11 +11,11 @@ from PIL import Image
 
 
 class ColorConverter:
-    """مبدل رنگ‌ها"""
+    """Color converter"""
 
     @staticmethod
     def hex_to_rgb(hex_color: str) -> tuple[float, float, float]:
-        """تبدیل هگز به RGB (مقادیر 0-1)"""
+        """Convert hex to RGB (values 0-1)"""
         hex_color = hex_color.lstrip('#')
 
         if len(hex_color) == 3:
@@ -34,7 +34,7 @@ class ColorConverter:
 
     @staticmethod
     def rgb_to_hex(r: float, g: float, b: float) -> str:
-        """تبدیل RGB به هگز"""
+        """Convert RGB to hex"""
         r_int = max(0, min(255, int(r * 255)))
         g_int = max(0, min(255, int(g * 255)))
         b_int = max(0, min(255, int(b * 255)))
@@ -42,7 +42,7 @@ class ColorConverter:
 
     @staticmethod
     def cmyk_to_rgb(c: float, m: float, y: float, k: float) -> tuple[float, float, float]:
-        """تبدیل CMYK به RGB"""
+        """Convert CMYK to RGB"""
         r = (1 - c) * (1 - k)
         g = (1 - m) * (1 - k)
         b = (1 - y) * (1 - k)
@@ -50,7 +50,7 @@ class ColorConverter:
 
     @staticmethod
     def rgb_to_cmyk(r: float, g: float, b: float) -> tuple[float, float, float, float]:
-        """تبدیل RGB به CMYK"""
+        """Convert RGB to CMYK"""
         if (r, g, b) == (0, 0, 0):
             return (0, 0, 0, 1)
 
@@ -67,13 +67,13 @@ class ColorConverter:
 
     @staticmethod
     def parse_color(color_str: str) -> tuple[float, float, float] | None:
-        """پارس کردن رشته رنگ به RGB"""
+        """Parse color string to RGB"""
         if not color_str:
             return None
 
         color_str = color_str.strip().lower()
 
-        # هگز
+        # Hex
         if color_str.startswith('#'):
             return ColorConverter.hex_to_rgb(color_str)
 
@@ -89,7 +89,7 @@ class ColorConverter:
             r_str, g_str, b_str, _alpha_str = rgba_match.groups()
             return (int(r_str)/255.0, int(g_str)/255.0, int(b_str)/255.0)
 
-        # نام رنگ
+        # Named colors
         named_colors = {
             'black': (0.0, 0.0, 0.0),
             'white': (1.0, 1.0, 1.0),
@@ -116,30 +116,30 @@ class ColorConverter:
 
 
 class UnitConverter:
-    """مبدل واحدهای اندازه‌گیری"""
+    """Unit converter for measurements"""
 
-    # تبدیل واحدها به نقطه (point)
+    # Convert units to points
     CONVERSION_FACTORS = {
-        'pt': 1.0,          # نقطه
-        'px': 0.75,         # پیکسل (فرضی)
-        'in': 72.0,         # اینچ
-        'cm': 28.3465,      # سانتی‌متر
-        'mm': 2.83465,      # میلی‌متر
-        'pc': 12.0,         # پیکا
-        'em': 12.0,         # em (فرضی)
-        'rem': 12.0,        # rem (فرضی)
-        'percent': 0.01     # درصد
+        'pt': 1.0,          # Point
+        'px': 0.75,         # Pixel (assumed)
+        'in': 72.0,         # Inch
+        'cm': 28.3465,      # Centimeter
+        'mm': 2.83465,      # Millimeter
+        'pc': 12.0,         # Pica
+        'em': 12.0,         # Em (assumed)
+        'rem': 12.0,        # Rem (assumed)
+        'percent': 0.01     # Percent
     }
 
     @staticmethod
     def to_points(value: float, unit: str = 'pt') -> float:
-        """تبدیل مقدار به نقطه"""
+        """Convert value to points"""
         factor = UnitConverter.CONVERSION_FACTORS.get(unit.lower(), 1.0)
         return value * factor
 
     @staticmethod
     def from_points(value: float, unit: str = 'pt') -> float:
-        """تبدیل از نقطه به واحد دیگر"""
+        """Convert from points to another unit"""
         factor = UnitConverter.CONVERSION_FACTORS.get(unit.lower(), 1.0)
         if factor == 0:
             return 0.0
@@ -147,19 +147,19 @@ class UnitConverter:
 
     @staticmethod
     def convert(value: float, from_unit: str, to_unit: str) -> float:
-        """تبدیل بین واحدهای مختلف"""
+        """Convert between different units"""
         points = UnitConverter.to_points(value, from_unit)
         return UnitConverter.from_points(points, to_unit)
 
     @staticmethod
     def parse_measurement(measurement: str) -> tuple[float, str]:
-        """پارس کردن رشته اندازه‌گیری"""
+        """Parse measurement string"""
         if not measurement:
             return (0.0, 'pt')
 
         measurement = measurement.strip().lower()
 
-        # الگوهای مختلف
+        # Different patterns
         patterns = [
             r'^([\d.]+)\s*(pt|px|in|cm|mm|pc|em|rem|%)$',
             r'^([\d.]+)(pt|px|in|cm|mm|pc|em|rem|%)$'
@@ -174,7 +174,7 @@ class UnitConverter:
                     unit = 'percent'
                 return (value, unit)
 
-        # اگر واحد مشخص نشده، فرض می‌کنیم نقطه است
+        # If no unit specified, assume points
         try:
             value = float(measurement)
             return (value, 'pt')
@@ -183,13 +183,13 @@ class UnitConverter:
 
     @staticmethod
     def normalize_measurement(measurement: str, target_unit: str = 'pt') -> float:
-        """نرمال‌سازی اندازه‌گیری به واحد هدف"""
+        """Normalize measurement to target unit"""
         value, unit = UnitConverter.parse_measurement(measurement)
         return UnitConverter.convert(value, unit, target_unit)
 
 
 class ImageProcessor:
-    """پردازشگر تصاویر"""
+    """Image processor"""
 
     def __init__(self):
         self.supported_formats = ['jpeg', 'jpg', 'png', 'gif', 'bmp', 'tiff', 'webp']
@@ -200,32 +200,32 @@ class ImageProcessor:
                      quality: int = 85,
                      format: str = 'jpeg') -> dict[str, Any]:
         """
-        پردازش تصویر
+        Process image
         
         Args:
-            image_data: داده‌های تصویر
-            max_width: حداکثر عرض (پیکسل)
-            max_height: حداکثر ارتفاع (پیکسل)
-            quality: کیفیت (0-100)
-            format: فرمت خروجی
+            image_data: Image data
+            max_width: Maximum width (pixels)
+            max_height: Maximum height (pixels)
+            quality: Quality (0-100)
+            format: Output format
             
         Returns:
-            دیکشنری حاوی اطلاعات تصویر پردازش شده
+            Dictionary containing processed image info
         """
         try:
-            # باز کردن تصویر
+            # Open image
             image: Image.Image = Image.open(io.BytesIO(image_data))
 
-            # ذخیره اطلاعات اصلی
+            # Save original info
             original_width, original_height = image.size
             original_format = image.format.lower() if image.format else 'unknown'
             image.mode
 
-            # تغییر اندازه اگر نیاز باشد
+            # Resize if needed
             if max_width or max_height:
                 image = self._resize_image(image, max_width, max_height)
 
-            # تبدیل به RGB اگر نیاز باشد
+            # Convert to RGB if needed
             if image.mode not in ['RGB', 'RGBA', 'L']:
                 if image.mode == 'P' and 'transparency' in image.info:
                     image = image.convert('RGBA')
@@ -237,7 +237,7 @@ class ImageProcessor:
 
             if format.lower() in ['jpeg', 'jpg']:
                 if image.mode == 'RGBA':
-                    # ایجاد پس‌زمینه سفید برای JPEG
+                    # Create white background for JPEG
                     background = Image.new('RGB', image.size, (255, 255, 255))
                     background.paste(image, mask=image.split()[3] if image.mode == 'RGBA' else None)
                     image = background
@@ -254,7 +254,7 @@ class ImageProcessor:
                 mime_type = 'image/webp'
 
             else:
-                # ذخیره با فرمت اصلی
+                # Save with original format
                 image.save(output_buffer, format=image.format or 'PNG')
                 mime_type = f'image/{original_format}'
 
@@ -275,21 +275,21 @@ class ImageProcessor:
             }
 
         except Exception as e:
-            raise Exception(f"خطا در پردازش تصویر: {e}")
+            raise Exception(f"Error processing image: {e}")
 
     def _resize_image(self, image: Image.Image,
                      max_width: int | None,
                      max_height: int | None) -> Image.Image:
-        """تغییر اندازه تصویر"""
+        """Resize image"""
         original_width, original_height = image.size
 
-        # اگر هیچ محدودیتی نباشد
+        # If no limits
         if not max_width and not max_height:
             return image
 
-        # محاسبه ابعاد جدید
+        # Calculate new dimensions
         if max_width and max_height:
-            # حفظ نسبت ابعاد
+            # Maintain aspect ratio
             width_ratio = max_width / original_width
             height_ratio = max_height / original_height
             ratio = min(width_ratio, height_ratio)
@@ -297,23 +297,23 @@ class ImageProcessor:
             new_height = int(original_height * ratio)
 
         elif max_width:
-            # محدودیت عرض
+            # Width limit
             ratio = max_width / original_width
             new_width = max_width
             new_height = int(original_height * ratio)
 
         else:  # max_height
-            # محدودیت ارتفاع
+            # Height limit
             assert max_height is not None
             ratio = max_height / original_height
             new_width = int(original_width * ratio)
             new_height = max_height
 
-        # تغییر اندازه
+            # Resize
         return image.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
     def extract_image_info(self, image_data: bytes) -> dict[str, Any]:
-        """استخراج اطلاعات تصویر"""
+        """Extract image info"""
         try:
             image: Image.Image = Image.open(io.BytesIO(image_data))
 
@@ -329,7 +329,7 @@ class ImageProcessor:
                 'n_frames': getattr(image, 'n_frames', 1)
             }
 
-            # اطلاعات اضافی برای فرمت‌های خاص
+            # Additional info for specific formats
             if image.format == 'JPEG':
                 info['exif'] = image._getexif() if hasattr(image, '_getexif') else None
 
@@ -343,12 +343,12 @@ class ImageProcessor:
             return info
 
         except Exception as e:
-            raise Exception(f"خطا در استخراج اطلاعات تصویر: {e}")
+            raise Exception(f"Error extracting image info: {e}")
 
     def convert_to_base64(self, image_data: bytes, mime_type: str | None = None) -> str:
-        """تبدیل تصویر به base64"""
+        """Convert image to base64"""
         if not mime_type:
-            # تشخیص خودکار MIME type
+            # Auto-detect MIME type
             try:
                 image: Image.Image = Image.open(io.BytesIO(image_data))
                 mime_type = f'image/{image.format.lower()}' if image.format else 'image/jpeg'
@@ -361,15 +361,15 @@ class ImageProcessor:
     def create_thumbnail(self, image_data: bytes,
                         thumbnail_size: tuple[int, int] = (100, 100),
                         quality: int = 75) -> bytes:
-        """ایجاد thumbnail"""
+        """Create thumbnail"""
         try:
             image: Image.Image = Image.open(io.BytesIO(image_data))
 
-            # حفظ نسبت ابعاد
+            # Maintain aspect ratio
             original_width, original_height = image.size
             thumb_width, thumb_height = thumbnail_size
 
-            # محاسبه ابعاد thumbnail با حفظ نسبت
+            # Calculate thumbnail dimensions maintaining ratio
             width_ratio = thumb_width / original_width
             height_ratio = thumb_height / original_height
             ratio = min(width_ratio, height_ratio)
@@ -377,22 +377,22 @@ class ImageProcessor:
             new_width = int(original_width * ratio)
             new_height = int(original_height * ratio)
 
-            # تغییر اندازه
+        # Resize
             thumbnail = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
-            # ذخیره
+            # Save
             output_buffer = io.BytesIO()
             thumbnail.save(output_buffer, format='JPEG', quality=quality)
 
             return output_buffer.getvalue()
 
         except Exception as e:
-            raise Exception(f"خطا در ایجاد thumbnail: {e}")
+            raise Exception(f"Error creating thumbnail: {e}")
 
 
 @dataclass
 class PDFColor:
-    """کلاس رنگ PDF"""
+    """PDF Color class"""
     r: float  # 0-1
     g: float  # 0-1
     b: float  # 0-1
@@ -404,34 +404,34 @@ class PDFColor:
 
     @classmethod
     def from_hex(cls, hex_color: str, alpha: float = 1.0) -> 'PDFColor':
-        """ایجاد از هگز"""
+        """Create from hex"""
         r, g, b = ColorConverter.hex_to_rgb(hex_color)
         return cls(r=r, g=g, b=b, a=alpha)
 
     @classmethod
     def from_rgb(cls, r: float, g: float, b: float, alpha: float = 1.0) -> 'PDFColor':
-        """ایجاد از RGB"""
+        """Create from RGB"""
         return cls(r=r, g=g, b=b, a=alpha)
 
     @classmethod
     def from_cmyk(cls, c: float, m: float, y: float, k: float, alpha: float = 1.0) -> 'PDFColor':
-        """ایجاد از CMYK"""
+        """Create from CMYK"""
         r, g, b = ColorConverter.cmyk_to_rgb(c, m, y, k)
         return cls(r=r, g=g, b=b, c=c, m=m, y=y, k=k, a=alpha)
 
     def to_pdf_rgb(self) -> str:
-        """تبدیل به رشته RGB For PDF"""
+        """Convert to RGB string for PDF"""
         return f"{self.r:.3f} {self.g:.3f} {self.b:.3f} rg"
 
     def to_pdf_cmyk(self) -> str:
-        """تبدیل به رشته CMYK For PDF"""
+        """Convert to CMYK string for PDF"""
         return f"{self.c:.3f} {self.m:.3f} {self.y:.3f} {self.k:.3f} k"
 
     def to_pdf_gray(self) -> str:
-        """تبدیل به خاکستری For PDF"""
+        """Convert to gray string for PDF"""
         gray = 0.299 * self.r + 0.587 * self.g + 0.114 * self.b
         return f"{gray:.3f} g"
 
     def to_hex(self) -> str:
-        """تبدیل به هگز"""
+        """Convert to hex"""
         return ColorConverter.rgb_to_hex(self.r, self.g, self.b)

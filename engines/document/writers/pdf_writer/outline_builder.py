@@ -10,27 +10,27 @@ from typing import Any
 
 class OutlineStyle(Enum):
     """Table of contents styles"""
-    DEFAULT = "default"      # پیش‌فرض
-    BOLD = "bold"           # پررنگ
-    ITALIC = "italic"       # ایتالیک
-    COLORED = "colored"     # رنگی
+    DEFAULT = "default"      # Default
+    BOLD = "bold"           # Bold
+    ITALIC = "italic"       # Italic
+    COLORED = "colored"     # Colored
 
 
 @dataclass
 class OutlineItem:
-    """آیتم فهرست مطالب"""
-    title: str                      # عنوان
-    page_number: int                # شماره صفحه
-    level: int = 0                  # سطح (0 برای ریشه)
-    children: list['OutlineItem'] = field(default_factory=list)  # زیرمجموعه‌ها
-    style: OutlineStyle = OutlineStyle.DEFAULT  # سبک
-    color: tuple[float, float, float] | None = None  # رنگ (RGB)
-    is_open: bool = True            # آیا باز باشد؟
-    action: str | None = None    # اکشن (برای لینک‌های خاص)
-    object_id: str = field(default_factory=lambda: str(uuid.uuid4()))  # شناسه یکتا
+    """Table of contents item"""
+    title: str                      # Title
+    page_number: int                # Page number
+    level: int = 0                  # Level (0 for root)
+    children: list['OutlineItem'] = field(default_factory=list)  # Children
+    style: OutlineStyle = OutlineStyle.DEFAULT  # Style
+    color: tuple[float, float, float] | None = None  # Color (RGB)
+    is_open: bool = True            # Is open?
+    action: str | None = None    # Action (for special links)
+    object_id: str = field(default_factory=lambda: str(uuid.uuid4()))  # Unique identifier
 
     def to_dict(self) -> dict[str, Any]:
-        """تبدیل به دیکشنری"""
+        """Convert to dictionary"""
         return {
             'title': self.title,
             'page_number': self.page_number,
@@ -45,16 +45,16 @@ class OutlineItem:
 
 
 class OutlineBuilder:
-    """سازنده فهرست مطالب PDF"""
+    """PDF table of contents builder"""
 
     def __init__(self) -> None:
         self.items: list[OutlineItem] = []
         self.next_object_num = 1
-        self.object_map: dict[str, int] = {}  # نگاشت object_id به شماره آبجکت PDF
+        self.object_map: dict[str, int] = {}  # Map object_id to PDF object number
 
     def add_item(self, title: str, page_number: int, level: int = 0,
                 parent: OutlineItem | None = None, **kwargs) -> OutlineItem:
-        """افزودن آیتم به فهرست مطالب"""
+        """Add item to table of contents"""
         item = OutlineItem(
             title=title,
             page_number=page_number,
@@ -70,12 +70,12 @@ class OutlineBuilder:
         return item
 
     def build_from_toc(self, toc_structure: list[dict[str, Any]]) -> None:
-        """ساخت فهرست از ساختار TOC"""
+        """Build table of contents from TOC structure"""
         self._build_recursive(toc_structure, None, 0)
 
     def _build_recursive(self, items: list[dict[str, Any]],
                         parent: OutlineItem | None, level: int) -> None:
-        """ساخت بازگشتی"""
+        """Build recursively"""
         for item_data in items:
             item = OutlineItem(
                 title=item_data.get('title', ''),
@@ -92,23 +92,23 @@ class OutlineBuilder:
             else:
                 self.items.append(item)
 
-            # پردازش فرزندان
+            # Process children
             children = item_data.get('children', [])
             if children:
                 self._build_recursive(children, item, level + 1)
 
     def generate_outline_objects(self, page_refs: dict[int, str]) -> list[dict[str, Any]]:
-        """تولید آبجکت‌های فهرست مطالب PDF"""
+        """Generate PDF outline objects"""
         objects: list[dict[str, Any]] = []
 
         if not self.items:
             return objects
 
-        # تولید آبجکت‌های Outline
+        # Generate Outline objects
         outline_dict = self._create_outline_dict()
         objects.append(outline_dict)
 
-        # تولید آبجکت‌های آیتم‌ها
+        # Generate item objects
         for item in self._flatten_items():
             item_objects = self._create_outline_item_objects(item, page_refs)
             objects.extend(item_objects)
@@ -116,7 +116,7 @@ class OutlineBuilder:
         return objects
 
     def _flatten_items(self) -> list[OutlineItem]:
-        """تبدیل ساختار درختی به لیست تخت"""
+        """Convert tree structure to flat list"""
         flattened = []
 
         def flatten_recursive(items: list[OutlineItem]):
@@ -128,7 +128,7 @@ class OutlineBuilder:
         return flattened
 
     def _create_outline_dict(self) -> dict[str, Any]:
-        """ایجاد دیکشنری Outline"""
+        """Create Outline dictionary"""
         first_item_ref = None
         last_item_ref = None
         count = len(self._flatten_items())
@@ -158,7 +158,7 @@ class OutlineBuilder:
         return outline_dict
 
     def _get_last_item(self, item: OutlineItem) -> OutlineItem:
-        """دریافت آخرین آیتم در زیردرخت"""
+        """Get last item in subtree"""
         if not item.children:
             return item
 
@@ -166,24 +166,24 @@ class OutlineBuilder:
 
     def _create_outline_item_objects(self, item: OutlineItem,
                                    page_refs: dict[int, str]) -> list[dict[str, Any]]:
-        """ایجاد آبجکت‌های آیتم فهرست"""
+        """Create outline item objects"""
         objects = []
 
-        # ایجاد آبجکت اصلی آیتم
+        # Create main item object
         item_dict = self._create_item_dict(item, page_refs)
         objects.append(item_dict)
 
-        # ثبت در object_map
+        # Register in object_map
         self.object_map[item.object_id] = item_dict['object_num']
 
         return objects
 
     def _create_item_dict(self, item: OutlineItem,
                          page_refs: dict[int, str]) -> dict[str, Any]:
-        """ایجاد دیکشنری آیتم"""
+        """Create item dictionary"""
         data: dict[str, Any] = {
                 'Title': f'({self._escape_pdf_string(item.title)})',
-                'Parent': '',  # بعداً پر می‌شود
+                'Parent': '',  # Will be filled later
                 'Dest': self._create_destination(item, page_refs)
             }
         item_dict = {
@@ -192,24 +192,24 @@ class OutlineBuilder:
             'data': data
         }
 
-        # تنظیم سبک
+        # Set style
         if item.style == OutlineStyle.BOLD:
             data['F'] = 2  # Bold flag
         elif item.style == OutlineStyle.ITALIC:
             data['F'] = 1  # Italic flag
 
-        # تنظیم رنگ
+        # Set color
         if item.color:
             r, g, b = item.color
             data['C'] = f'[{r:.3f} {g:.3f} {b:.3f}]'
 
-        # تنظیم وضعیت باز/بسته بودن
+        # Set open/closed state
         if not item.is_open:
             data['Count'] = 0
         elif item.children:
             data['Count'] = len(self._flatten_items_from(item))
 
-        # تنظیم ارجاعات به فرزندان و همسایه‌ها
+        # Set references to children and siblings
         if item.children:
             item.children[0]
             item.children[-1]
@@ -221,7 +221,7 @@ class OutlineBuilder:
         return item_dict
 
     def _flatten_items_from(self, item: OutlineItem) -> list[OutlineItem]:
-        """تبدیل زیردرخت به لیست تخت"""
+        """Convert subtree to flat list"""
         flattened = []
 
         def flatten_recursive(current_item: OutlineItem):
@@ -234,19 +234,19 @@ class OutlineBuilder:
 
     def _create_destination(self, item: OutlineItem,
                           page_refs: dict[int, str]) -> str:
-        """ایجاد مقصد برای آیتم"""
+        """Create destination for item"""
         page_ref = page_refs.get(item.page_number, page_refs.get(1, ''))
 
         if item.action:
-            # اکشن سفارشی
+            # Custom action
             return f'/{item.action}'
         else:
-            # مقصد صفحه
+            # Page destination
             return f'[{page_ref} /XYZ 0 0 null]'
 
     def _escape_pdf_string(self, text: str) -> str:
-        """فرار کردن رشته For PDF"""
-        # جایگزینی کاراکترهای خاص
+        """Escape string for PDF"""
+        # Replace special characters
         replacements = {
             '(': '\\(',
             ')': '\\)',
@@ -265,11 +265,11 @@ class OutlineBuilder:
         return result
 
     def get_outline_structure(self) -> list[dict[str, Any]]:
-        """دریافت ساختار فهرست مطالب"""
+        """Get table of contents structure"""
         return [item.to_dict() for item in self.items]
 
     def clear(self):
-        """پاک کردن فهرست"""
+        """Clear table of contents"""
         self.items.clear()
         self.object_map.clear()
         self.next_object_num = 1

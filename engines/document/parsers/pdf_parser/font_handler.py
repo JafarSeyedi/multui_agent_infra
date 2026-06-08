@@ -1,7 +1,7 @@
 """
 font_handler.py - Managing Persian fonts in PDF
 
-این ماژول مسئولیت استخراج، تحلیل و مدیریت فونت‌های فارسی در فایل‌های PDF را بر عهده دارد.
+This module is responsible for extracting, analyzing and managing Persian fonts in PDF files.
 """
 import hashlib
 import logging
@@ -11,15 +11,15 @@ from dataclasses import field
 from enum import Enum
 from typing import Any
 
-# تنظیمات لاگ‌گیری
+# Logging setup
 logger = logging.getLogger(__name__)
 
 
 class FontType(Enum):
-    """انواع فونت‌های PDF"""
-    TYPE0 = "Type0"  # فونت مرکب
-    TYPE1 = "Type1"  # Type1
-    TYPE3 = "Type3"  # Type3
+    """PDF font types"""
+    TYPE0 = "Type0"  # Composite font
+    TYPE1 = "Type1"
+    TYPE3 = "Type3"
     TRUETYPE = "TrueType"
     CIDFONT_TYPE0 = "CIDFontType0"
     CIDFONT_TYPE2 = "CIDFontType2"
@@ -28,7 +28,7 @@ class FontType(Enum):
 
 
 class FontEncoding(Enum):
-    """انواع encoding فونت‌ها"""
+    """Font encoding types"""
     STANDARD = "StandardEncoding"
     WIN_ANSI = "WinAnsiEncoding"
     MAC_ROMAN = "MacRomanEncoding"
@@ -40,7 +40,7 @@ class FontEncoding(Enum):
 
 
 class FontLanguage(Enum):
-    """زبان‌های فونت"""
+    """Font languages"""
     FARSI = "Farsi"
     ARABIC = "Arabic"
     ENGLISH = "English"
@@ -50,7 +50,7 @@ class FontLanguage(Enum):
 
 @dataclass
 class FontDescriptor:
-    """داده‌های توصیف‌کننده فونت"""
+    """Font descriptor data"""
     font_name: str = ""
     base_font: str = ""
     font_family: str = ""
@@ -77,41 +77,41 @@ class FontDescriptor:
 
 @dataclass
 class FontInfo:
-    """اطلاعات کامل یک فونت"""
-    # شناسه فونت
+    """Complete font information"""
+    # Font identifier
     font_id: str = ""
     font_name: str = ""
     base_font: str = ""
 
-    # نوع فونت
+    # Font type
     font_type: FontType = FontType.UNKNOWN
     subtype: str = ""
 
-    # encoding
+    # Encoding
     encoding: FontEncoding = FontEncoding.UNKNOWN
     to_unicode_cmap: bytes | None = None
     cid_system_info: dict[str, str] | None = None
     has_to_unicode: bool = False
     has_cid_system_info: bool = False
 
-    # اطلاعات فنی
+    # Technical information
     descriptor: FontDescriptor | None = None
     first_char: int = 0
     last_char: int = 255
     widths: list[float] = field(default_factory=list)
 
-    # اطلاعات زبانی
+    # Language information
     language: FontLanguage = FontLanguage.UNKNOWN
     supports_farsi: bool = False
     supports_arabic: bool = False
     supports_english: bool = False
 
-    # اطلاعات embedded
+    # Embedded information
     is_embedded: bool = False
     embedded_data: bytes | None = None
     embedded_data_type: str = ""
 
-    # اطلاعات استفاده
+    # Usage information
     used_in_pages: list[int] = field(default_factory=list)
     char_count: int = 0
     is_subset: bool = False
@@ -122,8 +122,8 @@ class FontInfo:
 
 @dataclass
 class FontAnalysisResult:
-    """Results تحلیل فونت‌ها"""
-    # لیست فونت‌ها
+    """Font analysis results"""
+    # Font list
     fonts: list[FontInfo] = field(default_factory=list)
 
     # Overall Statistics
@@ -133,41 +133,41 @@ class FontAnalysisResult:
     farsi_fonts: int = 0
     arabic_fonts: int = 0
 
-    # فونت‌های فارسی
+    # Persian fonts
     farsi_font_list: list[FontInfo] = field(default_factory=list)
 
-    # مشکلات فونت
+    # Font problems
     font_problems: list[dict[str, Any]] = field(default_factory=list)
 
-    # پیشنهادات
+    # Suggestions
     suggestions: list[str] = field(default_factory=list)
 
-    # اطلاعات فنی
+    # Technical information
     has_to_unicode: bool = False
     has_cid_system_info: bool = False
     encoding_issues: list[str] = field(default_factory=list)
 
 
 class FontHandler:
-    """کلاس اصلی مدیریت فونت‌های فارسی"""
+    """Main class for managing Persian fonts"""
 
     def __init__(self, pdf_parser=None) -> None:
         """
-        مقداردهی اولیه
+        Initialize
         
         Args:
-            pdf_parser: نمونه PDFParser (اختیاری)
+            pdf_parser: PDFParser instance (optional)
         """
         self.pdf_parser = pdf_parser
         self.font_cache: dict[str, FontInfo] = {}
         self.character_maps: dict[str, dict[int, str]] = {}
 
-        # جداول mapping برای فونت‌های فارسی
+        # Mapping tables for Persian fonts
         self._init_farsi_mappings()
 
     def _init_farsi_mappings(self):
-        """مقداردهی جداول mapping فارسی"""
-        # جدول تبدیل کدهای فارسی رایج
+        """Initialize Persian mapping tables"""
+        # Common Persian code page conversion table
         self.farsi_code_pages = {
             # Windows-1256 Arabic
             'windows-1256': {
@@ -212,7 +212,7 @@ class FontHandler:
             }
         }
 
-        # لیست کاراکترهای فارسی
+        # List of Persian characters
         self.farsi_chars = {
             'آ', 'أ', 'ؤ', 'إ', 'ئ', 'ا', 'ب', 'ة', 'ت', 'ث',
             'ج', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'س', 'ش', 'ص',
@@ -222,7 +222,7 @@ class FontHandler:
             '۳', '۴', '۵', '۶', '۷', '۸', '۹'
         }
 
-        # لیست کاراکترهای عربی
+        # List of Arabic characters
         self.arabic_chars = {
             'آ', 'أ', 'ؤ', 'إ', 'ئ', 'ا', 'ب', 'ة', 'ت', 'ث',
             'ج', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'س', 'ش', 'ص',
@@ -231,7 +231,7 @@ class FontHandler:
             'ِ', 'ّ', 'ْ'
         }
 
-        # نام فونت‌های فارسی رایج
+        # Common Persian font names
         self.farsi_font_names = {
             'B Nazanin', 'B Titr', 'B Yekan', 'B Zar', 'B Badr',
             'B Compset', 'B Elham', 'B Farnaz', 'B Homa', 'B Koodak',
@@ -243,62 +243,62 @@ class FontHandler:
 
     def extract_fonts_from_pdf(self, pdf_path: str) -> FontAnalysisResult:
         """
-        استخراج و تحلیل فونت‌های PDF
+        Extract and analyze PDF fonts
         
         Args:
-            pdf_path: مسیر فایل PDF
+            pdf_path: Path to the PDF file
             
         Returns:
-            FontAnalysisResult: Results تحلیل فونت‌ها
+            FontAnalysisResult: Font analysis results
         """
-        logger.info(f"استخراج فونت‌ها از فایل: {pdf_path}")
+        logger.info(f"Extracting fonts from file: {pdf_path}")
 
         result = FontAnalysisResult()
 
         try:
-            # استفاده از PyPDF2 برای استخراج فونت‌ها
+            # Use PyPDF2 for font extraction
             import PyPDF2
 
             with open(pdf_path, 'rb') as file:
                 pdf_reader = PyPDF2.PdfReader(file)
 
-                # استخراج فونت‌ها از هر صفحه
+                # Extract fonts from each page
                 for page_num, page in enumerate(pdf_reader.pages):
                     try:
                         self._extract_fonts_from_page(page, page_num, result)
                     except Exception as e:
-                        logger.warning(f"خطا در استخراج فونت‌های صفحه {page_num}: {str(e)}")
+                        logger.warning(f"Error extracting fonts from page {page_num}: {str(e)}")
 
-                # تحلیل فونت‌های استخراج شده
+                # Analyze extracted fonts
                 self._analyze_extracted_fonts(result)
 
         except ImportError:
-            logger.error("PyPDF2 نصب نیست. استفاده از روش fallback")
+            logger.error("PyPDF2 is not installed. Using fallback method")
             self._extract_fonts_fallback(pdf_path, result)
         except Exception as e:
-            logger.error(f"خطا در استخراج فونت‌ها: {str(e)}")
+            logger.error(f"Error extracting fonts: {str(e)}")
             result.font_problems.append({
                 "type": "extraction_error",
-                "message": f"خطا در استخراج فونت‌ها: {str(e)}"
+                "message": f"Error extracting fonts: {str(e)}"
             })
 
         return result
 
     def _extract_fonts_from_page(self, page, page_num: int, result: FontAnalysisResult):
         """
-        استخراج فونت‌ها از یک صفحه
+        Extract fonts from a single page
         
         Args:
-            page: صفحه PDF
-            page_num: شماره صفحه
-            result: شیء Results
+            page: PDF page
+            page_num: Page number
+            result: Result object
         """
         try:
-            # استخراج منابع صفحه
+            # Extract page resources
             if hasattr(page, 'resources') and page.resources:
                 resources = page.resources
 
-                # استخراج فونت‌ها از منابع
+                # Extract fonts from resources
                 if hasattr(resources, 'get') and '/Font' in resources:
                     fonts = resources['/Font']
 
@@ -307,23 +307,23 @@ class FontHandler:
                             try:
                                 font_info = self._parse_font_object(font_obj, font_name)
                                 if font_info:
-                                    # اضافه کردن شماره صفحه به لیست صفحات استفاده
+                                    # Add page number to used pages list
                                     if page_num not in font_info.used_in_pages:
                                         font_info.used_in_pages.append(page_num)
 
-                                    # بررسی تکراری نبودن فونت
+                                    # Check if font is duplicate
                                     font_key = f"{font_info.font_name}_{font_info.base_font}"
                                     if font_key not in self.font_cache:
                                         self.font_cache[font_key] = font_info
                                         result.fonts.append(font_info)
                                     else:
-                                        # به‌روزرسانی صفحات استفاده
+                                        # Update used pages
                                         cached_font = self.font_cache[font_key]
                                         if page_num not in cached_font.used_in_pages:
                                             cached_font.used_in_pages.append(page_num)
 
                             except Exception as e:
-                                logger.warning(f"خطا در پردازش فونت {font_name}: {str(e)}")
+                                logger.warning(f"Error processing font {font_name}: {str(e)}")
                                 result.font_problems.append({
                                     "font_name": font_name,
                                     "page": page_num,
@@ -331,37 +331,37 @@ class FontHandler:
                                 })
 
         except Exception as e:
-            logger.warning(f"خطا در استخراج فونت‌های صفحه {page_num}: {str(e)}")
+            logger.warning(f"Error extracting fonts from page {page_num}: {str(e)}")
 
     def _parse_font_object(self, font_obj, font_name: str) -> FontInfo | None:
         """
-        پارس شیء فونت PDF
+        Parse PDF font object
         
         Args:
-            font_obj: شیء فونت PDF
-            font_name: نام فونت
+            font_obj: PDF font object
+            font_name: Font name
             
         Returns:
-            FontInfo: اطلاعات فونت
+            FontInfo: Font information
         """
         font_info = FontInfo()
         font_info.font_id = hashlib.md5(f"{font_name}_{id(font_obj)}".encode()).hexdigest()[:8]
         font_info.font_name = font_name
 
         try:
-            # استخراج base font
+            # Extract base font
             if hasattr(font_obj, 'get') and '/BaseFont' in font_obj:
                 font_info.base_font = font_obj['/BaseFont']
             elif hasattr(font_obj, 'base_font'):
                 font_info.base_font = font_obj.base_font
 
-            # استخراج subtype
+            # Extract subtype
             if hasattr(font_obj, 'get') and '/Subtype' in font_obj:
                 font_info.subtype = font_obj['/Subtype']
-                # تعیین نوع فونت بر اساس subtype
+                # Determine font type from subtype
                 font_info.font_type = self._determine_font_type(font_info.subtype)
 
-            # استخراج encoding
+            # Extract encoding
             if hasattr(font_obj, 'get'):
                 if '/Encoding' in font_obj:
                     encoding_obj = font_obj['/Encoding']
@@ -370,12 +370,12 @@ class FontHandler:
                     elif isinstance(encoding_obj, str):
                         font_info.encoding = self._determine_encoding(encoding_obj)
 
-                # بررسی ToUnicode
+                # Check ToUnicode
                 if '/ToUnicode' in font_obj:
                     font_info.to_unicode_cmap = self._extract_to_unicode(font_obj['/ToUnicode'])
                     font_info.has_to_unicode = True
 
-                # بررسی CIDSystemInfo
+                # Check CIDSystemInfo
                 if '/CIDSystemInfo' in font_obj:
                     cid_info = font_obj['/CIDSystemInfo']
                     if hasattr(cid_info, 'get'):
@@ -386,78 +386,78 @@ class FontHandler:
                         }
                         font_info.has_cid_system_info = True
 
-                # استخراج descriptor
+                # Extract descriptor
                 if '/FontDescriptor' in font_obj:
                     descriptor_obj = font_obj['/FontDescriptor']
                     font_info.descriptor = self._parse_font_descriptor(descriptor_obj)
                     font_info.is_embedded = font_info.descriptor.font_file is not None
 
-                # استخراج widths
+                # Extract widths
                 if '/Widths' in font_obj:
                     widths_obj = font_obj['/Widths']
                     if isinstance(widths_obj, list):
                         font_info.widths = [float(w) for w in widths_obj]
 
-                # استخراج first_char و last_char
+                # Extract first_char and last_char
                 if '/FirstChar' in font_obj:
                     font_info.first_char = int(font_obj['/FirstChar'])
                 if '/LastChar' in font_obj:
                     font_info.last_char = int(font_obj['/LastChar'])
 
-            # تشخیص زبان فونت
+            # Detect font language
             font_info.language = self._detect_font_language(font_info)
             font_info.supports_farsi = self._check_farsi_support(font_info)
             font_info.supports_arabic = self._check_arabic_support(font_info)
             font_info.supports_english = self._check_english_support(font_info)
 
-            # بررسی subset بودن
+            # Check if subset
             font_info.is_subset = self._is_subset_font(font_info.base_font)
 
             return font_info
 
         except Exception as e:
-            logger.error(f"خطا در پارس فونت {font_name}: {str(e)}")
+            logger.error(f"Error parsing font {font_name}: {str(e)}")
             return None
 
     def _parse_font_descriptor(self, descriptor_obj) -> FontDescriptor:
         """
-        پارس descriptor فونت
+        Parse font descriptor
         
         Args:
-            descriptor_obj: شیء descriptor
+            descriptor_obj: Descriptor object
             
         Returns:
-            FontDescriptor: اطلاعات descriptor
+            FontDescriptor: Descriptor information
         """
         descriptor = FontDescriptor()
 
         try:
             if hasattr(descriptor_obj, 'get'):
-                # استخراج نام فونت
+                # Extract font name
                 if '/FontName' in descriptor_obj:
                     descriptor.font_name = descriptor_obj['/FontName']
 
-                # استخراج base font
+                # Extract base font
                 if '/BaseFont' in descriptor_obj:
                     descriptor.base_font = descriptor_obj['/BaseFont']
 
-                # استخراج خانواده فونت
+                # Extract font family
                 if '/FontFamily' in descriptor_obj:
                     descriptor.font_family = descriptor_obj['/FontFamily']
 
-                # استخراج stretch
+                # Extract stretch
                 if '/FontStretch' in descriptor_obj:
                     descriptor.font_stretch = descriptor_obj['/FontStretch']
 
-                # استخراج وزن
+                # Extract weight
                 if '/FontWeight' in descriptor_obj:
                     descriptor.font_weight = int(descriptor_obj['/FontWeight'])
 
-                # استخراج زاویه ایتالیک
+                # Extract italic angle
                 if '/ItalicAngle' in descriptor_obj:
                     descriptor.italic_angle = float(descriptor_obj['/ItalicAngle'])
 
-                # استخراج مقادیر typographic
+                # Extract typographic values
                 if '/Ascent' in descriptor_obj:
                     descriptor.ascent = float(descriptor_obj['/Ascent'])
                 if '/Descent' in descriptor_obj:
@@ -477,21 +477,21 @@ class FontHandler:
                 if '/MissingWidth' in descriptor_obj:
                     descriptor.missing_width = float(descriptor_obj['/MissingWidth'])
 
-                # استخراج flags
+                # Extract flags
                 if '/Flags' in descriptor_obj:
                     descriptor.flags = int(descriptor_obj['/Flags'])
 
-                # استخراج bbox
+                # Extract bbox
                 if '/FontBBox' in descriptor_obj:
                     bbox_obj = descriptor_obj['/FontBBox']
                     if isinstance(bbox_obj, list) and len(bbox_obj) == 4:
                         descriptor.bbox = (float(bbox_obj[0]), float(bbox_obj[1]), float(bbox_obj[2]), float(bbox_obj[3]))
 
-                # استخراج char set
+                # Extract char set
                 if '/CharSet' in descriptor_obj:
                     descriptor.char_set = descriptor_obj['/CharSet']
 
-                # استخراج فایل فونت embedded
+                # Extract embedded font file
                 if '/FontFile' in descriptor_obj:
                     descriptor.font_file = self._extract_font_file(descriptor_obj['/FontFile'])
                     descriptor.font_file_type = 'Type1'
@@ -506,19 +506,19 @@ class FontHandler:
                     descriptor.font_file_length = len(descriptor.font_file)
 
         except Exception as e:
-            logger.warning(f"خطا در پارس descriptor فونت: {str(e)}")
+            logger.warning(f"Error parsing font descriptor: {str(e)}")
 
         return descriptor
 
     def _extract_font_file(self, font_file_obj) -> bytes | None:
         """
-        استخراج داده‌های فایل فونت
+        Extract font file data
         
         Args:
-            font_file_obj: شیء فایل فونت
+            font_file_obj: Font file object
             
         Returns:
-            bytes: داده‌های فونت
+            bytes: Font data
         """
         try:
             if hasattr(font_file_obj, 'get_data'):
@@ -528,19 +528,19 @@ class FontHandler:
             elif isinstance(font_file_obj, bytes):
                 return font_file_obj
         except Exception as e:
-            logger.warning(f"خطا در استخراج فایل فونت: {str(e)}")
+            logger.warning(f"Error extracting font file: {str(e)}")
 
         return None
 
     def _extract_to_unicode(self, to_unicode_obj) -> bytes | None:
         """
-        استخراج ToUnicode CMap
+        Extract ToUnicode CMap
         
         Args:
-            to_unicode_obj: شیء ToUnicode
+            to_unicode_obj: ToUnicode object
             
         Returns:
-            bytes: داده‌های CMap
+            bytes: CMap data
         """
         try:
             if hasattr(to_unicode_obj, 'get_data'):
@@ -548,19 +548,19 @@ class FontHandler:
             elif hasattr(to_unicode_obj, '_data'):
                 return to_unicode_obj._data
         except Exception as e:
-            logger.warning(f"خطا در استخراج ToUnicode: {str(e)}")
+            logger.warning(f"Error extracting ToUnicode: {str(e)}")
 
         return None
 
     def _determine_font_type(self, subtype: str) -> FontType:
         """
-        تعیین نوع فونت بر اساس subtype
+        Determine font type from subtype
         
         Args:
-            subtype: subtype فونت
+            subtype: Font subtype
             
         Returns:
-            FontType: نوع فونت
+            FontType: Font type
         """
         subtype = str(subtype).upper()
 
@@ -583,13 +583,13 @@ class FontHandler:
 
     def _determine_encoding(self, encoding: str) -> FontEncoding:
         """
-        تعیین encoding فونت
+        Determine font encoding
         
         Args:
-            encoding: encoding فونت
+            encoding: Font encoding
             
         Returns:
-            FontEncoding: نوع encoding
+            FontEncoding: Encoding type
         """
         if not encoding:
             return FontEncoding.UNKNOWN
@@ -613,18 +613,18 @@ class FontHandler:
 
     def _detect_font_language(self, font_info: FontInfo) -> FontLanguage:
         """
-        تشخیص زبان فونت
+        Detect font language
         
         Args:
-            font_info: اطلاعات فونت
+            font_info: Font information
             
         Returns:
-            FontLanguage: زبان فونت
+            FontLanguage: Font language
         """
-        # بررسی بر اساس نام فونت
+        # Check based on font name
         font_name_lower = font_info.base_font.lower()
 
-        # بررسی فونت‌های فارسی
+        # Check for Persian fonts
         farsi_keywords = ['farsi', 'persian', 'iran', 'nazanin', 'titr', 'yekan',
                          'zar', 'badr', 'lotus', 'mitra', 'roya', 'shabnam']
 
@@ -632,20 +632,20 @@ class FontHandler:
             if keyword in font_name_lower:
                 return FontLanguage.FARSI
 
-        # بررسی فونت‌های عربی
+        # Check for Arabic fonts
         arabic_keywords = ['arabic', 'arab', 'kfgq', 'scheherazade', 'lateef', 'amiri']
 
         for keyword in arabic_keywords:
             if keyword in font_name_lower:
                 return FontLanguage.ARABIC
 
-        # بررسی بر اساس charset
+        # Check based on charset
         if font_info.descriptor and font_info.descriptor.char_set:
             char_set = font_info.descriptor.char_set.lower()
             if 'arabic' in char_set or 'farsi' in char_set or 'persian' in char_set:
                 return FontLanguage.FARSI
 
-        # بررسی بر اساس CIDSystemInfo
+        # Check based on CIDSystemInfo
         if font_info.cid_system_info:
             registry = font_info.cid_system_info.get('Registry', '').lower()
             ordering = font_info.cid_system_info.get('Ordering', '').lower()
@@ -659,25 +659,25 @@ class FontHandler:
 
     def _check_farsi_support(self, font_info: FontInfo) -> bool:
         """
-        بررسی پشتیبانی از فارسی
+        Check Persian language support
         
         Args:
-            font_info: اطلاعات فونت
+            font_info: Font information
             
         Returns:
-            bool: True اگر فونت از فارسی پشتیبانی کند
+            bool: True if font supports Persian
         """
-        # بررسی بر اساس نام فونت
+        # Check based on font name
         if font_info.base_font:
             for farsi_font in self.farsi_font_names:
                 if farsi_font.lower() in font_info.base_font.lower():
                     return True
 
-        # بررسی بر اساس زبان تشخیص داده شده
+        # Check based on detected language
         if font_info.language == FontLanguage.FARSI:
             return True
 
-        # بررسی بر اساس charset
+        # Check based on charset
         if font_info.descriptor and font_info.descriptor.char_set:
             char_set = font_info.descriptor.char_set.lower()
             if 'arabic' in char_set or 'farsi' in char_set or 'persian' in char_set:
@@ -687,13 +687,13 @@ class FontHandler:
 
     def _check_arabic_support(self, font_info: FontInfo) -> bool:
         """
-        بررسی پشتیبانی از عربی
+        Check Arabic language support
         
         Args:
-            font_info: اطلاعات فونت
+            font_info: Font information
             
         Returns:
-            bool: True اگر فونت از عربی پشتیبانی کند
+            bool: True if font supports Arabic
         """
         if font_info.language == FontLanguage.ARABIC:
             return True
@@ -708,37 +708,37 @@ class FontHandler:
 
     def _check_english_support(self, font_info: FontInfo) -> bool:
         """
-        بررسی پشتیبانی از انگلیسی
+        Check English language support
         
         Args:
-            font_info: اطلاعات فونت
+            font_info: Font information
             
         Returns:
-            bool: True اگر فونت از انگلیسی پشتیبانی کند
+            bool: True if font supports English
         """
-        # بیشتر فونت‌ها از انگلیسی پشتیبانی می‌کنند
-        # مگر اینکه مشخصاً فقط برای زبان خاصی باشند
+        # Most fonts support English
+        # unless specifically for a particular language
         if font_info.language == FontLanguage.FARSI or font_info.language == FontLanguage.ARABIC:
-            # فونت‌های فارسی/عربی معمولاً از انگلیسی هم پشتیبانی می‌کنند
+            # Persian/Arabic fonts usually support English as well
             return True
 
         return True
 
     def _is_subset_font(self, base_font: str) -> bool:
         """
-        بررسی subset بودن فونت
+        Check if font is subset
         
         Args:
-            base_font: نام base font
+            base_font: Base font name
             
         Returns:
-            bool: True اگر فونت subset باشد
+            bool: True if font is subset
         """
         if not base_font:
             return False
 
-        # فونت‌های subset معمولاً با حروف بزرگ و علامت + شروع می‌شوند
-        # یا شامل کلمات خاصی هستند
+        # Subset fonts typically start with uppercase letters and a + sign
+        # or contain certain keywords
         subset_indicators = ['+', 'SUBSET', 'SUBSETTED', 'SUBSET-']
 
         for indicator in subset_indicators:
@@ -749,80 +749,80 @@ class FontHandler:
 
     def _analyze_extracted_fonts(self, result: FontAnalysisResult):
         """
-        تحلیل فونت‌های استخراج شده
+        Analyze extracted fonts
         
         Args:
-            result: شیء Results
+            result: Result object
         """
         result.total_fonts = len(result.fonts)
 
         for font in result.fonts:
-            # شمارش فونت‌های embedded
+            # Count embedded fonts
             if font.is_embedded:
                 result.embedded_fonts += 1
 
-            # شمارش فونت‌های subset
+            # Count subset fonts
             if font.is_subset:
                 result.subset_fonts += 1
 
-            # شمارش فونت‌های فارسی
+            # Count Persian fonts
             if font.supports_farsi:
                 result.farsi_fonts += 1
                 result.farsi_font_list.append(font)
 
-            # شمارش فونت‌های عربی
+            # Count Arabic fonts
             if font.supports_arabic:
                 result.arabic_fonts += 1
 
-            # بررسی مشکلات encoding
+            # Check encoding issues
             if font.encoding == FontEncoding.UNKNOWN:
-                result.encoding_issues.append(f"فونت {font.font_name}: encoding نامشخص")
+                result.encoding_issues.append(f"Font {font.font_name}: unknown encoding")
 
-            # بررسی ToUnicode
+            # Check ToUnicode
             if not font.to_unicode_cmap and font.supports_farsi:
                 result.font_problems.append({
                     "font": font.font_name,
                     "type": "missing_tounicode",
-                    "message": "فونت فارسی بدون ToUnicode CMap"
+                    "message": "Persian font without ToUnicode CMap"
                 })
 
-        # تولید پیشنهادات
+        # Generate suggestions
         self._generate_suggestions(result)
 
     def _generate_suggestions(self, result: FontAnalysisResult):
-        """تولید پیشنهادات بر اساس تحلیل فونت‌ها"""
+        """Generate suggestions based on font analysis"""
 
         if result.farsi_fonts == 0:
-            result.suggestions.append("هیچ فونت فارسی در سند یافت نشد. ممکن است متن فارسی به درستی نمایش داده نشود.")
+            result.suggestions.append("No Persian font found in document. Persian text may not display correctly.")
 
         if result.embedded_fonts == 0:
-            result.suggestions.append("هیچ فونت embedded در سند وجود ندارد. ممکن است نمایش سند در سیستم‌های دیگر با مشکل مواجه شود.")
+            result.suggestions.append("No embedded fonts exist in the document. Document display may have issues on other systems.")
 
         if result.subset_fonts > 0:
-            result.suggestions.append(f"{result.subset_fonts} فونت subset شده وجود دارد. ممکن است برخی کاراکترها موجود نباشند.")
+            result.suggestions.append(f"{result.subset_fonts} subsetted fonts found. Some characters may be missing.")
 
         for font in result.fonts:
             if font.supports_farsi and not font.is_embedded:
-                result.suggestions.append(f"فونت فارسی '{font.base_font}' embedded نیست. برای نمایش صحیح در همه سیستم‌ها آن را embed کنید.")
+                result.suggestions.append(f"Persian font '{font.base_font}' is not embedded. Embed it for correct display on all systems.")
 
             if font.supports_farsi and not font.to_unicode_cmap:
-                result.suggestions.append(f"فونت فارسی '{font.base_font}' فاقد ToUnicode CMap است. ممکن است متن فارسی قابل جستجو نباشد.")
+                result.suggestions.append(f"Persian font '{font.base_font}' lacks ToUnicode CMap. Persian text may not be searchable.")
 
     def _extract_fonts_fallback(self, pdf_path: str, result: FontAnalysisResult):
         """
-        روش fallback برای استخراج فونت‌ها (بدون PyPDF2)
+        Fallback method for font extraction (without PyPDF2)
         
         Args:
-            pdf_path: مسیر فایل PDF
-            result: شیء Results
+            pdf_path: Path to the PDF file
+            result: Result object
         """
-        logger.info("استفاده از روش fallback برای استخراج فونت‌ها")
+        logger.info("Using fallback method for font extraction")
 
         try:
             with open(pdf_path, 'rb') as file:
                 content = file.read()
 
-                # جستجوی فونت‌ها در محتوای باینری
+                # Search for fonts in binary content
                 font_patterns = [
                     b'/Font',
                     b'/BaseFont',
@@ -837,33 +837,33 @@ class FontHandler:
                     positions = self._find_all_occurrences(content, pattern)
                     for pos in positions:
                         try:
-                            # استخراج اطلاعات فونت از اطراف موقعیت
+                            # Extract font info from surrounding position
                             font_info = self._extract_font_from_binary(content, pos)
                             if font_info:
                                 result.fonts.append(font_info)
                         except Exception as e:
-                            logger.warning(f"خطا در استخراج فونت از موقعیت {pos}: {str(e)}")
+                            logger.warning(f"Error extracting font at position {pos}: {str(e)}")
 
-                # تحلیل فونت‌های استخراج شده
+                # Analyze extracted fonts
                 self._analyze_extracted_fonts(result)
 
         except Exception as e:
-            logger.error(f"خطا در روش fallback: {str(e)}")
+            logger.error(f"Error in fallback method: {str(e)}")
             result.font_problems.append({
                 "type": "fallback_error",
-                "message": f"خطا در استخراج فونت‌ها: {str(e)}"
+                "message": f"Error extracting fonts: {str(e)}"
             })
 
     def _find_all_occurrences(self, content: bytes, pattern: bytes) -> list[int]:
         """
-        یافتن تمام occurrences یک الگو در محتوا
+        Find all occurrences of a pattern in content
         
         Args:
-            content: محتوای باینری
-            pattern: الگوی جستجو
+            content: Binary content
+            pattern: Search pattern
             
         Returns:
-            List[int]: لیست موقعیت‌ها
+            List[int]: List of positions
         """
         positions = []
         start = 0
@@ -879,27 +879,27 @@ class FontHandler:
 
     def _extract_font_from_binary(self, content: bytes, position: int) -> FontInfo | None:
         """
-        استخراج اطلاعات فونت از محتوای باینری
+        Extract font information from binary content
         
         Args:
-            content: محتوای باینری
-            position: موقعیت شروع
+            content: Binary content
+            position: Start position
             
         Returns:
-            FontInfo: اطلاعات فونت
+            FontInfo: Font information
         """
-        # این یک پیاده‌سازی ساده است
-        # در واقعیت نیاز به پارس دقیق‌تر ساختار PDF دارد
+        # This is a simple implementation
+        # In reality, this requires more precise PDF structure parsing
 
         font_info = FontInfo()
         font_info.font_id = f"bin_{position:08x}"
 
-        # استخراج base font از اطراف موقعیت
+        # Extract base font from surrounding position
         start = max(0, position - 200)
         end = min(len(content), position + 200)
         chunk = content[start:end]
 
-        # جستجوی BaseFont
+        # Search for BaseFont
         basefont_match = re.search(b'/BaseFont\\s*/([^\\s\\[\\]<]+)', chunk)
         if basefont_match and basefont_match.group(1):
             try:
@@ -911,7 +911,7 @@ class FontHandler:
             except (UnicodeDecodeError, AttributeError):
                 pass
 
-        # جستجوی Subtype
+        # Search for Subtype
         subtype_match = re.search(b'/Subtype\\s*/([^\\s\\[\\]<]+)', chunk)
         if subtype_match and subtype_match.group(1):
             try:

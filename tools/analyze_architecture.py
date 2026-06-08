@@ -33,7 +33,7 @@ class FileInfo:
     functions: list[str] = field(default_factory=list)
     imports: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
-    lines: int = 0  # تعداد خطوط کد
+    lines: int = 0  # number of lines of code
 
 
 class ASTParser:
@@ -44,7 +44,7 @@ class ASTParser:
         )
         try:
             source = file_path.read_text(encoding="utf-8", errors="replace")
-            # شمارش خطوط
+            # counting lines
             info.lines = len(source.splitlines())
 
             tree = ast.parse(source, filename=str(file_path))
@@ -146,7 +146,7 @@ class ArchitectureAnalyzer:
         self.files = files
 
     def folder_structure(self) -> str:
-        """ساختار فولدرها بدون فایل‌ها"""
+        """Folder structure without files"""
         dirs: set[str] = set()
         for f in self.files:
             parts = Path(f.relative).parts
@@ -154,7 +154,7 @@ class ArchitectureAnalyzer:
                 dirs.add(str(Path(*parts[:i])))
 
         if not dirs:
-            return "```\n📦 project/\n  (فولدری یافت نشد)\n```"
+            return "```\n📦 project/\n  (no folders found)\n```"
 
         lines = ["```", "📦 project/"]
         all_dirs = sorted(dirs)
@@ -181,7 +181,7 @@ class ArchitectureAnalyzer:
         return "\n".join(lines)
 
     def folder_tree(self) -> str:
-        """ساختار کامل فولدرها و فایل‌ها با نمایش تعداد خطوط"""
+        """Full folder and file structure with line count display"""
         dirs: set[str] = set()
         for f in self.files:
             parts = Path(f.relative).parts
@@ -189,7 +189,7 @@ class ArchitectureAnalyzer:
                 dirs.add(str(Path(*parts[:i])))
 
         if not dirs and not self.files:
-            return "```\n📦 project/\n  (خالی)\n```"
+            return "```\n📦 project/\n  (empty)\n```"
 
         lines = ["```", "📦 project/"]
         all_dirs = sorted(dirs)
@@ -225,7 +225,7 @@ class ArchitectureAnalyzer:
                 is_last = idx == items
                 connector = "└── " if is_last else "├── "
                 icon = "⚠️" if child_file.errors else "📄"
-                # نمایش تعداد خطوط به همراه نام فایل
+                # display line count alongside filename
                 lines.append(f"{prefix}{connector}{icon} {Path(child_file.relative).name} [{child_file.lines} lines]")
 
         render("", "  ")
@@ -248,10 +248,10 @@ class ArchitectureAnalyzer:
                     )
                 )
         if not rows:
-            return "_کلاسی یافت نشد_"
+            return "_No classes found_"
 
         lines = [
-            "| فایل | کلاس | والدین | متدها |",
+            "| File | Class | Parents | Methods |",
             "|------|------|--------|-------|",
         ]
         for row in rows:
@@ -270,7 +270,7 @@ class ArchitectureAnalyzer:
                 for base in cls.bases:
                     lines.append(f"{base}  →  {cls.name}")
         if not found:
-            lines.append("(وراثتی یافت نشد)")
+            lines.append("(no inheritance found)")
         lines.append("```")
         return "\n".join(lines)
 
@@ -288,16 +288,16 @@ class ArchitectureAnalyzer:
                     methods_joined = "`, `".join(cls.methods)
                     items.append(
                         f"- **`{cls.name}`** (`{f.relative}`)\n"
-                        f"  - متدها: `{methods_joined}`"
+                        f"  - Methods: `{methods_joined}`"
                     )
-        return "\n".join(items) if items else "_کلاس Abstract یافت نشد_"
+        return "\n".join(items) if items else "_No Abstract class found_"
 
     def potential_issues(self) -> str:
         issues: list[str] = []
 
         parse_errors = [f for f in self.files if f.errors]
         if parse_errors:
-            issues.append("### ⚠️ خطاهای Parse")
+            issues.append("### ⚠️ Parse Errors")
             for f in parse_errors:
                 for e in f.errors:
                     issues.append(f"- `{f.relative}`: {e}")
@@ -310,12 +310,12 @@ class ArchitectureAnalyzer:
         ]
         if big_classes:
             issues.append(
-                "\n### 🔴 کلاس‌های بزرگ "
-                "(بیش از ۱۵ متد — نشانه نقض SRP)"
+                "\n### 🔴 Large classes "
+                "(more than 15 methods — indicates SRP violation)"
             )
             for rel, cls in big_classes:
                 issues.append(
-                    f"- `{cls.name}` در `{rel}` — {len(cls.methods)} متد"
+                    f"- `{cls.name}` in `{rel}` — {len(cls.methods)} methods"
                 )
 
         empty = [
@@ -324,7 +324,7 @@ class ArchitectureAnalyzer:
             if not f.classes and not f.functions and not f.errors and Path(f.relative).name != "__init__.py"
         ]
         if empty:
-            issues.append("\n### 🟡 فایل‌های خالی یا فقط شامل import")
+            issues.append("\n### 🟡 Empty or import-only files")
             for f in empty:
                 issues.append(f"- `{f.relative}` [{f.lines} lines]")
 
@@ -337,22 +337,22 @@ class ArchitectureAnalyzer:
         ]
         if no_base:
             issues.append(
-                "\n### 🟠 کلاس‌های بدون Base Class "
-                "(احتمال عدم رعایت interface مشترک)"
+                "\n### 🟠 Classes without Base Class "
+                "(possible lack of common interface)"
             )
             for rel, cls in no_base:
-                issues.append(f"- `{cls.name}` در `{rel}`")
+                issues.append(f"- `{cls.name}` in `{rel}`")
 
-        return "\n".join(issues) if issues else "✅ مشکل آشکاری یافت نشد."
+        return "\n".join(issues) if issues else "✅ No obvious problems found."
 
     def summary_stats(self) -> dict[str, int]:
         total_lines = sum(f.lines for f in self.files)
         return {
-            "فایل‌های Python": len(self.files),
-            "کلاس‌ها": sum(len(f.classes) for f in self.files),
-            "توابع سطح بالا": sum(len(f.functions) for f in self.files),
-            "فایل‌های با خطا": sum(1 for f in self.files if f.errors),
-            "مجموع خطوط کد": total_lines,
+            "Python files": len(self.files),
+            "Classes": sum(len(f.classes) for f in self.files),
+            "Top-level functions": sum(len(f.functions) for f in self.files),
+            "Files with errors": sum(1 for f in self.files if f.errors),
+            "Total lines of code": total_lines,
         }
 
 
@@ -376,29 +376,29 @@ class MarkdownRenderer:
             "|-------|-------|",
             stats_table,
             "\n---\n",
-            "## 📂 ساختار فولدرها\n",
+            "## 📂 Folder Structure\n",
             self.analyzer.folder_structure(),
             "\n---\n",
-            "## 🗂️ ساختار کامل (فولدرها + فایل‌ها + تعداد خطوط)\n",
+            "## 🗂️ Full Structure (folders + files + line count)\n",
             self.analyzer.folder_tree(),
             "\n---\n",
-            "## 🏛️ کلاس‌ها و وراثت\n",
-            "### جدول کامل کلاس‌ها\n",
+            "## 🏛️ Classes and Inheritance\n",
+            "### Complete Classes Table\n",
             self.analyzer.classes_table(),
             "\n---\n",
-            "### نقشه وراثت\n",
+            "### Inheritance Map\n",
             self.analyzer.inheritance_map(),
             "\n---\n",
-            "### کلاس‌های Abstract / Interface\n",
+            "### Abstract Classes / Interface\n",
             self.analyzer.abstract_classes(),
             "\n---\n",
-            "## 🔍 تحلیل مشکلات احتمالی\n",
+            "## 🔍 Potential Issues Analysis\n",
             self.analyzer.potential_issues(),
             "\n---\n",
-            "## 📝 یادداشت\n",
-            "این گزارش به صورت **استاتیک** (تحلیل AST) تولید شده است.  ",
-            "برای تحلیل runtime و dependency injection، "
-            "ابزار تکمیلی لازم است.\n",
+            "## 📝 Note\n",
+            "This report is generated **statically** (AST analysis).  ",
+            "For runtime and dependency injection analysis, "
+            "a complementary tool is needed.\n",
         ]
 
         return "\n".join(parts)
@@ -415,19 +415,19 @@ def main():
     root = find_project_root()
     output = root / "architecture.md"
 
-    print(f"🔍 اسکن پروژه: {root}")
+    print(f"🔍 Scanning project: {root}")
 
     collector = ProjectCollector(root)
     files = collector.collect()
 
     total_lines = sum(f.lines for f in files)
-    print(f"✅ {len(files)} فایل Python یافت شد. مجموع خطوط: {total_lines}")
+    print(f"✅ {len(files)} Python files found. Total lines: {total_lines}")
 
     renderer = MarkdownRenderer(root, files)
     content = renderer.render()
 
     output.write_text(content, encoding="utf-8")
-    print(f"📄 گزارش نوشته شد: {output}")
+    print(f"📄 Report written: {output}")
 
 
 if __name__ == "__main__":

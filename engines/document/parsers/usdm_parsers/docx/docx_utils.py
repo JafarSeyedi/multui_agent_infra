@@ -1,6 +1,6 @@
 """
 Helper tools for DOCX parser
-شامل توابع کمکی برای پردازش استایل‌ها، متن، ریاضیات و مدیریت فایل‌های DOCX
+Includes helper functions for processing styles, text, math, and managing DOCX files
 """
 # mypy: ignore-errors
 import re
@@ -8,7 +8,7 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from typing import Any
 
-# Namespaceهای OOXML
+# OOXML namespaces
 OOXML_NAMESPACES = {
     'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main',
     'wp': 'http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing',
@@ -28,14 +28,14 @@ OOXML_NAMESPACES = {
     'wps': 'http://schemas.microsoft.com/office/word/2010/wordprocessingShape',
     'dgm': 'http://schemas.openxmlformats.org/drawingml/2006/diagram',
 }
-# ثبت namespaceها برای ET
+# Register namespaces for ET
 for prefix, uri in OOXML_NAMESPACES.items():
     ET.register_namespace(prefix, uri)
 
 
 @dataclass
 class DocxStyleInfo:
-    """اطلاعات استایل DOCX"""
+    """DOCX style information"""
     style_id: str
     style_type: str  # 'paragraph', 'character', 'table', 'numbering'
     style_name: str | None = None
@@ -50,7 +50,7 @@ class DocxStyleInfo:
 
 @dataclass
 class DocxNumberingInfo:
-    """اطلاعات شماره‌گذاری DOCX"""
+    """DOCX numbering information"""
     num_id: str
     abstract_num_id: str
     level: int
@@ -65,18 +65,18 @@ class DocxNumberingInfo:
 
 
 class DocxUtils:
-    """کلاس ابزارهای کمکی DOCX"""
+    """DOCX utility class"""
 
     @staticmethod
     def extract_text_style(rPr_elem: ET.Element | None) -> dict[str, Any]:
         """
-        استخراج استایل متن از المان rPr
+        Extract text style from rPr element
         
         Args:
-            rPr_elem: المان rPr (run properties)
+            rPr_elem: rPr element (run properties)
             
         Returns:
-            Dict[str, Any]: اطلاعات استایل متن
+            Dict[str, Any]: text style information
         """
         style_info = {
             'bold': False,
@@ -100,19 +100,19 @@ class DocxUtils:
             return style_info
 
         try:
-            # بررسی bold
+            # Check bold
             b_elem = rPr_elem.find('.//w:b', OOXML_NAMESPACES)
             if b_elem is not None:
                 val_attr = b_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
                 style_info['bold'] = val_attr is None or val_attr.lower() not in ['false', '0', 'off']
 
-            # بررسی italic
+            # Check italic
             i_elem = rPr_elem.find('.//w:i', OOXML_NAMESPACES)
             if i_elem is not None:
                 val_attr = i_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
                 style_info['italic'] = val_attr is None or val_attr.lower() not in ['false', '0', 'off']
 
-            # بررسی underline
+            # Check underline
             u_elem = rPr_elem.find('.//w:u', OOXML_NAMESPACES)
             if u_elem is not None:
                 val_attr = u_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
@@ -122,13 +122,13 @@ class DocxUtils:
                 elif val_attr is None:
                     style_info['underline'] = True
 
-            # بررسی strikethrough
+            # Check strikethrough
             strike_elem = rPr_elem.find('.//w:strike', OOXML_NAMESPACES)
             if strike_elem is not None:
                 val_attr = strike_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
                 style_info['strikethrough'] = val_attr is None or val_attr.lower() not in ['false', '0', 'off']
 
-            # بررسی double strikethrough
+            # Check double strikethrough
             dstrike_elem = rPr_elem.find('.//w:dstrike', OOXML_NAMESPACES)
             if dstrike_elem is not None:
                 val_attr = dstrike_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
@@ -136,7 +136,7 @@ class DocxUtils:
                     style_info['strikethrough'] = True
                     style_info['double_strikethrough'] = True
 
-            # بررسی superscript/subscript
+            # Check superscript/subscript
             vert_align_elem = rPr_elem.find('.//w:vertAlign', OOXML_NAMESPACES)
             if vert_align_elem is not None:
                 val_attr = vert_align_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
@@ -145,31 +145,31 @@ class DocxUtils:
                 elif val_attr == 'subscript':
                     style_info['subscript'] = True
 
-            # بررسی فونت
+            # Check font
             rFonts_elem = rPr_elem.find('.//w:rFonts', OOXML_NAMESPACES)
             if rFonts_elem is not None:
                 ascii_attr = rFonts_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}ascii')
                 h_ansi_attr = rFonts_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}hAnsi')
                 cs_attr = rFonts_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}cs')
 
-                # اولویت: ascii > hAnsi > cs
+                # Priority: ascii > hAnsi > cs
                 font_family = ascii_attr or h_ansi_attr or cs_attr
                 if font_family:
                     style_info['font_family'] = font_family
 
-                    # تشخیص کد (monospace font)
+                    # Detect code (monospace font)
                     monospace_fonts = ['consolas', 'courier', 'monospace', 'monaco', 'source code pro',
                                       'fira code', 'cascadia code', 'jetbrains mono']
                     if any(mf in font_family.lower() for mf in monospace_fonts):
                         style_info['is_code'] = True
 
-            # بررسی سایز فونت
+            # Check font size
             sz_elem = rPr_elem.find('.//w:sz', OOXML_NAMESPACES)
             if sz_elem is not None:
                 sz_val = sz_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
                 if sz_val:
                     try:
-                        # تبدیل از half-points به points
+                        # Convert from half-points to points
                         size_pts = int(sz_val) / 2
                         style_info['font_size'] = f"{size_pts}pt"
                     except ValueError:
@@ -185,14 +185,14 @@ class DocxUtils:
                     except ValueError:
                         style_info['font_size'] = sz_val
 
-            # بررسی رنگ متن
+            # Check text color
             color_elem = rPr_elem.find('.//w:color', OOXML_NAMESPACES)
             if color_elem is not None:
                 color_val = color_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
                 if color_val and color_val.lower() != 'auto':
                     style_info['color'] = f"#{color_val}"
 
-            # بررسی رنگ پس‌زمینه
+            # Check background color
             highlight_elem = rPr_elem.find('.//w:highlight', OOXML_NAMESPACES)
             if highlight_elem is not None:
                 highlight_val = highlight_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
@@ -205,14 +205,14 @@ class DocxUtils:
                 if fill_attr and fill_attr.lower() != 'auto':
                     style_info['background_color'] = f"#{fill_attr}"
 
-            # بررسی زبان
+            # Check language
             lang_elem = rPr_elem.find('.//w:lang', OOXML_NAMESPACES)
             if lang_elem is not None:
                 lang_val = lang_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
                 if lang_val:
                     style_info['language'] = lang_val
 
-            # بررسی استایل run
+            # Check run style
             rStyle_elem = rPr_elem.find('.//w:rStyle', OOXML_NAMESPACES)
             if rStyle_elem is not None:
                 style_id = rStyle_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
@@ -220,23 +220,23 @@ class DocxUtils:
                     style_info['style_id'] = style_id
 
         except Exception as e:
-            # در صورت خطا، اطلاعات جزئی را لاگ کنید
+            # Log detailed info on error
             import logging
-            logging.getLogger(__name__).warning(f"خطا در استخراج استایل متن: {str(e)}")
+            logging.getLogger(__name__).warning(f"Error extracting text style: {str(e)}")
 
         return style_info
 
     @staticmethod
     def extract_paragraph_style(pPr_elem: ET.Element | None, styles_dict: dict[str, DocxStyleInfo]) -> dict[str, Any]:
         """
-        استخراج استایل پاراگراف از المان pPr
+        Extract paragraph style from pPr element
         
         Args:
-            pPr_elem: المان pPr (paragraph properties)
-            styles_dict: دیکشنری استایل‌های بارگذاری شده
+            pPr_elem: pPr element (paragraph properties)
+            styles_dict: dictionary of loaded styles
             
         Returns:
-            Dict[str, Any]: اطلاعات استایل پاراگراف
+            Dict[str, Any]: paragraph style information
         """
         style_info = {
             'is_heading': False,
@@ -262,49 +262,49 @@ class DocxUtils:
             return style_info
 
         try:
-            # استخراج styleId
+            # Extract styleId
             pStyle_elem = pPr_elem.find('.//w:pStyle', OOXML_NAMESPACES)
             if pStyle_elem is not None:
                 style_id = pStyle_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
                 if style_id:
                     style_info['style_id'] = style_id
 
-                    # جستجوی استایل در دیکشنری
+                    # Look up style in dictionary
                     if style_id in styles_dict:
                         style_obj = styles_dict[style_id]
                         style_info['style_name'] = style_obj.style_name
 
-                        # تشخیص نوع استایل
+                        # Detect style type
                         if style_obj.style_name:
                             style_name_lower = style_obj.style_name.lower()
 
-                            # تشخیص هدینگ
+                            # Detect heading
                             if 'heading' in style_name_lower:
                                 style_info['is_heading'] = True
-                                # استخراج سطح هدینگ
+                                # Extract heading level
                                 for i in range(1, 10):
                                     if f'heading {i}' in style_name_lower or f'heading{i}' in style_name_lower:
                                         style_info['heading_level'] = i
                                         break
-                                # اگر عدد پیدا نشد، از outline level استفاده کن
+                                # If number not found, use outline level
                                 if style_info['heading_level'] == 1 and 'outline_level' in style_obj.properties:
                                     outline_level = style_obj.properties.get('outline_level')
                                     if outline_level and 1 <= outline_level <= 9:
                                         style_info['heading_level'] = outline_level
 
-                            # تشخیص لیست
+                            # Detect list
                             elif any(list_term in style_name_lower for list_term in ['list', 'bullet', 'numbering']):
                                 style_info['is_list'] = True
 
-                            # تشخیص نقل قول
+                            # Detect quote
                             elif any(quote_term in style_name_lower for quote_term in ['quote', 'blockquote', 'quotation']):
                                 style_info['is_quote'] = True
 
-                            # تشخیص بلوک کد
+                            # Detect code block
                             elif any(code_term in style_name_lower for code_term in ['code', 'preformatted', 'monospace']):
                                 style_info['is_code_block'] = True
 
-            # استخراج outline level
+            # Extract outline level
             outline_lvl_elem = pPr_elem.find('.//w:outlineLvl', OOXML_NAMESPACES)
             if outline_lvl_elem is not None:
                 outline_val = outline_lvl_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
@@ -317,7 +317,7 @@ class DocxUtils:
                     except ValueError:
                         pass
 
-            # استخراج تراز (justification)
+            # Extract alignment (justification)
             jc_elem = pPr_elem.find('.//w:jc', OOXML_NAMESPACES)
             if jc_elem is not None:
                 alignment = jc_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
@@ -333,23 +333,23 @@ class DocxUtils:
                     }
                     style_info['alignment'] = alignment_map.get(alignment.lower(), 'left')
 
-            # استخراج تورفتگی (indentation)
+            # Extract indentation
             ind_elem = pPr_elem.find('.//w:ind', OOXML_NAMESPACES)
             if ind_elem is not None:
                 indentation = {}
 
-                # تورفتگی چپ
+                # Left indentation
                 left_attr = ind_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}left')
                 if left_attr:
                     try:
-                        # تبدیل از twips به points (1 twip = 1/1440 inch, 1 point = 1/72 inch)
+                        # Convert from twips to points (1 twip = 1/1440 inch, 1 point = 1/72 inch)
                         left_twips = int(left_attr)
                         left_pts = left_twips / 20  # 1440/72 = 20
                         indentation['left'] = f"{left_pts}pt"
                     except ValueError:
                         indentation['left'] = left_attr
 
-                # تورفتگی راست
+                # Right indentation
                 right_attr = ind_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}right')
                 if right_attr:
                     try:
@@ -359,7 +359,7 @@ class DocxUtils:
                     except ValueError:
                         indentation['right'] = right_attr
 
-                # تورفتگی خط اول
+                # First line indentation
                 first_line_attr = ind_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}firstLine')
                 if first_line_attr:
                     try:
@@ -369,7 +369,7 @@ class DocxUtils:
                     except ValueError:
                         indentation['first_line'] = first_line_attr
 
-                # تورفتگی آویز (hanging)
+                # Hanging indent
                 hanging_attr = ind_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}hanging')
                 if hanging_attr:
                     try:
@@ -382,12 +382,12 @@ class DocxUtils:
                 if indentation:
                     style_info['indentation'] = indentation
 
-            # استخراج فاصله‌گذاری (spacing)
+            # Extract spacing
             spacing_elem = pPr_elem.find('.//w:spacing', OOXML_NAMESPACES)
             if spacing_elem is not None:
                 spacing = {}
 
-                # فاصله قبل
+                # Space before
                 before_attr = spacing_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}before')
                 if before_attr:
                     try:
@@ -397,7 +397,7 @@ class DocxUtils:
                     except ValueError:
                         spacing['before'] = before_attr
 
-                # فاصله بعد
+                # Space after
                 after_attr = spacing_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}after')
                 if after_attr:
                     try:
@@ -407,7 +407,7 @@ class DocxUtils:
                     except ValueError:
                         spacing['after'] = after_attr
 
-                # فاصله خط
+                # Line spacing
                 line_attr = spacing_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}line')
                 if line_attr:
                     try:
@@ -415,11 +415,11 @@ class DocxUtils:
                         if line_attr.endswith('auto'):
                             spacing['line'] = 'auto'
                         else:
-                            # اگر lineRule مشخص نشده، پیش‌فرض atLeast است
+                            # If lineRule not specified, default is atLeast
                             line_rule = spacing_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}lineRule', 'atLeast')
                             if line_rule == 'exact':
                                 spacing['line'] = f"{line_val / 240}pt"  # 240 = 20 * 12
-                            else:  # atLeast یا auto
+                            else:  # atLeast or auto
                                 spacing['line'] = f"{line_val / 240}pt"
                     except ValueError:
                         spacing['line'] = line_attr
@@ -427,20 +427,20 @@ class DocxUtils:
                 if spacing:
                     style_info['spacing'] = spacing
 
-            # استخراج اطلاعات لیست
+            # Extract list information
             numPr_elem = pPr_elem.find('.//w:numPr', OOXML_NAMESPACES)
             if numPr_elem is not None:
                 style_info['is_list'] = True
                 list_info = {}
 
-                # شماره لیست
+                # List number
                 numId_elem = numPr_elem.find('.//w:numId', OOXML_NAMESPACES)
                 if numId_elem is not None:
                     num_id = numId_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
                     if num_id:
                         list_info['num_id'] = num_id
 
-                # سطح لیست
+                # List level
                 ilvl_elem = numPr_elem.find('.//w:ilvl', OOXML_NAMESPACES)
                 if ilvl_elem is not None:
                     ilvl_val = ilvl_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
@@ -452,28 +452,28 @@ class DocxUtils:
 
                 style_info['list_info'] = list_info
 
-            # بررسی keepLines (نگه داشتن همه خطوط در یک صفحه)
+            # Check keepLines (keep all lines on same page)
             keepLines_elem = pPr_elem.find('.//w:keepLines', OOXML_NAMESPACES)
             if keepLines_elem is not None:
                 style_info['keep_lines'] = True
 
-            # بررسی keepNext (نگه داشتن با پاراگراف بعدی)
+            # Check keepNext (keep with next paragraph)
             keepNext_elem = pPr_elem.find('.//w:keepNext', OOXML_NAMESPACES)
             if keepNext_elem is not None:
                 style_info['keep_next'] = True
 
-            # بررسی pageBreakBefore (شکستن صفحه قبل)
+            # Check pageBreakBefore (page break before)
             pageBreakBefore_elem = pPr_elem.find('.//w:pageBreakBefore', OOXML_NAMESPACES)
             if pageBreakBefore_elem is not None:
                 style_info['page_break_before'] = True
 
-            # بررسی widowControl (کنترل بیوه)
+            # Check widowControl (widow control)
             widowControl_elem = pPr_elem.find('.//w:widowControl', OOXML_NAMESPACES)
             if widowControl_elem is not None:
                 val_attr = widowControl_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
                 style_info['widow_control'] = val_attr is None or val_attr.lower() not in ['false', '0', 'off']
 
-            # بررسی orphanControl (کنترل یتیم)
+            # Check orphanControl (orphan control)
             orphanControl_elem = pPr_elem.find('.//w:orphanControl', OOXML_NAMESPACES)
             if orphanControl_elem is not None:
                 val_attr = orphanControl_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
@@ -481,25 +481,25 @@ class DocxUtils:
 
         except Exception as e:
             import logging
-            logging.getLogger(__name__).warning(f"خطا در استخراج استایل پاراگراف: {str(e)}")
+            logging.getLogger(__name__).warning(f"Error extracting paragraph style: {str(e)}")
 
         return style_info
 
     @staticmethod
     def extract_style_properties(style_elem: ET.Element) -> dict[str, Any]:
         """
-        استخراج ویژگی‌های استایل از المان style
+        Extract style properties from style element
         
         Args:
-            style_elem: المان style
+            style_elem: style element
             
         Returns:
-            Dict[str, Any]: ویژگی‌های استایل
+            Dict[str, Any]: style properties
         """
         properties = {}
 
         try:
-            # استخراج ویژگی‌های پاراگراف
+            # Extract paragraph properties
             pPr_elem = style_elem.find('.//w:pPr', OOXML_NAMESPACES)
             if pPr_elem is not None:
                 # outline level
@@ -541,7 +541,7 @@ class DocxUtils:
                     if spacing_props:
                         properties['spacing'] = spacing_props
 
-            # استخراج ویژگی‌های run
+            # Extract run properties
             rPr_elem = style_elem.find('.//w:rPr', OOXML_NAMESPACES)
             if rPr_elem is not None:
                 # font
@@ -602,20 +602,20 @@ class DocxUtils:
 
         except Exception as e:
             import logging
-            logging.getLogger(__name__).warning(f"خطا در استخراج ویژگی‌های استایل: {str(e)}")
+            logging.getLogger(__name__).warning(f"Error extracting style properties: {str(e)}")
 
         return properties
 
     @staticmethod
     def extract_numbering_definition(abstract_num_elem: ET.Element) -> dict[str, Any]:
         """
-        استخراج تعریف شماره‌گذاری از المان abstractNum
+        Extract numbering definition from abstractNum element
         
         Args:
-            abstract_num_elem: المان abstractNum
+            abstract_num_elem: abstractNum element
             
         Returns:
-            Dict[str, Any]: اطلاعات شماره‌گذاری
+            Dict[str, Any]: numbering information
         """
         numbering_info = {
             'levels': {},
@@ -624,14 +624,14 @@ class DocxUtils:
         }
 
         try:
-            # استخراج restart numbering
+            # Extract restart numbering
             restart_elem = abstract_num_elem.find('.//w:lvlRestart', OOXML_NAMESPACES)
             if restart_elem is not None:
                 restart_val = restart_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
                 if restart_val:
                     numbering_info['restart_numbering'] = restart_val.lower() not in ['false', '0', 'off']
 
-            # استخراج سطوح
+            # Extract levels
             for lvl_elem in abstract_num_elem.findall('.//w:lvl', OOXML_NAMESPACES):
                 ilvl_attr = lvl_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}ilvl')
                 if ilvl_attr is None:
@@ -641,7 +641,7 @@ class DocxUtils:
                     level = int(ilvl_attr)
                     level_info = {}
 
-                    # استخراج start
+                    # Extract start
                     start_elem = lvl_elem.find('.//w:start', OOXML_NAMESPACES)
                     if start_elem is not None:
                         start_val = start_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
@@ -651,7 +651,7 @@ class DocxUtils:
                             except ValueError:
                                 level_info['start'] = 1
 
-                    # استخراج format
+                    # Extract format
                     numFmt_elem = lvl_elem.find('.//w:numFmt', OOXML_NAMESPACES)
                     if numFmt_elem is not None:
                         num_fmt = numFmt_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
@@ -667,14 +667,14 @@ class DocxUtils:
                             }
                             level_info['format'] = format_map.get(num_fmt, num_fmt)
 
-                    # استخراج text
+                    # Extract text
                     lvlText_elem = lvl_elem.find('.//w:lvlText', OOXML_NAMESPACES)
                     if lvlText_elem is not None:
                         lvl_text = lvlText_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
                         if lvl_text:
                             level_info['text'] = lvl_text
 
-                    # استخراج justification
+                    # Extract justification
                     lvlJc_elem = lvl_elem.find('.//w:lvlJc', OOXML_NAMESPACES)
                     if lvlJc_elem is not None:
                         lvl_jc = lvlJc_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
@@ -686,27 +686,27 @@ class DocxUtils:
                 except ValueError:
                     continue
 
-            # بررسی multi-level
+            # Check multi-level
             if len(numbering_info['levels']) > 1:
                 numbering_info['multi_level'] = True
 
         except Exception as e:
             import logging
-            logging.getLogger(__name__).warning(f"خطا در استخراج تعریف شماره‌گذاری: {str(e)}")
+            logging.getLogger(__name__).warning(f"Error extracting numbering definition: {str(e)}")
 
         return numbering_info
 
     @staticmethod
     def extract_text_from_element(elem: ET.Element | None, include_children: bool = True) -> str:
         """
-        استخراج متن از یک المان XML و فرزندان آن
+        Extract text from an XML element and its children
         
         Args:
-            elem: المان XML
-            include_children: آیا متن فرزندان نیز استخراج شود
+            elem: XML element
+            include_children: whether to extract children's text too
             
         Returns:
-            str: متن استخراج شده
+            str: extracted text
         """
         if elem is None:
             return ""
@@ -714,59 +714,59 @@ class DocxUtils:
         text_parts = []
 
         try:
-            # اگر المان خودش متن دارد
+            # If element has its own text
             if elem.text and elem.text.strip():
                 text_parts.append(elem.text.strip())
 
-            # پردازش فرزندان
+            # Process children
             if include_children:
                 for child in elem:
-                    # استخراج متن از المان‌های w:t
+                    # Extract text from w:t elements
                     if child.tag.endswith('t'):
                         if child.text and child.text.strip():
                             text_parts.append(child.text.strip())
-                    # پردازش بازگشتی برای المان‌های دیگر
+                    # Recursive processing for other elements
                     else:
                         child_text = DocxUtils.extract_text_from_element(child, include_children)
                         if child_text:
                             text_parts.append(child_text)
 
-                    # افزودن tail
+                    # Add tail
                     if child.tail and child.tail.strip():
                         text_parts.append(child.tail.strip())
 
-            # افزودن tail المان اصلی
+            # Add main element tail
             if elem.tail and elem.tail.strip():
                 text_parts.append(elem.tail.strip())
 
         except Exception as e:
             import logging
-            logging.getLogger(__name__).warning(f"خطا در استخراج متن از المان: {str(e)}")
+            logging.getLogger(__name__).warning(f"Error extracting text from element: {str(e)}")
 
         return ' '.join(text_parts).strip()
 
     @staticmethod
     def convert_omml_to_latex(omml_elem: ET.Element) -> str | None:
         """
-        تبدیل OMML (Office Math ML) به LaTeX
+        Convert OMML (Office Math ML) to LaTeX
         
         Args:
-            omml_elem: المان OMML
+            omml_elem: OMML element
             
         Returns:
-            Optional[str]: رشته LaTeX یا None در صورت خطا
+            Optional[str]: LaTeX string or None on error
         """
         try:
-            # این یک تبدیل ساده است. برای تبدیل کامل نیاز به پیاده‌سازی کامل داریم
+            # This is a simple conversion. Full conversion requires complete implementation
             latex_parts = []
 
-            # پردازش المان‌های ریاضی
+            # Process math elements
             for elem in omml_elem.iter():
                 if elem.tag.endswith('oMath'):
-                    # المان ریاضی اصلی
+                    # Main math element
                     continue
                 elif elem.tag.endswith('acc'):
-                    # اکسان (مثل hat, bar)
+                    # Accent (e.g. hat, bar)
                     acc_elem = elem.find('.//m:accPr', OOXML_NAMESPACES)
                     if acc_elem is not None:
                         chr_elem = acc_elem.find('.//m:chr', OOXML_NAMESPACES)
@@ -785,7 +785,7 @@ class DocxUtils:
                                     else:
                                         latex_parts.append(f"{base_text}")
                 elif elem.tag.endswith('rad'):
-                    # رادیکال
+                    # Radical
                     deg_elem = elem.find('.//m:deg', OOXML_NAMESPACES)
                     rad_elem = elem.find('.//m:e', OOXML_NAMESPACES)
 
@@ -797,7 +797,7 @@ class DocxUtils:
                         else:
                             latex_parts.append(f"\\sqrt{{{rad_text}}}")
                 elif elem.tag.endswith('frac'):
-                    # کسر
+                    # Fraction
                     num_elem = elem.find('.//m:num', OOXML_NAMESPACES)
                     den_elem = elem.find('.//m:den', OOXML_NAMESPACES)
 
@@ -806,7 +806,7 @@ class DocxUtils:
                         den_text = DocxUtils.extract_text_from_element(den_elem)
                         latex_parts.append(f"\\frac{{{num_text}}}{{{den_text}}}")
                 elif elem.tag.endswith('sup'):
-                    # توان
+                    # Superscript
                     base_elem = elem.find('.//m:e', OOXML_NAMESPACES)
                     sup_elem = elem.find('.//m:sup', OOXML_NAMESPACES)
 
@@ -815,7 +815,7 @@ class DocxUtils:
                         sup_text = DocxUtils.extract_text_from_element(sup_elem)
                         latex_parts.append(f"{{{base_text}}}^{{{sup_text}}}")
                 elif elem.tag.endswith('sub'):
-                    # اندیس
+                    # Subscript
                     base_elem = elem.find('.//m:e', OOXML_NAMESPACES)
                     sub_elem = elem.find('.//m:sub', OOXML_NAMESPACES)
 
@@ -824,7 +824,7 @@ class DocxUtils:
                         sub_text = DocxUtils.extract_text_from_element(sub_elem)
                         latex_parts.append(f"{{{base_text}}}_{{{sub_text}}}")
                 elif elem.tag.endswith('r'):
-                    # متن معمولی
+                    # Regular text
                     text = DocxUtils.extract_text_from_element(elem)
                     if text:
                         latex_parts.append(text)
@@ -832,7 +832,7 @@ class DocxUtils:
             if latex_parts:
                 return ' '.join(latex_parts)
 
-            # اگر تبدیل خاصی انجام نشد، متن ساده استخراج شود
+            # If no specific conversion done, extract plain text
             simple_text = DocxUtils.extract_text_from_element(omml_elem)
             if simple_text:
                 return f"${simple_text}$"
@@ -841,34 +841,34 @@ class DocxUtils:
 
         except Exception as e:
             import logging
-            logging.getLogger(__name__).warning(f"خطا در تبدیل OMML به LaTeX: {str(e)}")
+            logging.getLogger(__name__).warning(f"Error converting OMML to LaTeX: {str(e)}")
             return None
 
     @staticmethod
     def convert_color_from_ooxml(color_value: str) -> str:
         """
-        تبدیل رنگ از فرمت OOXML به HEX
+        Convert color from OOXML format to HEX
         
         Args:
-            color_value: مقدار رنگ در OOXML
+            color_value: color value in OOXML
             
         Returns:
-            str: رنگ در فرمت HEX
+            str: color in HEX format
         """
         if not color_value:
             return "#000000"
 
         color_value = color_value.lower().strip()
 
-        # اگر رنگ از قبل HEX است
+        # If color is already HEX
         if re.match(r'^[0-9a-f]{6}$', color_value):
             return f"#{color_value}"
 
-        # اگر رنگ با auto یا none است
+        # If color is auto or none
         if color_value in ['auto', 'none']:
             return "#000000"
 
-        # رنگ‌های نامی
+        # Named colors
         color_map = {
             'black': '#000000',
             'white': '#FFFFFF',
@@ -893,44 +893,44 @@ class DocxUtils:
         if color_value in color_map:
             return color_map[color_value]
 
-        # اگر مقدار عددی است (مثل "FF0000" بدون #)
+        # If value is numeric (e.g. "FF0000" without #)
         if re.match(r'^[0-9a-f]{6}$', color_value):
             return f"#{color_value}"
 
-        # اگر مقدار ARGB است (مثل "FF000000")
+        # If value is ARGB (e.g. "FF000000")
         if re.match(r'^[0-9a-f]{8}$', color_value):
-            # حذف آلفا و برگرداندن RGB
+            # Remove alpha and return RGB
             return f"#{color_value[2:]}"
 
-        # پیش‌فرض
+        # Default
         return "#000000"
 
     @staticmethod
     def get_namespace_tag(tag_name: str, namespace: str = 'w') -> str:
         """
-        ساخت تگ با namespace
+        Build tag with namespace
         
         Args:
-            tag_name: نام تگ
-            namespace: namespace (پیش‌فرض: 'w')
+            tag_name: tag name
+            namespace: namespace (default: 'w')
             
         Returns:
-            str: تگ کامل با namespace
+            str: full tag with namespace
         """
         return f"{{{OOXML_NAMESPACES.get(namespace, namespace)}}}{tag_name}"
 
     @staticmethod
     def find_element_with_ns(elem: ET.Element, tag_name: str, namespace: str = 'w') -> ET.Element | None:
         """
-        یافتن المان با namespace
+        Find element with namespace
         
         Args:
-            elem: المان والد
-            tag_name: نام تگ
-            namespace: namespace (پیش‌فرض: 'w')
+            elem: parent element
+            tag_name: tag name
+            namespace: namespace (default: 'w')
             
         Returns:
-            Optional[ET.Element]: المان یافت شده یا None
+            Optional[ET.Element]: found element or None
         """
         if elem is None:
             return None
@@ -941,15 +941,15 @@ class DocxUtils:
     @staticmethod
     def find_all_elements_with_ns(elem: ET.Element, tag_name: str, namespace: str = 'w') -> list[ET.Element]:
         """
-        یافتن همه المان‌ها با namespace
+        Find all elements with namespace
         
         Args:
-            elem: المان والد
-            tag_name: نام تگ
-            namespace: namespace (پیش‌فرض: 'w')
+            elem: parent element
+            tag_name: tag name
+            namespace: namespace (default: 'w')
             
         Returns:
-            List[ET.Element]: لیست المان‌های یافت شده
+            List[ET.Element]: list of found elements
         """
         if elem is None:
             return []
@@ -960,13 +960,13 @@ class DocxUtils:
     @staticmethod
     def extract_hyperlink_info(hyperlink_elem: ET.Element) -> dict[str, Any]:
         """
-        استخراج اطلاعات هایپرلینک از المان hyperlink
+        Extract hyperlink information from hyperlink element
         
         Args:
-            hyperlink_elem: المان hyperlink
+            hyperlink_elem: hyperlink element
             
         Returns:
-            Dict[str, Any]: اطلاعات هایپرلینک
+            Dict[str, Any]: hyperlink information
         """
         hyperlink_info = {
             'url': None,
@@ -976,22 +976,22 @@ class DocxUtils:
         }
 
         try:
-            # استخراج رابطه (relationship)
+            # Extract relationship
             r_id = hyperlink_elem.get('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id')
             if r_id:
                 hyperlink_info['relationship_id'] = r_id
 
-            # استخراج anchor
+            # Extract anchor
             anchor = hyperlink_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}anchor')
             if anchor:
                 hyperlink_info['anchor'] = anchor
 
-            # استخراج tooltip
+            # Extract tooltip
             tooltip = hyperlink_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tooltip')
             if tooltip:
                 hyperlink_info['tooltip'] = tooltip
 
-            # استخراج متن نمایشی
+            # Extract display text
             runs = hyperlink_elem.findall('.//w:r', OOXML_NAMESPACES)
             text_parts = []
             for run in runs:
@@ -1004,20 +1004,20 @@ class DocxUtils:
 
         except Exception as e:
             import logging
-            logging.getLogger(__name__).warning(f"خطا در استخراج اطلاعات هایپرلینک: {str(e)}")
+            logging.getLogger(__name__).warning(f"Error extracting hyperlink information: {str(e)}")
 
         return hyperlink_info
 
     @staticmethod
     def extract_image_info(drawing_elem: ET.Element) -> dict[str, Any]:
         """
-        استخراج اطلاعات تصویر از المان drawing
+        Extract image information from drawing element
         
         Args:
-            drawing_elem: المان drawing
+            drawing_elem: drawing element
             
         Returns:
-            Dict[str, Any]: اطلاعات تصویر
+            Dict[str, Any]: image information
         """
         image_info = {
             'relationship_id': None,
@@ -1030,7 +1030,7 @@ class DocxUtils:
         }
 
         try:
-            # یافتن المان blip (تصویر)
+            # Find blip element (image)
             blip_elem = drawing_elem.find('.//a:blip', OOXML_NAMESPACES)
             if blip_elem is not None:
                 r_embed = blip_elem.get('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed')
@@ -1043,10 +1043,10 @@ class DocxUtils:
                     image_info['relationship_id'] = r_link
                     image_info['embed_type'] = 'linked'
 
-            # یافتن المان pic (تصویر)
+            # Find pic element (image)
             pic_elem = drawing_elem.find('.//pic:pic', OOXML_NAMESPACES)
             if pic_elem is not None:
-                # استخراج ابعاد
+                # Extract dimensions
                 ext_elem = pic_elem.find('.//a:ext', OOXML_NAMESPACES)
                 if ext_elem is not None:
                     cx_attr = ext_elem.get('cx')
@@ -1054,12 +1054,12 @@ class DocxUtils:
 
                     if cx_attr and cy_attr:
                         try:
-                            # تبدیل از EMU به پیکسل (1 EMU = 1/914400 inch)
-                            # فرض: 96 DPI
+                            # Convert from EMU to pixels (1 EMU = 1/914400 inch)
+                            # Assume: 96 DPI
                             width_emu = int(cx_attr)
                             height_emu = int(cy_attr)
 
-                            # تبدیل به پیکسل
+                            # Convert to pixels
                             width_px = width_emu / 914400 * 96
                             height_px = height_emu / 914400 * 96
 
@@ -1070,7 +1070,7 @@ class DocxUtils:
                         except ValueError:
                             pass
 
-                # استخراج عنوان و توضیحات
+                # Extract title and description
                 nvPicPr_elem = pic_elem.find('.//pic:nvPicPr', OOXML_NAMESPACES)
                 if nvPicPr_elem is not None:
                     cNvPr_elem = nvPicPr_elem.find('.//a:cNvPr', OOXML_NAMESPACES)
@@ -1083,12 +1083,12 @@ class DocxUtils:
                         if desc:
                             image_info['description'] = desc
 
-            # یافتن اطلاعات content type
+            # Find content type information
             blipFill_elem = drawing_elem.find('.//a:blipFill', OOXML_NAMESPACES)
             if blipFill_elem is not None:
                 srcRect_elem = blipFill_elem.find('.//a:srcRect', OOXML_NAMESPACES)
                 if srcRect_elem is not None:
-                    # استخراج اطلاعات crop
+                    # Extract crop information
                     for attr in ['l', 't', 'r', 'b']:
                         val = srcRect_elem.get(attr)
                         if val:
@@ -1096,20 +1096,20 @@ class DocxUtils:
 
         except Exception as e:
             import logging
-            logging.getLogger(__name__).warning(f"خطا در استخراج اطلاعات تصویر: {str(e)}")
+            logging.getLogger(__name__).warning(f"Error extracting image information: {str(e)}")
 
         return image_info
 
     @staticmethod
     def extract_table_properties(tblPr_elem: ET.Element | None) -> dict[str, Any]:
         """
-        استخراج ویژگی‌های جدول از المان tblPr
+        Extract table properties from tblPr element
         
         Args:
-            tblPr_elem: المان tblPr (table properties)
+            tblPr_elem: tblPr element (table properties)
             
         Returns:
-            Dict[str, Any]: ویژگی‌های جدول
+            Dict[str, Any]: table properties
         """
         table_props = {
             'style_id': None,
@@ -1126,14 +1126,14 @@ class DocxUtils:
             return table_props
 
         try:
-            # استخراج استایل جدول
+            # Extract table style
             tblStyle_elem = tblPr_elem.find('.//w:tblStyle', OOXML_NAMESPACES)
             if tblStyle_elem is not None:
                 style_id = tblStyle_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
                 if style_id:
                     table_props['style_id'] = style_id
 
-            # استخراج تراز جدول
+            # Extract table alignment
             jc_elem = tblPr_elem.find('.//w:jc', OOXML_NAMESPACES)
             if jc_elem is not None:
                 alignment = jc_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
@@ -1149,7 +1149,7 @@ class DocxUtils:
                     }
                     table_props['alignment'] = alignment_map.get(alignment.lower(), 'left')
 
-            # استخراج عرض جدول
+            # Extract table width
             tblW_elem = tblPr_elem.find('.//w:tblW', OOXML_NAMESPACES)
             if tblW_elem is not None:
                 width_type = tblW_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}type', 'auto')
@@ -1157,7 +1157,7 @@ class DocxUtils:
 
                 if width_val and width_type != 'auto':
                     try:
-                        # تبدیل از twips به points
+                        # Convert از twips به points
                         width_twips = int(width_val)
                         width_pts = width_twips / 20
                         table_props['width'] = f"{width_pts}pt"
@@ -1165,7 +1165,7 @@ class DocxUtils:
                     except ValueError:
                         table_props['width'] = width_val
 
-            # استخراج حاشیه‌های جدول
+            # Extract table borders
             tblBorders_elem = tblPr_elem.find('.//w:tblBorders', OOXML_NAMESPACES)
             if tblBorders_elem is not None:
                 borders = {}
@@ -1174,22 +1174,22 @@ class DocxUtils:
                     if border_elem is not None:
                         border_info = {}
 
-                        # استخراج نوع border
+                        # Extract border type
                         border_val = border_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
                         if border_val:
                             border_info['type'] = border_val
 
-                        # استخراج سایز
+                        # Extract size
                         border_sz = border_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}sz')
                         if border_sz:
                             try:
-                                # تبدیل از 1/8 point به point
+                                # Convert از 1/8 point به point
                                 sz_val = int(border_sz)
                                 border_info['size'] = f"{sz_val / 8}pt"
                             except ValueError:
                                 border_info['size'] = border_sz
 
-                        # استخراج رنگ
+                        # Extract color
                         border_color = border_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}color')
                         if border_color:
                             border_info['color'] = DocxUtils.convert_color_from_ooxml(border_color)
@@ -1200,7 +1200,7 @@ class DocxUtils:
                 if borders:
                     table_props['borders'] = borders
 
-            # استخراج سایه‌زنی
+            # Extract shading
             shd_elem = tblPr_elem.find('.//w:shd', OOXML_NAMESPACES)
             if shd_elem is not None:
                 shading = {}
@@ -1220,14 +1220,14 @@ class DocxUtils:
                 if shading:
                     table_props['shading'] = shading
 
-            # استخراج layout
+            # Extract layout
             tblLayout_elem = tblPr_elem.find('.//w:tblLayout', OOXML_NAMESPACES)
             if tblLayout_elem is not None:
                 layout_type = tblLayout_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}type')
                 if layout_type:
                     table_props['layout'] = 'fixed' if layout_type == 'fixed' else 'autofit'
 
-            # استخراج تورفتگی
+            # Extract indentation
             tblInd_elem = tblPr_elem.find('.//w:tblInd', OOXML_NAMESPACES)
             if tblInd_elem is not None:
                 ind_type = tblInd_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}type', 'dxa')
@@ -1246,20 +1246,20 @@ class DocxUtils:
 
         except Exception as e:
             import logging
-            logging.getLogger(__name__).warning(f"خطا در استخراج ویژگی‌های جدول: {str(e)}")
+            logging.getLogger(__name__).warning(f"Error extracting table properties: {str(e)}")
 
         return table_props
 
     @staticmethod
     def extract_cell_properties(tcPr_elem: ET.Element | None) -> dict[str, Any]:
         """
-        استخراج ویژگی‌های سلول جدول از المان tcPr
+        Extract table cell properties from tcPr element
         
         Args:
-            tcPr_elem: المان tcPr (table cell properties)
+            tcPr_elem: tcPr element (table cell properties)
             
         Returns:
-            Dict[str, Any]: ویژگی‌های سلول
+            Dict[str, Any]: Cell properties
         """
         cell_props = {
             'width': None,
@@ -1275,7 +1275,7 @@ class DocxUtils:
             return cell_props
 
         try:
-            # استخراج عرض سلول
+            # Extract cell width
             tcW_elem = tcPr_elem.find('.//w:tcW', OOXML_NAMESPACES)
             if tcW_elem is not None:
                 width_type = tcW_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}type', 'dxa')
@@ -1287,7 +1287,7 @@ class DocxUtils:
                             width_twips = int(width_val)
                             width_pts = width_twips / 20
                             cell_props['width'] = f"{width_pts}pt"
-                        elif width_type == 'pct':  # درصد
+                        elif width_type == 'pct':  # Percent
                             cell_props['width'] = f"{width_val}%"
                         else:
                             cell_props['width'] = width_val
@@ -1295,7 +1295,7 @@ class DocxUtils:
                     except ValueError:
                         cell_props['width'] = width_val
 
-            # استخراج تراز عمودی
+            # Extract vertical alignment
             vAlign_elem = tcPr_elem.find('.//w:vAlign', OOXML_NAMESPACES)
             if vAlign_elem is not None:
                 align_val = vAlign_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
@@ -1308,7 +1308,7 @@ class DocxUtils:
                     }
                     cell_props['vertical_align'] = align_map.get(align_val.lower(), 'top')
 
-            # استخراج grid span (ادغام ستون‌ها)
+            # Extract grid span (column merge)
             gridSpan_elem = tcPr_elem.find('.//w:gridSpan', OOXML_NAMESPACES)
             if gridSpan_elem is not None:
                 span_val = gridSpan_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
@@ -1318,14 +1318,14 @@ class DocxUtils:
                     except ValueError:
                         cell_props['grid_span'] = 1
 
-            # استخراج vMerge (ادغام Row‌ها)
+            # Extract vMerge (row merge)
             vMerge_elem = tcPr_elem.find('.//w:vMerge', OOXML_NAMESPACES)
             if vMerge_elem is not None:
                 merge_val = vMerge_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
                 if merge_val:
                     cell_props['v_merge'] = merge_val  # 'restart' یا 'continue'
 
-            # استخراج سایه‌زنی سلول
+            # Extract cell shading
             shd_elem = tcPr_elem.find('.//w:shd', OOXML_NAMESPACES)
             if shd_elem is not None:
                 shading = {}
@@ -1345,7 +1345,7 @@ class DocxUtils:
                 if shading:
                     cell_props['shading'] = shading
 
-            # استخراج حاشیه‌های سلول
+            # Extract cell borders
             tcBorders_elem = tcPr_elem.find('.//w:tcBorders', OOXML_NAMESPACES)
             if tcBorders_elem is not None:
                 borders = {}
@@ -1376,7 +1376,7 @@ class DocxUtils:
                 if borders:
                     cell_props['borders'] = borders
 
-            # استخراج حاشیه‌های داخلی سلول
+            # Extract cell inner borders
             tcMar_elem = tcPr_elem.find('.//w:tcMar', OOXML_NAMESPACES)
             if tcMar_elem is not None:
                 margins = {}
@@ -1409,13 +1409,13 @@ class DocxUtils:
     @staticmethod
     def extract_row_properties(trPr_elem: ET.Element | None) -> dict[str, Any]:
         """
-        استخراج ویژگی‌های Row جدول از المان trPr
+        Extract table row properties from trPr element
         
         Args:
-            trPr_elem: المان trPr (table row properties)
+            trPr_elem: trPr element (table row properties)
             
         Returns:
-            Dict[str, Any]: ویژگی‌های Row
+            Dict[str, Any]: Row properties
         """
         row_props = {
             'height': None,
@@ -1429,7 +1429,7 @@ class DocxUtils:
             return row_props
 
         try:
-            # استخراج ارتفاع Row
+            # Extract row height
             trHeight_elem = trPr_elem.find('.//w:trHeight', OOXML_NAMESPACES)
             if trHeight_elem is not None:
                 height_val = trHeight_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
@@ -1437,7 +1437,7 @@ class DocxUtils:
 
                 if height_val:
                     try:
-                        # تبدیل از twips به points
+                        # Convert از twips به points
                         height_twips = int(height_val)
                         height_pts = height_twips / 20
                         row_props['height'] = f"{height_pts}pt"
@@ -1445,17 +1445,17 @@ class DocxUtils:
                     except ValueError:
                         row_props['height'] = height_val
 
-            # بررسی عدم شکستن Row
+            # Check no row break
             cantSplit_elem = trPr_elem.find('.//w:cantSplit', OOXML_NAMESPACES)
             if cantSplit_elem is not None:
                 row_props['cant_split'] = True
 
-            # بررسی Row هدر
+            # Check header row
             tblHeader_elem = trPr_elem.find('.//w:tblHeader', OOXML_NAMESPACES)
             if tblHeader_elem is not None:
                 row_props['header'] = True
 
-            # بررسی Row مخفی
+            # Check hidden row
             hidden_elem = trPr_elem.find('.//w:hidden', OOXML_NAMESPACES)
             if hidden_elem is not None:
                 row_props['hidden'] = True
@@ -1469,13 +1469,13 @@ class DocxUtils:
     @staticmethod
     def extract_footnote_info(footnote_elem: ET.Element) -> dict[str, Any]:
         """
-        استخراج اطلاعات پاورقی از المان footnote
+        Extract footnote information from footnote element
         
         Args:
-            footnote_elem: المان footnote
+            footnote_elem: footnote element
             
         Returns:
-            Dict[str, Any]: اطلاعات پاورقی
+            Dict[str, Any]: Footnote information
         """
         footnote_info = {
             'id': None,
@@ -1485,7 +1485,7 @@ class DocxUtils:
         }
 
         try:
-            # استخراج ID و نوع
+            # Extract ID and type
             footnote_id = footnote_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id')
             footnote_type = footnote_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}type')
 
@@ -1501,7 +1501,7 @@ class DocxUtils:
                 }
                 footnote_info['type'] = type_map.get(footnote_type, 'normal')
 
-            # استخراج محتوا
+            # Extract content
             paragraphs = footnote_elem.findall('.//w:p', OOXML_NAMESPACES)
             content_parts = []
 
@@ -1513,7 +1513,7 @@ class DocxUtils:
             if content_parts:
                 footnote_info['content'] = '\n'.join(content_parts)
 
-            # استخراج reference mark
+            # Extract reference mark
             ref_elem = footnote_elem.find('.//w:r/w:footnoteRef', OOXML_NAMESPACES)
             if ref_elem is not None:
                 footnote_info['reference_mark'] = True
@@ -1527,13 +1527,13 @@ class DocxUtils:
     @staticmethod
     def extract_endnote_info(endnote_elem: ET.Element) -> dict[str, Any]:
         """
-        استخراج اطلاعات یادداشت پایانی از المان endnote
+        Extract endnote information from endnote element
         
         Args:
-            endnote_elem: المان endnote
+            endnote_elem: endnote element
             
         Returns:
-            Dict[str, Any]: اطلاعات یادداشت پایانی
+            Dict[str, Any]: Endnote information
         """
         endnote_info = {
             'id': None,
@@ -1543,7 +1543,7 @@ class DocxUtils:
         }
 
         try:
-            # استخراج ID و نوع
+            # Extract ID and type
             endnote_id = endnote_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id')
             endnote_type = endnote_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}type')
 
@@ -1559,7 +1559,7 @@ class DocxUtils:
                 }
                 endnote_info['type'] = type_map.get(endnote_type, 'normal')
 
-            # استخراج محتوا
+            # Extract content
             paragraphs = endnote_elem.findall('.//w:p', OOXML_NAMESPACES)
             content_parts = []
 
@@ -1571,7 +1571,7 @@ class DocxUtils:
             if content_parts:
                 endnote_info['content'] = '\n'.join(content_parts)
 
-            # استخراج reference mark
+            # Extract reference mark
             ref_elem = endnote_elem.find('.//w:r/w:endnoteRef', OOXML_NAMESPACES)
             if ref_elem is not None:
                 endnote_info['reference_mark'] = True
@@ -1585,13 +1585,13 @@ class DocxUtils:
     @staticmethod
     def extract_bookmark_info(bookmark_elem: ET.Element) -> dict[str, Any]:
         """
-        استخراج اطلاعات بوکمارک از المان bookmarkStart یا bookmarkEnd
+        Extract bookmark information from bookmarkStart or bookmarkEnd element
         
         Args:
-            bookmark_elem: المان bookmarkStart یا bookmarkEnd
+            bookmark_elem: bookmarkStart or bookmarkEnd element
             
         Returns:
-            Dict[str, Any]: اطلاعات بوکمارک
+            Dict[str, Any]: Bookmark information
         """
         bookmark_info = {
             'id': None,
@@ -1602,24 +1602,24 @@ class DocxUtils:
         }
 
         try:
-            # تعیین نوع بوکمارک
+            # Determine bookmark type
             if bookmark_elem.tag.endswith('bookmarkStart'):
                 bookmark_info['type'] = 'start'
             elif bookmark_elem.tag.endswith('bookmarkEnd'):
                 bookmark_info['type'] = 'end'
 
-            # استخراج ID
+            # Extract ID
             bookmark_id = bookmark_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id')
             if bookmark_id:
                 bookmark_info['id'] = bookmark_id
 
-            # استخراج نام (فقط برای bookmarkStart)
+            # Extract name (only for bookmarkStart)
             if bookmark_info['type'] == 'start':
                 bookmark_name = bookmark_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}name')
                 if bookmark_name:
                     bookmark_info['name'] = bookmark_name
 
-            # استخراج محدوده ستون‌ها (برای جداول)
+            # Extract column range (for tables)
             col_first = bookmark_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}colFirst')
             col_last = bookmark_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}colLast')
 
@@ -1644,13 +1644,13 @@ class DocxUtils:
     @staticmethod
     def extract_comment_info(comment_elem: ET.Element) -> dict[str, Any]:
         """
-        استخراج اطلاعات کامنت از المان comment
+        Extract comment information from comment element
         
         Args:
-            comment_elem: المان comment
+            comment_elem: comment element
             
         Returns:
-            Dict[str, Any]: اطلاعات کامنت
+            Dict[str, Any]: Comment information
         """
         comment_info = {
             'id': None,
@@ -1662,32 +1662,32 @@ class DocxUtils:
         }
 
         try:
-            # استخراج ID
+            # Extract ID
             comment_id = comment_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id')
             if comment_id:
                 comment_info['id'] = comment_id
 
-            # استخراج author
+            # Extract author
             author_elem = comment_elem.find('.//w:author', OOXML_NAMESPACES)
             if author_elem is not None and author_elem.text:
                 comment_info['author'] = author_elem.text.strip()
 
-            # استخراج date
+            # Extract date
             date_elem = comment_elem.find('.//w:date', OOXML_NAMESPACES)
             if date_elem is not None and date_elem.text:
                 comment_info['date'] = date_elem.text.strip()
 
-            # استخراج initials
+            # Extract initials
             initials_elem = comment_elem.find('.//w:initials', OOXML_NAMESPACES)
             if initials_elem is not None and initials_elem.text:
                 comment_info['initials'] = initials_elem.text.strip()
 
-            # استخراج parent comment ID
+            # Extract parent comment ID
             parent_id = comment_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}parentId')
             if parent_id:
                 comment_info['parent_id'] = parent_id
 
-            # استخراج محتوا
+            # Extract content
             paragraphs = comment_elem.findall('.//w:p', OOXML_NAMESPACES)
             content_parts = []
 
@@ -1708,13 +1708,13 @@ class DocxUtils:
     @staticmethod
     def extract_field_info(fldChar_elem: ET.Element) -> dict[str, Any]:
         """
-        استخراج اطلاعات فیلد از المان fldChar
+        Extract field information from fldChar element
         
         Args:
-            fldChar_elem: المان fldChar
+            fldChar_elem: fldChar element
             
         Returns:
-            Dict[str, Any]: اطلاعات فیلد
+            Dict[str, Any]: Field information
         """
         field_info = {
             'type': None,  # 'begin', 'separate', 'end', 'unknown'
@@ -1724,7 +1724,7 @@ class DocxUtils:
         }
 
         try:
-            # استخراج نوع فیلد
+            # Extract field type
             fld_char_type = fldChar_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}fldCharType')
             if fld_char_type:
                 type_map = {
@@ -1734,19 +1734,19 @@ class DocxUtils:
                 }
                 field_info['type'] = type_map.get(fld_char_type, 'unknown')
 
-            # استخراج دستورات فیلد (از المان‌های run مجاور)
+            # Extract field instructions (from adjacent run elements)
             parent = fldChar_elem.getparent()
             if parent is not None:
-                # جستجوی المان‌های run در اطراف
+                # Search for run elements around
                 runs = parent.findall('.//w:r', OOXML_NAMESPACES)
                 for run in runs:
-                    # بررسی المان instrText (دستورات فیلد)
+                    # Check instrText element (field instructions)
                     instr_elem = run.find('.//w:instrText', OOXML_NAMESPACES)
                     if instr_elem is not None and instr_elem.text:
                         instructions = instr_elem.text.strip()
                         field_info['instructions'] = instructions
 
-                        # تشخیص نوع فیلد از دستورات
+                        # Detect field type from instructions
                         if 'PAGE' in instructions:
                             field_info['field_type'] = 'PAGE'
                         elif 'NUMPAGES' in instructions:
@@ -1764,7 +1764,7 @@ class DocxUtils:
                         elif 'SEQ' in instructions:
                             field_info['field_type'] = 'SEQ'
 
-                    # بررسی المان t (نتیجه فیلد)
+                    # Check t element (field result)
                     text_elem = run.find('.//w:t', OOXML_NAMESPACES)
                     if text_elem is not None and text_elem.text:
                         result_text = text_elem.text.strip()
@@ -1780,13 +1780,13 @@ class DocxUtils:
     @staticmethod
     def extract_smart_tag_info(smartTag_elem: ET.Element) -> dict[str, Any]:
         """
-        استخراج اطلاعات Smart Tag از المان smartTag
+        Extract Smart Tag information from smartTag element
         
         Args:
-            smartTag_elem: المان smartTag
+            smartTag_elem: smartTag element
             
         Returns:
-            Dict[str, Any]: اطلاعات Smart Tag
+            Dict[str, Any]: Smart Tag information
         """
         smart_tag_info = {
             'uri': None,
@@ -1795,7 +1795,7 @@ class DocxUtils:
         }
 
         try:
-            # استخراج URI و element
+            # Extract URI و element
             uri_attr = smartTag_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}uri')
             element_attr = smartTag_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}element')
 
@@ -1804,7 +1804,7 @@ class DocxUtils:
             if element_attr:
                 smart_tag_info['element'] = element_attr
 
-            # استخراج محتوا
+            # Extract content
             content = DocxUtils.extract_text_from_element(smartTag_elem)
             if content:
                 smart_tag_info['content'] = content
@@ -1818,13 +1818,13 @@ class DocxUtils:
     @staticmethod
     def extract_sdt_info(sdt_elem: ET.Element) -> dict[str, Any]:
         """
-        استخراج اطلاعات Structured Document Tag (کنترل‌های فرم)
+        Extract Structured Document Tag information (form controls)
         
         Args:
-            sdt_elem: المان w:sdt
+            sdt_elem: w:sdt element
             
         Returns:
-            Dict[str, Any]: اطلاعات SDT شامل:
+            Dict[str, Any]: SDT information including:
                 - type: نوع SDT (text, richText, comboBox, dropDownList, date, etc.)
                 - tag: نام تگ
                 - alias: نام نمایشی
@@ -1832,7 +1832,7 @@ class DocxUtils:
                 - placeholder: متن placeholder
                 - content: محتوای فعلی
                 - list_items: آیتم‌های لیست (برای comboBox و dropDownList)
-                - date_format: فرمت تاریخ (برای date picker)
+                - date_format: فرمت تاریخ (for date picker)
                 - formatting: فرمت‌های اضافی
         """
         sdt_info = {
@@ -1848,13 +1848,13 @@ class DocxUtils:
         }
 
         try:
-            # استخراج خصوصیات SDT
+            # Extract SDT properties
             sdtPr_elem = sdt_elem.find('.//w:sdtPr', OOXML_NAMESPACES)
             if sdtPr_elem is not None:
-                # تعیین نوع SDT
+                # Determine SDT type
                 sdt_type = None
 
-                # بررسی انواع مختلف SDT
+                # Check different SDT types
                 if sdtPr_elem.find('.//w:text', OOXML_NAMESPACES) is not None:
                     sdt_type = 'text'
                 elif sdtPr_elem.find('.//w:richText', OOXML_NAMESPACES) is not None:
@@ -1887,23 +1887,23 @@ class DocxUtils:
                 if sdt_type:
                     sdt_info['type'] = sdt_type
 
-                # استخراج تگ
+                # Extract تگ
                 tag_elem = sdtPr_elem.find('.//w:tag', OOXML_NAMESPACES)
                 if tag_elem is not None:
                     sdt_info['tag'] = tag_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
 
-                # استخراج alias
+                # Extract alias
                 alias_elem = sdtPr_elem.find('.//w:alias', OOXML_NAMESPACES)
                 if alias_elem is not None:
                     sdt_info['alias'] = alias_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
 
-                # استخراج وضعیت قفل
+                # Extract lock status
                 lock_elem = sdtPr_elem.find('.//w:lock', OOXML_NAMESPACES)
                 if lock_elem is not None:
                     lock_val = lock_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
                     sdt_info['lock'] = lock_val if lock_val else 'sdtLocked'
 
-                # استخراج placeholder
+                # Extract placeholder
                 placeholder_elem = sdtPr_elem.find('.//w:placeholder', OOXML_NAMESPACES)
                 if placeholder_elem is not None:
                     docPart_elem = placeholder_elem.find('.//w:docPart', OOXML_NAMESPACES)
@@ -1912,69 +1912,69 @@ class DocxUtils:
                         if val_elem is not None:
                             sdt_info['placeholder'] = val_elem.text
 
-                # استخراج فرمت تاریخ (برای date picker)
+                # Extract date format (for date picker)
                 if sdt_info['type'] == 'date':
                     date_elem = sdtPr_elem.find('.//w:date', OOXML_NAMESPACES)
                     if date_elem is not None:
-                        # استخراج فرمت تاریخ
+                        # Extract date format
                         date_format = date_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}fullDate')
                         if date_format:
                             sdt_info['date_format'] = date_format
 
-                        # استخراج فرمت نمایش
+                        # Extract display format
                         display_format = date_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}dateFormat')
                         if display_format:
                             sdt_info['formatting']['display_format'] = display_format
 
-                        # استخراج زبان
+                        # Extract language
                         lang = date_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}lid')
                         if lang:
                             sdt_info['formatting']['language'] = lang
 
-                # استخراج فرمت‌های اضافی برای text و richText
+                # Extract additional formats for text and richText
                 if sdt_info['type'] in ['text', 'richText']:
                     text_elem = sdtPr_elem.find('.//w:text', OOXML_NAMESPACES)
                     if text_elem is not None:
-                        # استخراج فرمت multiline
+                        # Extract multiline format
                         multi_line = text_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}multiLine')
                         if multi_line:
                             sdt_info['formatting']['multi_line'] = multi_line == 'true' or multi_line == '1'
 
-                        # استخراج فرمت maxLength
+                        # Extract maxLength format
                         max_length = text_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}maxLength')
                         if max_length:
                             sdt_info['formatting']['max_length'] = int(max_length)
 
-                # استخراج وضعیت checkbox
+                # Extract checkbox status
                 if sdt_info['type'] == 'checkBox':
                     checkBox_elem = sdtPr_elem.find('.//w:checkBox', OOXML_NAMESPACES)
                     if checkBox_elem is not None:
-                        # استخراج وضعیت checked
+                        # Extract checked status
                         checked_elem = checkBox_elem.find('.//w:checked', OOXML_NAMESPACES)
                         if checked_elem is not None:
                             checked_val = checked_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
                             sdt_info['formatting']['checked'] = checked_val == 'true' or checked_val == '1' or checked_val == 'on'
 
-                        # استخراج اندازه
+                        # Extract size
                         size_elem = checkBox_elem.find('.//w:size', OOXML_NAMESPACES)
                         if size_elem is not None:
                             size_val = size_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
                             if size_val:
                                 sdt_info['formatting']['size'] = int(size_val)
 
-            # استخراج محتوا
+            # Extract content
             sdtContent_elem = sdt_elem.find('.//w:sdtContent', OOXML_NAMESPACES)
             if sdtContent_elem is not None:
-                # استخراج متن از محتوا
+                # Extract text from content
                 content = DocxUtils.extract_text_from_element(sdtContent_elem)
                 if content:
                     sdt_info['content'] = content
 
-                # برای comboBox و dropDownList، استخراج آیتم‌ها
+                # For comboBox and dropDownList, extract items
                 if sdt_info['type'] in ['comboBox', 'dropDownList']:
                     if sdtPr_elem is not None:
                         list_items = []
-                        # یافتن آیتم‌های لیست
+                        # Find list items
                         for listItem in sdtPr_elem.findall('.//w:listItem', OOXML_NAMESPACES):
                             item_display = listItem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}displayText')
                             item_value = listItem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}value')
@@ -1995,17 +1995,17 @@ class DocxUtils:
     @staticmethod
     def extract_math_info(math_elem: ET.Element) -> dict[str, Any]:
         """
-        استخراج اطلاعات ریاضیات (OMML)
+        Extract math information (OMML)
         
         Args:
-            math_elem: المان ریاضیات (w:oMath یا w:oMathPara)
+            math_elem: math element (w:oMath or w:oMathPara)
             
         Returns:
-            Dict[str, Any]: اطلاعات ریاضیات شامل:
+            Dict[str, Any]: Math information including:
                 - type: نوع (inline, paragraph)
                 - latex: نمایش LaTeX (در صورت تبدیل موفق)
                 - omml_xml: XML اصلی OMML
-                - properties: خصوصیات فرمت‌بندی
+                - properties: formatting properties‌بندی
         """
         math_info = {
             'type': 'inline',
@@ -2015,223 +2015,223 @@ class DocxUtils:
         }
 
         try:
-            # تعیین نوع ریاضیات
+            # Determine math type
             if math_elem.tag.endswith('oMathPara'):
                 math_info['type'] = 'paragraph'
 
-            # استخراج XML اصلی
+            # Extract main XML
             import xml.etree.ElementTree as ET
             math_info['omml_xml'] = ET.tostring(math_elem, encoding='unicode')
 
-            # تبدیل OMML به LaTeX
+            # Convert OMML به LaTeX
             try:
                 latex = DocxUtils.convert_omml_to_latex(math_elem)
                 if latex:
                     math_info['latex'] = latex
             except Exception as e:
                 import logging
-                logging.getLogger(__name__).debug(f"خطا در تبدیل OMML به LaTeX: {str(e)}")
+                logging.getLogger(__name__).debug(f"Error converting OMML to LaTeX: {str(e)}")
 
-            # استخراج خصوصیات فرمت‌بندی
+            # Extract formatting properties
             mathPr_elem = math_elem.find('.//m:mathPr', OOXML_NAMESPACES)
             if mathPr_elem is not None:
-                # استخراج justify
+                # Extract justify
                 justify_elem = mathPr_elem.find('.//m:jc', OOXML_NAMESPACES)
                 if justify_elem is not None:
                     justify_val = justify_elem.get('{http://schemas.openxmlformats.org/officeDocument/2006/math}val')
                     if justify_val:
                         math_info['properties']['justify'] = justify_val
 
-                # استخراج breakBin
+                # Extract breakBin
                 breakBin_elem = mathPr_elem.find('.//m:brkBin', OOXML_NAMESPACES)
                 if breakBin_elem is not None:
                     breakBin_val = breakBin_elem.get('{http://schemas.openxmlformats.org/officeDocument/2006/math}val')
                     if breakBin_val:
                         math_info['properties']['break_bin'] = breakBin_val
 
-                # استخراج breakBinSub
+                # Extract breakBinSub
                 breakBinSub_elem = mathPr_elem.find('.//m:brkBinSub', OOXML_NAMESPACES)
                 if breakBinSub_elem is not None:
                     breakBinSub_val = breakBinSub_elem.get('{http://schemas.openxmlformats.org/officeDocument/2006/math}val')
                     if breakBinSub_val:
                         math_info['properties']['break_bin_sub'] = breakBinSub_val
 
-                # استخراج smallFrac
+                # Extract smallFrac
                 smallFrac_elem = mathPr_elem.find('.//m:smallFrac', OOXML_NAMESPACES)
                 if smallFrac_elem is not None:
                     smallFrac_val = smallFrac_elem.get('{http://schemas.openxmlformats.org/officeDocument/2006/math}val')
                     if smallFrac_val:
                         math_info['properties']['small_frac'] = smallFrac_val == 'on'
 
-                # استخراج dispDef
+                # Extract dispDef
                 dispDef_elem = mathPr_elem.find('.//m:dispDef', OOXML_NAMESPACES)
                 if dispDef_elem is not None:
                     dispDef_val = dispDef_elem.get('{http://schemas.openxmlformats.org/officeDocument/2006/math}val')
                     if dispDef_val:
                         math_info['properties']['disp_def'] = dispDef_val == 'on'
 
-                # استخراج lMargin
+                # Extract lMargin
                 lMargin_elem = mathPr_elem.find('.//m:lMargin', OOXML_NAMESPACES)
                 if lMargin_elem is not None:
                     lMargin_val = lMargin_elem.get('{http://schemas.openxmlformats.org/officeDocument/2006/math}val')
                     if lMargin_val:
                         math_info['properties']['left_margin'] = int(lMargin_val)
 
-                # استخراج rMargin
+                # Extract rMargin
                 rMargin_elem = mathPr_elem.find('.//m:rMargin', OOXML_NAMESPACES)
                 if rMargin_elem is not None:
                     rMargin_val = rMargin_elem.get('{http://schemas.openxmlformats.org/officeDocument/2006/math}val')
                     if rMargin_val:
                         math_info['properties']['right_margin'] = int(rMargin_val)
 
-                # استخراج defJc
+                # Extract defJc
                 defJc_elem = mathPr_elem.find('.//m:defJc', OOXML_NAMESPACES)
                 if defJc_elem is not None:
                     defJc_val = defJc_elem.get('{http://schemas.openxmlformats.org/officeDocument/2006/math}val')
                     if defJc_val:
                         math_info['properties']['default_justify'] = defJc_val
 
-                # استخراج preSp
+                # Extract preSp
                 preSp_elem = mathPr_elem.find('.//m:preSp', OOXML_NAMESPACES)
                 if preSp_elem is not None:
                     preSp_val = preSp_elem.get('{http://schemas.openxmlformats.org/officeDocument/2006/math}val')
                     if preSp_val:
                         math_info['properties']['pre_spacing'] = int(preSp_val)
 
-                # استخراج postSp
+                # Extract postSp
                 postSp_elem = mathPr_elem.find('.//m:postSp', OOXML_NAMESPACES)
                 if postSp_elem is not None:
                     postSp_val = postSp_elem.get('{http://schemas.openxmlformats.org/officeDocument/2006/math}val')
                     if postSp_val:
                         math_info['properties']['post_spacing'] = int(postSp_val)
 
-                # استخراج interSp
+                # Extract interSp
                 interSp_elem = mathPr_elem.find('.//m:interSp', OOXML_NAMESPACES)
                 if interSp_elem is not None:
                     interSp_val = interSp_elem.get('{http://schemas.openxmlformats.org/officeDocument/2006/math}val')
                     if interSp_val:
                         math_info['properties']['inter_spacing'] = int(interSp_val)
 
-                # استخراج intraSp
+                # Extract intraSp
                 intraSp_elem = mathPr_elem.find('.//m:intraSp', OOXML_NAMESPACES)
                 if intraSp_elem is not None:
                     intraSp_val = intraSp_elem.get('{http://schemas.openxmlformats.org/officeDocument/2006/math}val')
                     if intraSp_val:
                         math_info['properties']['intra_spacing'] = int(intraSp_val)
 
-                # استخراج wrapIndent
+                # Extract wrapIndent
                 wrapIndent_elem = mathPr_elem.find('.//m:wrapIndent', OOXML_NAMESPACES)
                 if wrapIndent_elem is not None:
                     wrapIndent_val = wrapIndent_elem.get('{http://schemas.openxmlformats.org/officeDocument/2006/math}val')
                     if wrapIndent_val:
                         math_info['properties']['wrap_indent'] = int(wrapIndent_val)
 
-                # استخراج wrapRight
+                # Extract wrapRight
                 wrapRight_elem = mathPr_elem.find('.//m:wrapRight', OOXML_NAMESPACES)
                 if wrapRight_elem is not None:
                     wrapRight_val = wrapRight_elem.get('{http://schemas.openxmlformats.org/officeDocument/2006/math}val')
                     if wrapRight_val:
                         math_info['properties']['wrap_right'] = wrapRight_val == 'on'
 
-                # استخراج mathFont
+                # Extract mathFont
                 mathFont_elem = mathPr_elem.find('.//m:mathFont', OOXML_NAMESPACES)
                 if mathFont_elem is not None:
                     mathFont_val = mathFont_elem.get('{http://schemas.openxmlformats.org/officeDocument/2006/math}val')
                     if mathFont_val:
                         math_info['properties']['math_font'] = mathFont_val
 
-                # استخراج brkBin
+                # Extract brkBin
                 brkBin_elem = mathPr_elem.find('.//m:brkBin', OOXML_NAMESPACES)
                 if brkBin_elem is not None:
                     brkBin_val = brkBin_elem.get('{http://schemas.openxmlformats.org/officeDocument/2006/math}val')
                     if brkBin_val:
                         math_info['properties']['break_bin'] = brkBin_val
 
-                # استخراج brkBinSub
+                # Extract brkBinSub
                 brkBinSub_elem = mathPr_elem.find('.//m:brkBinSub', OOXML_NAMESPACES)
                 if brkBinSub_elem is not None:
                     brkBinSub_val = brkBinSub_elem.get('{http://schemas.openxmlformats.org/officeDocument/2006/math}val')
                     if brkBinSub_val:
                         math_info['properties']['break_bin_sub'] = brkBinSub_val
 
-                # استخراج smallFrac
+                # Extract smallFrac
                 smallFrac_elem = mathPr_elem.find('.//m:smallFrac', OOXML_NAMESPACES)
                 if smallFrac_elem is not None:
                     smallFrac_val = smallFrac_elem.get('{http://schemas.openxmlformats.org/officeDocument/2006/math}val')
                     if smallFrac_val:
                         math_info['properties']['small_frac'] = smallFrac_val == 'on'
 
-                # استخراج dispDef
+                # Extract dispDef
                 dispDef_elem = mathPr_elem.find('.//m:dispDef', OOXML_NAMESPACES)
                 if dispDef_elem is not None:
                     dispDef_val = dispDef_elem.get('{http://schemas.openxmlformats.org/officeDocument/2006/math}val')
                     if dispDef_val:
                         math_info['properties']['disp_def'] = dispDef_val == 'on'
 
-                # استخراج lMargin
+                # Extract lMargin
                 lMargin_elem = mathPr_elem.find('.//m:lMargin', OOXML_NAMESPACES)
                 if lMargin_elem is not None:
                     lMargin_val = lMargin_elem.get('{http://schemas.openxmlformats.org/officeDocument/2006/math}val')
                     if lMargin_val:
                         math_info['properties']['left_margin'] = int(lMargin_val)
 
-                # استخراج rMargin
+                # Extract rMargin
                 rMargin_elem = mathPr_elem.find('.//m:rMargin', OOXML_NAMESPACES)
                 if rMargin_elem is not None:
                     rMargin_val = rMargin_elem.get('{http://schemas.openxmlformats.org/officeDocument/2006/math}val')
                     if rMargin_val:
                         math_info['properties']['right_margin'] = int(rMargin_val)
 
-                # استخراج defJc
+                # Extract defJc
                 defJc_elem = mathPr_elem.find('.//m:defJc', OOXML_NAMESPACES)
                 if defJc_elem is not None:
                     defJc_val = defJc_elem.get('{http://schemas.openxmlformats.org/officeDocument/2006/math}val')
                     if defJc_val:
                         math_info['properties']['default_justify'] = defJc_val
 
-                # استخراج preSp
+                # Extract preSp
                 preSp_elem = mathPr_elem.find('.//m:preSp', OOXML_NAMESPACES)
                 if preSp_elem is not None:
                     preSp_val = preSp_elem.get('{http://schemas.openxmlformats.org/officeDocument/2006/math}val')
                     if preSp_val:
                         math_info['properties']['pre_spacing'] = int(preSp_val)
 
-                # استخراج postSp
+                # Extract postSp
                 postSp_elem = mathPr_elem.find('.//m:postSp', OOXML_NAMESPACES)
                 if postSp_elem is not None:
                     postSp_val = postSp_elem.get('{http://schemas.openxmlformats.org/officeDocument/2006/math}val')
                     if postSp_val:
                         math_info['properties']['post_spacing'] = int(postSp_val)
 
-                # استخراج interSp
+                # Extract interSp
                 interSp_elem = mathPr_elem.find('.//m:interSp', OOXML_NAMESPACES)
                 if interSp_elem is not None:
                     interSp_val = interSp_elem.get('{http://schemas.openxmlformats.org/officeDocument/2006/math}val')
                     if interSp_val:
                         math_info['properties']['inter_spacing'] = int(interSp_val)
 
-                # استخراج intraSp
+                # Extract intraSp
                 intraSp_elem = mathPr_elem.find('.//m:intraSp', OOXML_NAMESPACES)
                 if intraSp_elem is not None:
                     intraSp_val = intraSp_elem.get('{http://schemas.openxmlformats.org/officeDocument/2006/math}val')
                     if intraSp_val:
                         math_info['properties']['intra_spacing'] = int(intraSp_val)
 
-                # استخراج wrapIndent
+                # Extract wrapIndent
                 wrapIndent_elem = mathPr_elem.find('.//m:wrapIndent', OOXML_NAMESPACES)
                 if wrapIndent_elem is not None:
                     wrapIndent_val = wrapIndent_elem.get('{http://schemas.openxmlformats.org/officeDocument/2006/math}val')
                     if wrapIndent_val:
                         math_info['properties']['wrap_indent'] = int(wrapIndent_val)
 
-                # استخراج wrapRight
+                # Extract wrapRight
                 wrapRight_elem = mathPr_elem.find('.//m:wrapRight', OOXML_NAMESPACES)
                 if wrapRight_elem is not None:
                     wrapRight_val = wrapRight_elem.get('{http://schemas.openxmlformats.org/officeDocument/2006/math}val')
                     if wrapRight_val:
                         math_info['properties']['wrap_right'] = wrapRight_val == 'on'
 
-                # استخراج mathFont
+                # Extract mathFont
                 mathFont_elem = mathPr_elem.find('.//m:mathFont', OOXML_NAMESPACES)
                 if mathFont_elem is not None:
                     mathFont_val = mathFont_elem.get('{http://schemas.openxmlformats.org/officeDocument/2006/math}val')
@@ -2247,13 +2247,13 @@ class DocxUtils:
     @staticmethod
     def extract_drawing_info(drawing_elem: ET.Element) -> dict[str, Any]:
         """
-        استخراج اطلاعات Drawing (شامل تصاویر، اشکال، نمودارها)
+        Extract Drawing information (including images, shapes, charts)
         
         Args:
-            drawing_elem: المان w:drawing
+            drawing_elem: w:drawing element
             
         Returns:
-            Dict[str, Any]: اطلاعات Drawing شامل:
+            Dict[str, Any]: Drawing information شامل:
                 - type: نوع (picture, shape, chart, diagram, etc.)
                 - id: شناسه
                 - name: نام
@@ -2273,13 +2273,13 @@ class DocxUtils:
         }
 
         try:
-            # بررسی نوع Drawing
-            # بررسی تصویر
+            # Check type Drawing
+            # Check images
             pic_elem = drawing_elem.find('.//pic:pic', OOXML_NAMESPACES)
             if pic_elem is not None:
                 drawing_info['type'] = 'picture'
 
-                # استخراج اطلاعات تصویر
+                # Extract image information
                 nvPicPr_elem = pic_elem.find('.//pic:nvPicPr', OOXML_NAMESPACES)
                 if nvPicPr_elem is not None:
                     cNvPr_elem = nvPicPr_elem.find('.//pic:cNvPr', OOXML_NAMESPACES)
@@ -2288,7 +2288,7 @@ class DocxUtils:
                         drawing_info['name'] = cNvPr_elem.get('name')
                         drawing_info['description'] = cNvPr_elem.get('descr')
 
-                # استخراج ابعاد
+                # Extract dimensions
                 xfrm_elem = pic_elem.find('.//a:xfrm', OOXML_NAMESPACES)
                 if xfrm_elem is not None:
                     ext_elem = xfrm_elem.find('.//a:ext', OOXML_NAMESPACES)
@@ -2300,11 +2300,11 @@ class DocxUtils:
                         if height:
                             drawing_info['size']['height'] = DocxUtils.convert_emu_to_pixels(height)
 
-            # بررسی shape
+            # Check shape
             elif drawing_elem.find('.//wps:wsp', OOXML_NAMESPACES) is not None:
                 drawing_info['type'] = 'shape'
 
-                # استخراج اطلاعات shape
+                # Extract shape information
                 wsp_elem = drawing_elem.find('.//wps:wsp', OOXML_NAMESPACES)
                 if wsp_elem is not None:
                     cNvPr_elem = wsp_elem.find('.//wp:cNvPr', OOXML_NAMESPACES)
@@ -2313,23 +2313,23 @@ class DocxUtils:
                         drawing_info['name'] = cNvPr_elem.get('name')
                         drawing_info['description'] = cNvPr_elem.get('descr')
 
-            # بررسی chart
+            # Check chart
             elif drawing_elem.find('.//c:chart', OOXML_NAMESPACES) is not None:
                 drawing_info['type'] = 'chart'
 
-                # استخراج اطلاعات chart
+                # Extract chart information
                 chart_elem = drawing_elem.find('.//c:chart', OOXML_NAMESPACES)
                 if chart_elem is not None:
                     drawing_info['id'] = chart_elem.get('{http://schemas.openxmlformats.org/drawingml/2006/chart}id')
 
-            # بررسی diagram
+            # Check diagram
             elif drawing_elem.find('.//dgm:relIds', OOXML_NAMESPACES) is not None:
                 drawing_info['type'] = 'diagram'
 
-            # استخراج موقعیت
+            # Extract position
             inline_elem = drawing_elem.find('.//wp:inline', OOXML_NAMESPACES)
             if inline_elem is not None:
-                # استخراج موقعیت
+                # Extract position
                 extent_elem = inline_elem.find('.//wp:extent', OOXML_NAMESPACES)
                 if extent_elem is not None:
                     width = extent_elem.get('cx')
@@ -2339,17 +2339,17 @@ class DocxUtils:
                     if height and not drawing_info['size']['height']:
                         drawing_info['size']['height'] = DocxUtils.convert_emu_to_pixels(height)
 
-                # استخراج موقعیت نسبی
+                # Extract relative position
                 docPr_elem = inline_elem.find('.//wp:docPr', OOXML_NAMESPACES)
                 if docPr_elem is not None:
                     drawing_info['id'] = docPr_elem.get('id')
                     drawing_info['name'] = docPr_elem.get('name')
                     drawing_info['description'] = docPr_elem.get('descr')
 
-            # استخراج موقعیت anchor
+            # Extract anchor position
             anchor_elem = drawing_elem.find('.//wp:anchor', OOXML_NAMESPACES)
             if anchor_elem is not None:
-                # استخراج موقعیت
+                # Extract position
                 simplePos_elem = anchor_elem.find('.//wp:simplePos', OOXML_NAMESPACES)
                 if simplePos_elem is not None:
                     x = simplePos_elem.get('x')
@@ -2359,7 +2359,7 @@ class DocxUtils:
                     if y:
                         drawing_info['position']['y'] = DocxUtils.convert_emu_to_pixels(y)
 
-                # استخراج موقعیت نسبی
+                # Extract relative position
                 positionH_elem = anchor_elem.find('.//wp:positionH', OOXML_NAMESPACES)
                 if positionH_elem is not None:
                     posOffset = positionH_elem.find('.//wp:posOffset', OOXML_NAMESPACES)
@@ -2372,7 +2372,7 @@ class DocxUtils:
                     if posOffset is not None and posOffset.text:
                         drawing_info['position']['y'] = DocxUtils.convert_emu_to_pixels(posOffset.text)
 
-                # استخراج ابعاد
+                # Extract dimensions
                 extent_elem = anchor_elem.find('.//wp:extent', OOXML_NAMESPACES)
                 if extent_elem is not None:
                     width = extent_elem.get('cx')
@@ -2382,7 +2382,7 @@ class DocxUtils:
                     if height and not drawing_info['size']['height']:
                         drawing_info['size']['height'] = DocxUtils.convert_emu_to_pixels(height)
 
-                # استخراج اطلاعات docPr
+                # Extract docPr information
                 docPr_elem = anchor_elem.find('.//wp:docPr', OOXML_NAMESPACES)
                 if docPr_elem is not None:
                     if not drawing_info['id']:
@@ -2401,13 +2401,13 @@ class DocxUtils:
     @staticmethod
     def extract_header_footer_info(part_xml: ET.Element) -> dict[str, Any]:
         """
-        استخراج اطلاعات هدر و فوتر
+        Extract header and footer information
         
         Args:
-            part_xml: المان ریشه XML هدر یا فوتر
+            part_xml: root header or footer XML element
             
         Returns:
-            Dict[str, Any]: اطلاعات هدر/فوتر شامل:
+            Dict[str, Any]: Header/footer information شامل:
                 - type: نوع (header, footer)
                 - id: شناسه
                 - content: محتوای متنی
@@ -2427,57 +2427,57 @@ class DocxUtils:
         }
 
         try:
-            # تعیین نوع بر اساس ریشه
+            # Determine type based on root
             root_tag = part_xml.tag
             if 'header' in root_tag:
                 header_footer_info['type'] = 'header'
             elif 'footer' in root_tag:
                 header_footer_info['type'] = 'footer'
 
-            # استخراج شناسه از نام فایل یا خصوصیت
-            # (شناسه معمولاً در سطح فایل ZIP است)
+            # Extract ID from filename or property
+            # (ID is usually at ZIP file level)
 
-            # استخراج محتوای متنی
+            # Extract text content
             content = DocxUtils.extract_text_from_element(part_xml)
             if content:
                 header_footer_info['content'] = content
 
-            # شمارش پاراگراف‌ها
+            # Count paragraphs
             paragraphs = part_xml.findall('.//w:p', OOXML_NAMESPACES)
             if paragraphs:
                 header_footer_info['paragraphs'] = len(paragraphs)
 
-            # شمارش تصاویر
+            # Count images
             drawings = part_xml.findall('.//w:drawing', OOXML_NAMESPACES)
             if drawings:
                 header_footer_info['images'] = len(drawings)
 
-            # شمارش جداول
+            # Count tables
             tables = part_xml.findall('.//w:tbl', OOXML_NAMESPACES)
             if tables:
                 header_footer_info['tables'] = len(tables)
 
-            # شمارش فیلدها
+            # Count fields
             fields = part_xml.findall('.//w:fldChar', OOXML_NAMESPACES)
             if fields:
                 header_footer_info['fields'] = len(fields)
 
         except Exception as e:
             import logging
-            logging.getLogger(__name__).warning(f"خطا در استخراج اطلاعات هدر/فوتر: {str(e)}")
+            logging.getLogger(__name__).warning(f"خطا در استخراج Header/footer information: {str(e)}")
 
         return header_footer_info
 
     @staticmethod
     def extract_section_properties(sectPr_elem: ET.Element) -> dict[str, Any]:
         """
-        استخراج خصوصیات بخش (Section)
+        Extract section properties
         
         Args:
-            sectPr_elem: المان w:sectPr
+            sectPr_elem: w:sectPr element
             
         Returns:
-            Dict[str, Any]: اطلاعات بخش شامل:
+            Dict[str, Any]: Section information including:
                 - page_size: ابعاد صفحه (width, height)
                 - page_margins: حاشیه‌ها (top, right, bottom, left, header, footer, gutter)
                 - page_orientation: جهت صفحه (portrait, landscape)
@@ -2486,7 +2486,7 @@ class DocxUtils:
                 - header_references: ارجاعات به هدرها
                 - footer_references: ارجاعات به فوترها
                 - line_numbers: شماره‌گذاری خطوط
-                - text_direction: جهت متن
+                - text_direction: Text direction
         """
         section_info = {
             'page_size': {'width': 0, 'height': 0},
@@ -2504,7 +2504,7 @@ class DocxUtils:
         }
 
         try:
-            # استخراج ابعاد صفحه
+            # Extract page dimensions
             pgSz_elem = sectPr_elem.find('.//w:pgSz', OOXML_NAMESPACES)
             if pgSz_elem is not None:
                 width = pgSz_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}w')
@@ -2518,7 +2518,7 @@ class DocxUtils:
                 if orient:
                     section_info['page_orientation'] = orient
 
-            # استخراج حاشیه‌های صفحه
+            # Extract page margins
             pgMar_elem = sectPr_elem.find('.//w:pgMar', OOXML_NAMESPACES)
             if pgMar_elem is not None:
                 top = pgMar_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}top')
@@ -2544,7 +2544,7 @@ class DocxUtils:
                 if gutter:
                     section_info['page_margins']['gutter'] = DocxUtils.convert_twips_to_points(gutter)
 
-            # استخراج ستون‌ها
+            # Extract columns
             cols_elem = sectPr_elem.find('.//w:cols', OOXML_NAMESPACES)
             if cols_elem is not None:
                 count = cols_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}num')
@@ -2558,7 +2558,7 @@ class DocxUtils:
                 if equal_width:
                     section_info['columns']['equal_width'] = equal_width == '1' or equal_width == 'true'
 
-            # استخراج ارجاعات به هدرها
+            # Extract header references
             header_refs = sectPr_elem.findall('.//w:headerReference', OOXML_NAMESPACES)
             for ref in header_refs:
                 ref_type = ref.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}type')
@@ -2569,7 +2569,7 @@ class DocxUtils:
                         'id': ref_id
                     })
 
-            # استخراج ارجاعات به فوترها
+            # Extract footer references
             footer_refs = sectPr_elem.findall('.//w:footerReference', OOXML_NAMESPACES)
             for ref in footer_refs:
                 ref_type = ref.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}type')
@@ -2580,27 +2580,27 @@ class DocxUtils:
                         'id': ref_id
                     })
 
-            # استخراج شماره‌گذاری صفحه
+            # Extract page numbering
             pgNumType_elem = sectPr_elem.find('.//w:pgNumType', OOXML_NAMESPACES)
             if pgNumType_elem is not None:
                 page_numbering = {}
 
-                # استخراج فرمت شماره صفحه
+                # Extract page number format
                 fmt = pgNumType_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}fmt')
                 if fmt:
                     page_numbering['format'] = fmt
 
-                # استخراج شماره شروع
+                # Extract start number
                 start = pgNumType_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}start')
                 if start:
                     page_numbering['start'] = int(start)
 
-                # استخراج فصل
+                # Extract chapter
                 chapSep = pgNumType_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}chapSep')
                 if chapSep:
                     page_numbering['chapter_separator'] = chapSep
 
-                # استخراج سبک فصل
+                # Extract chapter style
                 chapStyle = pgNumType_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}chapStyle')
                 if chapStyle:
                     page_numbering['chapter_style'] = chapStyle
@@ -2608,27 +2608,27 @@ class DocxUtils:
                 if page_numbering:
                     section_info['page_numbering'] = page_numbering
 
-            # استخراج شماره‌گذاری خطوط
+            # Extract line numbering
             lnNumType_elem = sectPr_elem.find('.//w:lnNumType', OOXML_NAMESPACES)
             if lnNumType_elem is not None:
                 line_numbers = {}
 
-                # استخراج شماره شروع
+                # Extract start number
                 start = lnNumType_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}start')
                 if start:
                     line_numbers['start'] = int(start)
 
-                # استخراج شمارش
+                # Extract count
                 countBy = lnNumType_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}countBy')
                 if countBy:
                     line_numbers['count_by'] = int(countBy)
 
-                # استخراج فاصله
+                # Extract spacing
                 distance = lnNumType_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}distance')
                 if distance:
                     line_numbers['distance'] = DocxUtils.convert_twips_to_points(distance)
 
-                # استخراج restart
+                # Extract restart
                 restart = lnNumType_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}restart')
                 if restart:
                     line_numbers['restart'] = restart
@@ -2636,24 +2636,24 @@ class DocxUtils:
                 if line_numbers:
                     section_info['line_numbers'] = line_numbers
 
-            # استخراج جهت متن
+            # Extract Text direction
             textDirection_elem = sectPr_elem.find('.//w:textDirection', OOXML_NAMESPACES)
             if textDirection_elem is not None:
                 direction = textDirection_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
                 if direction:
                     section_info['text_direction'] = direction
 
-            # استخراج نوع کاغذ
+            # Extract paper type
             paperSrc_elem = sectPr_elem.find('.//w:paperSrc', OOXML_NAMESPACES)
             if paperSrc_elem is not None:
                 paper_info = {}
 
-                # استخراج منبع کاغذ اول
+                # Extract first paper source
                 first = paperSrc_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}first')
                 if first:
                     paper_info['first'] = first
 
-                # استخراج منبع کاغذ دیگر
+                # Extract other paper source
                 other = paperSrc_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}other')
                 if other:
                     paper_info['other'] = other
@@ -2661,39 +2661,39 @@ class DocxUtils:
                 if paper_info:
                     section_info['paper_source'] = paper_info
 
-            # استخراج فواصل عمودی صفحه
+            # Extract vertical page margins
             pgBorders_elem = sectPr_elem.find('.//w:pgBorders', OOXML_NAMESPACES)
             if pgBorders_elem is not None:
                 page_borders = {}
 
-                # استخراج offsetFrom
+                # Extract offsetFrom
                 offsetFrom = pgBorders_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}offsetFrom')
                 if offsetFrom:
                     page_borders['offset_from'] = offsetFrom
 
-                # استخراج borderهای مختلف
+                # Extract various borders
                 borders = {}
                 for border_type in ['top', 'left', 'bottom', 'right']:
                     border_elem = pgBorders_elem.find(f'.//w:{border_type}', OOXML_NAMESPACES)
                     if border_elem is not None:
                         border_info = {}
 
-                        # استخراج رنگ
+                        # Extract color
                         color = border_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}color')
                         if color:
                             border_info['color'] = DocxUtils.convert_color_from_ooxml(color)
 
-                        # استخراج space
+                        # Extract space
                         space = border_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}space')
                         if space:
                             border_info['space'] = int(space)
 
-                        # استخراج sz
+                        # Extract sz
                         sz = border_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}sz')
                         if sz:
                             border_info['size'] = int(sz)
 
-                        # استخراج val
+                        # Extract val
                         val = border_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
                         if val:
                             border_info['type'] = val
@@ -2706,53 +2706,53 @@ class DocxUtils:
                 if page_borders:
                     section_info['page_borders'] = page_borders
 
-            # استخراج فرمت صفحه
+            # Extract page format
             formProt_elem = sectPr_elem.find('.//w:formProt', OOXML_NAMESPACES)
             if formProt_elem is not None:
                 form_prot = formProt_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
                 if form_prot:
                     section_info['form_protection'] = form_prot == 'true' or form_prot == '1'
 
-            # استخراج vertical alignment
+            # Extract vertical alignment
             vAlign_elem = sectPr_elem.find('.//w:vAlign', OOXML_NAMESPACES)
             if vAlign_elem is not None:
                 v_align = vAlign_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
                 if v_align:
                     section_info['vertical_alignment'] = v_align
 
-            # استخراج noEndnote
+            # Extract noEndnote
             noEndnote_elem = sectPr_elem.find('.//w:noEndnote', OOXML_NAMESPACES)
             if noEndnote_elem is not None:
                 section_info['no_endnote'] = True
 
-            # استخراج titlePg
+            # Extract titlePg
             titlePg_elem = sectPr_elem.find('.//w:titlePg', OOXML_NAMESPACES)
             if titlePg_elem is not None:
                 section_info['title_page'] = True
 
-            # استخراج textboxTightWrap
+            # Extract textboxTightWrap
             textboxTightWrap_elem = sectPr_elem.find('.//w:textboxTightWrap', OOXML_NAMESPACES)
             if textboxTightWrap_elem is not None:
                 tight_wrap = textboxTightWrap_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
                 if tight_wrap:
                     section_info['textbox_tight_wrap'] = tight_wrap
 
-            # استخراج docGrid
+            # Extract docGrid
             docGrid_elem = sectPr_elem.find('.//w:docGrid', OOXML_NAMESPACES)
             if docGrid_elem is not None:
                 doc_grid = {}
 
-                # استخراج type
+                # Extract type
                 grid_type = docGrid_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}type')
                 if grid_type:
                     doc_grid['type'] = grid_type
 
-                # استخراج linePitch
+                # Extract linePitch
                 line_pitch = docGrid_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}linePitch')
                 if line_pitch:
                     doc_grid['line_pitch'] = int(line_pitch)
 
-                # استخراج charSpace
+                # Extract charSpace
                 char_space = docGrid_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}charSpace')
                 if char_space:
                     doc_grid['char_space'] = int(char_space)
@@ -2769,15 +2769,15 @@ class DocxUtils:
     @staticmethod
     def extract_page_break_info(br_elem: ET.Element) -> dict[str, Any]:
         """
-        استخراج اطلاعات شکست صفحه
+        Extract page break information
         
         Args:
-            br_elem: المان w:br
+            br_elem: w:br element
             
         Returns:
-            Dict[str, Any]: اطلاعات شکست صفحه شامل:
+            Dict[str, Any]: Break information (page) including:
                 - type: نوع (page, column, textWrapping)
-                - clear: نوع clear (برای textWrapping)
+                - clear: نوع clear (for textWrapping)
                 - location: موقعیت (before, after)
         """
         page_break_info = {
@@ -2787,7 +2787,7 @@ class DocxUtils:
         }
 
         try:
-            # بررسی نوع break
+            # Check type break
             br_type = br_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}type')
             if br_type:
                 if br_type == 'page':
@@ -2797,18 +2797,18 @@ class DocxUtils:
                 elif br_type == 'textWrapping':
                     page_break_info['type'] = 'textWrapping'
 
-            # بررسی clear (برای textWrapping)
+            # Check clear (for textWrapping)
             if page_break_info['type'] == 'textWrapping':
                 clear = br_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}clear')
                 if clear:
                     page_break_info['clear'] = clear
 
-            # تعیین موقعیت (بر اساس المان والد)
+            # Determine position (based on parent element)
             parent = br_elem.getparent()
             if parent is not None:
-                # اگر break در ابتدای پاراگراف باشد
+                # If break is at the beginning of paragraph
                 if parent.tag.endswith('p'):
-                    # بررسی موقعیت در پاراگراف
+                    # Check position in paragraph
                     index = list(parent).index(br_elem)
                     if index == 0:
                         page_break_info['location'] = 'before'
@@ -2817,20 +2817,20 @@ class DocxUtils:
 
         except Exception as e:
             import logging
-            logging.getLogger(__name__).debug(f"خطا در استخراج اطلاعات شکست صفحه: {str(e)}")
+            logging.getLogger(__name__).debug(f"خطا در Extract page break information: {str(e)}")
 
         return page_break_info
 
     @staticmethod
     def extract_column_break_info(br_elem: ET.Element) -> dict[str, Any]:
         """
-        استخراج اطلاعات شکست ستون
+        Extract column break information
         
         Args:
-            br_elem: المان w:br با type='column'
+            br_elem: w:br element with type='column'
             
         Returns:
-            Dict[str, Any]: اطلاعات شکست ستون شامل:
+            Dict[str, Any]: Break information (column) including:
                 - type: همیشه 'column'
                 - location: موقعیت (before, after)
         """
@@ -2840,12 +2840,12 @@ class DocxUtils:
         }
 
         try:
-            # تعیین موقعیت (بر اساس المان والد)
+            # Determine position (based on parent element)
             parent = br_elem.getparent()
             if parent is not None:
-                # اگر break در ابتدای پاراگراف باشد
+                # If break is at the beginning of paragraph
                 if parent.tag.endswith('p'):
-                    # بررسی موقعیت در پاراگراف
+                    # Check position in paragraph
                     index = list(parent).index(br_elem)
                     if index == 0:
                         column_break_info['location'] = 'before'
@@ -2854,20 +2854,20 @@ class DocxUtils:
 
         except Exception as e:
             import logging
-            logging.getLogger(__name__).debug(f"خطا در استخراج اطلاعات شکست ستون: {str(e)}")
+            logging.getLogger(__name__).debug(f"خطا در Extract column break information: {str(e)}")
 
         return column_break_info
 
     @staticmethod
     def extract_line_break_info(br_elem: ET.Element) -> dict[str, Any]:
         """
-        استخراج اطلاعات شکست خط
+        Extract line break information
         
         Args:
-            br_elem: المان w:br با type='textWrapping'
+            br_elem: w:br element with type='textWrapping'
             
         Returns:
-            Dict[str, Any]: اطلاعات شکست خط شامل:
+            Dict[str, Any]: Break information (line) including:
                 - type: همیشه 'textWrapping'
                 - clear: نوع clear (all, left, right, none)
                 - location: موقعیت (before, after)
@@ -2879,17 +2879,17 @@ class DocxUtils:
         }
 
         try:
-            # استخراج clear
+            # Extract clear
             clear = br_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}clear')
             if clear:
                 line_break_info['clear'] = clear
 
-            # تعیین موقعیت (بر اساس المان والد)
+            # Determine position (based on parent element)
             parent = br_elem.getparent()
             if parent is not None:
-                # اگر break در ابتدای پاراگراف باشد
+                # If break is at the beginning of paragraph
                 if parent.tag.endswith('p'):
-                    # بررسی موقعیت در پاراگراف
+                    # Check position in paragraph
                     index = list(parent).index(br_elem)
                     if index == 0:
                         line_break_info['location'] = 'before'
@@ -2898,20 +2898,20 @@ class DocxUtils:
 
         except Exception as e:
             import logging
-            logging.getLogger(__name__).debug(f"خطا در استخراج اطلاعات شکست خط: {str(e)}")
+            logging.getLogger(__name__).debug(f"خطا در Extract line break information: {str(e)}")
 
         return line_break_info
 
     @staticmethod
     def extract_tab_info(tab_elem: ET.Element) -> dict[str, Any]:
         """
-        استخراج اطلاعات تب (Tab)
+        Extract tab information
         
         Args:
-            tab_elem: المان w:tab
+            tab_elem: w:tab element
             
         Returns:
-            Dict[str, Any]: اطلاعات تب شامل:
+            Dict[str, Any]: Tab information including:
                 - type: نوع تب (left, center, right, decimal, bar, clear, leader)
                 - leader: کاراکتر leader
                 - position: موقعیت (بر حسب points)
@@ -2923,22 +2923,22 @@ class DocxUtils:
         }
 
         try:
-            # استخراج خصوصیات تب از المان والد (w:tabs)
+            # Extract tab properties from parent element (w:tabs)
             parent = tab_elem.getparent()
             if parent is not None and parent.tag.endswith('tabs'):
-                # یافتن تعریف تب مربوطه
+                # Find corresponding tab definition
                 for tab_stop in parent.findall('.//w:tab', OOXML_NAMESPACES):
-                    # بررسی بر اساس موقعیت (اگر وجود داشته باشد)
+                    # Check by position (if exists)
                     pos = tab_stop.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}pos')
                     if pos:
                         tab_info['position'] = DocxUtils.convert_twips_to_points(pos)
 
-                    # استخراج نوع
+                    # Extract type
                     tab_type = tab_stop.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
                     if tab_type:
                         tab_info['type'] = tab_type
 
-                    # استخراج leader
+                    # Extract leader
                     leader = tab_stop.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}leader')
                     if leader:
                         tab_info['leader'] = leader
@@ -2953,13 +2953,13 @@ class DocxUtils:
     @staticmethod
     def extract_sym_info(sym_elem: ET.Element) -> dict[str, Any]:
         """
-        استخراج اطلاعات نماد (Symbol)
+        Extract symbol information
         
         Args:
-            sym_elem: المان w:sym
+            sym_elem: w:sym element
             
         Returns:
-            Dict[str, Any]: اطلاعات نماد شامل:
+            Dict[str, Any]: Symbol information including:
                 - font: فونت نماد
                 - char: کاراکتر نماد (کد یونیکد)
                 - unicode: نمایش یونیکد
@@ -2971,18 +2971,18 @@ class DocxUtils:
         }
 
         try:
-            # استخراج فونت
+            # Extract font
             font = sym_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}font')
             if font:
                 sym_info['font'] = font
 
-            # استخراج کاراکتر
+            # Extract character
             char = sym_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}char')
             if char:
                 sym_info['char'] = char
-                # تبدیل به یونیکد
+                # Convert to unicode
                 try:
-                    # کاراکتر به صورت هگزادسیمال است
+                    # Character is hexadecimal
                     if char.startswith('0x') or char.startswith('0X'):
                         char_code = int(char, 16)
                     else:
@@ -3000,13 +3000,13 @@ class DocxUtils:
     @staticmethod
     def extract_fld_char_info(fldChar_elem: ET.Element) -> dict[str, Any]:
         """
-        استخراج اطلاعات کاراکتر فیلد
+        Extract field character information
         
         Args:
-            fldChar_elem: المان w:fldChar
+            fldChar_elem: w:fldChar element
             
         Returns:
-            Dict[str, Any]: اطلاعات کاراکتر فیلد شامل:
+            Dict[str, Any]: Field character information including:
                 - type: نوع (begin, separate, end)
                 - dirty: وضعیت dirty
                 - fldLock: وضعیت قفل
@@ -3020,25 +3020,25 @@ class DocxUtils:
         }
 
         try:
-            # استخراج نوع
+            # Extract type
             fld_char_type = fldChar_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}fldCharType')
             if fld_char_type:
                 fld_char_info['type'] = fld_char_type
 
-            # استخراج dirty
+            # Extract dirty
             dirty = fldChar_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}dirty')
             if dirty:
                 fld_char_info['dirty'] = dirty == 'true' or dirty == '1'
 
-            # استخراج fldLock
+            # Extract fldLock
             fld_lock = fldChar_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}fldLock')
             if fld_lock:
                 fld_char_info['fldLock'] = fld_lock == 'true' or fld_lock == '1'
 
-            # استخراج متن دستور (از المان‌های مجاور)
+            # Extract instruction text (from adjacent elements)
             parent = fldChar_elem.getparent()
             if parent is not None:
-                # جستجوی المان w:instrText در همان سطح
+                # Search for w:instrText element at the same level
                 for sibling in parent:
                     if sibling.tag.endswith('instrText'):
                         fld_char_info['instrText'] = sibling.text
@@ -3046,20 +3046,20 @@ class DocxUtils:
 
         except Exception as e:
             import logging
-            logging.getLogger(__name__).debug(f"خطا در استخراج اطلاعات کاراکتر فیلد: {str(e)}")
+            logging.getLogger(__name__).debug(f"خطا در Extract field character information: {str(e)}")
 
         return fld_char_info
 
     @staticmethod
     def extract_soft_hyphen_info(hyphen_elem: ET.Element) -> dict[str, Any]:
         """
-        استخراج اطلاعات هایفن نرم
+        Extract soft hyphen information
         
         Args:
-            hyphen_elem: المان w:softHyphen یا w:noBreakHyphen
+            hyphen_elem: w:softHyphen element or w:noBreakHyphen
             
         Returns:
-            Dict[str, Any]: اطلاعات هایفن شامل:
+            Dict[str, Any]: Soft hyphen information شامل:
                 - type: نوع (softHyphen, noBreakHyphen)
                 - char: کاراکتر هایفن
         """
@@ -3069,27 +3069,27 @@ class DocxUtils:
         }
 
         try:
-            # تعیین نوع
+            # Determine type
             if hyphen_elem.tag.endswith('noBreakHyphen'):
                 hyphen_info['type'] = 'noBreakHyphen'
                 hyphen_info['char'] = '‑'  # کاراکتر هایفن غیرشکستنی (U+2011)
 
         except Exception as e:
             import logging
-            logging.getLogger(__name__).debug(f"خطا در استخراج اطلاعات هایفن: {str(e)}")
+            logging.getLogger(__name__).debug(f"خطا در استخراج Soft hyphen information: {str(e)}")
 
         return hyphen_info
 
     @staticmethod
     def extract_year_short_info(year_short_elem: ET.Element) -> dict[str, Any]:
         """
-        استخراج اطلاعات سال کوتاه (Year Short)
+        Extract year short information
         
         Args:
-            year_short_elem: المان w:yearShort
+            year_short_elem: w:yearShort element
             
         Returns:
-            Dict[str, Any]: اطلاعات سال کوتاه شامل:
+            Dict[str, Any]: Year short information including:
                 - type: همیشه 'yearShort'
                 - format: فرمت نمایش
                 - value: مقدار سال
@@ -3101,21 +3101,21 @@ class DocxUtils:
         }
 
         try:
-            # استخراج خصوصیات از المان
-            # در DOCX، yearShort معمولاً به صورت متن ساده است
-            # اما ممکن است خصوصیات فرمت داشته باشد
+            # Extract properties from element
+            # In DOCX, yearShort is usually plain text
+            # But may have formatting properties
             parent = year_short_elem.getparent()
             if parent is not None:
-                # بررسی المان‌های مرتبط برای فرمت
+                # Check related elements for format
                 for sibling in parent:
                     if sibling.tag.endswith('fldChar'):
-                        # اگر فیلد DATE باشد
+                        # If field is DATE
                         fld_char_info = DocxUtils.extract_fld_char_info(sibling)
                         if fld_char_info.get('instrText') and 'DATE' in fld_char_info['instrText']:
-                            # استخراج فرمت از دستور فیلد
+                            # Extract format from field instruction
                             instr_text = fld_char_info['instrText']
                             if '\\@' in instr_text:
-                                # استخراج فرمت
+                                # Extract format
                                 format_part = instr_text.split('\\@')[1].strip().strip('"\'')
                                 if 'yyyy' in format_part:
                                     year_short_info['format'] = 'yyyy'
@@ -3123,7 +3123,7 @@ class DocxUtils:
                                     year_short_info['format'] = 'yy'
                             break
 
-            # مقدار سال (از متن المان)
+            # Year value (from element text)
             if year_short_elem.text:
                 year_short_info['value'] = year_short_elem.text
 
@@ -3136,13 +3136,13 @@ class DocxUtils:
     @staticmethod
     def extract_month_short_info(month_short_elem: ET.Element) -> dict[str, Any]:
         """
-        استخراج اطلاعات ماه کوتاه (Month Short)
+        Extract month short information
         
         Args:
-            month_short_elem: المان w:monthShort
+            month_short_elem: w:monthShort element
             
         Returns:
-            Dict[str, Any]: اطلاعات ماه کوتاه شامل:
+            Dict[str, Any]: Month short information including:
                 - type: همیشه 'monthShort'
                 - format: فرمت نمایش
                 - value: مقدار ماه
@@ -3154,31 +3154,31 @@ class DocxUtils:
         }
 
         try:
-            # استخراج خصوصیات از المان
+            # Extract properties from element
             parent = month_short_elem.getparent()
             if parent is not None:
-                # بررسی المان‌های مرتبط برای فرمت
+                # Check related elements for format
                 for sibling in parent:
                     if sibling.tag.endswith('fldChar'):
-                        # اگر فیلد DATE باشد
+                        # If field is DATE
                         fld_char_info = DocxUtils.extract_fld_char_info(sibling)
                         if fld_char_info.get('instrText') and 'DATE' in fld_char_info['instrText']:
-                            # استخراج فرمت از دستور فیلد
+                            # Extract format from field instruction
                             instr_text = fld_char_info['instrText']
                             if '\\@' in instr_text:
-                                # استخراج فرمت
+                                # Extract format
                                 format_part = instr_text.split('\\@')[1].strip().strip('"\'')
                                 if 'MMMM' in format_part:
-                                    month_short_info['format'] = 'MMMM'  # نام کامل ماه
+                                    month_short_info['format'] = 'MMMM'  # Name کامل ماه
                                 elif 'MMM' in format_part:
-                                    month_short_info['format'] = 'MMM'  # نام کوتاه ماه
+                                    month_short_info['format'] = 'MMM'  # Name کوتاه ماه
                                 elif 'MM' in format_part:
                                     month_short_info['format'] = 'MM'  # ماه دو رقمی
                                 elif 'M' in format_part:
                                     month_short_info['format'] = 'M'  # ماه یک یا دو رقمی
                             break
 
-            # مقدار ماه (از متن المان)
+            # Month value (from element text)
             if month_short_elem.text:
                 month_short_info['value'] = month_short_elem.text
 
@@ -3191,13 +3191,13 @@ class DocxUtils:
     @staticmethod
     def extract_day_short_info(day_short_elem: ET.Element) -> dict[str, Any]:
         """
-        استخراج اطلاعات روز کوتاه (Day Short)
+        Extract day short information
         
         Args:
-            day_short_elem: المان w:dayShort
+            day_short_elem: w:dayShort element
             
         Returns:
-            Dict[str, Any]: اطلاعات روز کوتاه شامل:
+            Dict[str, Any]: Day short information including:
                 - type: همیشه 'dayShort'
                 - format: فرمت نمایش
                 - value: مقدار روز
@@ -3209,31 +3209,31 @@ class DocxUtils:
         }
 
         try:
-            # استخراج خصوصیات از المان
+            # Extract properties from element
             parent = day_short_elem.getparent()
             if parent is not None:
-                # بررسی المان‌های مرتبط برای فرمت
+                # Check related elements for format
                 for sibling in parent:
                     if sibling.tag.endswith('fldChar'):
-                        # اگر فیلد DATE باشد
+                        # If field is DATE
                         fld_char_info = DocxUtils.extract_fld_char_info(sibling)
                         if fld_char_info.get('instrText') and 'DATE' in fld_char_info['instrText']:
-                            # استخراج فرمت از دستور فیلد
+                            # Extract format from field instruction
                             instr_text = fld_char_info['instrText']
                             if '\\@' in instr_text:
-                                # استخراج فرمت
+                                # Extract format
                                 format_part = instr_text.split('\\@')[1].strip().strip('"\'')
                                 if 'dddd' in format_part:
-                                    day_short_info['format'] = 'dddd'  # نام کامل روز
+                                    day_short_info['format'] = 'dddd'  # Name کامل روز
                                 elif 'ddd' in format_part:
-                                    day_short_info['format'] = 'ddd'  # نام کوتاه روز
+                                    day_short_info['format'] = 'ddd'  # Name کوتاه روز
                                 elif 'dd' in format_part:
                                     day_short_info['format'] = 'dd'  # روز دو رقمی
                                 elif 'd' in format_part:
                                     day_short_info['format'] = 'd'  # روز یک یا دو رقمی
                             break
 
-            # مقدار روز (از متن المان)
+            # Day value (from element text)
             if day_short_elem.text:
                 day_short_info['value'] = day_short_elem.text
 

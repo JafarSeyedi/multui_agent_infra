@@ -35,7 +35,7 @@ class StructuralElementType(Enum):
 
 @dataclass
 class StructuralElement:
-    """عنصر ساختاری"""
+    """Structural element"""
     id: str
     element_type: StructuralElementType
     text: str
@@ -50,16 +50,16 @@ class StructuralElement:
 
 @dataclass
 class DocumentStructure:
-    """ساختار سند"""
+    """Document structure"""
     elements: list[StructuralElement] = field(default_factory=list)
     hierarchy: dict[str, list[str]] = field(default_factory=dict)  # parent -> children
     element_map: dict[str, StructuralElement] = field(default_factory=dict)
-    toc: list[dict[str, Any]] = field(default_factory=list)  # فهرست مطالب
+    toc: list[dict[str, Any]] = field(default_factory=list)  # Table of contents
     sections: list[dict[str, Any]] = field(default_factory=list)
 
 
 class StructureParser:
-    """تحلیلگر ساختاری PDF"""
+    """PDF structure analyzer"""
 
     def __init__(self, options: dict[str, Any] | None = None):
         self.options = options or {}
@@ -76,21 +76,21 @@ class StructureParser:
     def parse_structure(self, pdf_doc: fitz.Document,
                        layout_analysis: dict[int, Any]) -> DocumentStructure:
         """
-        تحلیل ساختاری PDF
+        Analyze PDF structure
         
         Args:
-            pdf_doc: سند PDF
-            layout_analysis: تحلیل لایه‌بندی صفحات
+            pdf_doc: PDF document
+            layout_analysis: page layout analysis
             
         Returns:
-            DocumentStructure: ساختار سند
+            DocumentStructure: document structure
         """
         structure = DocumentStructure()
 
-        # استخراج TOC از PDF
+        # Extract TOC from PDF
         structure.toc = self._extract_toc(pdf_doc)
 
-        # تحلیل ساختاری هر صفحه
+        # Analyze structure of each page
         for page_num in range(pdf_doc.page_count):
             page = pdf_doc[page_num]
             page_layout = layout_analysis.get(page_num)
@@ -99,20 +99,20 @@ class StructureParser:
                 page_elements = self._analyze_page_structure(page, page_num, page_layout)
                 structure.elements.extend(page_elements)
 
-        # ایجاد سلسله مراتب
+        # Build hierarchy
         structure = self._build_hierarchy(structure)
 
-        # شناسایی بخش‌ها
+        # Identify sections
         structure.sections = self._identify_sections(structure)
 
-        # ایجاد نقشه عناصر
+        # Create element map
         for element in structure.elements:
             structure.element_map[element.id] = element
 
         return structure
 
     def _extract_toc(self, pdf_doc: fitz.Document) -> list[dict[str, Any]]:
-        """استخراج فهرست مطالب"""
+        """Extract table of contents"""
         toc = []
 
         try:
@@ -132,28 +132,28 @@ class StructureParser:
 
     def _analyze_page_structure(self, page: fitz.Page, page_num: int,
                                page_layout: Any) -> list[StructuralElement]:
-        """تحلیل ساختاری یک صفحه"""
+        """Analyze structure of a page"""
         elements = []
 
-        # استخراج بلوک‌های متن
+        # Extract text blocks
         text_blocks = page.get_text("dict")["blocks"]
 
         for block_idx, block in enumerate(text_blocks):
-            if block["type"] == 0:  # متن
+            if block["type"] == 0:  # Text
                 block_text = self._extract_block_text(block)
                 if not block_text.strip():
                     continue
 
-                # تحلیل ویژگی‌های بلوک
+                # Analyze block features
                 font_sizes = self._extract_font_sizes(block)
                 avg_font_size = sum(font_sizes) / len(font_sizes) if font_sizes else 12
 
-                # تشخیص نوع عنصر
+                # Classify element type
                 element_type, confidence = self._classify_element(
                     block_text, avg_font_size, block, page_num
                 )
 
-                # ایجاد عنصر ساختاری
+                # Create structural element
                 element = StructuralElement(
                     id=f"elem_{page_num}_{block_idx}",
                     element_type=element_type,
@@ -172,19 +172,19 @@ class StructureParser:
 
                 elements.append(element)
 
-        # شناسایی شماره صفحه
+        # Detect page number
         page_number_element = self._detect_page_number(page, page_num, page_layout)
         if page_number_element:
             elements.append(page_number_element)
 
-        # شناسایی هدر و فوتر
+        # Detect header and footer
         header_footer_elements = self._detect_header_footer(page, page_num, page_layout)
         elements.extend(header_footer_elements)
 
         return elements
 
     def _extract_block_text(self, block: dict) -> str:
-        """استخراج متن از بلوک"""
+        """Extract text from block"""
         text_parts = []
 
         for line in block.get("lines", []):
@@ -196,7 +196,7 @@ class StructureParser:
         return " ".join(text_parts)
 
     def _extract_font_sizes(self, block: dict) -> list[float]:
-        """استخراج سایز فونت‌های بلوک"""
+        """Extract block font sizes"""
         font_sizes = []
 
         for line in block.get("lines", []):
@@ -209,49 +209,49 @@ class StructureParser:
 
     def _classify_element(self, text: str, font_size: float,
                          block: dict, page_num: int) -> tuple[StructuralElementType, float]:
-        """طبقه‌بندی عنصر"""
+        """Classify element"""
         text_lower = text.lower()
         words = text.split()
         word_count = len(words)
 
-        # تشخیص عنوان اصلی
+        # Detect main title
         if page_num == 0 and font_size >= 20 and word_count <= 10:
             return StructuralElementType.TITLE, 0.9
 
-        # تشخیص سرتیتر
+        # Detect heading
         if font_size >= self.min_heading_font_size:
-            # بررسی الگوهای سرتیتر
+            # Check heading patterns
             for pattern in self.heading_patterns:
                 if re.match(pattern, text, re.IGNORECASE):
                     return StructuralElementType.HEADING, 0.85
 
-            # تشخیص بر اساس طول متن و فونت
+            # Detect based on text length and font
             if word_count <= 15 and font_size >= 16:
                 return StructuralElementType.HEADING, 0.7
 
-        # تشخیص زیرسرتیتر
+        # Detect subheading
         if font_size >= 14 and font_size < 16 and word_count <= 20:
             return StructuralElementType.SUBHEADING, 0.6
 
-        # تشخیص لیست
+        # Detect list
         if text.strip().startswith(('•', '-', '*', '◦', '‣', '▪')) or \
            re.match(r'^[0-9]+[\.\)]', text.strip()):
             return StructuralElementType.LIST_ITEM, 0.8
 
-        # تشخیص زیرنویس (caption)
+        # Detect caption
         if text_lower.startswith(('figure', 'fig', 'table', 'شکل', 'جدول')):
             return StructuralElementType.CAPTION, 0.75
 
-        # تشخیص پانویس
+        # Detect footnote
         if re.match(r'^\[[0-9]+\]', text.strip()) or \
            re.match(r'^\([0-9]+\)', text.strip()):
             return StructuralElementType.FOOTNOTE, 0.8
 
-        # پیش‌فرض: پاراگراف
+        # Default: paragraph
         return StructuralElementType.PARAGRAPH, 0.5
 
     def _determine_level(self, element_type: StructuralElementType, font_size: float) -> int:
-        """تعیین سطح عنصر"""
+        """Determine element level"""
         if element_type == StructuralElementType.TITLE:
             return 1
         elif element_type == StructuralElementType.HEADING:
@@ -270,22 +270,22 @@ class StructureParser:
 
     def _detect_page_number(self, page: fitz.Page, page_num: int,
                            page_layout: Any) -> StructuralElement | None:
-        """شناسایی شماره صفحه"""
+        """Detect page number"""
         page_height = page.rect.height
 
-        # جستجو در پایین صفحه
+        # Search in bottom of page
         footer_region = (0, page_height * 0.9, page.rect.width, page_height)
 
         text_blocks = page.get_text("dict")["blocks"]
         for block in text_blocks:
             if block["type"] == 0:
                 bbox = block["bbox"]
-                # بررسی اگر بلوک در منطقه فوتر باشد
+                # Check if block is in footer region
                 if (bbox[1] >= footer_region[1] and bbox[3] <= footer_region[3] and
                     bbox[0] >= footer_region[0] and bbox[2] <= footer_region[2]):
 
                     block_text = self._extract_block_text(block)
-                    # بررسی اگر متن فقط عدد باشد
+                    # Check if text is only numbers
                     if re.match(r'^[0-9]+$', block_text.strip()):
                         return StructuralElement(
                             id=f"page_num_{page_num}",
@@ -301,11 +301,11 @@ class StructureParser:
 
     def _detect_header_footer(self, page: fitz.Page, page_num: int,
                             page_layout: Any) -> list[StructuralElement]:
-        """شناسایی هدر و فوتر"""
+        """Detect header and footer"""
         elements = []
         page_height = page.rect.height
 
-        # مناطق هدر و فوتر
+        # Header and footer regions
         header_region = (0, 0, page.rect.width, page_height * 0.1)
         footer_region = (0, page_height * 0.9, page.rect.width, page_height)
 
@@ -319,7 +319,7 @@ class StructureParser:
                 if not block_text.strip():
                     continue
 
-                # بررسی هدر
+                # Check header
                 if (bbox[1] >= header_region[1] and bbox[3] <= header_region[3]):
                     element = StructuralElement(
                         id=f"header_{page_num}_{block_idx}",
@@ -332,7 +332,7 @@ class StructureParser:
                     )
                     elements.append(element)
 
-                # بررسی فوتر
+                # Check footer
                 elif (bbox[1] >= footer_region[1] and bbox[3] <= footer_region[3]):
                     element = StructuralElement(
                         id=f"footer_{page_num}_{block_idx}",
@@ -348,26 +348,26 @@ class StructureParser:
         return elements
 
     def _build_hierarchy(self, structure: DocumentStructure) -> DocumentStructure:
-        """ساخت سلسله مراتب عناصر"""
-        # مرتب‌سازی عناصر بر اساس موقعیت
+        """Build element hierarchy"""
+        # Sort elements by position
         sorted_elements = sorted(structure.elements,
                                key=lambda x: (x.page_number, x.bbox[1], x.bbox[0]))
 
-        # ایجاد سلسله مراتب
+        # Build hierarchy
         hierarchy = defaultdict(list)
         parent_stack: list[StructuralElement] = []
 
         for element in sorted_elements:
-            # حذف والدین با سطح بالاتر یا مساوی
+            # Remove parents with higher or equal level
             while parent_stack and parent_stack[-1].level >= element.level:
                 parent_stack.pop()
 
-            # تنظیم والد
+            # Set parent
             if parent_stack:
                 element.parent_id = parent_stack[-1].id
                 hierarchy[parent_stack[-1].id].append(element.id)
 
-            # اضافه کردن به استک اگر عنصر ساختاری باشد
+            # Add to stack if element is structural
             if element.element_type in [
                 StructuralElementType.TITLE,
                 StructuralElementType.HEADING,
@@ -381,7 +381,7 @@ class StructureParser:
         return structure
 
     def _identify_sections(self, structure: DocumentStructure) -> list[dict[str, Any]]:
-        """شناسایی بخش‌های سند"""
+        """Identify document sections"""
         sections: list[dict[str, Any]] = []
         current_section: dict[str, Any] | None = None
 
@@ -393,11 +393,11 @@ class StructureParser:
                 StructuralElementType.HEADING,
                 StructuralElementType.CHAPTER
             ]:
-                # بستن بخش قبلی
+                # Close previous section
                 if current_section:
                     sections.append(current_section)
 
-                # شروع بخش جدید
+                # Start new section
                 current_section = {
                     "id": element.id,
                     "title": element.text,
@@ -409,18 +409,18 @@ class StructureParser:
                     "children": []
                 }
             elif current_section:
-                # اضافه کردن عنصر به بخش جاری
+                # Add element to current section
                 current_section["elements"].append(element.id)
                 current_section["page_end"] = max(current_section["page_end"], element.page_number)
 
-        # اضافه کردن آخرین بخش
+        # Add last section
         if current_section:
             sections.append(current_section)
 
         return sections
 
     def export_to_json(self, structure: DocumentStructure) -> dict[str, Any]:
-        """صادر کردن ساختار به JSON"""
+        """Export structure to JSON"""
         return {
             "toc": structure.toc,
             "sections": structure.sections,
@@ -453,14 +453,14 @@ class StructureParser:
         }
 
     def visualize_hierarchy(self, structure: DocumentStructure, output_path: str | None = None):
-        """نمایش بصری سلسله مراتب"""
+        """Visualize hierarchy"""
         try:
             import matplotlib.pyplot as plt  # type: ignore[import-not-found]
             import networkx as nx  # type: ignore[import-untyped]
 
             G = nx.DiGraph() # type: ignore[var-annotated]
 
-            # اضافه کردن گره‌ها
+            # Add nodes
             for element in structure.elements:
                 G.add_node(
                     element.id,
@@ -469,16 +469,16 @@ class StructureParser:
                     level=element.level
                 )
 
-            # اضافه کردن یال‌ها
+            # Add edges
             for parent_id, children_ids in structure.hierarchy.items():
                 for child_id in children_ids:
                     G.add_edge(parent_id, child_id)
 
-            # رسم گراف
+            # Draw graph
             plt.figure(figsize=(12, 8))
             pos = nx.spring_layout(G, seed=42)
 
-            # رنگ‌بندی بر اساس نوع
+            # Color by type
             node_colors = []
             for node in G.nodes():
                 node_type = G.nodes[node]['type']

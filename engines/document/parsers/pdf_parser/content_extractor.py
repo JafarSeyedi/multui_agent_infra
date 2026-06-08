@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 PDF content Extraction module
-استخراج متن، جداول، تصاویر، لینک‌ها و سایر محتوا از فایل‌های PDF
+PDF text, tables, images, links and other content extraction
 """
 import base64
 import io
@@ -42,7 +42,7 @@ from .structure_parser import StructuralElement
 
 
 class ContentType(Enum):
-    """انواع محتوای قابل استخراج"""
+    """Types of extractable content"""
     TEXT = "text"
     TABLE = "table"
     IMAGE = "image"
@@ -58,7 +58,7 @@ class ContentType(Enum):
 
 @dataclass
 class ExtractedText:
-    """کلاس برای نگهداری متن استخراج شده"""
+    """Class for holding extracted text"""
     text: str
     page_num: int
     bbox: tuple[float, float, float, float]  # (x0, y0, x1, y1)
@@ -72,7 +72,7 @@ class ExtractedText:
 
 @dataclass
 class ExtractedTable:
-    """کلاس برای نگهداری جدول استخراج شده"""
+    """Class for holding extracted table"""
     page_num: int
     bbox: tuple[float, float, float, float]
     data: list[list[str]]
@@ -82,13 +82,13 @@ class ExtractedTable:
     pandas_df: Any | None = None
 
     def to_dataframe(self):
-        """تبدیل داده‌های جدول به DataFrame"""
+        """Convert table data to DataFrame"""
         if HAS_PANDAS and self.data:
             return pd.DataFrame(self.data[1:], columns=self.data[0] if self.headers else None)
         return None
 
     def to_csv(self, filepath: str):
-        """ذخیره جدول به صورت CSV"""
+        """Save table as CSV"""
         if HAS_PANDAS:
             df = self.to_dataframe()
             if df is not None:
@@ -99,7 +99,7 @@ class ExtractedTable:
 
 @dataclass
 class ExtractedImage:
-    """کلاس برای نگهداری تصویر استخراج شده"""
+    """Class for holding extracted image"""
     page_num: int
     bbox: tuple[float, float, float, float]
     image_data: bytes
@@ -111,23 +111,23 @@ class ExtractedImage:
     caption: str | None = None
 
     def __post_init__(self):
-        """محاسبه base64_data پس از مقداردهی"""
+        """Calculate base64_data after initialization"""
         if self.image_data and not self.base64_data:
             self.base64_data = base64.b64encode(self.image_data).decode('utf-8')
 
     def save(self, filepath: str):
-        """ذخیره تصویر در فایل"""
+        """Save image to file"""
         with open(filepath, 'wb') as f:
             f.write(self.image_data)
 
     def to_pil_image(self):
-        """تبدیل به تصویر PIL"""
+        """Convert to PIL Image"""
         return Image.open(io.BytesIO(self.image_data))
 
 
 @dataclass
 class ExtractedLink:
-    """کلاس برای نگهداری لینک استخراج شده"""
+    """Class for holding extracted link"""
     page_num: int
     bbox: tuple[float, float, float, float]
     uri: str
@@ -137,7 +137,7 @@ class ExtractedLink:
 
 @dataclass
 class ExtractedAnnotation:
-    """کلاس برای نگهداری حاشیه‌نویسی استخراج شده"""
+    """Class for holding extracted annotation"""
     page_num: int
     bbox: tuple[float, float, float, float]
     annotation_type: str  # highlight, underline, strikeout, note, etc.
@@ -149,7 +149,7 @@ class ExtractedAnnotation:
 
 @dataclass
 class ContentExtractionStats:
-    """آمار استخراج محتوا"""
+    """Content extraction statistics"""
     total_pages: int = 0
     text_blocks: int = 0
     tables: int = 0
@@ -164,7 +164,7 @@ class ContentExtractionStats:
     languages_detected: list[str] = field(default_factory=list)
 
     def to_dict(self):
-        """تبدیل به دیکشنری"""
+        """Convert to dictionary"""
         return {
             'total_pages': self.total_pages,
             'text_blocks': self.text_blocks,
@@ -183,7 +183,7 @@ class ContentExtractionStats:
 
 class ContentExtractor:
     """
-    کلاس اصلی برای استخراج محتوای PDF
+    Main class for PDF content extraction
     """
 
     def __init__(self,
@@ -193,14 +193,14 @@ class ContentExtractor:
                  table_method: str = "lattice",
                  image_dpi: int = 150):
         """
-        مقداردهی اولیه استخراج کننده محتوا
+        Initialize content extractor
         
         Args:
-            pdf_path: مسیر فایل PDF
-            use_ocr: استفاده از OCR For PDFهای اسکن شده
-            ocr_languages: زبان‌های OCR (پیش‌فرض: ['fas', 'eng'])
-            table_method: روش استخراج جداول ('lattice', 'stream')
-            image_dpi: کیفیت تصاویر استخراج شده
+            pdf_path: Path to the PDF file
+            use_ocr: Use OCR for scanned PDFs
+            ocr_languages: OCR languages (default: ['fas', 'eng'])
+            table_method: Table extraction method ('lattice', 'stream')
+            image_dpi: Quality of extracted images
         """
         self.pdf_path = pdf_path
         self.use_ocr = use_ocr
@@ -208,24 +208,24 @@ class ContentExtractor:
         self.table_method = table_method
         self.image_dpi = image_dpi
 
-        # ذخیره Results
+        # Store results
         self.extracted_texts: list[ExtractedText] = []
         self.extracted_tables: list[ExtractedTable] = []
         self.extracted_images: list[ExtractedImage] = []
         self.extracted_links: list[ExtractedLink] = []
         self.extracted_annotations: list[ExtractedAnnotation] = []
 
-        # آمار
+        # Statistics
         self.stats = ContentExtractionStats()
 
-        # تنظیمات OCR
+        # OCR setup
         if use_ocr:
             self._setup_ocr()
 
     def _setup_ocr(self):
-        """تنظیمات اولیه OCR"""
+        """Initialize OCR setup"""
         try:
-            # بررسی وجود Tesseract
+            # Check Tesseract availability
             pytesseract.get_tesseract_version()
         except Exception as e:
             warnings.warn(f"Tesseract OCR not available: {e}")
@@ -235,14 +235,14 @@ class ContentExtractor:
                    layout: list[PageLayout] | None = None,
                    structure: list[StructuralElement] | None = None) -> dict[str, Any]:
         """
-        استخراج تمام محتواهای PDF
+        Extract all PDF content
         
         Args:
-            layout: خروجی LayoutAnalyzer (اختیاری)
-            structure: خروجی StructureParser (اختیاری)
+            layout: Output from LayoutAnalyzer (optional)
+            structure: Output from StructureParser (optional)
             
         Returns:
-            دیکشنری حاوی تمام محتواهای استخراج شده
+            Dictionary containing all extracted content
         """
         import time
         start_time = time.time()
@@ -259,39 +259,39 @@ class ContentExtractor:
         }
 
         try:
-            # استخراج Metadata
+            # Extract metadata
             results['metadata'] = self.extract_metadata()
 
-            # استخراج متن
-            print("📝 استخراج متن...")
+            # Extract text
+            print("📝 Extracting text...")
             self.extract_text(layout, structure)
             results['texts'] = [t.__dict__ for t in self.extracted_texts]
 
-            # استخراج جداول
-            print("📊 استخراج جداول...")
+            # Extract tables
+            print("📊 Extracting tables...")
             self.extract_tables()
             results['tables'] = [t.__dict__ for t in self.extracted_tables]
 
-            # استخراج تصاویر
-            print("🖼️ استخراج تصاویر...")
+            # Extract images
+            print("🖼️ Extracting images...")
             self.extract_images()
             results['images'] = [img.__dict__ for img in self.extracted_images]
 
-            # استخراج لینک‌ها
-            print("🔗 استخراج لینک‌ها...")
+            # Extract links
+            print("🔗 Extracting links...")
             self.extract_links()
             results['links'] = [link.__dict__ for link in self.extracted_links]
 
-            # استخراج حاشیه‌نویسی‌ها
-            print("📋 استخراج حاشیه‌نویسی‌ها...")
+            # Extract annotations
+            print("📋 Extracting annotations...")
             self.extract_annotations()
             results['annotations'] = [ann.__dict__ for ann in self.extracted_annotations]
 
-            # تشخیص معادلات و بلوک‌های کد
-            print("🧮 تشخیص معادلات و کد...")
+            # Detect equations and code blocks
+            print("🧮 Detecting equations and code...")
             self.detect_equations_and_code()
 
-            # محاسبه آمار
+            # Calculate statistics
             self.stats.total_pages = results['metadata'].get('num_pages', 0)
             self.stats.text_blocks = len(self.extracted_texts)
             self.stats.tables = len(self.extracted_tables)
@@ -299,22 +299,22 @@ class ContentExtractor:
             self.stats.links = len(self.extracted_links)
             self.stats.annotations = len(self.extracted_annotations)
 
-            # محاسبه تعداد کاراکترها و کلمات
+            # Calculate character and word counts
             total_chars = sum(len(t.text) for t in self.extracted_texts)
             total_words = sum(len(t.text.split()) for t in self.extracted_texts)
             self.stats.total_text_chars = total_chars
             self.stats.total_text_words = total_words
 
-            # زمان استخراج
+            # Extraction time
             self.stats.extraction_time = time.time() - start_time
 
             results['stats'] = self.stats.to_dict()
 
-            print(f"✅ استخراج کامل شد! زمان: {self.stats.extraction_time:.2f} ثانیه")
-            print(f"📊 آمار: {self.stats.text_blocks} بلوک متن، {self.stats.tables} جدول، {self.stats.images} تصویر")
+            print(f"✅ Extraction complete! Time: {self.stats.extraction_time:.2f}s")
+            print(f"📊 Stats: {self.stats.text_blocks} text blocks, {self.stats.tables} tables, {self.stats.images} images")
 
         except Exception as e:
-            print(f"❌ خطا در استخراج: {e}")
+            print(f"❌ Extraction error: {e}")
             import traceback
             traceback.print_exc()
 
@@ -324,28 +324,28 @@ class ContentExtractor:
                     layout: list[PageLayout] | None = None,
                     structure: list[StructuralElement] | None = None) -> list[ExtractedText]:
         """
-        استخراج متن از PDF
+        Extract text from PDF
         
         Args:
-            layout: اطلاعات لایه‌بندی صفحات
-            structure: اطلاعات ساختاری سند
+            layout: Page layout information
+            structure: Document structure information
             
         Returns:
-            لیست متن‌های استخراج شده
+            List of extracted texts
         """
         self.extracted_texts = []
 
         try:
             if self.use_ocr:
-                # استفاده از OCR For PDFهای اسکن شده
+                # Use OCR for scanned PDFs
                 self._extract_text_with_ocr()
             else:
-                # استخراج متن مستقیم
+                # Direct text extraction
                 self._extract_text_direct(layout, structure)
 
         except Exception as e:
-            print(f"خطا در استخراج متن: {e}")
-            # تلاش با روش جایگزین
+            print(f"Text extraction error: {e}")
+            # Try fallback method
             self._extract_text_fallback()
 
         return self.extracted_texts
@@ -353,19 +353,19 @@ class ContentExtractor:
     def _extract_text_direct(self,
                             layout: list[PageLayout] | None = None,
                             structure: list[StructuralElement] | None = None):
-        """استخراج متن مستقیم از PDF"""
+        """Direct text extraction from PDF"""
         with pdfplumber.open(self.pdf_path) as pdf:
             for page_num, page in enumerate(pdf.pages, 1):
                 try:
-                    # استخراج متن با pdfplumber
+                    # Extract text with pdfplumber
                     text = page.extract_text()
 
                     if text and text.strip():
-                        # استخراج متن با حفظ موقعیت
+                        # Extract text with position preservation
                         chars = page.chars
 
                         if chars:
-                            # گروه‌بندی کاراکترها بر اساس خطوط
+                            # Group characters by lines
                             lines: dict[int, list[dict[str, Any]]] = {}
                             for char in chars:
                                 line_key = round(char['top'])
@@ -373,26 +373,26 @@ class ContentExtractor:
                                     lines[line_key] = []
                                 lines[line_key].append(char)
 
-                            # مرتب‌سازی خطوط
+                            # Sort lines
                             sorted_lines = sorted(lines.items(), key=lambda x: x[0])
 
                             for line_top, line_chars in sorted_lines:
-                                # مرتب‌سازی کاراکترها در هر خط
+                                # Sort characters within each line
                                 line_chars.sort(key=lambda x: x['x0'])
 
-                                # ساخت متن خط
+                                # Build line text
                                 line_text = ''.join([c['text'] for c in line_chars])
 
-                                # محاسبه bounding box خط
+                                # Calculate line bounding box
                                 x0 = min(c['x0'] for c in line_chars)
                                 y0 = min(c['top'] for c in line_chars)
                                 x1 = max(c['x1'] for c in line_chars)
                                 y1 = max(c['bottom'] for c in line_chars)
 
-                                # تشخیص زبان
+                                # Detect language
                                 language = self._detect_language(line_text)
 
-                                # ایجاد شیء متن استخراج شده
+                                # Create extracted text object
                                 extracted_text = ExtractedText(
                                     text=line_text,
                                     page_num=page_num,
@@ -403,7 +403,7 @@ class ContentExtractor:
 
                                 self.extracted_texts.append(extracted_text)
                         else:
-                            # اگر کاراکترها موجود نباشند، کل متن صفحه را ذخیره می‌کنیم
+                            # If no characters available, store the full page text
                             extracted_text = ExtractedText(
                                 text=text,
                                 page_num=page_num,
@@ -413,27 +413,27 @@ class ContentExtractor:
                             )
                             self.extracted_texts.append(extracted_text)
 
-                    # به‌روزرسانی آمار
+                    # Update statistics
                     self.stats.languages_detected.extend(self._detect_languages_in_text(text))
 
                 except Exception as e:
-                    print(f"خطا در استخراج متن صفحه {page_num}: {e}")
+                    print(f"Error extracting text from page {page_num}: {e}")
 
     def _extract_text_with_ocr(self):
-        """استخراج متن با استفاده از OCR"""
+        """Extract text using OCR"""
         try:
-            # تبدیل PDF به تصاویر
+            # Convert PDF to images
             images = convert_from_path(self.pdf_path, dpi=self.image_dpi)
 
             for page_num, image in enumerate(images, 1):
-                # تبدیل به OpenCV format
+                # Convert to OpenCV format
                 open_cv_image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
 
-                # پیش‌پردازش تصویر برای بهبود OCR
+                # Preprocess image for better OCR
                 gray = cv2.cvtColor(open_cv_image, cv2.COLOR_BGR2GRAY)
                 _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
-                # اعمال OCR
+                # Apply OCR
                 config = f'--oem 3 --psm 6 -l {"+".join(self.ocr_languages)}'
                 ocr_result = pytesseract.image_to_data(
                     thresh,
@@ -441,10 +441,10 @@ class ContentExtractor:
                     config=config
                 )
 
-                # پردازش Results OCR
+                # Process OCR results
                 n_boxes = len(ocr_result['text'])
                 for i in range(n_boxes):
-                    if int(ocr_result['conf'][i]) > 60:  # اطمینان بالای 60%
+                    if int(ocr_result['conf'][i]) > 60:  # Confidence above 60%
                         text = ocr_result['text'][i].strip()
                         if text:
                             x = ocr_result['left'][i]
@@ -462,10 +462,10 @@ class ContentExtractor:
                             self.extracted_texts.append(extracted_text)
 
         except Exception as e:
-            print(f"خطا در OCR: {e}")
+            print(f"OCR error: {e}")
 
     def _extract_text_fallback(self):
-        """روش جایگزین برای استخراج متن"""
+        """Fallback method for text extraction"""
         try:
             if HAS_PYMUPDF:
                 doc = fitz.open(self.pdf_path)
@@ -484,32 +484,32 @@ class ContentExtractor:
                         self.extracted_texts.append(extracted_text)
                 doc.close()
         except Exception as e:
-            print(f"خطا در روش جایگزین استخراج متن: {e}")
+            print(f"Fallback text extraction error: {e}")
 
     def extract_tables(self) -> list[ExtractedTable]:
         """
-        استخراج جداول از PDF
+        Extract tables from PDF
         
         Returns:
-            لیست جداول استخراج شده
+            List of extracted tables
         """
         self.extracted_tables = []
 
         try:
-            # روش ۱: استفاده از Camelot
+            # Method 1: Using Camelot
             self._extract_tables_camelot()
 
-            # روش ۲: استفاده از pdfplumber (اگر Camelot جواب نداد)
+            # Method 2: Using pdfplumber (if Camelot fails)
             if not self.extracted_tables:
                 self._extract_tables_pdfplumber()
 
         except Exception as e:
-            print(f"خطا در استخراج جداول: {e}")
+            print(f"Table extraction error: {e}")
 
         return self.extracted_tables
 
     def _extract_tables_camelot(self):
-        """استخراج جداول با Camelot"""
+        """Extract tables with Camelot"""
         try:
             tables = camelot_py.read_pdf(
                 self.pdf_path,
@@ -521,12 +521,12 @@ class ContentExtractor:
 
             for table in tables:
                 if table.parsing_report and table.parsing_report.get('accuracy', 0) > 50:
-                    # تبدیل داده‌های جدول
+                    # Convert table data
                     table_data = []
                     for row in table.df.values.tolist():
                         table_data.append([str(cell) if cell is not None else "" for cell in row])
 
-                    # ایجاد شیء جدول استخراج شده
+                    # Create extracted table object
                     extracted_table = ExtractedTable(
                         page_num=table.page,
                         bbox=table._bbox,
@@ -539,10 +539,10 @@ class ContentExtractor:
                     self.extracted_tables.append(extracted_table)
 
         except Exception as e:
-            print(f"خطا در استخراج جداول با Camelot: {e}")
+            print(f"Error extracting tables with Camelot: {e}")
 
     def _extract_tables_pdfplumber(self):
-        """استخراج جداول با pdfplumber"""
+        """Extract tables with pdfplumber"""
         try:
             with pdfplumber.open(self.pdf_path) as pdf:
                 for page_num, page in enumerate(pdf.pages, 1):
@@ -550,10 +550,10 @@ class ContentExtractor:
 
                     for table in tables:
                         if table:
-                            # محاسبه تقریبی bounding box
+                            # Approximate bounding box calculation
                             bbox = page.bbox
 
-                            # ایجاد شیء جدول استخراج شده
+                            # Create extracted table object
                             extracted_table = ExtractedTable(
                                 page_num=page_num,
                                 bbox=bbox,
@@ -565,20 +565,20 @@ class ContentExtractor:
                             self.extracted_tables.append(extracted_table)
 
         except Exception as e:
-            print(f"خطا در استخراج جداول با pdfplumber: {e}")
+            print(f"Error extracting tables with pdfplumber: {e}")
 
     def extract_images(self,
                       min_size: tuple[int, int] = (50, 50),
                       max_images_per_page: int = 20) -> list[ExtractedImage]:
         """
-        استخراج تصاویر از PDF
+        Extract images from PDF
         
         Args:
-            min_size: حداقل ابعاد تصویر (عرض، ارتفاع)
-            max_images_per_page: حداکثر تعداد تصویر در هر صفحه
+            min_size: Minimum image dimensions (width, height)
+            max_images_per_page: Maximum images per page
             
         Returns:
-            لیست تصاویر استخراج شده
+            List of extracted images
         """
         self.extracted_images = []
 
@@ -589,12 +589,12 @@ class ContentExtractor:
                 self._extract_images_pdfplumber(min_size, max_images_per_page)
 
         except Exception as e:
-            print(f"خطا در استخراج تصاویر: {e}")
+            print(f"Image extraction error: {e}")
 
         return self.extracted_images
 
     def _extract_images_pymupdf(self, min_size: tuple[int, int], max_images_per_page: int):
-        """استخراج تصاویر با PyMuPDF"""
+        """Extract images with PyMuPDF"""
         doc = fitz.open(self.pdf_path)
 
         for page_num in range(len(doc)):
@@ -610,14 +610,14 @@ class ContentExtractor:
                     width = base_image["width"]
                     height = base_image["height"]
 
-                    # بررسی حداقل اندازه
+                    # Check minimum size
                     if width >= min_size[0] and height >= min_size[1]:
                         image_format = base_image["ext"]
 
-                        # ایجاد شیء تصویر استخراج شده
+                        # Create extracted image object
                         extracted_image = ExtractedImage(
                             page_num=page_num + 1,
-                            bbox=(0, 0, width, height),  # موقعیت دقیق نیاز به پردازش بیشتر دارد
+                            bbox=(0, 0, width, height),  # Exact position needs more processing
                             image_data=image_data,
                             image_format=image_format.upper(),
                             width=width,
@@ -630,7 +630,7 @@ class ContentExtractor:
         doc.close()
 
     def _extract_images_pdfplumber(self, min_size: tuple[int, int], max_images_per_page: int):
-        """استخراج تصاویر با pdfplumber"""
+        """Extract images with pdfplumber"""
         with pdfplumber.open(self.pdf_path) as pdf:
             for page_num, page in enumerate(pdf.pages, 1):
                 images = page.images
@@ -643,11 +643,11 @@ class ContentExtractor:
                             width = img.get('width', 0)
                             height = img.get('height', 0)
 
-                            # بررسی حداقل اندازه
+                            # Check minimum size
                             if width >= min_size[0] and height >= min_size[1]:
                                 image_format = self._detect_image_format(image_data)
 
-                                # ایجاد شیء تصویر استخراج شده
+                                # Create extracted image object
                                 extracted_image = ExtractedImage(
                                     page_num=page_num,
                                     bbox=(img['x0'], img['top'], img['x1'], img['bottom']),
@@ -662,10 +662,10 @@ class ContentExtractor:
 
     def extract_links(self) -> list[ExtractedLink]:
         """
-        استخراج لینک‌ها از PDF
+        Extract links from PDF
         
         Returns:
-            لیست لینک‌های استخراج شده
+            List of extracted links
         """
         self.extracted_links = []
 
@@ -676,12 +676,12 @@ class ContentExtractor:
                 self._extract_links_pdfplumber()
 
         except Exception as e:
-            print(f"خطا در استخراج لینک‌ها: {e}")
+            print(f"Link extraction error: {e}")
 
         return self.extracted_links
 
     def _extract_links_pymupdf(self):
-        """استخراج لینک‌ها با PyMuPDF"""
+        """Extract links with PyMuPDF"""
         doc = fitz.open(self.pdf_path)
 
         for page_num in range(len(doc)):
@@ -701,11 +701,11 @@ class ContentExtractor:
         doc.close()
 
     def _extract_links_pdfplumber(self):
-        """استخراج لینک‌ها با pdfplumber"""
+        """Extract links with pdfplumber"""
         with pdfplumber.open(self.pdf_path) as pdf:
             for page_num, page in enumerate(pdf.pages, 1):
-                # pdfplumber لینک‌ها را مستقیماً پشتیبانی نمی‌کند
-                # می‌توان از متن استخراج شده لینک‌ها را پیدا کرد
+                # pdfplumber does not directly support links
+                # Can find links from extracted text
                 text = page.extract_text()
                 if text:
                     urls = self._extract_urls_from_text(text)
@@ -720,10 +720,10 @@ class ContentExtractor:
 
     def extract_annotations(self) -> list[ExtractedAnnotation]:
         """
-        استخراج حاشیه‌نویسی‌ها از PDF
+        Extract annotations from PDF
         
         Returns:
-            لیست حاشیه‌نویسی‌های استخراج شده
+            List of extracted annotations
         """
         self.extracted_annotations = []
 
@@ -732,12 +732,12 @@ class ContentExtractor:
                 self._extract_annotations_pymupdf()
 
         except Exception as e:
-            print(f"خطا در استخراج حاشیه‌نویسی‌ها: {e}")
+            print(f"Annotation extraction error: {e}")
 
         return self.extracted_annotations
 
     def _extract_annotations_pymupdf(self):
-        """استخراج حاشیه‌نویسی‌ها با PyMuPDF"""
+        """Extract annotations with PyMuPDF"""
         doc = fitz.open(self.pdf_path)
 
         for page_num in range(len(doc)):
@@ -764,41 +764,41 @@ class ContentExtractor:
         doc.close()
 
     def detect_equations_and_code(self):
-        """تشخیص معادلات ریاضی و بلوک‌های کد"""
-        # الگوهای معادلات ریاضی
+        """Detect mathematical equations and code blocks"""
+        # Mathematical equation patterns
         equation_patterns = [
-            r'\$[^$]+\$',  # معادلات inline
-            r'\\\[.*?\\\]',  # معادلات display
-            r'\\\(.*?\\\)',  # معادلات inline با LaTeX
+            r'\$[^$]+\$',  # Inline equations
+            r'\\\[.*?\\\]',  # Display equations
+            r'\\\(.*?\\\)',  # Inline equations with LaTeX
             r'\\begin\{equation\}.*?\\end\{equation\}',
             r'\\begin\{align\}.*?\\end\{align\}',
-            r'\\frac\{.*?\}\{.*?\}',  # کسرها
-            r'\\sum_\{.*?\}\^\{.*?\}',  # سیگما
-            r'\\int_\{.*?\}\^\{.*?\}',  # انتگرال
+            r'\\frac\{.*?\}\{.*?\}',  # Fractions
+            r'\\sum_\{.*?\}\^\{.*?\}',  # Sigma
+            r'\\int_\{.*?\}\^\{.*?\}',  # Integral
         ]
 
-        # الگوهای بلوک‌های کد
+        # Code block patterns
         code_patterns = [
-            r'```.*?```',  # بلوک کد با backticks
-            r'def\s+\w+\(.*?\):',  # تعریف تابع پایتون
-            r'function\s+\w+\(.*?\)\s*\{',  # تعریف تابع جاوااسکریپت
-            r'class\s+\w+',  # تعریف کلاس
-            r'import\s+\w+',  # import statement
-            r'#include\s+<.*?>',  # include در C++
-            r'public\s+class',  # کلاس در جاوا
+            r'```.*?```',  # Code block with backticks
+            r'def\s+\w+\(.*?\):',  # Python function definition
+            r'function\s+\w+\(.*?\)\s*\{',  # JavaScript function definition
+            r'class\s+\w+',  # Class definition
+            r'import\s+\w+',  # Import statement
+            r'#include\s+<.*?>',  # C++ include
+            r'public\s+class',  # Java class
         ]
 
         for text_obj in self.extracted_texts:
             text = text_obj.text
 
-            # بررسی معادلات ریاضی
+            # Check for mathematical equations
             for pattern in equation_patterns:
                 if re.search(pattern, text, re.DOTALL):
                     text_obj.structural_type = "equation"
                     self.stats.equations += 1
                     break
 
-            # بررسی بلوک‌های کد
+            # Check for code blocks
             for pattern in code_patterns:
                 if re.search(pattern, text):
                     text_obj.structural_type = "code_block"
@@ -807,16 +807,16 @@ class ContentExtractor:
 
     def extract_metadata(self) -> dict[str, Any]:
         """
-        استخراج Metadataی PDF
+        Extract PDF metadata
         
         Returns:
-            دیکشنری Metadata
+            Metadata dictionary
         """
         metadata = {}
 
         try:
             with pdfplumber.open(self.pdf_path) as pdf:
-                # Metadataی اصلی
+                # Main metadata
                 metadata.update({
                     'num_pages': len(pdf.pages),
                     'author': pdf.metadata.get('Author', ''),
@@ -829,12 +829,12 @@ class ContentExtractor:
                     'modification_date': pdf.metadata.get('ModDate', ''),
                 })
 
-                # اطلاعات اضافی
+                # Additional info
                 # Access attributes from the PDF stream object (pdfplumber's internal PDF object)
                 metadata['pdf_version'] = getattr(pdf.stream, 'pdf_version', None)
                 metadata['is_encrypted'] = getattr(pdf.stream, 'is_encrypted', False)
 
-                # جمع‌آوری اطلاعات فونت‌ها
+                # Collect font information
                 fonts: set[str] = set()
                 for page in pdf.pages:
                     # pdfplumber provides page.fonts (but mypy may not know it)
@@ -846,17 +846,17 @@ class ContentExtractor:
                 metadata['fonts'] = list(fonts)
 
         except Exception as e:
-            print(f"خطا در استخراج Metadata: {e}")
+            print(f"Metadata extraction error: {e}")
             metadata['error'] = str(e)
 
         return metadata
 
     def export_to_json(self, output_path: str):
         """
-        خروجی Results به فرمت JSON
+        Export results to JSON format
         
         Args:
-            output_path: مسیر فایل خروجی
+            output_path: Output file path
         """
         results = {
             'metadata': self.extract_metadata(),
@@ -868,7 +868,7 @@ class ContentExtractor:
             'stats': self.stats.to_dict()
         }
 
-        # حذف image_data از JSON (حجم زیاد)
+        # Remove image_data from JSON (large size)
         for img in results['images']:
             if 'image_data' in img:
                 del img['image_data']
@@ -878,17 +878,17 @@ class ContentExtractor:
 
     def export_to_csv(self, output_dir: str | Path):
         """
-        خروجی Results به فرمت CSV
+        Export results to CSV format
         
         Args:
-            output_dir: دایرکتوری خروجی
+            output_dir: Output directory
         """
         import csv
 
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        # ذخیره متن‌ها
+        # Save texts
         if self.extracted_texts:
             text_path = output_dir / "texts.csv"
             with open(text_path, 'w', newline='', encoding='utf-8-sig') as f:
@@ -903,7 +903,7 @@ class ContentExtractor:
                         str(text.bbox)
                     ])
 
-        # ذخیره جداول
+        # Save tables
         if self.extracted_tables and HAS_PANDAS:
             for i, table in enumerate(self.extracted_tables):
                 table_path = output_dir / f"table_{i+1}.csv"
@@ -911,21 +911,21 @@ class ContentExtractor:
 
     def _detect_language(self, text: str) -> str:
         """
-        تشخیص زبان متن
+        Detect text language
         
         Args:
-            text: متن ورودی
+            text: Input text
             
         Returns:
-            کد زبان ('fa', 'en', 'ar', 'mixed')
+            Language code ('fa', 'en', 'ar', 'mixed')
         """
         if not text.strip():
             return 'unknown'
 
-        # کاراکترهای فارسی/عربی
+        # Persian/Arabic characters
         persian_arabic_chars = re.findall(r'[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]', text)
 
-        # کاراکترهای انگلیسی
+        # English characters
         english_chars = re.findall(r'[a-zA-Z]', text)
 
         if persian_arabic_chars and not english_chars:
@@ -938,10 +938,10 @@ class ContentExtractor:
             return 'unknown'
 
     def _detect_languages_in_text(self, text: str) -> list[str]:
-        """تشخیص زبان‌های موجود در متن"""
+        """Detect languages present in text"""
         languages = set()
 
-        # تقسیم متن به جملات
+        # Split text into sentences
         sentences = re.split(r'[.!?]', text)
 
         for sentence in sentences:
@@ -952,12 +952,12 @@ class ContentExtractor:
         return list(languages)
 
     def _extract_urls_from_text(self, text: str) -> list[str]:
-        """استخراج URL از متن"""
+        """Extract URLs from text"""
         url_pattern = r'https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+[/\w\.\-?=&%#+]*'
         return re.findall(url_pattern, text)
 
     def _detect_image_format(self, image_data: bytes) -> str:
-        """تشخیص فرمت تصویر"""
+        """Detect image format"""
         try:
             image = Image.open(io.BytesIO(image_data))
             return image.format or 'UNKNOWN'
@@ -966,10 +966,10 @@ class ContentExtractor:
 
     def get_summary(self) -> dict[str, Any]:
         """
-        دریافت خلاصه‌ای از Results استخراج
+        Get summary of extraction results
         
         Returns:
-            دیکشنری خلاصه Results
+            Dictionary of results summary
         """
         return {
             'total_pages': self.stats.total_pages,
@@ -987,35 +987,35 @@ class ContentExtractor:
         }
 
 
-# تابع کمکی برای استفاده سریع
+# Helper function for quick use
 def extract_content_from_pdf(pdf_path: str,
                            use_ocr: bool = False,
                            output_json: str | None = None,
                            output_dir: str | None = None) -> dict[str, Any]:
     """
-    تابع کمکی برای استخراج محتوای PDF
+    Helper function for PDF content extraction
     
     Args:
-        pdf_path: مسیر فایل PDF
-        use_ocr: استفاده از OCR
-        output_json: مسیر ذخیره JSON (اختیاری)
-        output_dir: دایرکتوری ذخیره CSV و تصاویر (اختیاری)
+        pdf_path: Path to the PDF file
+        use_ocr: Use OCR
+        output_json: Path to save JSON (optional)
+        output_dir: Directory to save CSV and images (optional)
         
     Returns:
-        Results استخراج
+        Extraction results
     """
     extractor = ContentExtractor(pdf_path, use_ocr=use_ocr)
     results = extractor.extract_all()
 
-    # ذخیره خروجی JSON
+    # Save JSON output
     if output_json:
         extractor.export_to_json(output_json)
 
-    # ذخیره خروجی CSV
+    # Save CSV output
     if output_dir:
         extractor.export_to_csv(output_dir)
 
-        # ذخیره تصاویر
+        # Save images
         images_dir = Path(output_dir) / "images"
         images_dir.mkdir(exist_ok=True)
 
@@ -1027,23 +1027,23 @@ def extract_content_from_pdf(pdf_path: str,
 
 
 # if __name__ == "__main__":
-#     # مثال استفاده
+#     # Example usage
 #     pdf_path = "sample.pdf"
 
-#     # ایجاد نمونه استخراج کننده
+#     # Create extractor instance
 #     extractor = ContentExtractor(pdf_path, use_ocr=True)
 
-#     # استخراج تمام محتوا
+#     # Extract all content
 #     results = extractor.extract_all()
 
-#     # نمایش خلاصه
+#     # Show summary
 #     summary = extractor.get_summary()
-#     print("📊 خلاصه استخراج:")
+#     print("📊 Extraction Summary:")
 #     for key, value in summary.items():
 #         print(f"  {key}: {value}")
 
-#     # ذخیره Results
+#     # Save results
 #     extractor.export_to_json("extraction_results.json")
 #     extractor.export_to_csv("extraction_output")
 
-#     print(f"✅ استخراج کامل شد! Results در extraction_results.json ذخیره شد.")
+#     print(f"✅ Extraction complete! Results saved to extraction_results.json.")

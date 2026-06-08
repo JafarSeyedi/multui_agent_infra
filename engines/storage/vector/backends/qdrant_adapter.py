@@ -121,18 +121,18 @@ class QdrantAdapter(VectorDBAdapter):
                     filter_conditions.append(
                         models.FieldCondition(
                             key=key,
-                            match=models.MatchValue(value=value),  # bool مجاز است
+                            match=models.MatchValue(value=value),  # bool is allowed
                         )
                     )
                 elif isinstance(value, int):
                     filter_conditions.append(
                         models.FieldCondition(
                             key=key,
-                            match=models.MatchValue(value=value),  # int مجاز است
+                            match=models.MatchValue(value=value),  # int is allowed
                         )
                     )
                 elif isinstance(value, float):
-                    # ── FIX خطا ۱: float در MatchValue مجاز نیست → Range ──
+                    # ── FIX Error 1: float not allowed in MatchValue → Range ──
                     filter_conditions.append(
                         models.FieldCondition(
                             key=key,
@@ -143,11 +143,11 @@ class QdrantAdapter(VectorDBAdapter):
                     filter_conditions.append(
                         models.FieldCondition(
                             key=key,
-                            match=models.MatchValue(value=value),  # str مجاز است
+                            match=models.MatchValue(value=value),  # str is allowed
                         )
                     )
                 elif isinstance(value, dict):
-                    # فیلتر range صریح: {"gte": 0.5, "lte": 0.9}
+                    # explicit range filter: {"gte": 0.5, "lte": 0.9}
                     filter_conditions.append(
                         models.FieldCondition(
                             key=key,
@@ -161,12 +161,12 @@ class QdrantAdapter(VectorDBAdapter):
                     )
 
             if filter_conditions:
-                # ── FIX خطا ۲: cast به Sequence برای رفع invariance ──
+                # ── FIX Error 2: cast to Sequence to fix invariance ──
                 must_seq: Sequence[models.FieldCondition] = filter_conditions
                 qdrant_filter = models.Filter(must=must_seq)  # type: ignore[arg-type]
 
         try:
-            # ── FIX خطا ۳: جایگزینی client.search با client.query_points ──
+            # ── FIX Error 3: replace client.search with client.query_points ──
             search_result = self.client.query_points(
                 collection_name=self.collection_name,
                 query=normalized_query_vector,
@@ -187,7 +187,7 @@ class QdrantAdapter(VectorDBAdapter):
 
         for hit in raw_points:
             if not isinstance(hit, ScoredPoint):
-                continue  # tuple یا موارد غیرمنتظره را رد کن
+                continue  # skip tuple or unexpected items
 
             payload = hit.payload or {}
             formatted_results.append(
@@ -205,7 +205,7 @@ class QdrantAdapter(VectorDBAdapter):
             return
 
         try:
-            # ── FIX خطا ۴: جایگزینی PointSelector با PointIdsList ──
+            # ── FIX Error 4: replace PointSelector with PointIdsList ──
             self.client.delete(
                 collection_name=self.collection_name,
                 wait=True,

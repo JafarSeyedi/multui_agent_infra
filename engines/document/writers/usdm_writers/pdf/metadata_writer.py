@@ -1,5 +1,5 @@
 """
-نویسنده Metadataی PDF
+PDF Metadata writer
 """
 import hashlib
 import uuid
@@ -15,7 +15,7 @@ from .pdf_objects import PDFStream
 
 @dataclass
 class XMPMetadata:
-    """Metadataی XMP"""
+    """XMP metadata"""
     title: str | None = None
     author: str | None = None
     subject: str | None = None
@@ -57,7 +57,7 @@ class XMPMetadata:
 
 
 class MetadataWriter:
-    """کلاس نوشتن Metadataی PDF"""
+    """PDF metadata writer class"""
 
     def __init__(self):
         self._next_obj_id = 1
@@ -72,12 +72,12 @@ class MetadataWriter:
 
     def create_pdf_metadata(self, document: USDMDocument,
                            options: Any) -> PDFInfo:
-        """ایجاد Metadataی PDF از سند USDM"""
+        """Create PDF metadata from USDM document"""
 
-        # استخراج Metadata از سند
+        # Extract metadata from document
         metadata = document.metadata if hasattr(document, 'metadata') else None
 
-        # ایجاد شیء PDFInfo
+        # Create PDFInfo object
         pdf_info = PDFInfo(
             obj_id=self._next_obj_id,
             title=self._get_title(document, metadata),
@@ -95,12 +95,12 @@ class MetadataWriter:
 
     def create_xmp_metadata(self, document: USDMDocument,
                            options: Any) -> PDFStream | None:
-        """ایجاد Metadataی XMP"""
+        """Create XMP metadata"""
 
-        # استخراج Metadata
+        # Extract metadata
         metadata = document.metadata if hasattr(document, 'metadata') else None
 
-        # ایجاد XMPMetadata
+        # Create XMPMetadata
         xmp_metadata = XMPMetadata(
             title=self._get_title(document, metadata),
             author=self._get_author(metadata),
@@ -120,10 +120,10 @@ class MetadataWriter:
             xmp_rights_marked=self._is_rights_marked(metadata)
         )
 
-        # تولید XML XMP
+        # Generate XMP XML
         xmp_xml = self._generate_xmp_xml(xmp_metadata)
 
-        # ایجاد استریم XMP
+        # Create XMP stream
         if xmp_xml:
             return PDFStream(
                 obj_id=self._next_obj_id,
@@ -134,7 +134,7 @@ class MetadataWriter:
         return None
 
     def _get_title(self, document: USDMDocument, metadata: dict[str, Any] | None) -> str | None:
-        """دریافت عنوان"""
+        """Get title"""
         if metadata and metadata.get('title'):
             return metadata['title']
         elif hasattr(document, 'title') and document.title:
@@ -142,7 +142,7 @@ class MetadataWriter:
         return None
 
     def _get_author(self, metadata: dict[str, Any] | None) -> str | None:
-        """دریافت نویسنده"""
+        """Get author"""
         if metadata:
             author = metadata.get('author')
             authors = metadata.get('authors')
@@ -221,8 +221,8 @@ class MetadataWriter:
         return False
 
     def _generate_document_id(self, document: USDMDocument) -> str:
-        """تولید شناسه منحصر به فرد سند"""
-        # ترکیب timestamp و hash سند
+        """Generate unique document identifier"""
+        # Combine timestamp and document hash
         import time
 
         timestamp = int(time.time() * 1000)
@@ -231,13 +231,13 @@ class MetadataWriter:
         return f"urn:uuid:{uuid.uuid5(uuid.NAMESPACE_URL, f'{timestamp}-{doc_hash}')}"
 
     def _get_language(self, document: USDMDocument) -> str | None:
-        """دریافت زبان سند"""
-        # بررسی از metadata
+        """Get document language"""
+        # Check metadata
         if hasattr(document, 'metadata') and document.metadata:
             if hasattr(document.metadata, 'language') and document.metadata.language:
                 return document.metadata.language
 
-        # بررسی از محتوا
+        # Check content
         if hasattr(document, 'logical_elements') and document.logical_elements:
             for element in document.logical_elements:
                 if hasattr(element, 'language') and element.language:
@@ -247,15 +247,15 @@ class MetadataWriter:
                         if hasattr(text_run, 'language') and text_run.language:
                             return text_run.language
 
-        return "en-US"  # پیش‌فرض
+        return "en-US"  # Default
 
     def _generate_xmp_xml(self, xmp: XMPMetadata) -> str:
-        """تولید XML Metadataی XMP"""
+        """Generate XMP metadata XML"""
 
         xml_parts = []
 
-        # شروع XMP
-        xml_parts.append('<?xpacket begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"?>')
+        # XMP start
+        xml_parts.append('<?xpacket begin="\ufeff" id="W5M0MpCehiHzreSzNTczkc9d"?>')
         xml_parts.append('<x:xmpmeta xmlns:x="adobe:ns:meta/">')
         xml_parts.append('<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">')
 
@@ -318,7 +318,7 @@ class MetadataWriter:
                 xml_parts.append(f'  <xmpRights:WebStatement>{self._escape_xml(xmp.xmp_rights_web_statement)}</xmpRights:WebStatement>')
             xml_parts.append('</rdf:Description>')
 
-        # پایان XMP
+        # XMP end
         xml_parts.append('</rdf:RDF>')
         xml_parts.append('</x:xmpmeta>')
         xml_parts.append('<?xpacket end="r"?>')
@@ -326,7 +326,7 @@ class MetadataWriter:
         return '\n'.join(xml_parts)
 
     def _escape_xml(self, text: str) -> str:
-        """فرار کردن کاراکترهای خاص XML"""
+        """Escape special XML characters"""
         if not text:
             return ""
 
@@ -345,14 +345,14 @@ class MetadataWriter:
 
     def create_custom_metadata(self, document: USDMDocument,
                               custom_fields: dict[str, Any]) -> dict[str, Any]:
-        """ایجاد Metadataی سفارشی"""
+        """Create custom metadata"""
         metadata_dict = {}
 
-        # Metadataی استاندارد
+        # Standard metadata
         if hasattr(document, 'metadata') and document.metadata:
             metadata = document.metadata
 
-            # فیلدهای استاندارد
+            # Standard fields
             standard_fields = [
                 ('title', 'title'),
                 ('author', 'author'),
@@ -376,22 +376,22 @@ class MetadataWriter:
                     if value:
                         metadata_dict[pdf_field.capitalize()] = value
 
-        # فیلدهای سفارشی
+        # Custom fields
         metadata_dict.update(custom_fields)
 
         return metadata_dict
 
     def validate_metadata(self, metadata_dict: dict[str, Any]) -> list[str]:
-        """Validation Metadata"""
+        """Validate metadata"""
         warnings = []
 
-        # بررسی فیلدهای اجباری
+        # Check required fields
         required_fields = ['Title', 'Author', 'Creator', 'Producer']
         for required_field in required_fields:
             if required_field not in metadata_dict or not metadata_dict[required_field]:
-                warnings.append(f"فیلد {required_field} خالی است")
+                warnings.append(f"Field {required_field} is empty")
 
-        # بررسی تاریخ‌ها
+        # Check dates
         date_fields = ['CreationDate', 'ModDate']
         for date_field in date_fields:
             if date_field in metadata_dict:
@@ -400,14 +400,14 @@ class MetadataWriter:
                     try:
                         datetime.fromisoformat(value.replace('Z', '+00:00'))
                     except ValueError:
-                        warnings.append(f"فرمت تاریخ {date_field} نامعتبر است: {value}")
+                        warnings.append(f"Date format {date_field} is invalid: {value}")
 
-        # بررسی طول رشته‌ها
+        # Check string lengths
         string_fields = ['Title', 'Author', 'Subject', 'Keywords']
         for string_field in string_fields:
             if string_field in metadata_dict and metadata_dict[string_field]:
                 value = str(metadata_dict[string_field])
                 if len(value) > 255:
-                    warnings.append(f"فیلد {string_field} بیش از حد طولانی است ({len(value)} کاراکتر)")
+                    warnings.append(f"Field {string_field} exceeds maximum length ({len(value)} characters)")
 
         return warnings

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 pdf_objects.py - PDF object classes for parser
-پیاده‌سازی کامل مدل اشیاء PDF مطابق با استاندارد PDF 1.7
+Complete implementation of PDF object model according to PDF 1.7 standard
 """
 import re
 import zlib
@@ -15,12 +15,12 @@ from enum import Enum
 from typing import Any
 from typing import cast
 
-# تنظیم دقت اعشار برای محاسبات PDF
+# Set decimal precision for PDF calculations
 getcontext().prec = 10
 
 
 class PDFObjectType(Enum):
-    """انواع اشیاء PDF"""
+    """PDF object types"""
     BOOLEAN = "boolean"
     INTEGER = "integer"
     REAL = "real"
@@ -35,7 +35,7 @@ class PDFObjectType(Enum):
 
 
 class PDFColorSpace(Enum):
-    """فضاهای رنگی PDF"""
+    """PDF color spaces"""
     DEVICE_GRAY = "DeviceGray"
     DEVICE_RGB = "DeviceRGB"
     DEVICE_CMYK = "DeviceCMYK"
@@ -50,21 +50,21 @@ class PDFColorSpace(Enum):
 
 
 class PDFLineCapStyle(Enum):
-    """سبک انتهای خط"""
+    """Line cap style"""
     BUTT_CAP = 0
     ROUND_CAP = 1
     SQUARE_CAP = 2
 
 
 class PDFLineJoinStyle(Enum):
-    """سبک اتصال خطوط"""
+    """Line join style"""
     MITER_JOIN = 0
     ROUND_JOIN = 1
     BEVEL_JOIN = 2
 
 
 class PDFTextRenderingMode(Enum):
-    """حالت‌های رندر متن"""
+    """Text rendering modes"""
     FILL = 0
     STROKE = 1
     FILL_STROKE = 2
@@ -76,32 +76,32 @@ class PDFTextRenderingMode(Enum):
 
 
 class PDFError(Exception):
-    """خطای پایه For PDF"""
+    """Base error for PDF"""
 
 
 class PDFParseError(PDFError):
-    """خطای پارس PDF"""
+    """PDF parse error"""
 
 
 class PDFValidationError(PDFError):
-    """خطای Validation PDF"""
+    """PDF validation error"""
 
 
 @dataclass
 class PDFObject(ABC):
-    """کلاس پایه برای تمام اشیاء PDF"""
+    """Base class for all PDF objects"""
 
     @abstractmethod
     def to_pdf(self) -> bytes:
-        """تبدیل به فرمت PDF"""
+        """Convert to PDF format"""
 
     @abstractmethod
     def get_type(self) -> PDFObjectType:
-        """دریافت نوع شیء"""
+        """Get object type"""
 
     @abstractmethod
     def to_dict(self) -> dict[str, Any]:
-        """تبدیل به دیکشنری"""
+        """Convert to dictionary"""
 
     def __str__(self) -> str:
         return f"PDFObject(type={self.get_type().value})"
@@ -109,7 +109,7 @@ class PDFObject(ABC):
 
 @dataclass
 class PDFBoolean(PDFObject):
-    """شیء boolean در PDF"""
+    """Boolean object in PDF"""
     value: bool
 
     def to_pdf(self) -> bytes:
@@ -127,7 +127,7 @@ class PDFBoolean(PDFObject):
 
 @dataclass
 class PDFInteger(PDFObject):
-    """شیء integer در PDF"""
+    """Integer object in PDF"""
     value: int
 
     def to_pdf(self) -> bytes:
@@ -145,11 +145,11 @@ class PDFInteger(PDFObject):
 
 @dataclass
 class PDFReal(PDFObject):
-    """شیء real (اعشاری) در PDF"""
+    """Real (decimal) object in PDF"""
     value: float
 
     def to_pdf(self) -> bytes:
-        # فرمت اعشاری با حداکثر 4 رقم اعشار
+        # Decimal format with maximum 4 decimal places
         formatted = f"{self.value:.4f}".rstrip('0').rstrip('.')
         if formatted == '':
             formatted = '0'
@@ -167,19 +167,19 @@ class PDFReal(PDFObject):
 
 @dataclass
 class PDFString(PDFObject):
-    """شیء string در PDF"""
+    """String object in PDF"""
     value: str
     is_hex: bool = False
     is_literal: bool = True
 
     def to_pdf(self) -> bytes:
         if self.is_hex:
-            # رشته هگزادسیمال
+            # Hexadecimal string
             hex_str = self.value.encode('utf-8').hex().upper()
             return f"<{hex_str}>".encode('ascii')
         else:
-            # رشته لفظی
-            # فرار کردن کاراکترهای خاص
+            # Literal string
+            # Escape special characters
             escaped = self.value
             escaped = escaped.replace('\\', '\\\\')
             escaped = escaped.replace('(', '\\(')
@@ -212,13 +212,13 @@ class PDFString(PDFObject):
 
 @dataclass
 class PDFName(PDFObject):
-    """شیء name در PDF"""
+    """Name object in PDF"""
     value: str
 
     def to_pdf(self) -> bytes:
-        # فرار کردن کاراکترهای خاص در نام‌ها
+        # Escape special characters in names
         escaped = self.value
-        # کاراکترهای خاص که باید فرار شوند
+        # Special characters that must be escaped
         special_chars = {
             ' ': '#20',
             '(': '#28',
@@ -239,7 +239,7 @@ class PDFName(PDFObject):
             if char in special_chars:
                 result.append(special_chars[char])
             elif ord(char) < 33 or ord(char) > 126:
-                # کاراکترهای غیر ASCII به هگزادسیمال
+                # Non-ASCII characters to hexadecimal
                 result.append(f"#{ord(char):02X}")
             else:
                 result.append(char)
@@ -258,7 +258,7 @@ class PDFName(PDFObject):
 
 @dataclass
 class PDFArray(PDFObject):
-    """شیء array در PDF"""
+    """Array object in PDF"""
     elements: list[PDFObject] = field(default_factory=list)
 
     def to_pdf(self) -> bytes:
@@ -285,11 +285,11 @@ class PDFArray(PDFObject):
         }
 
     def append(self, element: PDFObject):
-        """اضافه کردن عنصر به آرایه"""
+        """Add element to array"""
         self.elements.append(element)
 
     def extend(self, elements: list[PDFObject]):
-        """اضافه کردن چند عنصر به آرایه"""
+        """Add multiple elements to array"""
         self.elements.extend(elements)
 
     def __getitem__(self, index: int) -> PDFObject:
@@ -304,7 +304,7 @@ class PDFArray(PDFObject):
 
 @dataclass
 class PDFDictionary(PDFObject):
-    """شیء dictionary در PDF"""
+    """Dictionary object in PDF"""
     entries: dict[PDFName, PDFObject] = field(default_factory=dict)
 
     def to_pdf(self) -> bytes:
@@ -332,30 +332,30 @@ class PDFDictionary(PDFObject):
         }
 
     def get(self, key: str, default: Any = None) -> PDFObject | None:
-        """دریافت مقدار با کلید"""
+        """Get value by key"""
         name_key = PDFName(key)
         return self.entries.get(name_key, default)
 
     def set(self, key: str, value: PDFObject):
-        """تنظیم مقدار با کلید"""
+        """Set value by key"""
         name_key = PDFName(key)
         self.entries[name_key] = value
 
     def has_key(self, key: str) -> bool:
-        """بررسی وجود کلید"""
+        """Check if key exists"""
         name_key = PDFName(key)
         return name_key in self.entries
 
     def keys(self) -> list[str]:
-        """دریافت کلیدها"""
+        """Get keys"""
         return [key.value for key in self.entries.keys()]
 
     def values(self) -> list[PDFObject]:
-        """دریافت مقادیر"""
+        """Get values"""
         return list(self.entries.values())
 
     def items(self) -> list[tuple[str, PDFObject]]:
-        """دریافت جفت‌های کلید-مقدار"""
+        """Get key-value pairs"""
         return [(key.value, value) for key, value in self.entries.items()]
 
     def __contains__(self, key: str) -> bool:
@@ -378,18 +378,18 @@ class PDFDictionary(PDFObject):
 
 @dataclass
 class PDFStream(PDFObject):
-    """شیء stream در PDF"""
+    """Stream object in PDF"""
     data: bytes
     filters: list[str] = field(default_factory=list)
     decode_params: dict[str, Any] | None = None
     length: int | None = None
 
     def to_pdf(self) -> bytes:
-        # محاسبه طول اگر داده‌شده نباشد
+        # Calculate length if not provided
         if self.length is None:
             self.length = len(self.data)
 
-        # ایجاد دیکشنری stream
+        # Create stream dictionary
         dict_obj = PDFDictionary()
         dict_obj.set("Length", PDFInteger(self.length))
 
@@ -413,7 +413,7 @@ class PDFStream(PDFObject):
                     params_dict.set(key, PDFBoolean(value))
             dict_obj.set("DecodeParms", params_dict)
 
-        # ترکیب دیکشنری و داده‌ها
+        # Combine dictionary and data
         result = []
         result.append(dict_obj.to_pdf())
         result.append(b"\nstream\n")
@@ -436,16 +436,16 @@ class PDFStream(PDFObject):
         }
 
     def get_decoded_data(self) -> bytes:
-        """دریافت داده‌های decode شده"""
+        """Get decoded data"""
         data = self.data
 
-        # اعمال فیلترها به ترتیب معکوس (برای decode)
+        # Apply filters in reverse order (for decode)
         for filter_name in reversed(self.filters):
             if filter_name == "FlateDecode":
                 try:
                     data = zlib.decompress(data)
                 except zlib.error:
-                    raise PDFParseError("خطا در decompress داده‌های FlateDecode")
+                    raise PDFParseError("Error decompressing FlateDecode data")
             elif filter_name == "ASCIIHexDecode":
                 data = self._decode_ascii_hex(data)
             elif filter_name == "ASCII85Decode":
@@ -455,19 +455,19 @@ class PDFStream(PDFObject):
             elif filter_name == "RunLengthDecode":
                 data = self._decode_run_length(data)
             elif filter_name == "CCITTFaxDecode":
-                # نیاز به پیاده‌سازی خاص
+                # Needs specific implementation
                 pass
             elif filter_name == "JBIG2Decode":
-                # نیاز به پیاده‌سازی خاص
+                # Needs specific implementation
                 pass
             elif filter_name == "DCTDecode":
-                # JPEG - نیازی به decode نیست
+                # JPEG - no decode needed
                 pass
             elif filter_name == "JPXDecode":
-                # JPEG2000 - نیازی به decode نیست
+                # JPEG2000 - no decode needed
                 pass
             elif filter_name == "Crypt":
-                # رمزگذاری - نیاز به کلید
+                # Encryption - needs key
                 pass
 
         return data
@@ -477,36 +477,36 @@ class PDFStream(PDFObject):
         hex_str = data.decode('ascii', errors='ignore').strip()
         hex_str = hex_str.replace(' ', '').replace('\n', '').replace('\r', '').replace('\t', '')
 
-        # حذف کاراکتر >
+        # Remove > character
         if hex_str.endswith('>'):
             hex_str = hex_str[:-1]
 
-        # اطمینان از طول زوج
+        # Ensure even length
         if len(hex_str) % 2 != 0:
             hex_str += '0'
 
         try:
             return bytes.fromhex(hex_str)
         except ValueError:
-            raise PDFParseError("خطا در decode ASCIIHex")
+            raise PDFParseError("Error decoding ASCIIHex")
 
     def _decode_ascii85(self, data: bytes) -> bytes:
         """Decode ASCII85"""
         import base64
         ascii85_str = data.decode('ascii', errors='ignore').strip()
 
-        # حذف کاراکترهای ~>
+        # Remove ~> characters
         ascii85_str = ascii85_str.replace('~>', '')
 
         try:
-            # اضافه کردن padding اگر نیاز باشد
+            # Add padding if needed
             padding = 4 - (len(ascii85_str) % 4)
             if padding != 4:
                 ascii85_str += 'u' * padding
 
             return base64.a85decode(ascii85_str, adobe=True)
         except Exception:
-            raise PDFParseError("خطا در decode ASCII85")
+            raise PDFParseError("Error decoding ASCII85")
 
     def _decode_lzw(self, data: bytes) -> bytes:
         """Decode LZW (simple fallback implementation)"""
@@ -618,14 +618,14 @@ class PDFStream(PDFObject):
             if byte == 128:  # EOD marker
                 break
             elif byte < 128:
-                # کپی n+1 بایت
+                # Copy n+1 bytes
                 count = byte + 1
                 if i + count > len(data):
                     break
                 result.extend(data[i:i+count])
                 i += count
             else:
-                # تکرار بایت n-127 بار
+                # Repeat byte n-127 times
                 count = 257 - byte
                 if i >= len(data):
                     break
@@ -641,7 +641,7 @@ class PDFStream(PDFObject):
 
 @dataclass
 class PDFNull(PDFObject):
-    """شیء null در PDF"""
+    """Null object in PDF"""
 
     def to_pdf(self) -> bytes:
         return b"null"
@@ -658,7 +658,7 @@ class PDFNull(PDFObject):
 
 @dataclass
 class PDFReference(PDFObject):
-    """ارجاع به شیء PDF"""
+    """Reference to PDF object"""
     obj_id: int
     gen_num: int = 0
 
@@ -681,7 +681,7 @@ class PDFReference(PDFObject):
 
 @dataclass
 class PDFIndirectObject:
-    """شیء غیرمستقیم PDF"""
+    """PDF indirect object"""
     obj_id: int
     gen_num: int = 0
     value: PDFObject = field(default_factory=PDFNull)
@@ -706,7 +706,7 @@ class PDFIndirectObject:
 
 @dataclass
 class PDFXRefEntry:
-    """ورودی جدول XRef"""
+    """XRef table entry"""
     offset: int
     gen_num: int
     in_use: bool
@@ -724,20 +724,20 @@ class PDFXRefEntry:
 
 @dataclass
 class PDFXRefTable:
-    """جدول XRef"""
+    """XRef table"""
     entries: list[PDFXRefEntry] = field(default_factory=list)
     subsections: list[tuple[int, int]] = field(default_factory=list)
 
     def add_entry(self, entry: PDFXRefEntry):
-        """اضافه کردن ورودی به جدول"""
+        """Add entry to table"""
         self.entries.append(entry)
 
     def to_pdf(self) -> bytes:
         result = [b"xref\n"]
 
-        # گروه‌بندی ورودی‌ها بر اساس subsections
+        # Group entries by subsections
         if not self.subsections:
-            # ایجاد subsections خودکار
+            # Auto-generate subsections
             self._generate_subsections()
 
         for start, count in self.subsections:
@@ -747,17 +747,17 @@ class PDFXRefTable:
                     result.append(self.entries[i].to_pdf())
                     result.append(b"\n")
                 else:
-                    # ورودی آزاد
+                    # Free entry
                     result.append(f"{0:010d} {65535:05d} f\n".encode('ascii'))
 
         return b"".join(result)
 
     def _generate_subsections(self):
-        """تولید subsections خودکار"""
+        """Auto-generate subsections"""
         if not self.entries:
             return
 
-        # فرض می‌کنیم ورودی‌ها به ترتیب هستند
+        # Assume entries are in order
         self.subsections = [(0, len(self.entries))]
 
     def __str__(self) -> str:
@@ -766,7 +766,7 @@ class PDFXRefTable:
 
 @dataclass
 class PDFTrailer:
-    """تریلی PDF"""
+    """PDF trailer"""
     size: int
     root: PDFReference
     info: PDFReference | None = None
@@ -802,7 +802,7 @@ class PDFTrailer:
         result.append(b"trailer\n")
         result.append(dict_obj.to_pdf())
         result.append(b"\nstartxref\n")
-        # offset باید از بیرون تنظیم شود
+        # Offset must be set externally
         result.append(b"%%EOF\n")
 
         return b"".join(result)
@@ -813,7 +813,7 @@ class PDFTrailer:
 
 @dataclass
 class PDFPage(PDFObject):
-    """صفحه PDF"""
+    """PDF page"""
     media_box: list[float]  # [x0, y0, x1, y1]
     contents: PDFReference | list[PDFReference] | None = None
     resources: PDFDictionary | None = None
@@ -913,7 +913,7 @@ class PDFPage(PDFObject):
 
 @dataclass
 class PDFCatalog(PDFObject):
-    """کاتالوگ PDF (ریشه سند)"""
+    """PDF catalog (document root)"""
     pages: PDFReference
     page_layout: str | None = None
     page_mode: str | None = None
@@ -966,7 +966,7 @@ class PDFCatalog(PDFObject):
 
 @dataclass
 class PDFInfo(PDFObject):
-    """اطلاعات سند PDF"""
+    """PDF document information"""
     title: str | None = None
     author: str | None = None
     subject: str | None = None
@@ -1038,7 +1038,7 @@ class PDFInfo(PDFObject):
         return result
 
     def _format_pdf_date(self, dt: datetime) -> str:
-        """فرمت‌بندی تاریخ به فرمت PDF"""
+        """Format date to PDF format"""
         return dt.strftime("D:%Y%m%d%H%M%S")
 
     def __str__(self) -> str:
@@ -1046,11 +1046,11 @@ class PDFInfo(PDFObject):
 
 
 class PDFObjectFactory:
-    """کارخانه تولید اشیاء PDF"""
+    """PDF object factory"""
 
     @staticmethod
     def create_from_value(value: Any) -> PDFObject:
-        """ایجاد شیء PDF از مقدار پایتون"""
+        """Create PDF object from Python value"""
         if value is None:
             return PDFNull()
         elif isinstance(value, bool):
@@ -1076,50 +1076,50 @@ class PDFObjectFactory:
         elif isinstance(value, PDFObject):
             return value
         else:
-            raise PDFParseError(f"نوع نامعتبر برای تبدیل به PDFObject: {type(value)}")
+            raise PDFParseError(f"Invalid type for conversion to PDFObject: {type(value)}")
 
     @staticmethod
     def parse_pdf_string(pdf_str: str) -> PDFString:
-        """پارس رشته PDF"""
+        """Parse PDF string"""
         if pdf_str.startswith('(') and pdf_str.endswith(')'):
-            # رشته لفظی
+            # Literal string
             content = pdf_str[1:-1]
-            # حذف escaping
+            # Remove escaping
             content = content.replace('\\(', '(').replace('\\)', ')')
             content = content.replace('\\n', '\n').replace('\\r', '\r')
             content = content.replace('\\t', '\t').replace('\\b', '\b')
             content = content.replace('\\f', '\f').replace('\\\\', '\\')
             return PDFString(content, is_literal=True)
         elif pdf_str.startswith('<') and pdf_str.endswith('>'):
-            # رشته هگزادسیمال
+            # Hexadecimal string
             hex_str = pdf_str[1:-1].strip()
-            # حذف فاصله‌ها
+            # Delete spaces
             hex_str = hex_str.replace(' ', '').replace('\n', '').replace('\r', '').replace('\t', '')
             try:
-                # decode هگزادسیمال
+                # Decode hex
                 if len(hex_str) % 2 != 0:
-                    hex_str += '0'  # padding برای طول فرد
+                    hex_str += '0'  # padding for odd length
                 content = bytes.fromhex(hex_str).decode('utf-8', errors='replace')
                 return PDFString(content, is_hex=True)
             except ValueError:
-                raise PDFParseError(f"خطا در decode رشته هگزادسیمال: {pdf_str}")
+                raise PDFParseError(f"Error decoding hex string: {pdf_str}")
         else:
-            raise PDFParseError(f"فرمت رشته PDF نامعتبر: {pdf_str}")
+            raise PDFParseError(f"Invalid PDF string format: {pdf_str}")
 
 
 class PDFObjectSerializer:
-    """سریالایزر اشیاء PDF"""
+    """PDF object serializer"""
 
     @staticmethod
     def serialize(obj: PDFObject) -> bytes:
-        """سریالایز شیء PDF"""
+        """Serialize PDF object"""
         return obj.to_pdf()
 
     @staticmethod
     def deserialize(data: bytes) -> PDFObject:
-        """دسی‌ریالایز داده‌های PDF"""
-        # این یک پیاده‌سازی ساده است
-        # برای نسخه کامل نیاز به پارسر کامل داریم
+        """Deserialize PDF data"""
+        # This is a simple implementation
+        # Full version needs a complete parser
         try:
             text = data.decode('ascii', errors='ignore').strip()
 
@@ -1130,89 +1130,89 @@ class PDFObjectSerializer:
             elif text == 'false':
                 return PDFBoolean(False)
             elif text.startswith('/'):
-                # نام
+                # Name
                 name = text[1:]
                 return PDFName(name)
             elif text.startswith('(') and text.endswith(')'):
-                # رشته لفظی
+                # Literal string
                 return PDFObjectFactory.parse_pdf_string(text)
             elif text.startswith('<') and text.endswith('>'):
                 if text.startswith('<<'):
-                    # دیکشنری
-                    # پیاده‌سازی ساده - برای نسخه کامل نیاز به پارسر داریم
+                    # Dictionary
+                    # Simple implementation - full version needs a parser
                     return PDFDictionary()
                 else:
-                    # رشته هگزادسیمال
+                    # Hexadecimal string
                     return PDFObjectFactory.parse_pdf_string(text)
             elif text.startswith('[') and text.endswith(']'):
-                # آرایه
-                # پیاده‌سازی ساده
+                # Array
+                # Simple implementation
                 return PDFArray()
             elif text.isdigit() or (text.startswith('-') and text[1:].isdigit()):
-                # عدد صحیح
+                # Integer
                 return PDFInteger(int(text))
             elif re.match(r'^-?\d+\.\d+$', text):
-                # عدد اعشاری
+                # Decimal
                 return PDFReal(float(text))
             elif re.match(r'^\d+ \d+ R$', text):
-                # ارجاع
+                # Reference
                 parts = text.split()
                 return PDFReference(int(parts[0]), int(parts[1]))
             else:
-                raise PDFParseError(f"نوع داده ناشناخته: {text}")
+                raise PDFParseError(f"Unknown data type: {text}")
 
         except Exception as e:
-            raise PDFParseError(f"خطا در deserialize: {str(e)}")
+            raise PDFParseError(f"Error in deserialize: {str(e)}")
 
 
-# # تست کلاس‌ها
+# # Test classes
 # if __name__ == "__main__":
-#     print("🧪 تست کلاس‌های PDF Objects")
+#     print("🧪 Test PDF object classes")
 
-#     # تست Boolean
+#     # Test Boolean
 #     bool_obj = PDFBoolean(True)
 #     print(f"Boolean: {bool_obj.to_pdf()}")
 
-#     # تست Integer
+#     # Test Integer
 #     int_obj = PDFInteger(42)
 #     print(f"Integer: {int_obj.to_pdf()}")
 
-#     # تست Real
+#     # Test Real
 #     real_obj = PDFReal(3.14159)
 #     print(f"Real: {real_obj.to_pdf()}")
 
-#     # تست String
+#     # Test String
 #     str_obj = PDFString("Hello PDF!")
 #     print(f"String: {str_obj.to_pdf()}")
 
-#     # تست Name
+#     # Test Name
 #     name_obj = PDFName("Font")
 #     print(f"Name: {name_obj.to_pdf()}")
 
-#     # تست Array
+#     # Test Array
 #     array_obj = PDFArray([PDFInteger(1), PDFInteger(2), PDFInteger(3)])
 #     print(f"Array: {array_obj.to_pdf()}")
 
-#     # تست Dictionary
+#     # Test Dictionary
 #     dict_obj = PDFDictionary()
 #     dict_obj.set("Type", PDFName("Page"))
 #     dict_obj.set("MediaBox", PDFArray([PDFReal(0), PDFReal(0), PDFReal(612), PDFReal(792)]))
 #     print(f"Dictionary:\n{dict_obj.to_pdf().decode('ascii')}")
 
-#     # تست Stream
+#     # Test Stream
 #     stream_data = b"Hello World!"
 #     stream_obj = PDFStream(stream_data, filters=["FlateDecode"])
 #     print(f"Stream length: {len(stream_obj.to_pdf())} bytes")
 
-#     # تست Reference
+#     # Test Reference
 #     ref_obj = PDFReference(1, 0)
 #     print(f"Reference: {ref_obj.to_pdf()}")
 
-#     # تست Page
+#     # Test Page
 #     page_obj = PDFPage(
 #         media_box=[0, 0, 612, 792],
 #         resources=PDFDictionary()
 #     )
 #     print(f"Page:\n{page_obj.to_pdf().decode('ascii')}")
 
-#     print("\n✅ تست کلاس‌های PDF Objects با موفقیت انجام شد")
+#     print("\n✅ PDF object classes test completed successfully")

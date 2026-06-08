@@ -1,6 +1,6 @@
 """
-ماژول بهینه‌سازی PDF
-کاهش حجم فایل و بهبود کارایی
+PDF Optimization Module
+Reduces file size and improves performance
 """
 import hashlib
 import logging
@@ -18,30 +18,30 @@ logger = logging.getLogger(__name__)
 
 
 class OptimizationLevel(Enum):
-    """سطوح بهینه‌سازی"""
-    NONE = "none"           # بدون بهینه‌سازی
-    FAST = "fast"           # بهینه‌سازی سریع
-    BALANCED = "balanced"   # متعادل
-    MAXIMUM = "maximum"     # حداکثر بهینه‌سازی
+    """Optimization levels"""
+    NONE = "none"           # No optimization
+    FAST = "fast"           # Fast optimization
+    BALANCED = "balanced"   # Balanced
+    MAXIMUM = "maximum"     # Maximum optimization
 
 
 @dataclass
 class OptimizationOptions:
-    """گزینه‌های بهینه‌سازی"""
+    """Optimization options"""
     level: OptimizationLevel = OptimizationLevel.BALANCED
-    compress_images: bool = True          # Compression تصاویر
-    compress_streams: bool = True         # Compression استریم‌ها
-    remove_unused: bool = True            # حذف آبجکت‌های استفاده نشده
-    merge_fonts: bool = False             # ادغام فونت‌ها
-    linearize: bool = False               # خطی‌سازی برای وب
-    remove_metadata: bool = False         # حذف Metadata
-    downscale_images: bool = False        # کاهش اندازه تصاویر
-    image_quality: int = 85               # کیفیت تصاویر (0-100)
-    remove_duplicates: bool = True        # حذف داده‌های تکراری
+    compress_images: bool = True          # Compress images
+    compress_streams: bool = True         # Compress streams
+    remove_unused: bool = True            # Remove unused objects
+    merge_fonts: bool = False             # Merge fonts
+    linearize: bool = False               # Linearize for web
+    remove_metadata: bool = False         # Remove metadata
+    downscale_images: bool = False        # Downscale images
+    image_quality: int = 85               # Image quality (0-100)
+    remove_duplicates: bool = True        # Remove duplicate data
 
 
 class PDFOptimizer:
-    """بهینه‌ساز PDF"""
+    """PDF Optimizer"""
 
     def __init__(self, options: OptimizationOptions | None = None):
         self.options = options or OptimizationOptions()
@@ -55,19 +55,19 @@ class PDFOptimizer:
         }
 
     def optimize(self, pdf_data: bytes) -> bytes:
-        """بهینه‌سازی PDF"""
+        """Optimize PDF"""
         self.stats['original_size'] = len(pdf_data)
 
         if self.options.level == OptimizationLevel.NONE:
             return pdf_data
 
-        # تجزیه PDF به بخش‌های مختلف
+        # Parse PDF into parts
         pdf_parts = self._parse_pdf_structure(pdf_data)
 
-        # اعمال بهینه‌سازی‌ها
+        # Apply optimizations
         optimized_parts = self._apply_optimizations(pdf_parts)
 
-        # مونتاژ مجدد PDF
+        # Reassemble PDF
         optimized_data = self._assemble_pdf(optimized_parts)
 
         self.stats['optimized_size'] = len(optimized_data)
@@ -77,9 +77,9 @@ class PDFOptimizer:
         return optimized_data
 
     def _parse_pdf_structure(self, pdf_data: bytes) -> dict[str, Any]:
-        """تجزیه ساختار PDF"""
-        # این یک پیاده‌سازی ساده است
-        # در عمل نیاز به پارسر کامل PDF دارد
+        """Parse PDF structure"""
+        # This is a simple implementation
+        # In practice, a full PDF parser is needed
 
         parts = {
             'header': b'',
@@ -89,7 +89,7 @@ class PDFOptimizer:
             'startxref': b''
         }
 
-        # پیدا کردن header
+        # Find header
         header_match = re.search(rb'%PDF-\d\.\d', pdf_data)
         if header_match:
             parts['header'] = pdf_data[:header_match.end()]
@@ -98,70 +98,70 @@ class PDFOptimizer:
             parts['header'] = b'%PDF-1.7\n'
             remaining = pdf_data
 
-        # پیدا کردن startxref
+        # Find startxref
         startxref_match = re.search(rb'startxref\s+(\d+)', remaining)
         if startxref_match:
             parts['startxref'] = remaining[startxref_match.start():]
             remaining = remaining[:startxref_match.start()]
 
-        # پیدا کردن trailer
+        # Find trailer
         trailer_match = re.search(rb'trailer\s*<<.*?>>', remaining, re.DOTALL)
         if trailer_match:
             parts['trailer'] = remaining[trailer_match.start():]
             remaining = remaining[:trailer_match.start()]
 
-        # پیدا کردن xref
+        # Find xref
         xref_match = re.search(rb'xref\s+\d+\s+\d+.*?\n', remaining, re.DOTALL)
         if xref_match:
             parts['xref'] = remaining[xref_match.start():]
             remaining = remaining[:xref_match.start()]
 
-        # استخراج آبجکت‌ها (ساده)
-        # در پیاده‌سازی واقعی نیاز به پارسر کامل داریم
+        # Extract objects (simple)
+        # In real implementation, a full parser is needed
         parts['objects_data'] = remaining
 
         return parts
 
     def _apply_optimizations(self, pdf_parts: dict[str, Any]) -> dict[str, Any]:
-        """اعمال بهینه‌سازی‌ها"""
+        """Apply optimizations"""
         optimized_parts = pdf_parts.copy()
 
-        # Compression استریم‌ها
+        # Compress streams
         if self.options.compress_streams:
             optimized_parts = self._compress_streams(optimized_parts)
 
-        # بهینه‌سازی تصاویر
+        # Optimize images
         if self.options.compress_images:
             optimized_parts = self._optimize_images(optimized_parts)
 
-        # حذف آبجکت‌های استفاده نشده
+        # Remove unused objects
         if self.options.remove_unused:
             optimized_parts = self._remove_unused_objects(optimized_parts)
 
-        # حذف داده‌های تکراری
+        # Remove duplicate data
         if self.options.remove_duplicates:
             optimized_parts = self._remove_duplicates(optimized_parts)
 
-        # حذف Metadata
+        # Remove metadata
         if self.options.remove_metadata:
             optimized_parts = self._remove_metadata(optimized_parts)
 
-        # خطی‌سازی برای وب
+        # Linearize for web
         if self.options.linearize:
             optimized_parts = self._linearize_pdf(optimized_parts)
 
         return optimized_parts
 
     def _compress_streams(self, pdf_parts: dict[str, Any]) -> dict[str, Any]:
-        """Compression استریم‌ها"""
-        # پیدا کردن و Compression استریم‌ها
+        """Compress streams"""
+        # Find and compress streams
         pattern = rb'stream\s*\n(.*?)\n\s*endstream'
         objects_data = pdf_parts.get('objects_data', b'')
 
         def compress_stream(match):
             stream_data = match.group(1)
             try:
-                # Compression با zlib
+                # Compress with zlib
                 compressed = zlib.compress(stream_data, level=zlib.Z_BEST_COMPRESSION)
                 return b'stream\n' + compressed + b'\nendstream'
             except Exception:
@@ -176,21 +176,21 @@ class PDFOptimizer:
 
     def _optimize_images(self, pdf_parts: dict[str, Any]) -> dict[str, Any]:
         """
-        بهینه‌سازی تصاویر در PDF با قابلیت‌های:
-        1. کاهش اندازه تصاویر (downscaling)
-        2. Compression با الگوریتم‌های بهینه
-        3. حذف Metadataی غیرضروری
-        4. تبدیل فرمت‌های غیربهینه
+        Optimize images in PDF with capabilities:
+        1. Downscale images
+        2. Compress with optimal algorithms
+        3. Remove unnecessary metadata
+        4. Convert non-optimal formats
         
         Args:
-            pdf_parts: دیکشنری حاوی بخش‌های PDF
+            pdf_parts: Dictionary containing PDF parts
             
         Returns:
-            pdf_parts بهینه‌سازی شده
+            Optimized pdf_parts
         """
         try:
             if 'objects' not in pdf_parts:
-                logger.warning("PDF بدون آبجکت برای بهینه‌سازی تصاویر")
+                logger.warning("PDF has no objects for image optimization")
                 return pdf_parts
 
             objects = pdf_parts['objects']
@@ -198,14 +198,14 @@ class PDFOptimizer:
             total_size_before = 0
             total_size_after = 0
 
-            # آمار بهینه‌سازی
+            # Optimization stats
             self.stats['images_optimized'] = 0
             self.stats['images_downscaled'] = 0
             self.stats['images_converted'] = 0
             self.stats['size_reduction_bytes'] = 0
             self.stats['size_reduction_percent'] = 0.0
 
-            # گزینه‌های بهینه‌سازی
+            # Optimization options
             options = getattr(self, 'optimization_options', {
                 'downscale_images': True,
                 'max_image_width': 1920,
@@ -217,13 +217,13 @@ class PDFOptimizer:
                 'dpi_threshold': 300
             })
 
-            # پردازش هر آبجکت
+            # Process each object
             for i, obj in enumerate(objects):
                 if self._is_image_object(obj):
                     original_size = self._get_object_size(obj)
                     total_size_before += original_size
 
-                    # بهینه‌سازی تصویر
+                    # Optimize image
                     optimized_obj = self._optimize_single_image(obj, options)
 
                     if optimized_obj:
@@ -235,20 +235,20 @@ class PDFOptimizer:
                             optimized_count += 1
                             total_size_after += new_size
 
-                            # به‌روزرسانی آمار
+                            # Update stats
                             self.stats['images_optimized'] += 1
                             self.stats['size_reduction_bytes'] += size_reduction
 
-                            logger.debug(f"تصویر بهینه‌سازی شد: {size_reduction} بایت کاهش")
+                            logger.debug(f"Image optimized: {size_reduction} bytes reduction")
 
-            # محاسبه درصد کاهش
+            # Calculate reduction percentage
             if total_size_before > 0:
                 reduction_percent = ((total_size_before - total_size_after) / total_size_before) * 100
                 self.stats['size_reduction_percent'] = round(reduction_percent, 2)
 
                 logger.info(
-                    f"بهینه‌سازی تصاویر کامل شد: {optimized_count} تصویر، "
-                    f"{self.stats['size_reduction_bytes']:,} بایت کاهش "
+                    f"Image optimization complete: {optimized_count} images, "
+                    f"{self.stats['size_reduction_bytes']:,} bytes reduction "
                     f"({self.stats['size_reduction_percent']}%)"
                 )
 
@@ -256,32 +256,32 @@ class PDFOptimizer:
             return pdf_parts
 
         except Exception as e:
-            logger.error(f"خطا در بهینه‌سازی تصاویر: {e}", exc_info=True)
+            logger.error(f"Error optimizing images: {e}", exc_info=True)
             return pdf_parts
 
 
     def _is_image_object(self, obj: dict) -> bool:
         """
-        تشخیص آبجکت تصویر در PDF
+        Check if object is an image in PDF
         
         Args:
-            obj: آبجکت PDF
+            obj: PDF object
             
         Returns:
-            True اگر آبجکت تصویر باشد
+            True if object is an image
         """
         try:
-            # بررسی بر اساس subtype
+            # Check by subtype
             if obj.get('type') == 'xobject':
                 subtype = obj.get('subtype', '')
                 return subtype.lower() == '/image'
 
-            # بررسی در metadata
+            # Check in metadata
             metadata = obj.get('metadata', {})
             if '/Subtype' in metadata:
                 return metadata['/Subtype'] == '/Image'
 
-            # بررسی در value
+            # Check in value
             value = obj.get('value', '')
             if isinstance(value, str):
                 return '/Subtype /Image' in value or '/Filter /DCTDecode' in value
@@ -293,16 +293,16 @@ class PDFOptimizer:
 
     def _get_object_size(self, obj: dict) -> int:
         """
-        محاسبه اندازه آبجکت
+        Calculate object size
         
         Args:
-            obj: آبجکت PDF
+            obj: PDF object
             
         Returns:
-            اندازه بر حسب بایت
+            Size in bytes
         """
         try:
-            # اندازه stream
+            # Stream size
             if 'stream' in obj:
                 stream_data = obj['stream']
                 if isinstance(stream_data, bytes):
@@ -310,7 +310,7 @@ class PDFOptimizer:
                 elif isinstance(stream_data, str):
                     return len(stream_data.encode('utf-8'))
 
-            # اندازه value
+            # Value size
             if 'value' in obj:
                 value = obj['value']
                 if isinstance(value, bytes):
@@ -318,7 +318,7 @@ class PDFOptimizer:
                 elif isinstance(value, str):
                     return len(value.encode('utf-8'))
 
-            # اندازه تقریبی
+            # Approximate size
             return len(str(obj).encode('utf-8'))
         except Exception:
             return 0
@@ -326,25 +326,25 @@ class PDFOptimizer:
 
     def _optimize_single_image(self, image_obj: dict, options: dict) -> dict | None:
         """
-        بهینه‌سازی یک تصویر
+        Optimize a single image
         
         Args:
-            image_obj: آبجکت تصویر
-            options: گزینه‌های بهینه‌سازی
+            image_obj: Image object
+            options: Optimization options
             
         Returns:
-            آبجکت بهینه‌سازی شده یا None
+            Optimized object or None
         """
         try:
-            # استخراج داده‌های تصویر
+            # Extract image data
             image_data, image_info = self._extract_image_data(image_obj)
             if not image_data:
                 return None
 
-            # تشخیص فرمت تصویر
+            # Detect image format
             image_format = self._detect_image_format(image_info)
 
-            # پردازش بر اساس فرمت
+            # Process by format
             processed_data = None
 
             if image_format == 'JPEG':
@@ -368,13 +368,13 @@ class PDFOptimizer:
                     image_data, image_info, options
                 )
             else:
-                # فرمت‌های دیگر - Compression عمومی
+                # Other formats - Generic compression
                 processed_data = self._compress_generic_image(
                     image_data, image_info, options
                 )
 
             if processed_data:
-                # ایجاد آبجکت بهینه‌سازی شده
+                # Create optimized object
                 optimized_obj = self._create_optimized_image_object(
                     image_obj, processed_data, image_info, image_format
                 )
@@ -383,31 +383,31 @@ class PDFOptimizer:
             return None
 
         except Exception as e:
-            logger.warning(f"خطا در بهینه‌سازی تصویر: {e}")
+            logger.warning(f"Error optimizing image: {e}")
             return None
 
 
     def _extract_image_data(self, image_obj: dict) -> tuple[bytes | None, dict]:
         """
-        استخراج داده‌های تصویر از آبجکت PDF
+        Extract image data from PDF object
         
         Args:
-            image_obj: آبجکت تصویر PDF
+            image_obj: PDF image object
             
         Returns:
-            (داده‌های تصویر, اطلاعات تصویر)
+            (image data, image info)
         """
         try:
             image_info: dict[str, Any] = {}
 
-            # استخراج از stream
+            # Extract from stream
             if 'stream' in image_obj:
                 stream_data = image_obj['stream']
                 if isinstance(stream_data, bytes):
                     image_data = stream_data
                 else:
                     image_data = str(stream_data).encode('utf-8')
-            # استخراج از value
+            # Extract from value
             elif 'value' in image_obj:
                 value = image_obj['value']
                 if isinstance(value, bytes):
@@ -417,51 +417,51 @@ class PDFOptimizer:
             else:
                 return None, {}
 
-            # استخراج اطلاعات از metadata
+            # Extract info from metadata
             metadata = image_obj.get('metadata', {})
 
-            # ابعاد
+            # Dimensions
             if '/Width' in metadata and '/Height' in metadata:
                 image_info['width'] = int(metadata['/Width'])
                 image_info['height'] = int(metadata['/Height'])
 
-            # فضای رنگ
+            # Color space
             if '/ColorSpace' in metadata:
                 image_info['colorspace'] = metadata['/ColorSpace']
 
-            # عمق بیت
+            # Bit depth
             if '/BitsPerComponent' in metadata:
                 image_info['bits_per_component'] = int(metadata['/BitsPerComponent'])
 
-            # فیلتر
+            # Filter
             if '/Filter' in metadata:
                 image_info['filter'] = metadata['/Filter']
 
             # DPI
             if '/Width' in metadata and '/Height' in metadata:
-                # محاسبه DPI تقریبی
+                # Calculate approximate DPI
                 if '/UserUnit' in metadata:
                     user_unit = float(metadata['/UserUnit'])
                     image_info['dpi'] = int(72 * user_unit)
                 else:
-                    image_info['dpi'] = 72  # پیش‌فرض
+                    image_info['dpi'] = 72  # Default
 
             return image_data, image_info
 
         except Exception as e:
-            logger.warning(f"خطا در استخراج داده‌های تصویر: {e}")
+            logger.warning(f"Error extracting image data: {e}")
             return None, {}
 
 
     def _detect_image_format(self, image_info: dict) -> str:
         """
-        تشخیص فرمت تصویر
+        Detect image format
         
         Args:
-            image_info: اطلاعات تصویر
+            image_info: Image info
             
         Returns:
-            فرمت تصویر
+            Image format
         """
         filter_type = image_info.get('filter', '')
 
@@ -476,49 +476,49 @@ class PDFOptimizer:
         elif '/JPXDecode' in str(filter_type):
             return 'JPEG2000'
         else:
-            # سعی در تشخیص از روی داده‌ها
+            # Try detecting from data
             return 'UNKNOWN'
 
 
     def _optimize_jpeg_image(self, image_data: bytes, image_info: dict, options: dict) -> bytes | None:
         """
-        بهینه‌سازی تصویر JPEG
+        Optimize JPEG image
         
         Args:
-            image_data: داده‌های تصویر
-            image_info: اطلاعات تصویر
-            options: گزینه‌های بهینه‌سازی
+            image_data: Image data
+            image_info: Image info
+            options: Optimization options
             
         Returns:
-            داده‌های بهینه‌سازی شده
+            Optimized data
         """
         try:
             from PIL import Image
             import io
 
-            # باز کردن تصویر
+            # Open image
             img = cast(Image.Image, Image.open(io.BytesIO(image_data)))
 
-            # کاهش اندازه اگر لازم باشد
+            # Downscale if needed
             if options.get('downscale_images', True):
                 img = self._downscale_image(img, image_info, options)
                 self.stats['images_downscaled'] += 1
 
-            # حذف Metadata
+            # Remove metadata
             if options.get('remove_metadata', True):
-                # حذف EXIF و سایر Metadata
+                # Remove EXIF and other metadata
                 img_data = list(img.getdata())
                 img = cast(Image.Image, Image.new(img.mode, img.size))
                 img.putdata(img_data)
 
-            # ذخیره با کیفیت بهینه
+            # Save with optimal quality
             output = io.BytesIO()
             quality = options.get('jpeg_quality', 85)
 
-            # تبدیل به RGB اگر لازم باشد
+            # Convert to RGB if needed
             if img.mode not in ['RGB', 'L']:
                 if img.mode == 'RGBA':
-                    # ایجاد پس‌زمینه سفید برای تصاویر RGBA
+                    # Create white background for RGBA images
                     background = Image.new('RGB', img.size, (255, 255, 255))
                     background.paste(img, mask=img.split()[3] if img.mode == 'RGBA' else None)
                     img = cast(Image.Image, background)
@@ -530,93 +530,93 @@ class PDFOptimizer:
             return output.getvalue()
 
         except Exception as e:
-            logger.warning(f"خطا در بهینه‌سازی JPEG: {e}")
-            return image_data  # بازگشت داده اصلی در صورت خطا
+            logger.warning(f"Error optimizing JPEG: {e}")
+            return image_data  # Return original data on error
 
 
     def _optimize_png_image(self, image_data: bytes, image_info: dict, options: dict) -> bytes | None:
         """
-        بهینه‌سازی تصویر PNG
+        Optimize PNG image
         
         Args:
-            image_data: داده‌های تصویر
-            image_info: اطلاعات تصویر
-            options: گزینه‌های بهینه‌سازی
+            image_data: Image data
+            image_info: Image info
+            options: Optimization options
             
         Returns:
-            داده‌های بهینه‌سازی شده
+            Optimized data
         """
         try:
             from PIL import Image
             import io
 
-            # باز کردن تصویر
+            # Open image
             img = cast(Image.Image, Image.open(io.BytesIO(image_data)))
 
-            # کاهش اندازه اگر لازم باشد
+            # Downscale if needed
             if options.get('downscale_images', True):
                 img = self._downscale_image(img, image_info, options)
                 self.stats['images_downscaled'] += 1
 
-            # کاهش عمق رنگ اگر ممکن باشد
+            # Reduce color depth if possible
             if img.mode in ['RGBA', 'RGB']:
-                # بررسی اگر تصویر فقط از 256 رنگ استفاده می‌کند
+                # Check if image uses only 256 colors
                 colors = img.getcolors(maxcolors=256)
                 if colors and len(colors) <= 256:
                     img = cast(Image.Image, img.convert('P', palette=Image.Palette.ADAPTIVE, colors=256))
                     self.stats['images_converted'] += 1
 
-            # ذخیره با Compression بهینه
+            # Save with optimal compression
             output = io.BytesIO()
 
-            # تنظیمات Compression PNG
+            # PNG compression settings
             png_info: dict[str, Any] = {
                 'optimize': True,
             }
 
             if options.get('compress_png', True):
-                # سطح Compression zlib
-                png_info['compress_level'] = 9  # حداکثر Compression
+                # zlib compression level
+                png_info['compress_level'] = 9  # Maximum compression
 
             img.save(output, format='PNG', **png_info)
 
             return output.getvalue()
 
         except Exception as e:
-            logger.warning(f"خطا در بهینه‌سازی PNG: {e}")
+            logger.warning(f"Error optimizing PNG: {e}")
             return image_data
 
 
     def _optimize_tiff_image(self, image_data: bytes, image_info: dict, options: dict) -> bytes | None:
         """
-        بهینه‌سازی تصویر TIFF
+        Optimize TIFF image
         
         Args:
-            image_data: داده‌های تصویر
-            image_info: اطلاعات تصویر
-            options: گزینه‌های بهینه‌سازی
+            image_data: Image data
+            image_info: Image info
+            options: Optimization options
             
         Returns:
-            داده‌های بهینه‌سازی شده
+            Optimized data
         """
         try:
             from PIL import Image
             import io
 
-            # باز کردن تصویر
+            # Open image
             img = cast(Image.Image, Image.open(io.BytesIO(image_data)))
 
-            # کاهش اندازه اگر لازم باشد
+            # Downscale if needed
             if options.get('downscale_images', True):
                 img = self._downscale_image(img, image_info, options)
                 self.stats['images_downscaled'] += 1
 
-            # تبدیل به JPEG اگر کیفیت قابل قبول باشد
+            # Convert to JPEG if quality is acceptable
             if options.get('convert_tiff_to_jpeg', True):
                 output = io.BytesIO()
                 quality = options.get('jpeg_quality', 85)
 
-                # تبدیل به RGB
+                # Convert to RGB
                 if img.mode not in ['RGB', 'L']:
                     img = cast(Image.Image, img.convert('RGB'))
 
@@ -625,69 +625,69 @@ class PDFOptimizer:
 
                 return output.getvalue()
 
-            # یا Compression TIFF
+            # Or compress TIFF
             output = io.BytesIO()
             img.save(output, format='TIFF', compression='tiff_lzw')
 
             return output.getvalue()
 
         except Exception as e:
-            logger.warning(f"خطا در بهینه‌سازی TIFF: {e}")
+            logger.warning(f"Error optimizing TIFF: {e}")
             return image_data
 
 
     def _optimize_jbig2_image(self, image_data: bytes, image_info: dict, options: dict) -> bytes:
         """
-        بهینه‌سازی تصویر JBIG2
-        (JBIG2 از قبل فشرده است، فقط بررسی اندازه)
+        Optimize JBIG2 image
+        (JBIG2 is already compressed, only check size)
         
         Args:
-            image_data: داده‌های تصویر
-            image_info: اطلاعات تصویر
-            options: گزینه‌های بهینه‌سازی
+            image_data: Image data
+            image_info: Image info
+            options: Optimization options
             
         Returns:
-            داده‌های بهینه‌سازی شده
+            Optimized data
         """
-        # JBIG2 از قبل بسیار فشرده است
-        # فقط می‌توانیم بررسی کنیم که آیا نیاز به downscale دارد
+        # JBIG2 is already highly compressed
+        # We can only check if downscaling is needed
         return image_data
 
 
     def _optimize_ccitt_image(self, image_data: bytes, image_info: dict, options: dict) -> bytes:
         """
-        بهینه‌سازی تصویر CCITT (فکس)
+        Optimize CCITT (fax) image
         
         Args:
-            image_data: داده‌های تصویر
-            image_info: اطلاعات تصویر
-            options: گزینه‌های بهینه‌سازی
+            image_data: Image data
+            image_info: Image info
+            options: Optimization options
             
         Returns:
-            داده‌های بهینه‌سازی شده
+            Optimized data
         """
-        # CCITT برای اسناد سیاه و سفید بهینه است
-        # معمولاً نیازی به بهینه‌سازی بیشتر ندارد
+        # CCITT is optimal for black-and-white documents
+        # Usually doesn't need further optimization
         return image_data
 
 
     def _compress_generic_image(self, image_data: bytes, image_info: dict, options: dict) -> bytes:
         """
-        Compression عمومی برای فرمت‌های ناشناخته
+        Generic compression for unknown formats
         
         Args:
-            image_data: داده‌های تصویر
-            image_info: اطلاعات تصویر
-            options: گزینه‌های بهینه‌سازی
+            image_data: Image data
+            image_info: Image info
+            options: Optimization options
             
         Returns:
-            داده‌های فشرده‌شده
+            Compressed data
         """
         try:
-            # استفاده از zlib برای Compression عمومی
+            # Use zlib for generic compression
             compressed = zlib.compress(image_data, level=9)
 
-            # فقط اگر Compression مؤثر بود
+            # Only if compression was effective
             if len(compressed) < len(image_data):
                 return compressed
 
@@ -698,15 +698,15 @@ class PDFOptimizer:
 
     def _downscale_image(self, img: Image.Image, image_info: dict, options: dict) -> Image.Image:
         """
-        کاهش اندازه تصویر
+        Downscale image
         
         Args:
-            img: شیء تصویر PIL
-            image_info: اطلاعات تصویر
-            options: گزینه‌های بهینه‌سازی
+            img: PIL Image object
+            image_info: Image info
+            options: Optimization options
             
         Returns:
-            تصویر با اندازه کاهش یافته
+            Downscaled image
         """
         try:
             width, height = img.size
@@ -714,17 +714,17 @@ class PDFOptimizer:
             max_height = options.get('max_image_height', 1080)
             dpi_threshold = options.get('dpi_threshold', 300)
 
-            # بررسی DPI
+            # Check DPI
             current_dpi = image_info.get('dpi', 72)
             if current_dpi > dpi_threshold:
-                # محاسبه ضریب کاهش
+                # Calculate scale factor
                 scale_factor = dpi_threshold / current_dpi
                 new_width = int(width * scale_factor)
                 new_height = int(height * scale_factor)
             else:
-                # بررسی ابعاد
+                # Check dimensions
                 if width > max_width or height > max_height:
-                    # محاسبه نسبت
+                    # Calculate ratio
                     width_ratio = max_width / width
                     height_ratio = max_height / height
                     scale_factor = min(width_ratio, height_ratio)
@@ -734,15 +734,15 @@ class PDFOptimizer:
                 else:
                     return img
 
-            # اطمینان از حداقل اندازه
+            # Ensure minimum size
             new_width = max(new_width, 100)
             new_height = max(new_height, 100)
 
-            # تغییر اندازه با فیلتر با کیفیت
+            # Resize with high-quality filter
             return img.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
         except Exception as e:
-            logger.warning(f"خطا در کاهش اندازه تصویر: {e}")
+            logger.warning(f"Error downscaling image: {e}")
             return img
 
 
@@ -751,44 +751,44 @@ class PDFOptimizer:
                                     image_info: dict,
                                     image_format: str) -> dict:
         """
-        ایجاد آبجکت تصویر بهینه‌سازی شده
+        Create optimized image object
         
         Args:
-            original_obj: آبجکت اصلی
-            optimized_data: داده‌های بهینه‌سازی شده
-            image_info: اطلاعات تصویر
-            image_format: فرمت تصویر
+            original_obj: Original object
+            optimized_data: Optimized data
+            image_info: Image info
+            image_format: Image format
             
         Returns:
-            آبجکت بهینه‌سازی شده
+            Optimized object
         """
-        # ایجاد کپی از آبجکت اصلی
+        # Create copy of original object
         optimized_obj = original_obj.copy()
 
-        # به‌روزرسانی stream
+        # Update stream
         if 'stream' in optimized_obj:
             optimized_obj['stream'] = optimized_data
         elif 'value' in optimized_obj:
             optimized_obj['value'] = optimized_data
 
-        # به‌روزرسانی metadata
+        # Update metadata
         metadata = optimized_obj.get('metadata', {}).copy()
 
-        # به‌روزرسانی اندازه
+        # Update size
         metadata['/Length'] = len(optimized_data)
 
-        # به‌روزرسانی فیلتر بر اساس فرمت
+        # Update filter based on format
         if image_format == 'JPEG':
             metadata['/Filter'] = '/DCTDecode'
         elif image_format == 'PNG':
             metadata['/Filter'] = '/FlateDecode'
 
-        # به‌روزرسانی ابعاد اگر تغییر کرده باشد
+        # Update dimensions if changed
         if 'width' in image_info and 'height' in image_info:
             metadata['/Width'] = image_info['width']
             metadata['/Height'] = image_info['height']
 
-        # حذف Metadataی غیرضروری
+        # Remove unnecessary metadata
         if 'remove_metadata' in getattr(self, 'optimization_options', {}):
             keys_to_remove = ['/Metadata', '/PieceInfo', '/StructParent', '/ID']
             for key in keys_to_remove:
@@ -796,7 +796,7 @@ class PDFOptimizer:
 
         optimized_obj['metadata'] = metadata
 
-        # افزودن پرچم بهینه‌سازی
+        # Add optimization flag
         optimized_obj['optimized'] = True
         optimized_obj['original_size'] = self._get_object_size(original_obj)
         optimized_obj['optimized_size'] = len(optimized_data)
@@ -804,27 +804,27 @@ class PDFOptimizer:
         return optimized_obj
 
     def _remove_unused_objects(self, pdf_parts: dict[str, Any]) -> dict[str, Any]:
-        """حذف آبجکت‌های استفاده نشده"""
-        # تحلیل ارجاعات و پیدا کردن آبجکت‌های استفاده نشده
-        # این پیاده‌سازی ساده فقط آبجکت‌های مشخص را حذف می‌کند
+        """Remove unused objects"""
+        # Analyze references and find unused objects
+        # This simple implementation only removes specific objects
 
         objects_data = pdf_parts.get('objects_data', b'')
 
-        # پیدا کردن آبجکت‌ها
+        # Find objects
         object_pattern = rb'(\d+\s+\d+\s+obj.*?endobj)'
         objects = re.findall(object_pattern, objects_data, re.DOTALL)
 
-        # تحلیل ساده (در عمل پیچیده‌تر است)
+        # Simple analysis (more complex in practice)
         used_objects = set()
 
-        # پیدا کردن ارجاعات
+        # Find references
         ref_pattern = rb'(\d+\s+\d+\s+R)'
         for obj in objects:
             refs = re.findall(ref_pattern, obj)
             for ref in refs:
                 used_objects.add(ref.decode('utf-8').split()[0])
 
-        # حذف آبجکت‌های استفاده نشده
+        # Remove unused objects
         kept_objects = []
         for obj in objects:
             obj_match = re.match(rb'(\d+)\s+\d+\s+obj', obj)
@@ -839,7 +839,7 @@ class PDFOptimizer:
         return pdf_parts
 
     def _is_root_object(self, obj_data: bytes) -> bool:
-        """بررسی اینکه آیا آبجکت ریشه است"""
+        """Check if object is a root object"""
         root_patterns = [
             rb'/Type\s*/Catalog',
             rb'/Pages\s+\d+\s+\d+\s+R',
@@ -854,16 +854,16 @@ class PDFOptimizer:
         return False
 
     def _remove_duplicates(self, pdf_parts: dict[str, Any]) -> dict[str, Any]:
-        """حذف داده‌های تکراری"""
-        # شناسایی و حذف آبجکت‌های تکراری
-        # این پیاده‌سازی ساده فقط آبجکت‌های یکسان را حذف می‌کند
+        """Remove duplicate data"""
+        # Identify and remove duplicate objects
+        # This simple implementation only removes identical objects
 
         objects_data = pdf_parts.get('objects_data', b'')
 
         object_pattern = rb'(\d+\s+\d+\s+obj.*?endobj)'
         objects = re.findall(object_pattern, objects_data, re.DOTALL)
 
-        # حذف تکراری‌ها
+        # Remove duplicates
         unique_objects = []
         seen_hashes = set()
 
@@ -879,15 +879,15 @@ class PDFOptimizer:
         return pdf_parts
 
     def _remove_metadata(self, pdf_parts: dict[str, Any]) -> dict[str, Any]:
-        """حذف Metadata"""
-        # حذف دیکشنری Info و XMP metadata
+        """Remove metadata"""
+        # Remove Info dictionary and XMP metadata
         objects_data = pdf_parts.get('objects_data', b'')
 
-        # حذف آبجکت‌های Info
+        # Remove Info objects
         info_pattern = rb'\d+\s+\d+\s+obj\s*<<\s*/Type\s*/Metadata.*?endobj'
         objects_data = re.sub(info_pattern, b'', objects_data, flags=re.DOTALL)
 
-        # حذف XMP
+        # Remove XMP
         xmp_pattern = rb'<x:xmpmeta.*?</x:xmpmeta>'
         objects_data = re.sub(xmp_pattern, b'', objects_data, flags=re.DOTALL | re.IGNORECASE)
 
@@ -896,28 +896,28 @@ class PDFOptimizer:
 
     def _linearize_pdf(self, pdf_parts: dict[str, Any]) -> dict[str, Any]:
         """
-        خطی‌سازی PDF برای بارگذاری سریع‌تر در وب
+        Linearize PDF for faster web loading
         
-        پیاده‌سازی بر اساس استاندارد PDF 1.4+ Linearization
+        Implementation based on PDF 1.4+ Linearization standard
         RFC: https://www.adobe.com/content/dam/acom/en/devnet/pdf/pdfs/PDF32000_2008.pdf
-        بخش: Annex F (Linearized PDF)
+        Section: Annex F (Linearized PDF)
         
         Args:
-            pdf_parts: دیکشنری حاوی بخش‌های PDF
+            pdf_parts: Dictionary containing PDF parts
             
         Returns:
-            pdf_parts خطی‌سازی شده
+            Linearized pdf_parts
         """
         try:
-            # 1. بررسی ساختار PDF
+            # 1. Check PDF structure
             if 'objects' not in pdf_parts or not pdf_parts['objects']:
-                logger.warning("PDF بدون آبجکت برای خطی‌سازی")
+                logger.warning("PDF has no objects for linearization")
                 return pdf_parts
 
             objects = pdf_parts['objects']
             total_objects = len(objects)
 
-            # 2. ایجاد Linearization Dictionary (آبجکت اول)
+            # 2. Create Linearization Dictionary (first object)
             linearization_value: dict[str, Any] = {
                 'Type': '/Linearization',
                 'L': pdf_parts.get('file_size', 0),
@@ -935,7 +935,7 @@ class PDFOptimizer:
                 'value': linearization_value
             }
 
-            # 3. شناسایی صفحات و مرتب‌سازی
+            # 3. Identify pages and sort
             pages = []
             page_objects = []
             other_objects = []
@@ -947,11 +947,11 @@ class PDFOptimizer:
                 else:
                     other_objects.append(obj)
 
-            # 4. مرتب‌سازی آبجکت‌ها برای خطی‌سازی
-            # ترتیب: Linearization Dict → Root → Pages → Resources → Content → سایر
+            # 4. Sort objects for linearization
+            # Order: Linearization Dict → Root → Pages → Resources → Content → Other
             sorted_objects = []
 
-            # 4.1. Linearization Dictionary (همیشه آبجکت 1)
+            # 4.1. Linearization Dictionary (always object 1)
             sorted_objects.append(linearization_dict)
 
             # 4.2. Root object
@@ -975,17 +975,17 @@ class PDFOptimizer:
             for obj in content_objects:
                 other_objects.remove(obj)
 
-            # 4.6. سایر آبجکت‌ها
+            # 4.6. Other objects
             sorted_objects.extend(other_objects)
 
-            # 5. به‌روزرسانی شماره‌های آبجکت
+            # 5. Update object numbers
             for i, obj in enumerate(sorted_objects, 1):
                 obj['obj_num'] = i
 
-            # 6. ایجاد Hint Tables
+            # 6. Create Hint Tables
             hint_tables = self._create_hint_tables(sorted_objects, pages)
 
-            # 7. ایجاد Hint Stream
+            # 7. Create Hint Stream
             hint_stream = self._create_hint_stream(hint_tables)
             hint_stream_obj = {
                 'obj_num': len(sorted_objects) + 1,
@@ -1000,58 +1000,58 @@ class PDFOptimizer:
 
             sorted_objects.append(hint_stream_obj)
 
-            # 8. به‌روزرسانی Linearization Dictionary با اطلاعات Hint Stream
+            # 8. Update Linearization Dictionary with Hint Stream info
             linearization_value['H'] = [
                 self._calculate_object_offset(hint_stream_obj, sorted_objects),
                 len(hint_stream)
             ]
 
-            # 9. به‌روزرسانی اطلاعات صفحات
+            # 9. Update page information
             if pages:
                 first_page = pages[0]
                 linearization_value['P'] = first_page['obj_num']
                 linearization_value['T'] = self._calculate_object_offset(first_page, sorted_objects)
 
-            # 10. ایجاد هدر خطی‌سازی شده
-            # استفاده از کامنت استاندارد به جای کاراکترهای چینی
+            # 10. Create linearized header
+            # Use standard comments instead of Chinese characters
             linearized_header = b'%PDF-1.7\n%EOF\n%Linearized-1.0\n'
 
-            # 11. به‌روزرسانی pdf_parts
+            # 11. Update pdf_parts
             pdf_parts['header'] = linearized_header
             pdf_parts['objects'] = sorted_objects
             pdf_parts['linearized'] = True
 
-            # 12. محاسبه مجدد offsets برای xref table
+            # 12. Recalculate offsets for xref table
             pdf_parts['xref_offsets'] = self._calculate_xref_offsets(sorted_objects, len(linearized_header))
 
-            logger.info(f"PDF خطی‌سازی شده با {len(sorted_objects)} آبجکت")
+            logger.info(f"PDF linearized with {len(sorted_objects)} objects")
             return pdf_parts
 
         except Exception as e:
-            logger.error(f"خطا در خطی‌سازی PDF: {e}", exc_info=True)
-            # در صورت خطا، PDF اصلی را بازمی‌گردانیم
+            logger.error(f"Error linearizing PDF: {e}", exc_info=True)
+            # Return original PDF on error
             return pdf_parts
 
 
     def _create_hint_tables(self, objects: list[dict], pages: list[dict]) -> dict[str, list]:
         """
-        ایجاد Hint Tables برای خطی‌سازی
+        Create Hint Tables for linearization
         
-        Hint Tables شامل اطلاعاتی برای بارگذاری بهینه صفحات هستند.
+        Hint Tables contain information for optimal page loading.
         
         Args:
-            objects: لیست آبجکت‌های مرتب‌شده
-            pages: لیست آبجکت‌های صفحه
+            objects: List of sorted objects
+            pages: List of page objects
             
         Returns:
-            دیکشنری حاوی hint tables
+            Dictionary containing hint tables
         """
         hint_tables: dict[str, list[list[int]]] = {
             'primary': [],  # Primary Hint Table
             'overflow': []  # Overflow Hint Table
         }
 
-        # محاسبه offsets برای هر صفحه
+        # Calculate offsets for each page
         page_offsets = []
         for page in pages:
             offset = self._calculate_object_offset(page, objects)
@@ -1062,8 +1062,8 @@ class PDFOptimizer:
                 'obj_num': page['obj_num']
             })
 
-        # ایجاد Primary Hint Table
-        # فرمت: [object_number, offset, length] برای هر صفحه
+        # Create Primary Hint Table
+        # Format: [object_number, offset, length] for each page
         for page_info in page_offsets:
             hint_tables['primary'].append([
                 page_info['obj_num'],
@@ -1071,8 +1071,8 @@ class PDFOptimizer:
                 page_info['length']
             ])
 
-        # ایجاد Overflow Hint Table (برای اطلاعات اضافی)
-        # شامل اطلاعات shared objects بین صفحات
+        # Create Overflow Hint Table (for additional info)
+        # Contains shared objects info between pages
         shared_objects = self._identify_shared_objects(objects, pages)
         for shared_obj in shared_objects:
             offset = self._calculate_object_offset(shared_obj, objects)
@@ -1089,23 +1089,23 @@ class PDFOptimizer:
 
     def _create_hint_stream(self, hint_tables: dict[str, list]) -> bytes:
         """
-        ایجاد Hint Stream به صورت بایت
+        Create Hint Stream as bytes
         
         Args:
-            hint_tables: tables hint
+            hint_tables: Hint tables
             
         Returns:
-            بایت‌های hint stream
+            Hint stream bytes
         """
         import struct
         import zlib
 
-        # ساختار داده‌های hint
+        # Hint data structure
         hint_data = bytearray()
 
         # Primary Hint Table
         primary_table = hint_tables['primary']
-        hint_data.extend(struct.pack('>I', len(primary_table)))  # تعداد صفحات
+        hint_data.extend(struct.pack('>I', len(primary_table)))  # Number of pages
 
         for entry in primary_table:
             # object number, offset, length
@@ -1113,13 +1113,13 @@ class PDFOptimizer:
 
         # Overflow Hint Table
         overflow_table = hint_tables['overflow']
-        hint_data.extend(struct.pack('>I', len(overflow_table)))  # تعداد shared objects
+        hint_data.extend(struct.pack('>I', len(overflow_table)))  # Number of shared objects
 
         for entry in overflow_table:
             # object number, offset, length, page_count
             hint_data.extend(struct.pack('>IIIH', entry[0], entry[1], entry[2], entry[3]))
 
-        # Compression با zlib
+        # Compress with zlib
         compressed_data = zlib.compress(hint_data)
 
         return compressed_data
@@ -1127,23 +1127,23 @@ class PDFOptimizer:
 
     def _calculate_object_offset(self, obj: dict, all_objects: list[dict]) -> int:
         """
-        محاسبه offset آبجکت در فایل
+        Calculate object offset in file
         
         Args:
-            obj: آبجکت مورد نظر
-            all_objects: لیست تمام آبجکت‌ها
+            obj: Target object
+            all_objects: List of all objects
             
         Returns:
-            offset در بایت
+            Offset in bytes
         """
-        # این یک پیاده‌سازی ساده است
-        # در پیاده‌سازی واقعی باید offset دقیق محاسبه شود
-        base_offset = 100  # offset هدر و سایر اطلاعات
+        # This is a simple implementation
+        # In a real implementation, exact offset should be calculated
+        base_offset = 100  # Header and other info offset
 
-        # پیدا کردن index آبجکت
+        # Find object index
         try:
             obj_index = all_objects.index(obj)
-            # فرض: هر آبجکت حدود 500 بایت فضا می‌گیرد
+            # Assume: each object takes about 500 bytes
             return base_offset + (obj_index * 500)
         except ValueError:
             return base_offset
@@ -1151,19 +1151,19 @@ class PDFOptimizer:
 
     def _calculate_object_length(self, obj: dict) -> int:
         """
-        محاسبه طول آبجکت
+        Calculate object length
         
         Args:
-            obj: آبجکت مورد نظر
+            obj: Target object
             
         Returns:
-            طول بر حسب بایت
+            Length in bytes
         """
-        # محاسبه تقریبی طول بر اساس نوع آبجکت
+        # Approximate length calculation based on object type
         obj_type = obj.get('type', 'unknown')
 
         if obj_type == 'page':
-            return 200  # طول تقریبی page object
+            return 200  # Approximate page object length
         elif obj_type == 'content':
             content = obj.get('value', '')
             return len(str(content).encode('utf-8')) + 100
@@ -1178,23 +1178,23 @@ class PDFOptimizer:
 
     def _identify_shared_objects(self, objects: list[dict], pages: list[dict]) -> list[dict]:
         """
-        شناسایی آبجکت‌های مشترک بین صفحات
+        Identify shared objects between pages
         
         Args:
-            objects: تمام آبجکت‌ها
-            pages: آبجکت‌های صفحه
+            objects: All objects
+            pages: Page objects
             
         Returns:
-            لیست آبجکت‌های مشترک
+            List of shared objects
         """
         shared_objects = []
 
-        # منابعی که بین صفحات مشترک هستند (فونت‌ها، تصاویر، ...)
+        # Resources shared between pages (fonts, images, ...)
         resource_types = ['font', 'xobject', 'colorspace', 'pattern']
 
         for obj in objects:
             if obj.get('type') in resource_types:
-                # بررسی استفاده در بیش از یک صفحه
+                # Check if used in more than one page
                 used_in_pages = []
 
                 for page in pages:
@@ -1220,28 +1220,28 @@ class PDFOptimizer:
 
     def _calculate_xref_offsets(self, objects: list[dict], header_length: int) -> list[int]:
         """
-        محاسبه offsets برای xref table
+        Calculate offsets for xref table
         
         Args:
-            objects: آبجکت‌های مرتب‌شده
-            header_length: طول هدر
+            objects: Sorted objects
+            header_length: Header length
             
         Returns:
-            لیست offsets
+            List of offsets
         """
         offsets = []
         current_offset = header_length
 
         for obj in objects:
             offsets.append(current_offset)
-            # محاسبه طول آبجکت فعلی
+            # Calculate current object length
             obj_length = self._calculate_object_length(obj)
             current_offset += obj_length
 
         return offsets
 
     def _assemble_pdf(self, pdf_parts: dict[str, Any]) -> bytes:
-        """مونتاژ مجدد PDF"""
+        """Reassemble PDF"""
         parts = [
             pdf_parts.get('header', b'%PDF-1.7\n'),
             pdf_parts.get('objects_data', b''),
@@ -1253,5 +1253,5 @@ class PDFOptimizer:
         return b''.join(parts)
 
     def get_optimization_stats(self) -> dict[str, Any]:
-        """دریافت آمار بهینه‌سازی"""
+        """Get optimization statistics"""
         return self.stats.copy()

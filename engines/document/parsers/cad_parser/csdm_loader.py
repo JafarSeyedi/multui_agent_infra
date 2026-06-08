@@ -62,7 +62,7 @@
 # # ------------------------------------------------------------------------------
 # class CSDMLoader:
 #     """
-#     Loader اصلی که یک ODADocumentHandle را به مدل CSDM v2.0 Ultra تبدیل می‌کند.
+#     Main Loader that converts an ODADocumentHandle to the CSDM v2.0 Ultra model.
 #     """
 #     def __init__(self, oda_doc: ODADocumentHandle):
 #         self.oda = oda_doc
@@ -275,7 +275,7 @@
 #             return self._map_underlay(ent)
 #         if "viewport" in cls:
 #             return self._map_viewportent(ent)
-#         # اگر انتیتی ناشناخته بود:
+#         # If the entity is unknown:
 #         return CSDMEntityBase(
 #             handle=str(ent.handle),
 #             object_class=ent.object_class,
@@ -283,7 +283,7 @@
 #             raw_xdata=ent.read_xdata(),
 #         )
 #     # ------------------------ Entity mappers --------------------------
-#     # هر mapper کاملاً عملیاتی و بدون TODO است.
+#     # Each mapper is fully operational and has no TODO.
 #     def _map_line(self, ent: ODAObjectProxy) -> CSDMLine:
 #         o = ent._obj
 #         s = o.startPoint()

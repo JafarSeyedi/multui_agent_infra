@@ -27,17 +27,17 @@ class PageLayout:
 
     @property
     def content_width(self) -> float:
-        """عرض منطقه محتوا"""
+        """Content area width"""
         return self.width - self.margin_left - self.margin_right
 
     @property
     def content_height(self) -> float:
-        """ارتفاع منطقه محتوا"""
+        """Content area height"""
         return self.height - self.margin_top - self.margin_bottom - self.header_height - self.footer_height
 
     @property
     def column_width(self) -> float:
-        """عرض هر ستون"""
+        """Column width"""
         if self.columns <= 1:
             return self.content_width
         return (self.content_width - (self.columns - 1) * self.column_gap) / self.columns
@@ -52,10 +52,10 @@ class LayoutBuilder:
 
     def create_page_layouts(self, document: USDMDocument,
                            options: dict[str, Any]) -> list[PageLayout]:
-        """ایجاد طرح‌بندی صفحات بر اساس سند USDM"""
+        """Create page layouts based on USDM document"""
         layouts: list[PageLayout] = []
 
-        # اگر صفحات از قبل وجود دارند، از آنها استفاده کن
+        # If pages already exist, use them
         if document.pages:
             for usdm_page in document.pages:
                 layout = PageLayout(
@@ -70,13 +70,13 @@ class LayoutBuilder:
                 layouts.append(layout)
                 self.page_layouts[layout.page_number] = layout
         else:
-            # ایجاد صفحات جدید بر اساس محتوا
+            # Create new pages based on content
             page_size = options.get('page_size', 'A4')
             orientation = options.get('page_orientation', 'portrait')
 
             width, height = self._get_page_size(page_size, orientation)
 
-            # تخمین تعداد صفحات مورد نیاز
+            # Estimate number of pages needed
             content_volume = self._estimate_content_volume(document)
             page_count = max(1, math.ceil(content_volume / (width * height * 0.7)))
 
@@ -96,8 +96,8 @@ class LayoutBuilder:
         return layouts
 
     def _get_page_size(self, page_size: str, orientation: str) -> tuple[float, float]:
-        """دریافت اندازه صفحه بر اساس نام"""
-        # نقاط در اینچ (72 points = 1 inch)
+        """Get page size by name"""
+        # Points per inch (72 points = 1 inch)
         sizes = {
             'A4': (595, 842),      # 210mm x 297mm
             'letter': (612, 792),   # 8.5in x 11in
@@ -115,32 +115,32 @@ class LayoutBuilder:
         return (width, height)
 
     def _estimate_content_volume(self, document: USDMDocument) -> float:
-        """تخمین حجم محتوای سند"""
+        """Estimate document content volume"""
         volume = 0
 
-        # تخمین از عناصر منطقی
+        # Estimate from logical elements
         for element in document.logical_elements:
             if hasattr(element, 'text'):
-                volume += len(element.text or '') * 10  # تقریباً 10 نقطه برای هر کاراکتر
+                volume += len(element.text or '') * 10  # Approximately 10 points per character
             elif hasattr(element, 'rows'):
-                # برای جداول
+                # For tables
                 rows = getattr(element, 'rows', [])
                 for row in rows:
                     for cell in row:
                         volume += len(str(cell)) * 8
 
-        # تخمین از صفحات
+        # Estimate from pages
         for page in document.pages:
             for elmnt in page.elements:
                 if hasattr(elmnt, 'text'):
                     volume += len(getattr(elmnt, 'text', '')) * 10
                 elif hasattr(elmnt, 'image_data'):
-                    volume += 1000  # تقریب برای تصاویر
+                    volume += 1000  # Estimate for images
 
         return volume
 
     def create_pdf_pages(self, pdf_factory, layouts: list[PageLayout]) -> list[PDFPage]:
-        """ایجاد اشیاء PDF Page"""
+        """Create PDF Page objects"""
         pdf_pages = []
 
         for layout in layouts:
@@ -148,11 +148,11 @@ class LayoutBuilder:
                 media_box=[0, 0, layout.width, layout.height]
             )
 
-            # تنظیم منابع صفحه
+            # Set page resources
             pdf_page.resources = {
                 'ProcSet': ['/PDF', '/Text', '/ImageB', '/ImageC', '/ImageI'],
-                'Font': pdf_factory.create_dictionary({}),  # بعداً پر می‌شود
-                'XObject': pdf_factory.create_dictionary({})  # برای تصاویر
+                'Font': pdf_factory.create_dictionary({}),  # Will be filled later
+                'XObject': pdf_factory.create_dictionary({})  # For images
             }
 
             pdf_pages.append(pdf_page)
@@ -161,39 +161,39 @@ class LayoutBuilder:
 
     def calculate_text_position(self, text_run, page_layout: PageLayout,
                                current_y: float) -> tuple[float, float, float]:
-        """محاسبه موقعیت متن در صفحه"""
+        """Calculate text position on page"""
         bbox = getattr(text_run, 'bbox', {})
 
-        # اگر موقعیت از قبل وجود دارد
+        # If position already exists
         if bbox and 'x' in bbox and 'y' in bbox:
             x = bbox['x']
-            y = page_layout.height - bbox['y']  # تبدیل به سیستم مختصات PDF
+            y = page_layout.height - bbox['y']  # Convert to PDF coordinate system
             width = bbox.get('width', 0)
             return x, y, width
 
-        # محاسبه موقعیت خودکار
+        # Calculate position automatically
         x = page_layout.margin_left
         y = current_y
 
-        # محاسبه عرض متن
+        # Calculate text width
         font_size = 12
         if hasattr(text_run, 'style_id'):
-            # در واقعیت باید از FontManager استفاده شود
+            # In practice, should use FontManager
             pass
 
         avg_char_width = font_size * 0.6
         width = len(text_run.text) * avg_char_width
 
-        # اگر متن از عرض صفحه بیشتر شود، به خط بعد برو
+        # If text exceeds page width, move to next line
         if x + width > page_layout.width - page_layout.margin_right:
             x = page_layout.margin_left
-            y -= font_size * 1.5  # رفتن به خط بعد
+            y -= font_size * 1.5  # Move to next line
 
         return x, y, width
 
     def calculate_image_position(self, image_object, page_layout: PageLayout,
                                 current_y: float) -> tuple[float, float, float, float]:
-        """محاسبه موقعیت تصویر در صفحه"""
+        """Calculate image position on page"""
         bbox = getattr(image_object, 'bbox', {})
 
         if bbox and all(k in bbox for k in ['x', 'y', 'width', 'height']):
@@ -203,12 +203,12 @@ class LayoutBuilder:
             height = bbox['height']
             return x, y, width, height
 
-        # موقعیت پیش‌فرض
+        # Default position
         x = page_layout.margin_left
         width = image_object.width or 100
         height = image_object.height or 100
 
-        # اگر تصویر از عرض صفحه بیشتر شود، وسط‌چین کن
+        # If image exceeds page width, center it
         if width > page_layout.content_width:
             width = page_layout.content_width
             height = (image_object.height or 100) * (width / (image_object.width or 100))
@@ -219,5 +219,5 @@ class LayoutBuilder:
         return x, y, width, height
 
     def get_page_layout(self, page_number: int) -> PageLayout | None:
-        """دریافت طرح‌بندی صفحه"""
+        """Get page layout"""
         return self.page_layouts.get(page_number)

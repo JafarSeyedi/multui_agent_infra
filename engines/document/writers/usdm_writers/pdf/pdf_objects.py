@@ -1,5 +1,5 @@
 """
-کلاس‌های اشیاء PDF سطح پایین
+Low-level PDF object classes
 """
 import hashlib
 import zlib
@@ -12,23 +12,23 @@ from typing import Optional
 
 @dataclass
 class PDFObject:
-    """کلاس پایه برای اشیاء PDF"""
+    """Base class for PDF objects"""
     obj_id: int
     generation: int = 0
     data: Any = None
 
     def to_bytes(self) -> bytes:
-        """تبدیل شیء به بایت‌های PDF"""
+        """Convert object to PDF bytes"""
         raise NotImplementedError
 
     def get_reference(self) -> str:
-        """دریافت رشته مرجع شیء"""
+        """Get object reference string"""
         return f"{self.obj_id} {self.generation} R"
 
 
 @dataclass
 class PDFDictionary(PDFObject):
-    """شیء دیکشنری PDF"""
+    """PDF dictionary object"""
     entries: dict[str, Any] = field(default_factory=dict)
 
     def to_bytes(self) -> bytes:
@@ -37,7 +37,7 @@ class PDFDictionary(PDFObject):
 
         for key, value in self.entries.items():
             if isinstance(value, str):
-                # رشته‌های UTF-16 برای پشتیبانی از فارسی
+                # UTF-16 strings for Persian support
                 if any(ord(c) > 127 for c in value):
                     encoded = value.encode('utf-16-be')
                     result.append(f"/{key} ".encode())
@@ -69,7 +69,7 @@ class PDFDictionary(PDFObject):
             elif value is None:
                 result.append(f"/{key} null\n".encode())
             elif isinstance(value, dict):
-                # دیکشنری تو در تو
+                # Nested dictionary
                 nested_dict = PDFDictionary(obj_id=0, entries=value)
                 result.append(f"/{key} ".encode())
                 result.append(nested_dict.to_bytes())
@@ -81,13 +81,13 @@ class PDFDictionary(PDFObject):
 
 @dataclass
 class PDFStream(PDFObject):
-    """شیء استریم PDF"""
+    """PDF stream object"""
     data: bytes = b''
     filters: list[str] = field(default_factory=list)
     length: int | None = None
 
     def to_bytes(self) -> bytes:
-        # ایجاد دیکشنری استریم
+        # Create stream dictionary
         dict_entries: dict[str, Any] = {                     # <-- add type annotation
             'Length': len(self.data) if self.length is None else self.length
         }
@@ -104,7 +104,7 @@ class PDFStream(PDFObject):
             entries=dict_entries
         )
 
-        # Compression اگر نیاز باشد
+        # Compress if needed
         stream_data = self.data
         if 'FlateDecode' in self.filters:
             stream_data = zlib.compress(stream_data)
@@ -120,7 +120,7 @@ class PDFStream(PDFObject):
 
 @dataclass
 class PDFPage(PDFObject):
-    """شیء صفحه PDF"""
+    """PDF page object"""
     media_box: list[float] = field(default_factory=lambda: [0, 0, 595, 842])  # A4
     resources: dict[str, Any] = field(default_factory=dict)
     contents: list[PDFObject] = field(default_factory=list)
@@ -132,7 +132,7 @@ class PDFPage(PDFObject):
             'Type': '/Page',
             'MediaBox': self.media_box,
             'Resources': PDFDictionary(
-                obj_id=0,  # ID موقت
+                obj_id=0,  # Temporary ID
                 generation=0,
                 entries=self.resources
             )
@@ -161,7 +161,7 @@ class PDFPage(PDFObject):
 
 @dataclass
 class PDFCatalog(PDFObject):
-    """کاتالوگ PDF (ریشه سند)"""
+    """PDF catalog (document root)"""
     pages: PDFObject | None = None
     outlines: PDFObject | None = None
     metadata: PDFObject | None = None
@@ -188,7 +188,7 @@ class PDFCatalog(PDFObject):
 
 @dataclass
 class PDFInfo(PDFObject):
-    """اطلاعات Metadataی PDF"""
+    """PDF metadata information"""
     title: str | None = None
     author: str | None = None
     subject: str | None = None
@@ -214,7 +214,7 @@ class PDFInfo(PDFObject):
         if self.producer:
             entries['Producer'] = self.producer or 'USDM PDF Writer'
 
-        # فرمت تاریخ PDF
+        # PDF date format
         if self.creation_date:
             entries['CreationDate'] = self._format_pdf_date(self.creation_date)
         if self.mod_date:
@@ -229,19 +229,19 @@ class PDFInfo(PDFObject):
         return dict_obj.to_bytes()
 
     def _format_pdf_date(self, dt: datetime) -> str:
-        """فرمت‌بندی تاریخ For PDF"""
+        """Format date for PDF"""
         return f"D:{dt.strftime('%Y%m%d%H%M%S')}Z"
 
 
 @dataclass
 class PDFXRefEntry:
-    """ورودی جدول XRef"""
+    """XRef table entry"""
     offset: int
     generation: int
     in_use: bool = True
 
     def to_bytes(self) -> bytes:
-        """تبدیل به فرمت XRef"""
+        """Convert to XRef format"""
         offset_str = f"{self.offset:010d}"
         generation_str = f"{self.generation:05d}"
         status = "n" if self.in_use else "f"
@@ -250,7 +250,7 @@ class PDFXRefEntry:
 
 @dataclass
 class PDFTrailer:
-    """تریلر PDF"""
+    """PDF trailer"""
     size: int
     root: PDFObject
     info: PDFObject | None = None
@@ -278,28 +278,28 @@ class PDFTrailer:
         result.append(b"trailer\n")
         result.append(dict_obj.to_bytes())
         result.append(b"\nstartxref\n")
-        result.append(b"0\n")  # offset به XRef
+        result.append(b"0\n")  # offset to XRef
         result.append(b"%%EOF")
 
         return b''.join(result)
 
 
 class PDFObjectFactory:
-    """کارخانه تولید اشیاء PDF"""
+    """PDF object factory"""
 
     def __init__(self) -> None:
         self.next_obj_id = 1
         self.objects: list[PDFObject] = []
 
     def create_dictionary(self, entries: dict[str, Any]) -> PDFDictionary:
-        """ایجاد دیکشنری جدید"""
+        """Create new dictionary"""
         obj = PDFDictionary(obj_id=self.next_obj_id, entries=entries)
         self.next_obj_id += 1
         self.objects.append(obj)
         return obj
 
     def create_stream(self, data: bytes, filters: list[str] | None = None) -> PDFStream:
-        """ایجاد استریم جدید"""
+        """Create new stream"""
         obj = PDFStream(
             obj_id=self.next_obj_id,
             data=data,
@@ -310,7 +310,7 @@ class PDFObjectFactory:
         return obj
 
     def create_page(self, media_box: list[float] | None = None) -> PDFPage:
-        """ایجاد صفحه جدید"""
+        """Create new page"""
         obj = PDFPage(
             obj_id=self.next_obj_id,
             media_box=media_box or [0, 0, 595, 842]
@@ -320,36 +320,36 @@ class PDFObjectFactory:
         return obj
 
     def create_catalog(self, pages: PDFObject) -> PDFCatalog:
-        """ایجاد کاتالوگ"""
+        """Create catalog"""
         obj = PDFCatalog(obj_id=self.next_obj_id, pages=pages)
         self.next_obj_id += 1
         self.objects.append(obj)
         return obj
 
     def create_info(self, **kwargs) -> PDFInfo:
-        """ایجاد اطلاعات Metadata"""
+        """Create metadata information"""
         obj = PDFInfo(obj_id=self.next_obj_id, **kwargs)
-        self.next_obj_id += 1  # اصلاح: اضافه کردن +=
+        self.next_obj_id += 1  # Fix: added +=
         self.objects.append(obj)
         return obj
 
     def create_xref_table(self) -> list[PDFXRefEntry]:
-        """ایجاد جدول XRef"""
+        """Create XRef table"""
         xref_entries = []
 
-        # ورودی اول (free list head)
+        # First entry (free list head)
         xref_entries.append(PDFXRefEntry(offset=0, generation=65535, in_use=False))
 
-        # ورودی‌های اشیاء
+        # Object entries
         for obj in self.objects:
-            # در اینجا offset باید محاسبه شود
+            # Offset should be calculated here
             xref_entries.append(PDFXRefEntry(offset=0, generation=obj.generation, in_use=True))
 
         return xref_entries
 
     def create_trailer(self, root: PDFObject, info: PDFObject | None = None) -> PDFTrailer:
-        """ایجاد تریلر"""
-        # تولید ID منحصر به فرد برای سند
+        """Create trailer"""
+        # Generate unique document ID
         import time
         import random
 
@@ -360,18 +360,18 @@ class PDFObjectFactory:
         id2 = hashlib.md5(random_bytes).digest()
 
         return PDFTrailer(
-            size=len(self.objects) + 1,  # +1 برای free list head
+            size=len(self.objects) + 1,  # +1 for free list head
             root=root,
             info=info,
             id=(id1, id2)
         )
 
     def get_all_objects(self) -> list[PDFObject]:
-        """دریافت تمام اشیاء"""
+        """Get all objects"""
         return self.objects
 
     def get_object_by_id(self, obj_id: int) -> PDFObject | None:
-        """یافتن شیء بر اساس ID"""
+        """Find object by ID"""
         for obj in self.objects:
             if obj.obj_id == obj_id:
                 return obj
@@ -379,7 +379,7 @@ class PDFObjectFactory:
 
 
 class PDFWriter:
-    """کلاس اصلی برای نوشتن PDF"""
+    """Main class for writing PDF"""
 
     def __init__(self) -> None:
         self.factory = PDFObjectFactory()
@@ -388,30 +388,30 @@ class PDFWriter:
         self.object_offsets: dict[int, int] = {}
 
     def add_page(self, media_box: list[float] | None = None) -> PDFPage:
-        """افزودن صفحه جدید"""
+        """Add new page"""
         page = self.factory.create_page(media_box)
         self.pages.append(page)
         return page
 
     def add_text(self, page: PDFPage, text: str, x: float, y: float,
                  font_name: str = "F1", font_size: float = 12) -> None:
-        """افزودن متن به صفحه"""
-        # ایجاد محتوای متن
+        """Add text to page"""
+        # Create text content
         content = f"BT\n/F{font_name} {font_size} Tf\n{x} {y} Td\n({text}) Tj\nET"
 
-        # ایجاد استریم محتوا
+        # Create content stream
         stream = self.factory.create_stream(content.encode('utf-8'))
 
-        # افزودن به محتوای صفحه
+        # Add to page content
         if not page.contents:
             page.contents = []
         page.contents.append(stream)
 
-        # افزودن فونت به منابع صفحه
+        # Add font to page resources
         if 'Font' not in page.resources:
             page.resources['Font'] = {}
 
-        # در اینجا باید فونت واقعی اضافه شود
+        # Actual font should be added here
         page.resources['Font'][font_name] = {
             'Type': '/Font',
             'Subtype': '/Type1',
@@ -420,81 +420,81 @@ class PDFWriter:
         }
 
     def build_pdf(self) -> bytes:
-        """ساخت فایل PDF کامل"""
+        """Build complete PDF file"""
         result = []
 
-        # هدر PDF
+        # PDF header
         result.append(b"%PDF-1.7\n")
         result.append(b"%\xc2\xb5\xc2\xb5\n")  # Binary marker
 
-        # ایجاد اشیاء صفحات
+        # Create pages object
         pages_obj = self.factory.create_dictionary({
             'Type': '/Pages',
             'Kids': self.pages,
             'Count': len(self.pages)
         })
 
-        # ایجاد کاتالوگ
+        # Create catalog
         catalog = self.factory.create_catalog(pages_obj)
 
-        # ایجاد اطلاعات
+        # Create info
         info = self.factory.create_info(
-            title="سند PDF",
+            title="PDF Document",
             author="USDM PDF Writer",
             creator="USDM PDF Writer",
             producer="USDM PDF Writer",
             creation_date=datetime.now()
         )
 
-        # نوشتن اشیاء
+        # Write objects
         all_objects = self.factory.get_all_objects()
 
-        # ذخیره آفست‌ها
+        # Save offsets
         for obj in all_objects:
             self.object_offsets[obj.obj_id] = len(b''.join(result))
             result.append(f"{obj.obj_id} {obj.generation} obj\n".encode())
             result.append(obj.to_bytes())
             result.append(b"\nendobj\n")
 
-        # ایجاد جدول XRef
+        # Create XRef table
         len(b''.join(result))
         result.append(b"xref\n")
         result.append(f"0 {len(all_objects) + 1}\n".encode())
 
-        # free list head
+        # Free list head
         result.append(b"0000000000 65535 f \n")
 
-        # اشیاء
+        # Objects
         for obj in all_objects:
             offset = self.object_offsets.get(obj.obj_id, 0)
             result.append(f"{offset:010d} {obj.generation:05d} n \n".encode())
 
-        # ایجاد تریلر
+        # Create trailer
         trailer = self.factory.create_trailer(catalog, info)
         result.append(trailer.to_bytes())
 
         return b''.join(result)
 
     def save(self, filepath: str) -> None:
-        """ذخیره PDF در فایل"""
+        """Save PDF to file"""
         pdf_data = self.build_pdf()
         with open(filepath, 'wb') as f:
             f.write(pdf_data)
 
 
-# # مثال استفاده
+# # Example usage
 # if __name__ == "__main__":
-#     # ایجاد یک سند PDF ساده
+#     # Create a simple PDF document
 #     writer = PDFWriter()
-
-#     # افزودن صفحه
+#
+#     # Add page
 #     page1 = writer.add_page()
-
-#     # افزودن متن فارسی
+#
+#     # Add text
 #     writer.add_text(page1, "Hello دنیا!", 100, 700, font_size=20)
 #     writer.add_text(page1, "این یک سند PDF تست است.", 100, 650, font_size=14)
 #     writer.add_text(page1, "This is English text.", 100, 600, font_size=14)
-
-#     # ذخیره فایل
+#
+#     # Save file
 #     writer.save("test_output.pdf")
 #     print("فایل PDF با موفقیت ایجاد شد: test_output.pdf")

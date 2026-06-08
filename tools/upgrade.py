@@ -377,7 +377,7 @@ class IsInstanceUnionDetector(cst.CSTVisitor):
         if isinstance(test, cst.Call) and isinstance(test.func, cst.Name) and test.func.value == "isinstance":
             if len(test.args) == 2:
                 # mypy alone cannot recognize Arg.value type as BaseExpression,
-                # بنابراین با یک annotation کمکی صریح‌ش کنید
+                # so annotate it with an explicit helper annotation
                 arg0: cst.BaseExpression = test.args[0].value
                 arg1: cst.BaseExpression = test.args[1].value
                 if isinstance(arg0, cst.Name):
@@ -400,7 +400,7 @@ class IsInstanceUnionDetector(cst.CSTVisitor):
         if isinstance(node, cst.Tuple):
             inner: list[str] = []
             for elem in node.elements:
-                # فقط BaseExpression‌ها را در نظر می‌گیریم، StarredElement‌ها را نادیده می‌گیریم
+                # we only consider BaseExpressions, ignore StarredElements
                 if isinstance(elem, cst.BaseExpression):
                     res = IsInstanceUnionDetector._type_to_str(elem)
                     if res:
@@ -1453,15 +1453,15 @@ class RuffErrorFixer(cst.CSTTransformer):
         if isinstance(node.value, cst.Name):
             name = node.value.value
             if name == "Optional":
-                # استخراج نوع درونی از slice
+                # extract inner type from slice
                 inner_slice = node.slice[0].slice if isinstance(node.slice[0], cst.SubscriptElement) else node.slice
 
-                # BaseSlice را به BaseExpression تبدیل کنید
+                # convert BaseSlice to BaseExpression
                 inner_expr: cst.BaseExpression | None = None
                 if isinstance(inner_slice, cst.Index):
                     inner_expr = inner_slice.value
                 else:
-                    # نمی‌توانیم به‌صورت امن تبدیل کنیم
+                    # we cannot safely convert
                     return node
 
                 if inner_expr is not None:
@@ -1473,7 +1473,7 @@ class RuffErrorFixer(cst.CSTTransformer):
                     )
 
             elif name == "Union":
-                # همهٔ عناصر slice را به BaseExpression نگاشت دهید
+                # map all slice elements to BaseExpression
                 exprs: list[cst.BaseExpression] = []
                 for elem in node.slice:
                     if isinstance(elem, cst.SubscriptElement):
@@ -1481,7 +1481,7 @@ class RuffErrorFixer(cst.CSTTransformer):
                         if isinstance(slc, cst.Index):
                             exprs.append(slc.value)
                         else:
-                            # نوع پیچیده‌ای است که نمی‌توان تبدیل کرد
+                            # it's a complex type that cannot be converted
                             return node
                     else:
                         return node
@@ -1553,7 +1553,7 @@ class RuffErrorFixer(cst.CSTTransformer):
             return name_node.value
         elif isinstance(name_node, cst.Attribute):
             # e.g., import pkg.mod → Attribute(value=Name("pkg"), attr=Name("mod"))
-            # نام کامل را به‌صورت "pkg.mod" برمی‌گردانیم
+            # return the full name as "pkg.mod"
             return f"{name_node.value.value}.{name_node.attr.value}" if isinstance(name_node.value, cst.Name) else None
         return None
 
@@ -1700,7 +1700,7 @@ class PipelineSupervisor:
         files = self._collect_py_files()
         if not files:
             return ""
-        # رشتهٔ جداکننده null → تبدیل به بایت
+        # null separator string → convert to bytes
         input_bytes = "\0".join(files).encode()
         cmd_parts = shlex.split(cmd_base)
         proc = subprocess.run(
@@ -1709,7 +1709,7 @@ class PipelineSupervisor:
             capture_output=capture,
             text=False,                  # ← Important
         )
-        # خروجی‌ها را دستی decode می‌کنیم
+        # manually decode the outputs
         out = proc.stdout.decode(errors="replace") if proc.stdout else ""
         err = proc.stderr.decode(errors="replace") if proc.stderr else ""
         return out + err
@@ -1788,7 +1788,7 @@ class PipelineSupervisor:
         merged = merger.merge(all_hints)
         # Apply with libcst transformer per file that contains relevant functions
         affected_files = self._group_hints_by_file(merged)
-        # حالا برای هر فایل transformer را اجرا می‌کنیم.
+        # now run the transformer for each file.
         transformer = AnnotationInjector({h.symbol: h for h in merged})
         for file_path, hints_in_file in affected_files.items():
             self._apply_transformer_to_file(file_path, transformer)
@@ -1812,7 +1812,7 @@ class PipelineSupervisor:
             loc = self.symbol_index.index.get(hint.symbol)
             if loc is None:
                 continue
-            # hint.symbol ممکن است نام ساده باشد، یا qualname. در SymbolIndex هر دو ثبت می‌شود.
+            # hint.symbol may be a simple name or qualname. Both are registered in SymbolIndex.
             by_file[loc.file].append(hint)
         return by_file
 
@@ -1836,7 +1836,7 @@ class PipelineSupervisor:
 
     def _apply_external_hints(self, hints: list[TypeHint], source: HintSource) -> None:
         """Inject high-confidence external annotations directly using libcst."""
-        # فیلتر بر اساس آستانه
+        # filter by threshold
         confident = [h for h in hints if h.confidence >= self.config.confidence_threshold]
         if not confident:
             return
@@ -1906,7 +1906,7 @@ class PipelineSupervisor:
 
     def stage_ruff_deep_fix(self) -> tuple[str, dict]:
         """Run RuffErrorFixer on unfixed diagnostics."""
-        # دریافت خروجی ruff به صورت JSON
+        # get ruff output as JSON
         diags = self._collect_ruff_diagnostics()
         if not diags:
             return "No ruff diagnostics to deep fix", {}

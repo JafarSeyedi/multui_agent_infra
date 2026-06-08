@@ -21,7 +21,7 @@ class ChromaAdapter(VectorDBAdapter):
             settings=Settings(allow_reset=True),
         )
         self.collection_name = collection_name
-        self._collection: Collection | None = None  # ← fix: نوع صریح
+        self._collection: Collection | None = None  # ← fix: explicit type
         self._dimension: int | None = None
 
     def _sanitize_metadata(self, meta: dict[str, Any]) -> Metadata:
@@ -33,10 +33,10 @@ class ChromaAdapter(VectorDBAdapter):
             elif isinstance(v, (int, float, str)):
                 result[k] = v
             elif v is None:
-                result[k] = ""        # chroma None را نمی‌پذیرد
+                result[k] = ""        # chroma does not accept None
             else:
-                result[k] = str(v)    # fallback برای list, dict, etc.
-        return result  # Dict[str, str|int|float|bool] با Metadata سازگاره
+                result[k] = str(v)    # fallback for list, dict, etc.
+        return result  # Dict[str, str|int|float|bool] is compatible with Metadata
 
     async def _get_or_create_collection(self, dimension: int) -> Collection:
         if self._collection is None:

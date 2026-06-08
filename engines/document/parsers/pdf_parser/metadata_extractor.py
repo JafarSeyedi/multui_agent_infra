@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-metadata_extractor.py - استخراج Metadata از فایل‌های PDF
-ماژول استخراج اطلاعات Metadata، XMP، و اطلاعات فنی PDF
+metadata_extractor.py - Extract metadata from PDF files
+Module for extracting PDF metadata, XMP information, and technical details
 """
 import hashlib
 import json
@@ -46,7 +46,7 @@ except ImportError:
 
 
 class MetadataType(Enum):
-    """انواع Metadata"""
+    """Metadata types"""
     BASIC = "basic"
     XMP = "xmp"
     TECHNICAL = "technical"
@@ -56,7 +56,7 @@ class MetadataType(Enum):
 
 
 class PDFVersion(Enum):
-    """نسخه‌های PDF"""
+    """PDF versions"""
     PDF_1_0 = "1.0"
     PDF_1_1 = "1.1"
     PDF_1_2 = "1.2"
@@ -69,7 +69,7 @@ class PDFVersion(Enum):
 
 
 class PDFConformance(Enum):
-    """سطوح انطباق PDF"""
+    """PDF conformance levels"""
     PDF_A_1A = "PDF/A-1a"
     PDF_A_1B = "PDF/A-1b"
     PDF_A_2A = "PDF/A-2a"
@@ -85,9 +85,9 @@ class PDFConformance(Enum):
 
 @dataclass
 class PDFMetadata:
-    """کلاس اصلی Metadataی PDF"""
+    """Main PDF metadata class"""
 
-    # اطلاعات پایه
+    # Basic info
     title: str | None = None
     author: str | None = None
     subject: str | None = None
@@ -97,7 +97,7 @@ class PDFMetadata:
     creation_date: datetime | None = None
     modification_date: datetime | None = None
 
-    # اطلاعات فنی
+    # Technical info
     pdf_version: str | None = None
     page_count: int | None = None
     file_size: int | None = None
@@ -105,7 +105,7 @@ class PDFMetadata:
     file_hash_sha256: str | None = None
     mime_type: str | None = None
 
-    # اطلاعات امنیتی
+    # Security info
     encrypted: bool = False
     encryption_type: str | None = None
     permissions: list[str] = field(default_factory=list)
@@ -114,7 +114,7 @@ class PDFMetadata:
     can_copy: bool = True
     can_annotate: bool = True
 
-    # اطلاعات ساختاری
+    # Structural info
     tagged: bool = False
     linearized: bool = False
     has_attachments: bool = False
@@ -122,49 +122,49 @@ class PDFMetadata:
     has_javascript: bool = False
     has_embedded_files: bool = False
 
-    # اطلاعات XMP
-    xmp_metadata: dict[str, Any] = field(default_factory=dict)
+    # XMP info
+    xmp_metadata: dict[str, Any] = field(default_factory=list)
 
-    # اطلاعات فونت‌ها
+    # Font info
     fonts: list[dict[str, Any]] = field(default_factory=list)
 
-    # اطلاعات رنگ
+    # Color info
     color_spaces: list[str] = field(default_factory=list)
 
-    # اطلاعات تصاویر
+    # Image info
     image_count: int = 0
     image_formats: dict[str, int] = field(default_factory=dict)
 
-    # اطلاعات لایه‌بندی
+    # Layer info
     layers: list[str] = field(default_factory=list)
 
-    # اطلاعات سفارشی
+    # Custom info
     custom_metadata: dict[str, Any] = field(default_factory=dict)
 
-    # اطلاعات انطباق
+    # Compliance info
     conformance: str | None = None
     validation_errors: list[str] = field(default_factory=list)
 
-    # اطلاعات جغرافیایی
+    # Geolocation info
     geolocation: dict[str, float] | None = None
 
-    # اطلاعات حقوقی
+    # Legal info
     copyright: str | None = None
     license: str | None = None
     rights: str | None = None
 
-    # اطلاعات زبان
+    # Language info
     language: str | None = None
     languages: list[str] = field(default_factory=list)
 
-    # اطلاعات دسترسی
+    # Accessibility info
     accessibility: dict[str, bool] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        """تبدیل به دیکشنری"""
+        """Convert to dictionary"""
         result = asdict(self)
 
-        # تبدیل datetime به string
+        # Convert datetime to string
         if result.get('creation_date'):
             result['creation_date'] = result['creation_date'].isoformat()
         if result.get('modification_date'):
@@ -173,11 +173,11 @@ class PDFMetadata:
         return result
 
     def to_json(self, indent: int = 2) -> str:
-        """تبدیل به JSON"""
+        """Convert to JSON"""
         return json.dumps(self.to_dict(), indent=indent, ensure_ascii=False)
 
     def get_summary(self) -> dict[str, Any]:
-        """دریافت خلاصه Metadata"""
+        """Get metadata summary"""
         return {
             "title": self.title,
             "author": self.author,
@@ -191,66 +191,66 @@ class PDFMetadata:
 
 
 class PDFMetadataExtractor:
-    """کلاس اصلی استخراج Metadata از PDF"""
+    """Main class for extracting PDF metadata"""
 
     def __init__(self, pdf_path: str | None = None, pdf_bytes: bytes | None = None):
         """
-        مقداردهی اولیه استخراج‌کننده Metadata
+        Initialize metadata extractor
         
         Args:
-            pdf_path: مسیر فایل PDF
-            pdf_bytes: داده‌های PDF به صورت بایت
+            pdf_path: Path to the PDF file
+            pdf_bytes: PDF data as bytes
         """
         self.pdf_path = pdf_path
         self.pdf_bytes = pdf_bytes
         self.metadata = PDFMetadata()
 
         if pdf_path and pdf_bytes:
-            raise ValueError("فقط یکی از pdf_path یا pdf_bytes باید مشخص شود")
+            raise ValueError("Only one of pdf_path or pdf_bytes should be specified")
 
         if not pdf_path and not pdf_bytes:
-            raise ValueError("یکی از pdf_path یا pdf_bytes باید مشخص شود")
+            raise ValueError("Either pdf_path or pdf_bytes must be specified")
 
     def extract_all(self) -> PDFMetadata:
-        """استخراج تمام Metadataها"""
+        """Extract all metadata"""
         try:
-            # استخراج اطلاعات پایه
+            # Extract basic info
             self._extract_basic_metadata()
 
-            # استخراج اطلاعات فنی
+            # Extract technical info
             self._extract_technical_metadata()
 
-            # استخراج اطلاعات امنیتی
+            # Extract security info
             self._extract_security_metadata()
 
-            # استخراج اطلاعات XMP
+            # Extract XMP info
             self._extract_xmp_metadata()
 
-            # استخراج اطلاعات ساختاری
+            # Extract structural info
             self._extract_structural_metadata()
 
-            # استخراج اطلاعات فونت‌ها
+            # Extract font info
             self._extract_font_metadata()
 
-            # استخراج اطلاعات تصاویر
+            # Extract image info
             self._extract_image_metadata()
 
-            # استخراج اطلاعات انطباق
+            # Extract compliance info
             self._extract_conformance_metadata()
 
-            # استخراج اطلاعات سفارشی
+            # Extract custom info
             self._extract_custom_metadata()
 
-            # استخراج اطلاعات دسترسی
+            # Extract accessibility info
             self._extract_accessibility_metadata()
 
             return self.metadata
 
         except Exception as e:
-            raise PDFMetadataError(f"خطا در استخراج Metadata: {str(e)}")
+            raise PDFMetadataError(f"Error extracting metadata: {str(e)}")
 
     def _extract_basic_metadata(self):
-        """استخراج Metadataی پایه"""
+        """Extract basic metadata"""
         if HAS_PYPDF2:
             self._extract_with_pypdf2()
         elif HAS_PIKEPDF:
@@ -261,7 +261,7 @@ class PDFMetadataExtractor:
             self._extract_with_binary_scan()
 
     def _extract_with_pypdf2(self):
-        """استخراج با PyPDF2"""
+        """Extract with PyPDF2"""
         try:
             if self.pdf_path:
                 with open(self.pdf_path, 'rb') as file:
@@ -270,7 +270,7 @@ class PDFMetadataExtractor:
                 import io
                 pdf_reader = PyPDF2.PdfReader(io.BytesIO(self.pdf_bytes))
 
-            # اطلاعات پایه
+            # Basic info
             info = pdf_reader.metadata
             if info:
                 self.metadata.title = info.get('/Title')
@@ -280,7 +280,7 @@ class PDFMetadataExtractor:
                 self.metadata.creator = info.get('/Creator')
                 self.metadata.producer = info.get('/Producer')
 
-                # تاریخ‌ها
+                # Dates
                 creation_date = info.get('/CreationDate')
                 if creation_date:
                     self.metadata.creation_date = self._parse_pdf_date(creation_date)
@@ -289,7 +289,7 @@ class PDFMetadataExtractor:
                 if mod_date:
                     self.metadata.modification_date = self._parse_pdf_date(mod_date)
 
-            # اطلاعات فنی
+            # Technical info
             self.metadata.pdf_version = pdf_reader.pdf_header
             self.metadata.page_count = len(pdf_reader.pages)
             self.metadata.encrypted = pdf_reader.is_encrypted
@@ -297,7 +297,7 @@ class PDFMetadataExtractor:
             if pdf_reader.is_encrypted:
                 self.metadata.encryption_type = "Standard" if hasattr(pdf_reader, '_encryption') else "Unknown"
 
-                # بررسی مجوزها
+                # Check permissions
                 if hasattr(pdf_reader, '_encryption'):
                     encrypt = pdf_reader._encryption
                     if hasattr(encrypt, 'P'):
@@ -305,10 +305,10 @@ class PDFMetadataExtractor:
                         self._parse_permissions(permissions)
 
         except Exception as e:
-            warnings.warn(f"خطا در استخراج با PyPDF2: {str(e)}")
+            warnings.warn(f"Error extracting with PyPDF2: {str(e)}")
 
     def _extract_with_pikepdf(self):
-        """استخراج با pikepdf"""
+        """Extract with pikepdf"""
         try:
             if self.pdf_path:
                 pdf = pikepdf.Pdf.open(self.pdf_path)
@@ -316,7 +316,7 @@ class PDFMetadataExtractor:
                 import io
                 pdf = pikepdf.Pdf.open(io.BytesIO(self.pdf_bytes))
 
-            # اطلاعات پایه
+            # Basic info
             if '/Info' in pdf.trailer:
                 info = pdf.trailer['/Info']
 
@@ -333,7 +333,7 @@ class PDFMetadataExtractor:
                 if '/Producer' in info:
                     self.metadata.producer = str(info['/Producer'])
 
-                # تاریخ‌ها
+                # Dates
                 if '/CreationDate' in info:
                     creation_date = str(info['/CreationDate'])
                     self.metadata.creation_date = self._parse_pdf_date(creation_date)
@@ -342,7 +342,7 @@ class PDFMetadataExtractor:
                     mod_date = str(info['/ModDate'])
                     self.metadata.modification_date = self._parse_pdf_date(mod_date)
 
-            # اطلاعات فنی
+            # Technical info
             self.metadata.pdf_version = str(pdf.pdf_version)
             self.metadata.page_count = len(pdf.pages)
             self.metadata.encrypted = pdf.is_encrypted
@@ -350,21 +350,21 @@ class PDFMetadataExtractor:
             if pdf.is_encrypted:
                 self.metadata.encryption_type = "Standard"
 
-                # بررسی مجوزها
+                # Check permissions
                 if hasattr(pdf, 'permissions'):
                     perms = pdf.permissions
                     self._parse_pikepdf_permissions(perms)
 
-            # بررسی XMP
+            # Check XMP
             self._extract_xmp_from_pikepdf(pdf)
 
             pdf.close()
 
         except Exception as e:
-            warnings.warn(f"خطا در استخراج با pikepdf: {str(e)}")
+            warnings.warn(f"Error extracting with pikepdf: {str(e)}")
 
     def _extract_with_pdfplumber(self):
-        """استخراج با pdfplumber"""
+        """Extract with pdfplumber"""
         try:
             if self.pdf_path:
                 pdf = pdfplumber.open(self.pdf_path)
@@ -372,7 +372,7 @@ class PDFMetadataExtractor:
                 import io
                 pdf = pdfplumber.open(io.BytesIO(self.pdf_bytes))
 
-            # اطلاعات پایه از metadata
+            # Basic info from metadata
             metadata = pdf.metadata
             if metadata:
                 self.metadata.title = metadata.get('Title')
@@ -382,7 +382,7 @@ class PDFMetadataExtractor:
                 self.metadata.creator = metadata.get('Creator')
                 self.metadata.producer = metadata.get('Producer')
 
-                # تاریخ‌ها
+                # Dates
                 creation_date = metadata.get('CreationDate')
                 if creation_date:
                     self.metadata.creation_date = self._parse_pdf_date(creation_date)
@@ -391,16 +391,16 @@ class PDFMetadataExtractor:
                 if mod_date:
                     self.metadata.modification_date = self._parse_pdf_date(mod_date)
 
-            # اطلاعات فنی
+            # Technical info
             self.metadata.page_count = len(pdf.pages)
 
             pdf.close()
 
         except Exception as e:
-            warnings.warn(f"خطا در استخراج با pdfplumber: {str(e)}")
+            warnings.warn(f"Error extracting with pdfplumber: {str(e)}")
 
     def _extract_with_binary_scan(self):
-        """استخراج با اسکن باینری (بدون وابستگی)"""
+        """Extract with binary scan (no dependencies)"""
         try:
             if self.pdf_path:
                 with open(self.pdf_path, 'rb') as file:
@@ -408,27 +408,27 @@ class PDFMetadataExtractor:
             else:
                 data = self.pdf_bytes
 
-            # جستجوی Metadata در داده‌های باینری
+            # Search for metadata in binary data
             self._scan_binary_for_metadata(data)
 
         except Exception as e:
-            warnings.warn(f"خطا در استخراج با اسکن باینری: {str(e)}")
+            warnings.warn(f"Error extracting with binary scan: {str(e)}")
 
     def _extract_technical_metadata(self):
-        """استخراج اطلاعات فنی"""
+        """Extract technical information"""
         try:
             if self.pdf_path:
-                # اطلاعات فایل
+                # File info
                 file_stat = os.stat(self.pdf_path)
                 self.metadata.file_size = file_stat.st_size
 
-                # محاسبه هش
+                # Calculate hash
                 with open(self.pdf_path, 'rb') as file:
                     file_data = file.read()
                     self.metadata.file_hash_md5 = hashlib.md5(file_data).hexdigest()
                     self.metadata.file_hash_sha256 = hashlib.sha256(file_data).hexdigest()
 
-                # نوع MIME
+                # MIME type
                 mime_type, _ = mimetypes.guess_type(self.pdf_path)
                 self.metadata.mime_type = mime_type or 'application/pdf'
 
@@ -438,7 +438,7 @@ class PDFMetadataExtractor:
                 self.metadata.file_hash_sha256 = hashlib.sha256(self.pdf_bytes).hexdigest()
                 self.metadata.mime_type = 'application/pdf'
 
-            # تشخیص نسخه PDF از هدر
+            # Detect PDF version from header
             if not self.metadata.pdf_version:
                 if self.pdf_path:
                     with open(self.pdf_path, 'rb') as file:
@@ -451,10 +451,10 @@ class PDFMetadataExtractor:
                     self.metadata.pdf_version = version_match.group(1)
 
         except Exception as e:
-            warnings.warn(f"خطا در استخراج اطلاعات فنی: {str(e)}")
+            warnings.warn(f"Error extracting technical info: {str(e)}")
 
     def _extract_security_metadata(self):
-        """استخراج اطلاعات امنیتی"""
+        """Extract security information"""
         try:
             if HAS_PYPDF2:
                 if self.pdf_path:
@@ -467,7 +467,7 @@ class PDFMetadataExtractor:
                 self.metadata.encrypted = pdf_reader.is_encrypted
 
                 if pdf_reader.is_encrypted:
-                    # تشخیص نوع رمزگذاری
+                    # Detect encryption type
                     if hasattr(pdf_reader, '_encryption'):
                         encrypt = pdf_reader._encryption
 
@@ -484,16 +484,16 @@ class PDFMetadataExtractor:
                             else:
                                 self.metadata.encryption_type = f"Unknown (V={v})"
 
-                        # بررسی مجوزها
+                        # Check permissions
                         if hasattr(encrypt, 'P'):
                             permissions = int(encrypt.P)
                             self._parse_permissions(permissions)
 
         except Exception as e:
-            warnings.warn(f"خطا در استخراج اطلاعات امنیتی: {str(e)}")
+            warnings.warn(f"Error extracting security info: {str(e)}")
 
     def _extract_xmp_metadata(self):
-        """استخراج Metadataی XMP"""
+        """Extract XMP metadata"""
         try:
             if self.pdf_path:
                 with open(self.pdf_path, 'rb') as file:
@@ -501,36 +501,36 @@ class PDFMetadataExtractor:
             else:
                 data = self.pdf_bytes
 
-            # جستجوی XMP packet
+            # Search for XMP packet
             xmp_start = data.find(b'<?xpacket begin')
             xmp_end = data.find(b'<?xpacket end', xmp_start)
 
             if xmp_start != -1 and xmp_end != -1:
-                xmp_data = data[xmp_start:xmp_end + 14]  # +14 برای شامل کردن '<?xpacket end'
+                xmp_data = data[xmp_start:xmp_end + 14]  # +14 to include '<?xpacket end'
                 xmp_text = xmp_data.decode('utf-8', errors='ignore')
 
-                # تجزیه XMP
+                # Parse XMP
                 self._parse_xmp_data(xmp_text)
 
         except Exception as e:
-            warnings.warn(f"خطا در استخراج XMP: {str(e)}")
+            warnings.warn(f"Error extracting XMP: {str(e)}")
 
     def _extract_xmp_from_pikepdf(self, pdf):
-        """استخراج XMP از pikepdf"""
+        """Extract XMP from pikepdf"""
         try:
             if hasattr(pdf, 'open_metadata') and '/Metadata' in pdf.Root:
                 metadata_stream = pdf.Root['/Metadata']
                 xmp_data = metadata_stream.read_bytes()
 
-                # تجزیه XMP
+                # Parse XMP
                 xmp_text = xmp_data.decode('utf-8', errors='ignore')
                 self._parse_xmp_data(xmp_text)
 
         except Exception as e:
-            warnings.warn(f"خطا در استخراج XMP از pikepdf: {str(e)}")
+            warnings.warn(f"Error extracting XMP from pikepdf: {str(e)}")
 
     def _extract_structural_metadata(self):
-        """استخراج اطلاعات ساختاری"""
+        """Extract structural information"""
         try:
             if HAS_PYPDF2:
                 if self.pdf_path:
@@ -540,38 +540,38 @@ class PDFMetadataExtractor:
                     import io
                     pdf_reader = PyPDF2.PdfReader(io.BytesIO(self.pdf_bytes))
 
-                # بررسی ساختارهای مختلف
+                # Check various structures
                 root = pdf_reader.trailer.get('/Root', {})
 
-                # بررسی tagged PDF
+                # Check tagged PDF
                 if '/MarkInfo' in root:
                     mark_info = root['/MarkInfo']
                     if '/Marked' in mark_info:
                         self.metadata.tagged = bool(mark_info['/Marked'])
 
-                # بررسی linearized
+                # Check linearized
                 self.metadata.linearized = pdf_reader.is_linearized if hasattr(pdf_reader, 'is_linearized') else False
 
-                # بررسی attachments
+                # Check attachments
                 if '/Names' in root and '/EmbeddedFiles' in root['/Names']:
                     self.metadata.has_attachments = True
 
-                # بررسی forms
+                # Check forms
                 if '/AcroForm' in root:
                     self.metadata.has_forms = True
 
-                # بررسی javascript
+                # Check javascript
                 if '/Names' in root and '/JavaScript' in root['/Names']:
                     self.metadata.has_javascript = True
 
-                # بررسی embedded files
+                # Check embedded files
                 self._check_for_embedded_files(pdf_reader)
 
         except Exception as e:
-            warnings.warn(f"خطا در استخراج اطلاعات ساختاری: {str(e)}")
+            warnings.warn(f"Error extracting structural info: {str(e)}")
 
     def _extract_font_metadata(self):
-        """استخراج اطلاعات فونت‌ها"""
+        """Extract font information"""
         try:
             if HAS_PDFPLUMBER and self.pdf_path:
                 with pdfplumber.open(self.pdf_path) as pdf:
@@ -588,14 +588,14 @@ class PDFMetadataExtractor:
                                 }
                                 fonts.add(json.dumps(font_data, sort_keys=True))
 
-                    # تبدیل به لیست دیکشنری
+                    # Convert to list of dictionaries
                     self.metadata.fonts = [json.loads(f) for f in fonts]
 
         except Exception as e:
-            warnings.warn(f"خطا در استخراج اطلاعات فونت‌ها: {str(e)}")
+            warnings.warn(f"Error extracting font info: {str(e)}")
 
     def _extract_image_metadata(self):
-        """استخراج اطلاعات تصاویر"""
+        """Extract image information"""
         try:
             if HAS_PDFPLUMBER and self.pdf_path:
                 with pdfplumber.open(self.pdf_path) as pdf:
@@ -617,20 +617,20 @@ class PDFMetadataExtractor:
                     self.metadata.image_formats = image_formats
 
         except Exception as e:
-            warnings.warn(f"خطا در استخراج اطلاعات تصاویر: {str(e)}")
+            warnings.warn(f"Error extracting image info: {str(e)}")
 
     def _extract_conformance_metadata(self):
-        """استخراج اطلاعات انطباق"""
+        """Extract conformance information"""
         try:
             if self.pdf_path:
                 with open(self.pdf_path, 'rb') as file:
-                    data = file.read(5000)  # خواندن 5KB اول برای جستجو
+                    data = file.read(5000)  # Read first 5KB for searching
             else:
                 data = self.pdf_bytes[:5000]
 
             data_str = data.decode('ascii', errors='ignore')
 
-            # جستجوی استانداردهای PDF
+            # Search for PDF standards
             standards = {
                 'PDF/A': ['PDF/A-1a', 'PDF/A-1b', 'PDF/A-2a', 'PDF/A-2b', 'PDF/A-3a', 'PDF/A-3b'],
                 'PDF/UA': ['PDF/UA-1'],
@@ -644,7 +644,7 @@ class PDFMetadataExtractor:
                         self.metadata.conformance = std
                         return
 
-            # جستجوی در XMP
+            # Search in XMP
             if self.metadata.xmp_metadata:
                 xmp_str = json.dumps(self.metadata.xmp_metadata)
                 for std_type, std_list in standards.items():
@@ -654,19 +654,19 @@ class PDFMetadataExtractor:
                             return
 
         except Exception as e:
-            warnings.warn(f"خطا در استخراج اطلاعات انطباق: {str(e)}")
+            warnings.warn(f"Error extracting conformance info: {str(e)}")
 
     def _extract_custom_metadata(self):
-        """استخراج Metadataی سفارشی"""
+        """Extract custom metadata"""
         try:
-            # جستجوی Metadataی سفارشی در کل فایل
+            # Search for custom metadata in entire file
             if self.pdf_path:
                 with open(self.pdf_path, 'rb') as file:
                     data = file.read()
             else:
                 data = self.pdf_bytes
 
-            # الگوهای Metadataی سفارشی
+            # Custom metadata patterns
             patterns = {
                 'custom_metadata': rb'/(\w+)\s*\(([^)]+)\)',
                 'properties': rb'/<(\w+)>\s*\(([^)]+)\)',
@@ -680,10 +680,10 @@ class PDFMetadataExtractor:
                     self.metadata.custom_metadata[key] = value
 
         except Exception as e:
-            warnings.warn(f"خطا در استخراج Metadataی سفارشی: {str(e)}")
+            warnings.warn(f"Error extracting custom metadata: {str(e)}")
 
     def _extract_accessibility_metadata(self):
-        """استخراج اطلاعات دسترسی"""
+        """Extract accessibility information"""
         try:
             if HAS_PYPDF2:
                 if self.pdf_path:
@@ -697,42 +697,42 @@ class PDFMetadataExtractor:
 
                 accessibility_info = {}
 
-                # بررسی ساختار منطقی
+                # Check logical structure
                 if '/StructTreeRoot' in root:
                     accessibility_info['has_structure_tree'] = True
 
-                # بررسی زبان
+                # Check language
                 if '/Lang' in root:
                     accessibility_info['language_specified'] = True
                     self.metadata.language = str(root['/Lang'])
 
-                # بررسی alt text برای تصاویر
+                # Check alt text for images
                 if '/MarkInfo' in root:
                     mark_info = root['/MarkInfo']
                     if '/Marked' in mark_info:
                         accessibility_info['tagged'] = bool(mark_info['/Marked'])
 
-                # بررسی navigation
+                # Check navigation
                 if '/Outlines' in root:
                     accessibility_info['has_outlines'] = True
 
                 self.metadata.accessibility = accessibility_info
 
         except Exception as e:
-            warnings.warn(f"خطا در استخراج اطلاعات دسترسی: {str(e)}")
+            warnings.warn(f"Error extracting accessibility info: {str(e)}")
 
     def _parse_pdf_date(self, pdf_date_str: str) -> datetime | None:
-        """پارس تاریخ PDF"""
+        """Parse PDF date"""
         try:
-            # فرمت: D:YYYYMMDDHHmmSSOHH'mm'
-            # مثال: D:20250101120000+03'30'
+            # Format: D:YYYYMMDDHHmmSSOHH'mm'
+            # Example: D:20250101120000+03'30'
 
             if not pdf_date_str.startswith('D:'):
                 return None
 
-            date_str = pdf_date_str[2:]  # حذف 'D:'
+            date_str = pdf_date_str[2:]  # Remove 'D:'
 
-            # استخراج بخش‌های تاریخ
+            # Extract date parts
             year = int(date_str[0:4]) if len(date_str) >= 4 else 1970
             month = int(date_str[4:6]) if len(date_str) >= 6 else 1
             day = int(date_str[6:8]) if len(date_str) >= 8 else 1
@@ -740,10 +740,10 @@ class PDFMetadataExtractor:
             minute = int(date_str[10:12]) if len(date_str) >= 12 else 0
             second = int(date_str[12:14]) if len(date_str) >= 14 else 0
 
-            # ایجاد datetime
+            # Create datetime
             dt = datetime(year, month, day, hour, minute, second, tzinfo=timezone.utc)
 
-            # تنظیم offset اگر وجود دارد
+            # Apply offset if present
             if len(date_str) > 14:
                 offset_str = date_str[14:]
                 if offset_str[0] in ['+', '-']:
@@ -765,8 +765,8 @@ class PDFMetadataExtractor:
             return None
 
     def _parse_permissions(self, permissions: int):
-        """پارس مجوزهای PDF"""
-        # ماسک‌های مجوز استاندارد PDF
+        """Parse PDF permissions"""
+        # Standard PDF permission masks
         PERMISSION_MASKS = {
             'print': 0b000000000100,  # 4
             'modify': 0b000000001000,  # 8
@@ -784,14 +784,14 @@ class PDFMetadataExtractor:
             if permissions & mask:
                 self.metadata.permissions.append(perm_name)
 
-        # تنظیم پرچم‌های ساده
+        # Set simple flags
         self.metadata.can_print = 'print' in self.metadata.permissions
         self.metadata.can_modify = 'modify' in self.metadata.permissions
         self.metadata.can_copy = 'copy' in self.metadata.permissions
         self.metadata.can_annotate = 'annotate' in self.metadata.permissions
 
     def _parse_pikepdf_permissions(self, permissions):
-        """پارس مجوزهای pikepdf"""
+        """Parse pikepdf permissions"""
         if hasattr(permissions, 'print'):
             self.metadata.can_print = permissions.print
             if permissions.print:
@@ -813,15 +813,15 @@ class PDFMetadataExtractor:
                 self.metadata.permissions.append('annotate')
 
     def _parse_xmp_data(self, xmp_text: str):
-        """پارس داده‌های XMP"""
+        """Parse XMP data"""
         try:
-            # حذف namespace برای سادگی
+            # Remove namespaces for simplicity
             xmp_text = xmp_text.replace('rdf:', '').replace('dc:', '').replace('xmp:', '')
 
-            # تجزیه XML
+            # Parse XML
             root = ET.fromstring(xmp_text)
 
-            # استخراج metadata های رایج
+            # Extract common metadata
             xmp_data = {}
 
             # Dublin Core
@@ -865,7 +865,7 @@ class PDFMetadataExtractor:
                     return ", ".join(str(item) for item in value)
                 return str(value)
 
-            # به‌روزرسانی metadata اصلی با XMP
+            # Update main metadata with XMP
             if 'title' in xmp_data and not self.metadata.title:
                 self.metadata.title = _stringify_xmp_value(xmp_data['title'])
             if 'creator' in xmp_data and not self.metadata.author:
@@ -880,15 +880,15 @@ class PDFMetadataExtractor:
                 self.metadata.producer = _stringify_xmp_value(xmp_data['producer'])
 
         except Exception as e:
-            warnings.warn(f"خطا در پارس XMP: {str(e)}")
+            warnings.warn(f"Error parsing XMP: {str(e)}")
 
     def _scan_binary_for_metadata(self, data: bytes):
-        """اسکن باینری برای یافتن Metadata"""
+        """Scan binary data for metadata"""
         try:
-            # تبدیل به متن برای جستجو
+            # Convert to text for searching
             text = data.decode('latin-1', errors='ignore')
 
-            # جستجوی Metadataی استاندارد PDF
+            # Search for standard PDF metadata
             patterns = {
                 'title': r'/Title\s*\(([^)]+)\)',
                 'author': r'/Author\s*\(([^)]+)\)',
@@ -904,7 +904,8 @@ class PDFMetadataExtractor:
                 match = re.search(pattern, text)
                 if match:
                     value = match.group(1)
-                    # حذف escaping
+                    # Remove escaping
+                    value = value.replace('\\(', '(').replace('\\)', ')')
                     value = value.replace('\\(', '(').replace('\\)', ')')
                     value = value.replace('\\n', '\n').replace('\\r', '\r')
                     value = value.replace('\\t', '\t').replace('\\b', '\b')
@@ -937,19 +938,19 @@ class PDFMetadataExtractor:
                 self.metadata.pdf_version = version_match.group(1)
 
         except Exception as e:
-            warnings.warn(f"خطا در اسکن باینری: {str(e)}")
+            warnings.warn(f"Binary scan error: {str(e)}")
 
     def _check_for_embedded_files(self, pdf_reader):
-        """بررسی فایل‌های embedded"""
+        """Check for embedded files"""
         try:
-            # بررسی embedded files در PDF
+            # Check embedded files in PDF
             if hasattr(pdf_reader, 'attachments'):
                 attachments = pdf_reader.attachments
                 if attachments and len(attachments) > 0:
                     self.metadata.has_embedded_files = True
                     self.metadata.has_attachments = True
 
-            # بررسی در trailer
+            # Check in trailer
             if '/Names' in pdf_reader.trailer:
                 names = pdf_reader.trailer['/Names']
                 if isinstance(names, dict) and '/EmbeddedFiles' in names:
@@ -957,15 +958,15 @@ class PDFMetadataExtractor:
                     self.metadata.has_attachments = True
 
         except Exception as e:
-            warnings.warn(f"خطا در بررسی embedded files: {str(e)}")
+            warnings.warn(f"Error checking embedded files: {str(e)}")
 
 
 class PDFMetadataError(Exception):
-    """خطای استخراج Metadataی PDF"""
+    """PDF metadata extraction error"""
 
 
 class MetadataExtractor:
-    """کلاس اصلی برای استخراج Metadata"""
+    """Main class for metadata extraction"""
 
     @staticmethod
     def extract_from_file(
@@ -973,14 +974,14 @@ class MetadataExtractor:
         extract_types: list[MetadataType] | None = None
     ) -> dict[str, Any]:
         """
-        استخراج Metadata از فایل
+        Extract metadata from file
         
         Args:
-            pdf_path: مسیر فایل PDF
-            extract_types: لیست انواع Metadata برای استخراج
+            pdf_path: Path to the PDF file
+            extract_types: List of metadata types to extract
             
         Returns:
-            دیکشنری حاوی Metadataهای استخراج شده
+            Dictionary containing extracted metadata
         """
         if extract_types is None:
             extract_types = [MetadataType.BASIC, MetadataType.TECHNICAL, MetadataType.XMP]

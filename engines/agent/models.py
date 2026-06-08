@@ -45,10 +45,10 @@ class AgentInput(BaseModel):
     # Structured inputs
     payload: dict[str, Any] = Field(default_factory=dict)
 
-    # کانتکست مشترک (shared context)
+    # Shared context
     context: dict[str, Any] = Field(default_factory=dict)
 
-    # اطلاعات aggiuntive → tracing, routing, strategy, priority
+    # Additional information → tracing, routing, strategy, priority
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -56,16 +56,16 @@ class AgentOutput(BaseModel):
     agent_id: str | None = None
     agent_name: str
 
-    # خروجی اصلی agent (LLM پاسخ یا نتیجه پردازش)
+    # Agent's main output (LLM response or processing result)
     message: str | None = None
 
-    # خروجی ساخت‌یافته
+    # Structured output
     payload: dict[str, Any] = Field(default_factory=dict)
 
-    # خطا (اگر وجود دارد)
+    # Error (if any)
     error: str | None = None
 
-    # برای orchestration و tracing
+    # For orchestration and tracing
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 

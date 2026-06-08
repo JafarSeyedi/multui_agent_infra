@@ -405,7 +405,7 @@ class LaTeXEnvironmentContent:
 
 @dataclass
 class LaTeXCommandContent:
-    """دستورات LaTeX مانند \\section{}, \\cite{}"""
+    """LaTeX commands such as \\section{}, \\cite{}"""
     command: str
     arguments: list[str] = field(default_factory=list)
     options: dict[str, str] = field(default_factory=dict)

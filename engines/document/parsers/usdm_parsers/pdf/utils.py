@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Helper Tools module for PDF Parser
-شامل توابع کاربردی برای پردازش متن، تصویر، و عملیات کمکی
+Includes utility functions for text, image processing, and helper operations
 """
 import base64
 import hashlib
@@ -26,14 +26,14 @@ from PIL.Image import Image as PILImage
 
 
 class TextDirection(Enum):
-    """جهت متن"""
-    LTR = "ltr"  # چپ به راست
-    RTL = "rtl"  # راست به چپ
-    TTB = "ttb"  # بالا به پایین (عمودی)
+    """Text direction"""
+    LTR = "ltr"  # Left to right
+    RTL = "rtl"  # Right to left
+    TTB = "ttb"  # Top to bottom (vertical)
 
 
 class Language(Enum):
-    """زبان‌های پشتیبانی شده"""
+    """Supported languages"""
     PERSIAN = "fa"
     ENGLISH = "en"
     ARABIC = "ar"
@@ -50,7 +50,7 @@ class Language(Enum):
 
 @dataclass
 class BoundingBox:
-    """محدوده مستطیلی (Bounding Box)"""
+    """Rectangular bounding box"""
     x0: float
     y0: float
     x1: float
@@ -58,84 +58,84 @@ class BoundingBox:
 
     @property
     def width(self) -> float:
-        """عرض محدوده"""
+        """Bounding box width"""
         return abs(self.x1 - self.x0)
 
     @property
     def height(self) -> float:
-        """ارتفاع محدوده"""
+        """Bounding box height"""
         return abs(self.y1 - self.y0)
 
     @property
     def area(self) -> float:
-        """مساحت محدوده"""
+        """Bounding box area"""
         return self.width * self.height
 
     @property
     def center(self) -> tuple[float, float]:
-        """مرکز محدوده"""
+        """Bounding box center"""
         return ((self.x0 + self.x1) / 2, (self.y0 + self.y1) / 2)
 
     def intersects(self, other: 'BoundingBox', threshold: float = 0.1) -> bool:
         """
-        بررسی تقاطع دو محدوده
+        Check intersection of two bounding boxes
         
         Args:
-            other: محدوده دیگر
-            threshold: آستانه تقاطع (نسبت مساحت)
+            other: other bounding box
+            threshold: intersection threshold (area ratio)
             
         Returns:
-            True اگر تقاطع داشته باشند
+            True if they intersect
         """
-        # محاسبه محدوده تقاطع
+        # Calculate intersection bounding box
         inter_x0 = max(self.x0, other.x0)
         inter_y0 = max(self.y0, other.y0)
         inter_x1 = min(self.x1, other.x1)
         inter_y1 = min(self.y1, other.y1)
 
         if inter_x0 < inter_x1 and inter_y0 < inter_y1:
-            # محاسبه مساحت تقاطع
+            # Calculate intersection area
             inter_area = (inter_x1 - inter_x0) * (inter_y1 - inter_y0)
-            # محاسبه حداقل مساحت دو محدوده
+            # Calculate minimum area of two boxes
             min_area = min(self.area, other.area)
-            # بررسی آستانه
+            # Check threshold
             return (inter_area / min_area) >= threshold
         return False
 
     def contains(self, point: tuple[float, float]) -> bool:
         """
-        بررسی آیا نقطه در محدوده قرار دارد
+        Check if point is inside bounding box
         
         Args:
-            point: نقطه (x, y)
+            point: point (x, y)
             
         Returns:
-            True اگر نقطه در محدوده باشد
+            True if point is inside
         """
         x, y = point
         return self.x0 <= x <= self.x1 and self.y0 <= y <= self.y1
 
     def distance_to(self, other: 'BoundingBox') -> float:
         """
-        محاسبه فاصله بین مرکز دو محدوده
+        Calculate distance between centers of two bounding boxes
         
         Args:
-            other: محدوده دیگر
+            other: other bounding box
             
         Returns:
-            فاصله اقلیدسی
+            Euclidean distance
         """
         x1, y1 = self.center
         x2, y2 = other.center
         return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
 
     def to_tuple(self) -> tuple[float, float, float, float]:
-        """تبدیل به تاپل"""
+        """Convert to tuple"""
         return (self.x0, self.y0, self.x1, self.y1)
 
     @classmethod
     def from_tuple(cls, bbox_tuple: tuple[float, float, float, float]) -> 'BoundingBox':
-        """ایجاد از تاپل"""
+        """Create from tuple"""
         return cls(*bbox_tuple)
 
     def __str__(self) -> str:
@@ -143,25 +143,25 @@ class BoundingBox:
 
 
 class TextUtils:
-    """ابزارهای پردازش متن"""
+    """Text processing tools"""
 
     @staticmethod
     def detect_language(text: str) -> Language:
         """
-        تشخیص زبان متن
+        Detect text language
         
         Args:
-            text: متن ورودی
+            text: input text
             
         Returns:
-            زبان تشخیص داده شده
+            Detected language
         """
         if not text or not text.strip():
             return Language.UNKNOWN
 
         text = text.strip()
 
-        # الگوهای زبان‌های مختلف
+        # Various language patterns
         patterns = {
             Language.PERSIAN: r'[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]',
             Language.ARABIC: r'[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]',
@@ -175,7 +175,7 @@ class TextUtils:
             Language.KOREAN: r'[\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F]',
         }
 
-        # شمارش کاراکترهای هر زبان
+        # Count characters per language
         counts = {}
         for lang, pattern in patterns.items():
             matches = re.findall(pattern, text)
@@ -185,12 +185,12 @@ class TextUtils:
         if not counts:
             return Language.UNKNOWN
 
-        # زبان با بیشترین تعداد کاراکتر
+        # Language with most characters
         detected_lang = max(counts.items(), key=lambda x: x[1])[0]
 
-        # تشخیص تفاوت فارسی و عربی (ساده)
+        # Detect Persian vs Arabic difference (simple)
         if detected_lang in [Language.PERSIAN, Language.ARABIC]:
-            # کلمات خاص فارسی
+            # Persian-specific words
             persian_words = ['است', 'های', 'را', 'که', 'این', 'با', 'برای']
             arabic_words = ['ال', 'وال', 'ب', 'ف', 'و']
 
@@ -207,41 +207,41 @@ class TextUtils:
     @staticmethod
     def detect_text_direction(text: str) -> TextDirection:
         """
-        تشخیص جهت متن
+        Detect text direction
         
         Args:
-            text: متن ورودی
+            text: input text
             
         Returns:
-            جهت متن
+            Text direction
         """
         lang = TextUtils.detect_language(text)
 
-        # زبان‌های RTL
+        # RTL languages
         rtl_languages = [Language.PERSIAN, Language.ARABIC, Language.HEBREW]
 
         if lang in rtl_languages:
             return TextDirection.RTL
         elif lang == Language.CHINESE or lang == Language.JAPANESE:
-            return TextDirection.TTB  # عمودی (در برخی موارد)
+            return TextDirection.TTB  # Vertical (in some cases)
         else:
             return TextDirection.LTR
 
     @staticmethod
     def normalize_persian_text(text: str) -> str:
         """
-        نرمال‌سازی متن فارسی
+        Normalize Persian text
         
         Args:
-            text: متن فارسی
+            text: Persian text
             
         Returns:
-            متن نرمال‌سازی شده
+            Normalized text
         """
         if not text:
             return text
 
-        # جایگزینی کاراکترهای عربی با فارسی
+        # Replace Arabic characters with Persian
         replacements = {
             'ك': 'ک',
             'ي': 'ی',
@@ -260,7 +260,7 @@ class TextUtils:
         for arabic_char, persian_char in replacements.items():
             text = text.replace(arabic_char, persian_char)
 
-        # حذف فاصله‌های اضافی
+        # Remove extra spaces
         text = re.sub(r'\s+', ' ', text).strip()
 
         return text
@@ -268,18 +268,18 @@ class TextUtils:
     @staticmethod
     def reshape_arabic_text(text: str) -> str:
         """
-        شکل‌دهی متن عربی/فارسی برای نمایش صحیح
+        Reshape Arabic/Persian text for correct display
         
         Args:
-            text: متن ورودی
+            text: input text
             
         Returns:
-            متن شکل‌دهی شده
+            Reshaped text
         """
         try:
-            # شکل‌دهی متن عربی
+            # Reshape Arabic text
             reshaped_text = arabic_reshaper.reshape(text)
-            # اعمال الگوریتم دوطرفه
+            # Apply bidirectional algorithm
             bidi_text = get_display(reshaped_text)
             return bidi_text
         except Exception:
@@ -288,33 +288,33 @@ class TextUtils:
     @staticmethod
     def calculate_text_similarity(text1: str, text2: str) -> float:
         """
-        محاسبه شباهت بین دو متن
+        Calculate similarity between two texts
         
         Args:
-            text1: متن اول
-            text2: متن دوم
+            text1: first text
+            text2: second text
             
         Returns:
-            میزان شباهت بین ۰ تا ۱
+            Similarity score between 0 and 1
         """
         if not text1 or not text2:
             return 0.0
 
-        # نرمال‌سازی متن‌ها
+        # Normalize texts
         text1 = text1.lower().strip()
         text2 = text2.lower().strip()
 
         if text1 == text2:
             return 1.0
 
-        # استفاده از فاصله لونشتاین
+        # Use Levenshtein distance
         len1, len2 = len(text1), len(text2)
         max_len = max(len1, len2)
 
         if max_len == 0:
             return 1.0
 
-        # ماتریس فاصله
+        # Distance matrix
         d = [[0] * (len2 + 1) for _ in range(len1 + 1)]
 
         for i in range(len1 + 1):
@@ -326,9 +326,9 @@ class TextUtils:
             for j in range(1, len2 + 1):
                 cost = 0 if text1[i-1] == text2[j-1] else 1
                 d[i][j] = min(
-                    d[i-1][j] + 1,      # حذف
-                    d[i][j-1] + 1,      # درج
-                    d[i-1][j-1] + cost  # جایگزینی
+                    d[i-1][j] + 1,      # Delete
+                    d[i][j-1] + 1,      # Insert
+                    d[i-1][j-1] + cost  # Replace
                 )
 
         distance = d[len1][len2]
@@ -339,14 +339,14 @@ class TextUtils:
     @staticmethod
     def extract_words(text: str, language: Language | None = None) -> list[str]:
         """
-        استخراج کلمات از متن
+        Extract words from text
         
         Args:
-            text: متن ورودی
-            language: زبان متن (اختیاری)
+            text: input text
+            language: text language (optional)
             
         Returns:
-            لیست کلمات
+            List of words
         """
         if not text:
             return []
@@ -354,15 +354,15 @@ class TextUtils:
         if language is None:
             language = TextUtils.detect_language(text)
 
-        # الگوهای جداکننده بر اساس زبان
+        # Separator patterns by language
         if language in [Language.PERSIAN, Language.ARABIC]:
-            # جداکننده‌های فارسی/عربی
+            # Persian/Arabic separators
             separators = r'[\s\u200c\u200f،؛:\.\!\?\(\)\[\]\{\}«»""'']+'
         elif language in [Language.CHINESE, Language.JAPANESE]:
-            # جداکننده‌های چینی/ژاپنی
+            # Chinese/Japanese separators
             separators = r'[\s，。！？：；「」『』【】（）《》]+'
         else:
-            # جداکننده‌های استاندارد
+            # Standard separators
             separators = r'[\s\.,!?;:\(\)\[\]\{\}"'']+'
 
         words = re.split(separators, text)
@@ -373,14 +373,14 @@ class TextUtils:
     @staticmethod
     def calculate_readability_score(text: str, language: Language = Language.ENGLISH) -> float:
         """
-        محاسبه نمره خوانایی متن
+        Calculate text readability score
         
         Args:
-            text: متن ورودی
-            language: زبان متن
+            text: input text
+            language: text language
             
         Returns:
-            نمره خوانایی (۰ تا ۱۰۰)
+            Readability score (0 to 100)
         """
         words = TextUtils.extract_words(text, language)
         sentences = re.split(r'[.!?۔؟۔]+', text)
@@ -389,60 +389,60 @@ class TextUtils:
         if not words or not sentences:
             return 0.0
 
-        # تعداد کلمات و جملات
+        # Word and sentence counts
         word_count = len(words)
         sentence_count = len(sentences)
 
         if sentence_count == 0:
             return 0.0
 
-        # میانگین طول کلمات (بر اساس حروف)
+        # Average word length (by characters)
         avg_word_length = sum(len(word) for word in words) / word_count
 
-        # میانگین طول جملات (بر اساس کلمات)
+        # Average sentence length (by words)
         avg_sentence_length = word_count / sentence_count
 
-        # فرمول ساده خوانایی (Flesch Reading Ease)
+        # Simple readability formula (Flesch Reading Ease)
         if language == Language.ENGLISH:
-            # فرمول برای انگلیسی
+            # Formula for English
             score = 206.835 - 1.015 * avg_sentence_length - 84.6 * (avg_word_length / word_count)
         elif language in [Language.PERSIAN, Language.ARABIC]:
-            # فرمول تطبیقی برای فارسی/عربی
+            # Adapted formula for Persian/Arabic
             score = 200 - 1.2 * avg_sentence_length - 80 * (avg_word_length / word_count)
         else:
-            # فرمول عمومی
+            # General formula
             score = 180 - 1.1 * avg_sentence_length - 70 * (avg_word_length / word_count)
 
-        # محدود کردن نمره بین ۰ تا ۱۰۰
+        # Clamp score between 0 and 100
         return max(0.0, min(100.0, score))
 
 
 class ImageUtils:
-    """ابزارهای پردازش تصویر"""
+    """Image processing tools"""
 
     @staticmethod
     def calculate_image_hash(image_data: bytes, hash_size: int = 8) -> str:
         """
-        محاسبه هش تصویر برای تشخیص تکراری بودن
+        Calculate image hash for duplicate detection
         
         Args:
-            image_data: داده‌های تصویر
-            hash_size: اندازه هش
+            image_data: image data
+            hash_size: hash size
             
         Returns:
-            هش تصویر
+            Image hash
         """
         try:
-            # بارگذاری تصویر
+            # Load image
             image: PILImage = Image.open(io.BytesIO(image_data))
-            # تبدیل به خاکستری و تغییر اندازه
+            # Convert to grayscale and resize
             image = image.convert('L').resize((hash_size, hash_size), Image.Resampling.LANCZOS)
 
-            # محاسبه میانگین
+            # Calculate average
             pixels = list(image.getdata())
             avg = sum(pixels) / len(pixels)
 
-            # ایجاد هش
+            # Create hash
             hash_value = 0
             for pixel in pixels:
                 hash_value = (hash_value << 1) | (1 if pixel > avg else 0)
@@ -450,27 +450,27 @@ class ImageUtils:
             return hex(hash_value)[2:].zfill(hash_size * hash_size // 4)
 
         except Exception:
-            # در صورت خطا، هش از داده‌های خام
+            # On error, hash from raw data
             return hashlib.md5(image_data).hexdigest()[:16]
 
     @staticmethod
     def image_to_base64(image_data: bytes, format: str = "PNG") -> str:
         """
-        تبدیل تصویر به base64
+        Convert image to base64
         
         Args:
-            image_data: داده‌های تصویر
-            format: فرمت خروجی
+            image_data: image data
+            format: output format
             
         Returns:
-            رشته base64
+            base64 string
         """
         try:
-            # اگر داده‌ها قبلاً base64 هستند
+            # If data is already base64
             if isinstance(image_data, str) and image_data.startswith('data:image'):
                 return image_data
 
-            # کدگذاری base64
+            # Base64 encode
             encoded = base64.b64encode(image_data).decode('utf-8')
             mime_type = f"image/{format.lower()}"
             return f"data:{mime_type};base64,{encoded}"
@@ -481,20 +481,20 @@ class ImageUtils:
     @staticmethod
     def base64_to_image(base64_string: str) -> bytes | None:
         """
-        تبدیل base64 به داده‌های تصویر
+        Convert base64 to image data
         
         Args:
-            base64_string: رشته base64
+            base64_string: base64 string
             
         Returns:
-            داده‌های تصویر یا None
+            Image data or None
         """
         try:
-            # حذف پیشوند data URL اگر وجود دارد
+            # Remove data URL prefix if present
             if base64_string.startswith('data:image'):
                 base64_string = base64_string.split(',', 1)[1]
 
-            # دیکد base64
+            # Decode base64
             return base64.b64decode(base64_string)
         except Exception:
             return None
@@ -503,30 +503,30 @@ class ImageUtils:
     def resize_image(image_data: bytes, max_width: int, max_height: int,
                     quality: int = 85) -> bytes:
         """
-        تغییر اندازه تصویر
+        Resize image
         
         Args:
-            image_data: داده‌های تصویر
-            max_width: حداکثر عرض
-            max_height: حداکثر ارتفاع
-            quality: کیفیت خروجی (برای JPEG)
+            image_data: image data
+            max_width: maximum width
+            max_height: maximum height
+            quality: output quality (for JPEG)
             
         Returns:
-            داده‌های تصویر تغییر اندازه داده شده
+            Resized image data
         """
         try:
             image: PILImage = Image.open(io.BytesIO(image_data))
             original_width, original_height = image.size
 
-            # محاسبه اندازه جدید با حفظ نسبت ابعاد
+            # Calculate new size maintaining aspect ratio
             ratio = min(max_width / original_width, max_height / original_height)
             new_width = int(original_width * ratio)
             new_height = int(original_height * ratio)
 
-            # تغییر اندازه
+            # Resize
             resized_image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
-            # ذخیره به بایت
+            # Save to bytes
             output = io.BytesIO()
             if image.format == 'JPEG':
                 resized_image.save(output, format='JPEG', quality=quality, optimize=True)
@@ -536,27 +536,27 @@ class ImageUtils:
             return output.getvalue()
 
         except Exception as e:
-            warnings.warn(f"خطا در تغییر اندازه تصویر: {e}")
-            return image_data  # بازگشت تصویر اصلی در صورت خطا
+            warnings.warn(f"Error resizing image: {e}")
+            return image_data  # Return original image on error
 
     @staticmethod
     def convert_image_format(image_data: bytes, target_format: str,
                            quality: int = 85) -> bytes:
         """
-        تبدیل فرمت تصویر
+        Convert image format
         
         Args:
-            image_data: داده‌های تصویر
-            target_format: فرمت هدف (JPEG, PNG, WEBP)
-            quality: کیفیت (برای فرمت‌های فشرده)
+            image_data: image data
+            target_format: target format (JPEG, PNG, WEBP)
+            quality: quality (for compressed formats)
             
         Returns:
-            داده‌های تصویر تبدیل شده
+            Converted image data
         """
         try:
             image: PILImage = Image.open(io.BytesIO(image_data))
 
-            # تبدیل به RGB اگر فرمت هدف JPEG است
+            # Convert to RGB if target format is JPEG
             if target_format.upper() == 'JPEG' and image.mode in ('RGBA', 'LA', 'P'):
                 background = Image.new('RGB', image.size, (255, 255, 255))
                 if image.mode == 'RGBA':
@@ -565,7 +565,7 @@ class ImageUtils:
                     background.paste(image)
                 image = background
 
-            # ذخیره با فرمت جدید
+            # Save with new format
             output = io.BytesIO()
             save_kwargs = {'format': target_format.upper()}
 
@@ -577,19 +577,19 @@ class ImageUtils:
             return output.getvalue()
 
         except Exception as e:
-            warnings.warn(f"خطا در تبدیل فرمت تصویر: {e}")
+            warnings.warn(f"Error converting image format: {e}")
             return image_data
 
     @staticmethod
     def extract_image_metadata(image_data: bytes) -> dict[str, Any]:
         """
-        استخراج Metadataی تصویر
+        Extract image metadata
         
         Args:
-            image_data: داده‌های تصویر
+            image_data: image data
             
         Returns:
-            دیکشنری Metadata
+            Metadata dictionary
         """
         metadata: dict[str, Any] = {
             'format': None,
@@ -611,18 +611,18 @@ class ImageUtils:
             metadata['has_alpha'] = image.mode in ('RGBA', 'LA', 'P')
             metadata['is_animated'] = getattr(image, 'is_animated', False)
 
-            # شمارش رنگ‌های منحصر به فرد
+            # Count unique colors
             if image.mode in ('P', 'L', '1'):
                 colors = image.getcolors()
                 if colors:
                     metadata['color_count'] = len(colors)
 
-            # استخراج EXIF اگر وجود دارد
+            # Extract EXIF if present
             if hasattr(image, '_getexif') and image._getexif():
                 exif = image._getexif()
                 if exif:
                     metadata['exif'] = {}
-                    # تگ‌های EXIF مهم
+                    # Important EXIF tags
                     exif_tags = {
                         271: 'make',
                         272: 'model',
@@ -646,33 +646,33 @@ class ImageUtils:
                             metadata['exif'][tag_name] = exif[tag_id]
 
         except Exception as e:
-            warnings.warn(f"خطا در استخراج Metadataی تصویر: {e}")
+            warnings.warn(f"Error extracting image metadata: {e}")
 
         return metadata
 
 
 class FileUtils:
-    """ابزارهای کار با فایل"""
+    """File utility tools"""
 
     @staticmethod
     def safe_filename(filename: str, max_length: int = 255) -> str:
         """
-        ایجاد نام فایل امن
+        Create safe filename
         
         Args:
-            filename: نام فایل اصلی
-            max_length: حداکثر طول نام فایل
+            filename: original filename
+            max_length: maximum filename length
             
         Returns:
-            نام فایل امن
+            Safe filename
         """
-        # حذف کاراکترهای غیرمجاز
+        # Remove invalid characters
         safe_name = re.sub(r'[<>:"/\\|?*]', '_', filename)
 
-        # حذف فاصله‌های اضافی
+        # Remove extra spaces
         safe_name = re.sub(r'\s+', '_', safe_name)
 
-        # محدود کردن طول
+        # Limit length
         if len(safe_name) > max_length:
             name, ext = os.path.splitext(safe_name)
             name = name[:max_length - len(ext)]
@@ -683,14 +683,14 @@ class FileUtils:
     @staticmethod
     def get_file_hash(filepath: str, algorithm: str = 'sha256') -> str:
         """
-        محاسبه هش فایل
+        Calculate file hash
         
         Args:
-            filepath: مسیر فایل
-            algorithm: الگوریتم هش (md5, sha1, sha256)
+            filepath: file path
+            algorithm: hash algorithm (md5, sha1, sha256)
             
         Returns:
-            هش فایل
+            File hash
         """
         hash_func = getattr(hashlib, algorithm, hashlib.sha256)
 
@@ -706,14 +706,14 @@ class FileUtils:
     @staticmethod
     def create_temp_file(data: bytes, suffix: str = '.tmp') -> str:
         """
-        ایجاد فایل موقت
+        Create temporary file
         
         Args:
-            data: داده‌های فایل
-            suffix: پسوند فایل
+            data: file data
+            suffix: file extension
             
         Returns:
-            مسیر فایل موقت
+            Temporary file path
         """
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
             tmp.write(data)
@@ -722,14 +722,14 @@ class FileUtils:
     @staticmethod
     def read_file_chunks(filepath: str, chunk_size: int = 8192):
         """
-        خواندن فایل به صورت تکه‌ای
+        Read file in chunks
         
         Args:
-            filepath: مسیر فایل
-            chunk_size: اندازه هر تکه
+            filepath: file path
+            chunk_size: chunk size
             
         Yields:
-            تکه‌های داده
+            Data chunks
         """
         with open(filepath, 'rb') as f:
             while True:
@@ -741,18 +741,18 @@ class FileUtils:
     @staticmethod
     def get_file_info(filepath: str) -> dict[str, Any]:
         """
-        دریافت اطلاعات فایل
+        Get file information
         
         Args:
-            filepath: مسیر فایل
+            filepath: file path
             
         Returns:
-            اطلاعات فایل
+            File information
         """
         path = Path(filepath)
 
         if not path.exists():
-            raise FileNotFoundError(f"فایل یافت نشد: {filepath}")
+            raise FileNotFoundError(f"File not found: {filepath}")
 
         stats = path.stat()
 
@@ -775,13 +775,13 @@ class FileUtils:
     @staticmethod
     def format_file_size(size_bytes: int) -> str:
         """
-        فرمت‌بندی اندازه فایل
+        Format file size
         
         Args:
-            size_bytes: اندازه به بایت
+            size_bytes: file size in bytes
             
         Returns:
-            رشته فرمت شده
+            Formatted string
         """
         if size_bytes == 0:
             return "0 B"
@@ -799,32 +799,32 @@ class FileUtils:
     @staticmethod
     def ensure_directory(directory: str) -> bool:
         """
-        اطمینان از وجود دایرکتوری
+        Ensure directory exists
         
         Args:
-            directory: مسیر دایرکتوری
+            directory: directory path
             
         Returns:
-            True اگر موفقیت‌آمیز باشد
+            True if successful
         """
         try:
             Path(directory).mkdir(parents=True, exist_ok=True)
             return True
         except Exception as e:
-            warnings.warn(f"خطا در ایجاد دایرکتوری: {e}")
+            warnings.warn(f"Error creating directory: {e}")
             return False
 
 
 class ValidationUtils:
-    """ابزارهای Validation"""
+    """Validation tools"""
 
     @staticmethod
     def is_valid_pdf(filepath: str) -> tuple[bool, str]:
         """
-        بررسی اعتبار فایل PDF
+        Validate PDF file
         
         Args:
-            filepath: مسیر فایل PDF
+            filepath: PDF file path
             
         Returns:
             (is_valid, message)
@@ -832,69 +832,69 @@ class ValidationUtils:
         try:
             path = Path(filepath)
 
-            # بررسی وجود فایل
+            # Check file exists
             if not path.exists():
-                return False, "فایل یافت نشد"
+                return False, "File not found"
 
-            # بررسی پسوند
+            # Check extension
             if path.suffix.lower() != '.pdf':
-                return False, "پسوند فایل باید .pdf باشد"
+                return False, "File extension must be .pdf"
 
-            # بررسی اندازه فایل
+            # Check file size
             file_size = path.stat().st_size
             if file_size == 0:
-                return False, "فایل خالی است"
+                return False, "File is empty"
 
             if file_size > 500 * 1024 * 1024:  # 500 MB
-                return False, "حجم فایل بیش از حد مجاز است (حداکثر 500 مگابایت)"
+                return False, "File size exceeds maximum allowed (500 MB)"
 
-            # بررسی هدر PDF
+            # Check PDF header
             with open(filepath, 'rb') as f:
                 header = f.read(5)
                 if header != b'%PDF-':
-                    return False, "فایل PDF معتبر نیست (هدر نادرست)"
+                    return False, "File is not a valid PDF (invalid header)"
 
-                # بررسی تریلر
-                f.seek(-128, 2)  # به انتهای فایل برو
+                # Check trailer
+                f.seek(-128, 2)  # go to end of file
                 trailer = f.read()
                 if b'%%EOF' not in trailer:
-                    return False, "فایل PDF معتبر نیست (تریلر نادرست)"
+                    return False, "File is not a valid PDF (invalid trailer)"
 
-            return True, "فایل PDF معتبر است"
+            return True, "PDF file is valid"
 
         except Exception as e:
-            return False, f"خطا در بررسی فایل: {str(e)}"
+            return False, f"Error checking file: {str(e)}"
 
     @staticmethod
     def is_valid_image(image_data: bytes) -> tuple[bool, str]:
         """
-        بررسی اعتبار داده‌های تصویر
+        Validate image data
         
         Args:
-            image_data: داده‌های تصویر
+            image_data: image data
             
         Returns:
             (is_valid, message)
         """
         try:
             image: PILImage = Image.open(io.BytesIO(image_data))
-            image.verify()  # بررسی اعتبار تصویر
+            image.verify()  # Verify image validity
             return True, f"تصویر معتبر ({image.format or 'unknown'})"
         except Exception as e:
-            return False, f"داده‌های تصویر معتبر نیستند: {str(e)}"
+            return False, f"Image data is not valid: {str(e)}"
 
     @staticmethod
     def validate_bbox(bbox: tuple[float, float, float, float],
                      page_size: tuple[float, float]) -> bool:
         """
-        Validation محدوده (Bounding Box)
+        Validate bounding box
         
         Args:
-            bbox: محدوده (x0, y0, x1, y1)
-            page_size: اندازه صفحه (width, height)
+            bbox: bounding box (x0, y0, x1, y1)
+            page_size: page size (width, height)
             
         Returns:
-            True اگر محدوده معتبر باشد
+            True if bounding box is valid
         """
         if len(bbox) != 4:
             return False
@@ -902,19 +902,19 @@ class ValidationUtils:
         x0, y0, x1, y1 = bbox
         page_width, page_height = page_size
 
-        # بررسی مقادیر عددی
+        # Check numeric values
         if not all(isinstance(v, (int, float)) for v in bbox):
             return False
 
-        # بررسی محدوده
+        # Check range
         if x0 < 0 or y0 < 0 or x1 > page_width or y1 > page_height:
             return False
 
-        # بررسی منطقی بودن مختصات
+        # Check coordinate logic
         if x0 >= x1 or y0 >= y1:
             return False
 
-        # بررسی اندازه
+        # Check size
         width = x1 - x0
         height = y1 - y0
 
@@ -928,18 +928,18 @@ class ValidationUtils:
 
 
 class PerformanceUtils:
-    """ابزارهای اندازه‌گیری عملکرد"""
+    """Performance measurement tools"""
 
     @staticmethod
     def timeit(func: Callable) -> Callable:
         """
-        دکوراتور برای اندازه‌گیری زمان اجرای تابع
+        Decorator for measuring function execution time
         
         Args:
-            func: تابع هدف
+            func: target function
             
         Returns:
-            تابع پوشش داده شده
+            Wrapped function
         """
         def wrapper(*args, **kwargs):
             import time
@@ -948,7 +948,7 @@ class PerformanceUtils:
             end_time = time.time()
             elapsed = end_time - start_time
 
-            print(f"⏱️  زمان اجرای {func.__name__}: {elapsed:.4f} ثانیه")
+            print(f"⏱️  زمان اجرای {func.__name__}: {elapsed:.4f} seconds")
             return result
 
         return wrapper
@@ -956,47 +956,47 @@ class PerformanceUtils:
     @staticmethod
     def memory_usage() -> float:
         """
-        دریافت میزان مصرف حافظه
+        Get memory usage
         
         Returns:
-            مصرف حافظه به مگابایت
+            Memory usage in megabytes
         """
         import psutil
         import os
 
         process = psutil.Process(os.getpid())
         memory_info = process.memory_info()
-        return memory_info.rss / 1024 / 1024  # به مگابایت
+        return memory_info.rss / 1024 / 1024  # In megabytes
 
     @staticmethod
     def profile_function(func: Callable, *args, **kwargs) -> dict[str, Any]:
         """
-        پروفایلینگ تابع
+        Profile function
         
         Args:
-            func: تابع هدف
-            *args: آرگومان‌های تابع
-            **kwargs: آرگومان‌های کلیدواژه
+            func: target function
+            *args: function arguments
+            **kwargs: keyword arguments
             
         Returns:
-            اطلاعات پروفایلینگ
+            Profiling information
         """
         import time
         import tracemalloc
 
-        # شروع ردیابی حافظه
+        # Start memory tracking
         tracemalloc.start()
 
-        # زمان شروع
+        # Start time
         start_time = time.time()
 
-        # اجرای تابع
+        # Execute function
         result = func(*args, **kwargs)
 
-        # زمان پایان
+        # End time
         end_time = time.time()
 
-        # دریافت آمار حافظه
+        # Get memory statistics
         current, peak = tracemalloc.get_traced_memory()
         tracemalloc.stop()
 
@@ -1009,16 +1009,16 @@ class PerformanceUtils:
         }
 
 
-# توابع کمکی عمومی
+# General helper functions
 def merge_dicts(dict1: dict, dict2: dict) -> dict:
-    """ادغام دو دیکشنری"""
+    """Merge two dictionaries"""
     result = dict1.copy()
     result.update(dict2)
     return result
 
 
 def flatten_list(nested_list: list) -> list:
-    """تخت کردن لیست تو در تو"""
+    """Flatten nested list"""
     result = []
     for item in nested_list:
         if isinstance(item, list):
@@ -1029,24 +1029,24 @@ def flatten_list(nested_list: list) -> list:
 
 
 def chunk_list(lst: list, chunk_size: int) -> list[list]:
-    """تقسیم لیست به تکه‌های کوچک"""
+    """Split list into smaller chunks"""
     return [lst[i:i + chunk_size] for i in range(0, len(lst), chunk_size)]
 
 
 def safe_divide(numerator: float, denominator: float, default: float = 0.0) -> float:
-    """تقسیم امن با جلوگیری از تقسیم بر صفر"""
+    """Safe division preventing division by zero"""
     if denominator == 0:
         return default
     return numerator / denominator
 
 
 def clamp(value: float, min_val: float, max_val: float) -> float:
-    """محدود کردن مقدار بین حداقل و حداکثر"""
+    """Clamp value between minimum and maximum"""
     return max(min_val, min(value, max_val))
 
 
 def format_bytes(size: float) -> str:
-    """فرمت‌بندی بایت به واحدهای خوانا"""
+    """Format bytes to human-readable units"""
     for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
         if size < 1024.0:
             return f"{size:.2f} {unit}"
@@ -1054,17 +1054,17 @@ def format_bytes(size: float) -> str:
     return f"{size:.2f} PB"
 
 
-# کلاس برای لاگ‌گیری
+# Logger class
 class Logger:
-    """لاگر ساده"""
+    """Simple logger"""
 
     def __init__(self, log_file: str | None = None, level: str = 'INFO'):
         """
-        مقداردهی اولیه لاگر
+        Initialize logger
         
         Args:
-            log_file: مسیر فایل لاگ (اختیاری)
-            level: سطح لاگ (DEBUG, INFO, WARNING, ERROR)
+            log_file: log file path (optional)
+            level: log level (DEBUG, INFO, WARNING, ERROR)
         """
         self.log_file = log_file
         self.level = level.upper()
@@ -1075,12 +1075,12 @@ class Logger:
 
     def log(self, level: str, message: str, **kwargs):
         """
-        ثبت لاگ
+        Log message
         
         Args:
-            level: سطح لاگ
-            message: پیام
-            **kwargs: اطلاعات اضافی
+            level: log level
+            message: log message
+            **kwargs: additional information
         """
         if self.levels.get(level.upper(), 99) < self.levels.get(self.level, 0):
             return
@@ -1091,55 +1091,55 @@ class Logger:
         if kwargs:
             log_message += f" | {json.dumps(kwargs, ensure_ascii=False)}"
 
-        # چاپ در کنسول
+        # Print to console
         print(log_message)
 
-        # ذخیره در فایل
+        # Save to file
         if self.log_file:
             with open(self.log_file, 'a', encoding='utf-8') as f:
                 f.write(log_message + '\n')
 
     def debug(self, message: str, **kwargs):
-        """ثبت لاگ سطح DEBUG"""
+        """Log DEBUG level message"""
         self.log('DEBUG', message, **kwargs)
 
     def info(self, message: str, **kwargs):
-        """ثبت لاگ سطح INFO"""
+        """Log INFO level message"""
         self.log('INFO', message, **kwargs)
 
     def warning(self, message: str, **kwargs):
-        """ثبت لاگ سطح WARNING"""
+        """Log WARNING level message"""
         self.log('WARNING', message, **kwargs)
 
     def error(self, message: str, **kwargs):
-        """ثبت لاگ سطح ERROR"""
+        """Log ERROR level message"""
         self.log('ERROR', message, **kwargs)
 
 
-# # نمونه لاگر پیش‌فرض
+# # Default logger instance
 # logger = Logger()
 
 
 # if __name__ == "__main__":
-#     # تست توابع
-#     text = "این یک متن فارسی است. This is English text."
+#     # Test functions
+#     text = "This is a Persian text. This is English text."
 
-#     print("🔍 تست تشخیص زبان:")
+#     print("🔍 Test language detection:")
 #     lang = TextUtils.detect_language(text)
-#     print(f"   زبان تشخیص داده شده: {lang}")
+#     print(f"   Detected language: {lang}")
 
-#     print("\n🧭 تست تشخیص جهت متن:")
+#     print("\n🧭 Test text direction:")
 #     direction = TextUtils.detect_text_direction(text)
-#     print(f"   جهت متن: {direction}")
+#     print(f"   Text direction: {direction}")
 
-#     print("\n📏 تست BoundingBox:")
+#     print("\n📏 Test BoundingBox:")
 #     bbox = BoundingBox(10, 20, 100, 200)
 #     print(f"   BBox: {bbox}")
-#     print(f"   عرض: {bbox.width}")
-#     print(f"   ارتفاع: {bbox.height}")
-#     print(f"   مساحت: {bbox.area}")
-#     print(f"   مرکز: {bbox.center}")
+#     print(f"   Width: {bbox.width}")
+#     print(f"   Height: {bbox.height}")
+#     print(f"   Area: {bbox.area}")
+#     print(f"   Center: {bbox.center}")
 
-#     print("\n📊 تست Validation:")
+#     print("\n📊 Test Validation:")
 #     is_valid, msg = ValidationUtils.is_valid_pdf("test.pdf")
-#     print(f"   اعتبار PDF: {is_valid} - {msg}")
+#     print(f"   PDF validity: {is_valid} - {msg}")
