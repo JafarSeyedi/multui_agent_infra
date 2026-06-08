@@ -96,7 +96,7 @@ class RecursiveTextChunker(BaseChunker):
             token_count_estimate=max(1, len(text.split())),
             start_char=max(start, 0),
             end_char=max(end, 0),
-            embeddings=[],   # ← مهم
+            embeddings=[],   # ← Important
             metadata={
                 "source_format": document.media_type.format.value if document.media_type else "unknown",
                 "chunker": "recursive",

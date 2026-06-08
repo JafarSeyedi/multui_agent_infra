@@ -1,4 +1,4 @@
- ساختار پوشه Storage
+ Storage folder structure
 text
 storage/
 ├── base_storage.py          # abstractionها
@@ -15,7 +15,7 @@ storage/
 
 الگوی طراحی: Template Pattern + ABC Interface
 
-هدف: هر کلاس ذخیره‌سازی (SQL، Redis، VectorDB، Memory و غیره) باید از این پایه ارث ببرد.
+Goal: هر کلاس ذخیره‌سازی (SQL، Redis، VectorDB، Memory و غیره) باید از این پایه ارث ببرد.
 
 
 2️⃣ SQL Storage Adapter
@@ -60,7 +60,7 @@ storage/redis_storage.py
 
 ذخیره حافظه کوتاه‌مدت عامل‌ها
 نگهداری sessionهای فعال کاربر
-cache نتایج LLM و RAG
+cache Results LLM و RAG
 
 
 Isolation: اگر Redis Cluster تو در دیتاسنتر جابه‌جا شود، فقط RedisManager تغییر می‌کند؛ ایجنت‌های تو اصلاً روحشان هم خبردار نمی‌شود.

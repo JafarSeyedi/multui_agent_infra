@@ -1,5 +1,5 @@
 """
-ماژول رمزگذاری PDF - پیاده‌سازی حرفه‌ای و کامل
+PDF Encryption module - Professional and complete implementation
 پشتیبانی از استانداردهای رمزگذاری PDF 1.4 تا 2.0
 """
 import base64
@@ -54,14 +54,14 @@ class EncryptionOptions:
     user_password: str = ""          # رمز عبور کاربر
     owner_password: str = ""          # رمز عبور مالک
     permissions: int = 0              # مجوزها (bit flags)
-    metadata_encrypted: bool = True   # رمزگذاری متادیتا
+    metadata_encrypted: bool = True   # رمزگذاری Metadata
     encrypt_attachments: bool = True  # رمزگذاری ضمایم (PDF 2.0)
     encrypt_form_data: bool = True     # رمزگذاری داده‌های فرم
     key_length: int = 256             # طول کلید (بیت)
     revision: int = 5                  # نسخه رمزگذاری (2-5)
 
     def __post_init__(self):
-        """اعتبارسنجی و تنظیم مقادیر پیش‌فرض"""
+        """Validation و تنظیم مقادیر پیش‌فرض"""
         # تنظیم رمز مالک اگر مشخص نشده
         if not self.owner_password and self.user_password:
             self.owner_password = self._generate_owner_password(self.user_password)
@@ -93,7 +93,7 @@ class EncryptionOptions:
             self.key_length = 256
             self.revision = 5
 
-        # اعتبارسنجی طول کلید
+        # Validation طول کلید
         valid_lengths = {40, 128, 256}
         if self.key_length not in valid_lengths:
             raise ValueError(f"طول کلید نامعتبر: {self.key_length}. مقادیر مجاز: {valid_lengths}")
@@ -137,16 +137,16 @@ class PDFEncryptor:
         self.file_id = file_id
 
         if self.options.revision == 5:
-            # الگوریتم SHA-256 برای PDF 2.0
+            # الگوریتم SHA-256 For PDF 2.0
             return self._generate_key_revision_5()
         elif self.options.revision == 4:
-            # الگوریتم AES-128 برای PDF 1.7 ExtensionLevel 3
+            # الگوریتم AES-128 For PDF 1.7 ExtensionLevel 3
             return self._generate_key_revision_4()
         elif self.options.revision == 3:
-            # الگوریتم RC4-128 برای PDF 1.4
+            # الگوریتم RC4-128 For PDF 1.4
             return self._generate_key_revision_3()
         elif self.options.revision == 2:
-            # الگوریتم RC4-40 برای PDF 1.2
+            # الگوریتم RC4-40 For PDF 1.2
             return self._generate_key_revision_2()
         else:
             raise ValueError(f"نسخه رمزگذاری نامعتبر: {self.options.revision}")
@@ -700,7 +700,7 @@ class PDFEncryptor:
                 'Perms': base64.b64encode(self._perms_key).decode('ascii') if self._perms_key else '',
             })
 
-            # Crypt filters برای PDF 2.0
+            # Crypt filters For PDF 2.0
             encrypt_dict['CF'] = {
                 '/StdCF': {
                     'Type': '/CryptFilter',
@@ -748,7 +748,7 @@ class PDFEncryptor:
                 'Length': 40,
             })
 
-        # افزودن اطلاعات اضافی برای PDF 2.0
+        # افزودن اطلاعات اضافی For PDF 2.0
         if revision >= 5:
             encrypt_dict['SubFilter'] = '/adbe.pkcs7.s5'
             encrypt_dict['Recipients'] = []  # برای رمزگذاری عمومی
@@ -770,16 +770,16 @@ class PDFEncryptor:
             return 2  # پیش‌فرض
 
     def validate_password(self, password: str, is_owner: bool = False) -> bool:
-        """اعتبارسنجی رمز عبور"""
+        """Validation رمز عبور"""
         if not self.encryption_key or not self._u_key or not self._o_key:
             return False
 
         password_bytes = password.encode('utf-8')
 
         if is_owner:
-            # اعتبارسنجی رمز مالک
+            # Validation رمز مالک
             if self.options.revision >= 5:
-                # برای PDF 2.0
+                # For PDF 2.0
                 padded_password = self._pad_password_32(password_bytes)
                 test_hash = hashlib.sha256(padded_password + self._o_key[:8]).digest()
                 return hmac.compare_digest(test_hash[:32], self._o_key[:32])
@@ -789,7 +789,7 @@ class PDFEncryptor:
                 test_key = self._compute_o_value_r3(padded_password, b'', self.encryption_key)
                 return hmac.compare_digest(test_key, self._o_key)
         else:
-            # اعتبارسنجی رمز کاربر
+            # Validation رمز کاربر
             if self.options.revision >= 5:
                 padded_password = self._pad_password_32(password_bytes)
                 test_hash = hashlib.sha256(padded_password + self._u_key[:8]).digest()
@@ -908,7 +908,7 @@ class PDFSecurityHandler:
         else:
             feedback.append("اضافه کردن کاراکترهای ویژه")
 
-        # ارزیابی نهایی
+        # Assessment نهایی
         if score >= 6:
             strength = "قوی"
         elif score >= 4:

@@ -11,7 +11,7 @@ from .reasoning_event import ReasoningEvent
 
 class ReasoningLevel(str, Enum):
     """
-    سطح رویداد استدلالی (برای فیلتر و آنالیز).
+    Reasoning event level (for filter and analysis).
     """
     DEBUG = "debug"
     INFO = "info"

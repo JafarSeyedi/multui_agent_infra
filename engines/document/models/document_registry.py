@@ -22,8 +22,8 @@ from ..writers.base import BaseDocumentWriter
 class DocumentRegistry:
     """
     - Resolution 3-layered (Magic Bytes → MIME → Extension)
-    - Registry override system (اصلی نسخه قبلی)
-    - Plugin-based Parser/Writer mapping (نسخه جدید)
+    - Registry override system (original previous version)
+    - Plugin-based Parser/Writer mapping (new version)
     - Ingestion Pipeline Integration
     - Smart Workflow Recommendation
     - Format fallbacks
@@ -37,12 +37,12 @@ class DocumentRegistry:
 
         self.media_registry = MediaTypeRegistry
 
-        # plugin-based mapping (نسخه جدید)
+        # plugin-based mapping (new version)
         self._parser_plugins: dict[DocumentFormat, type[BaseDocumentParser]] = {}
         self._writer_plugins: dict[DocumentFormat, type[BaseDocumentWriter]] = {}
 
     # ==========================================================
-    # PLUGIN-BASED REGISTRATION (نسخه جدید)
+    # PLUGIN-BASED REGISTRATION (new version)
     # ==========================================================
     def register_parser_plugin(
         self,
@@ -60,10 +60,10 @@ class DocumentRegistry:
 
     # ==========================================================
     # ADVANCED MEDIA DETECTION
-    # در DocumentRegistry._detect_magic_mime
+    # In DocumentRegistry._detect_magic_mime
     def _detect_magic_mime(self, src: str | Path | bytes) -> str | None:
         try:
-            # سعی در import magic
+            # Try to import magic
             import magic
             if isinstance(src, bytes):
                 return magic.from_buffer(src[:4096], mime=True)
@@ -71,16 +71,16 @@ class DocumentRegistry:
             if path.exists() and path.is_file():
                 return magic.from_file(str(path), mime=True)
         except ImportError:
-            # اگر magic نصب نیست، از fallback استفاده کن
+            # If magic is not installed, use fallback
             return self._fallback_mime_detection(src)
         except Exception:
             pass
         return None
 
     def _fallback_mime_detection(self, src: str | Path | bytes) -> str | None:
-        """Fallback MIME detection بدون magic"""
+        """Fallback MIME detection without magic"""
         if isinstance(src, bytes):
-            data = src[:1024]  # فقط ابتدای فایل را بررسی کن
+            data = src[:1024]  # Only check the beginning of the file
         else:
             try:
                 path = Path(src)
@@ -92,11 +92,11 @@ class DocumentRegistry:
             except Exception:
                 return None
 
-        # بررسی magic bytes ساده
+        # Simple magic bytes check
         if data.startswith(b"%PDF"):
             return "application/pdf"
         elif data.startswith(b"PK\x03\x04"):
-            return "application/zip"  # برای docx, xlsx, etc.
+            return "application/zip"  # For docx, xlsx, etc.
         elif data.startswith(b"\x89PNG\r\n\x1a\n"):
             return "image/png"
         elif data.startswith(b"\xff\xd8\xff"):
@@ -107,7 +107,7 @@ class DocumentRegistry:
             return "application/xml"
         elif data.startswith(b"{"):
             return "application/json"
-        # ... سایر فرمت‌ها
+        # ... other formats
 
         return None
 
@@ -116,7 +116,7 @@ class DocumentRegistry:
         self, src: str | Path | bytes
     ) -> MediaType:
         """
-        لایه تشخیص ۳-مرحله‌ای:
+        3-step detection layer:
 
         1. Magic Bytes → MIME
         2. MIME → MediaTypeRegistry
@@ -131,7 +131,7 @@ class DocumentRegistry:
             if mt:
                 return mt
 
-        # 2) fallback به detect_media_type (نسخه قبلی)
+        # 2) fallback to detect_media_type (previous version)
         if isinstance(src, (str, Path)):
             try:
                 mt = detect_media_type(str(src))
@@ -171,7 +171,7 @@ class DocumentRegistry:
         return mt.format
 
     # ==========================================================
-    # PARSER RESOLUTION (ترکیبی + Override)
+    # PARSER RESOLUTION (Combined + Override)
     # ==========================================================
     def get_parser(
         self,
@@ -188,7 +188,7 @@ class DocumentRegistry:
         return None
 
     # ==========================================================
-    # WRITER RESOLUTION (ترکیبی + Override)
+    # WRITER RESOLUTION (Combined + Override)
     # ==========================================================
     def get_writer(
         self,
@@ -238,7 +238,7 @@ class DocumentRegistry:
     # SMART WORKFLOW LEVEL (industrial routing)
     # ==========================================================
     def _suggest_workflow(self, mt: MediaType) -> str:
-        # این بخش به صورت تخصصی برای مسیرهای ingestion کاربرد دارد
+        # This section is specifically used for ingestion paths
         if mt.format == DocumentFormat.PDF:
             return "workflow_pdf_extraction"
 

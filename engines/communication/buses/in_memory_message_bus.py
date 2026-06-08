@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from engines.buses.message_models import AgentMessage
+    from engines.communication.buses.message_models import AgentMessage
 
 import asyncio
 import logging
@@ -16,7 +16,7 @@ _agent_message_cls = None
 def _get_agent_message():
     global _agent_message_cls
     if _agent_message_cls is None:
-        from engines.buses.message_models import AgentMessage as _agent_message_cls
+        from engines.communication.buses.message_models import AgentMessage as _agent_message_cls
     return _agent_message_cls
 
 logger = logging.getLogger(__name__)

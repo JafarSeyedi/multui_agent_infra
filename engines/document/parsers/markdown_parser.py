@@ -1,5 +1,5 @@
 """
-پارسر مارک‌داون برای تبدیل فایل‌های .md به مدل USDM
+Markdown parser for converting .md files to USDM model
 """
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ from .base import ParseOptions
 
 
 class MarkdownTreeProcessor(Treeprocessor):
-    """پردازنده درخت HTML برای استخراج ساختار معنایی"""
+    """HTML tree processor for semantic structure extraction"""
 
     def __init__(self, md):
         super().__init__(md)

@@ -3,7 +3,7 @@ from collections import deque
 
 class RetrievalFeedbackBuffer:
     """
-    Replay buffer برای یادگیری تدریجی
+    Replay buffer for gradual learning
     capacity: تعداد نمونه‌های ذخیره شده
     """
     def __init__(self, capacity=3000):

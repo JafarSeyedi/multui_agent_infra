@@ -1,5 +1,5 @@
 """
-ابزارهای کمکی برای پارسر DOCX
+Helper tools for DOCX parser
 شامل توابع کمکی برای پردازش استایل‌ها، متن، ریاضیات و مدیریت فایل‌های DOCX
 """
 # mypy: ignore-errors
@@ -1318,7 +1318,7 @@ class DocxUtils:
                     except ValueError:
                         cell_props['grid_span'] = 1
 
-            # استخراج vMerge (ادغام ردیف‌ها)
+            # استخراج vMerge (ادغام Row‌ها)
             vMerge_elem = tcPr_elem.find('.//w:vMerge', OOXML_NAMESPACES)
             if vMerge_elem is not None:
                 merge_val = vMerge_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
@@ -1409,13 +1409,13 @@ class DocxUtils:
     @staticmethod
     def extract_row_properties(trPr_elem: ET.Element | None) -> dict[str, Any]:
         """
-        استخراج ویژگی‌های ردیف جدول از المان trPr
+        استخراج ویژگی‌های Row جدول از المان trPr
         
         Args:
             trPr_elem: المان trPr (table row properties)
             
         Returns:
-            Dict[str, Any]: ویژگی‌های ردیف
+            Dict[str, Any]: ویژگی‌های Row
         """
         row_props = {
             'height': None,
@@ -1429,7 +1429,7 @@ class DocxUtils:
             return row_props
 
         try:
-            # استخراج ارتفاع ردیف
+            # استخراج ارتفاع Row
             trHeight_elem = trPr_elem.find('.//w:trHeight', OOXML_NAMESPACES)
             if trHeight_elem is not None:
                 height_val = trHeight_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val')
@@ -1445,24 +1445,24 @@ class DocxUtils:
                     except ValueError:
                         row_props['height'] = height_val
 
-            # بررسی عدم شکستن ردیف
+            # بررسی عدم شکستن Row
             cantSplit_elem = trPr_elem.find('.//w:cantSplit', OOXML_NAMESPACES)
             if cantSplit_elem is not None:
                 row_props['cant_split'] = True
 
-            # بررسی ردیف هدر
+            # بررسی Row هدر
             tblHeader_elem = trPr_elem.find('.//w:tblHeader', OOXML_NAMESPACES)
             if tblHeader_elem is not None:
                 row_props['header'] = True
 
-            # بررسی ردیف مخفی
+            # بررسی Row مخفی
             hidden_elem = trPr_elem.find('.//w:hidden', OOXML_NAMESPACES)
             if hidden_elem is not None:
                 row_props['hidden'] = True
 
         except Exception as e:
             import logging
-            logging.getLogger(__name__).warning(f"خطا در استخراج ویژگی‌های ردیف: {str(e)}")
+            logging.getLogger(__name__).warning(f"خطا در استخراج ویژگی‌های Row: {str(e)}")
 
         return row_props
 

@@ -3,9 +3,9 @@ from abc import ABC
 from abc import abstractmethod
 
 class BaseResearchAgent(ABC):
-    """قرارداد مشترک تمام Research Agent ها"""
+    """Common contract for all Research Agents"""
 
     @abstractmethod
     async def run(self, query: str):
-        """اجرای فرآیند تحقیق"""
+        """Execute research process"""
         ...

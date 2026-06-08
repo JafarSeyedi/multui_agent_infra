@@ -99,6 +99,17 @@ class DocumentFormat(str, Enum):
     PREFECT_DAG_PY = "prefect_dag_py"
     XPDL_XML = "xpd_xml"
 
+    # KSDM formats
+    XMLA_DISCOVER_XML = "xmla_discover_xml"
+    MONDRIAN_SCHEMA = "mondrian_schema"
+    CWM_XMI = "cwm_xmi"
+    PMML_XML = "pmml_xml"
+    ONNX_PROTOBUF = "onnx_protobuf"
+    RDF_TURTLE = "rdf_turtle"
+    
+    # VSDM formats
+    XES_XML = "xes_xml"
+
     UNKNOWN = "unknown"
 
 
@@ -118,6 +129,8 @@ class MediaContentKind(str, Enum):
     SCHEMA_DEFINITION = "schema_definition"
     SERVICE_DEFINITION = "service_definition"
     ORCHESTRATION_DEFINITION = "orchestration_definition"
+    KNOWLEDGE_EXTRACTION_DEFINITION = "knowledge_extraction_definition"
+    EVENT_LOG_DEFINITION = "event_log_definition"
     UNKNOWN = "unknown"
 
 
@@ -823,6 +836,79 @@ MEDIA_TYPES: dict[str, MediaType] = {
         kind=MediaContentKind.ORCHESTRATION_DEFINITION,
         raw_type=MediaRawType.TEXT, description="XPDL Process Definition"
     ),
+    
+    # ======================
+    # KSDM
+    # ======================
+
+    "xmla_discover_xml": MediaType(
+        mime="application/xml",
+        format=DocumentFormat.XMLA_DISCOVER_XML,
+        standard=DocumentStandard.KSDM, 
+        extensions=[".xml"],
+        kind=MediaContentKind.KNOWLEDGE_EXTRACTION_DEFINITION,
+        raw_type=MediaRawType.TEXT, 
+        description="XML/A Discover Response",
+    ),
+    "mondrian_schema": MediaType(
+        mime="application/xml",
+        format=DocumentFormat.MONDRIAN_SCHEMA,
+        standard=DocumentStandard.KSDM, 
+        extensions=[".mondrian.xml"],
+        kind=MediaContentKind.KNOWLEDGE_EXTRACTION_DEFINITION,
+        raw_type=MediaRawType.TEXT, 
+        description="Mondrian OLAP Schema",
+    ),
+    "cwm_xmi": MediaType(
+        mime="application/xml",
+        format=DocumentFormat.CWM_XMI,
+        standard=DocumentStandard.KSDM, 
+        extensions=[".xmi", ".cwm"],
+        kind=MediaContentKind.KNOWLEDGE_EXTRACTION_DEFINITION,
+        raw_type=MediaRawType.TEXT, 
+        description="Common Warehouse Metamodel (XMI)",
+    ),
+    "pmml_xml": MediaType(
+        mime="application/xml",
+        format=DocumentFormat.PMML_XML,
+        standard=DocumentStandard.KSDM, 
+        extensions=[".pmml"],
+        kind=MediaContentKind.KNOWLEDGE_EXTRACTION_DEFINITION,
+        raw_type=MediaRawType.TEXT, 
+        description="Predictive Model Markup Language",
+    ),
+    "onnx_protobuf": MediaType(
+        mime="application/octet-stream",
+        format=DocumentFormat.ONNX_PROTOBUF,
+        standard=DocumentStandard.KSDM, 
+        extensions=[".onnx"],
+        kind=MediaContentKind.KNOWLEDGE_EXTRACTION_DEFINITION,
+        raw_type=MediaRawType.TEXT, 
+        description="Open Neural Network Exchange",
+    ),
+    "rdf_turtle": MediaType(
+        mime="text/turtle",
+        format=DocumentFormat.RDF_TURTLE,
+        standard=DocumentStandard.KSDM, 
+        extensions=[".ttl"],
+        kind=MediaContentKind.KNOWLEDGE_EXTRACTION_DEFINITION,
+        raw_type=MediaRawType.TEXT, 
+        description="Terse RDF Triple Language",
+    ),
+
+    # ======================
+    # VSDM
+    # ======================
+    "xes_xml": MediaType(
+        mime="application/xml",
+        format=DocumentFormat.XES_XML,
+        standard=DocumentStandard.VSDM, 
+        extensions=[".xes"],
+        kind=MediaContentKind.EVENT_LOG_DEFINITION,
+        raw_type=MediaRawType.TEXT, 
+        description="Extensible Event Stream",
+    ),
+    
     # ======================
     # FALLBACK TYPES
     # ======================
@@ -844,67 +930,6 @@ MEDIA_TYPES: dict[str, MediaType] = {
         kind=MediaContentKind.TEXT,
         raw_type=MediaRawType.TEXT,
         description="Plain Text (generic)"
-    ),
-}
-
-
-class KnowledgeMediaType(BaseModel):
-    name: str = ""
-    format: str = ""
-    mime: str = ""
-    extensions: list[str] = []
-    description: str = ""
-
-
-KNOWLEDGE_MEDIA_TYPES: dict[str, KnowledgeMediaType] = {
-    "xmla_discover_xml": KnowledgeMediaType(
-        name="XML/A Discover",
-        format="xmla_discover_xml",
-        mime="application/xml",
-        extensions=[".xml"],
-        description="XML/A Discover Response",
-    ),
-    "mondrian_schema": KnowledgeMediaType(
-        name="Mondrian Schema",
-        format="mondrian_schema",
-        mime="application/xml",
-        extensions=[".mondrian.xml"],
-        description="Mondrian OLAP Schema",
-    ),
-    "cwm_xmi": KnowledgeMediaType(
-        name="CWM XMI",
-        format="cwm_xmi",
-        mime="application/xmi+xml",
-        extensions=[".xmi", ".cwm"],
-        description="Common Warehouse Metamodel (XMI)",
-    ),
-    "pmml_xml": KnowledgeMediaType(
-        name="PMML Model",
-        format="pmml_xml",
-        mime="application/xml",
-        extensions=[".pmml"],
-        description="Predictive Model Markup Language",
-    ),
-    "onnx_protobuf": KnowledgeMediaType(
-        name="ONNX Model",
-        format="onnx_protobuf",
-        mime="application/octet-stream",
-        extensions=[".onnx"],
-        description="Open Neural Network Exchange",
-    ),
-    "xes_xml": KnowledgeMediaType(
-        name="XES Event Log",
-        format="xes_xml",
-        mime="application/xml",
-        extensions=[".xes"],
-        description="Extensible Event Stream",
-    ),
-    "rdf_turtle": KnowledgeMediaType(
-        name="RDF Turtle",
-        format="rdf_turtle",
-        mime="text/turtle",
-        extensions=[".ttl"],
-        description="Terse RDF Triple Language",
     ),
 }
 

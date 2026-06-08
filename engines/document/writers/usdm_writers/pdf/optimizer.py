@@ -29,12 +29,12 @@ class OptimizationLevel(Enum):
 class OptimizationOptions:
     """گزینه‌های بهینه‌سازی"""
     level: OptimizationLevel = OptimizationLevel.BALANCED
-    compress_images: bool = True          # فشرده‌سازی تصاویر
-    compress_streams: bool = True         # فشرده‌سازی استریم‌ها
+    compress_images: bool = True          # Compression تصاویر
+    compress_streams: bool = True         # Compression استریم‌ها
     remove_unused: bool = True            # حذف آبجکت‌های استفاده نشده
     merge_fonts: bool = False             # ادغام فونت‌ها
     linearize: bool = False               # خطی‌سازی برای وب
-    remove_metadata: bool = False         # حذف متادیتا
+    remove_metadata: bool = False         # حذف Metadata
     downscale_images: bool = False        # کاهش اندازه تصاویر
     image_quality: int = 85               # کیفیت تصاویر (0-100)
     remove_duplicates: bool = True        # حذف داده‌های تکراری
@@ -126,7 +126,7 @@ class PDFOptimizer:
         """اعمال بهینه‌سازی‌ها"""
         optimized_parts = pdf_parts.copy()
 
-        # فشرده‌سازی استریم‌ها
+        # Compression استریم‌ها
         if self.options.compress_streams:
             optimized_parts = self._compress_streams(optimized_parts)
 
@@ -142,7 +142,7 @@ class PDFOptimizer:
         if self.options.remove_duplicates:
             optimized_parts = self._remove_duplicates(optimized_parts)
 
-        # حذف متادیتا
+        # حذف Metadata
         if self.options.remove_metadata:
             optimized_parts = self._remove_metadata(optimized_parts)
 
@@ -153,15 +153,15 @@ class PDFOptimizer:
         return optimized_parts
 
     def _compress_streams(self, pdf_parts: dict[str, Any]) -> dict[str, Any]:
-        """فشرده‌سازی استریم‌ها"""
-        # پیدا کردن و فشرده‌سازی استریم‌ها
+        """Compression استریم‌ها"""
+        # پیدا کردن و Compression استریم‌ها
         pattern = rb'stream\s*\n(.*?)\n\s*endstream'
         objects_data = pdf_parts.get('objects_data', b'')
 
         def compress_stream(match):
             stream_data = match.group(1)
             try:
-                # فشرده‌سازی با zlib
+                # Compression با zlib
                 compressed = zlib.compress(stream_data, level=zlib.Z_BEST_COMPRESSION)
                 return b'stream\n' + compressed + b'\nendstream'
             except Exception:
@@ -178,8 +178,8 @@ class PDFOptimizer:
         """
         بهینه‌سازی تصاویر در PDF با قابلیت‌های:
         1. کاهش اندازه تصاویر (downscaling)
-        2. فشرده‌سازی با الگوریتم‌های بهینه
-        3. حذف متادیتای غیرضروری
+        2. Compression با الگوریتم‌های بهینه
+        3. حذف Metadataی غیرضروری
         4. تبدیل فرمت‌های غیربهینه
         
         Args:
@@ -368,7 +368,7 @@ class PDFOptimizer:
                     image_data, image_info, options
                 )
             else:
-                # فرمت‌های دیگر - فشرده‌سازی عمومی
+                # فرمت‌های دیگر - Compression عمومی
                 processed_data = self._compress_generic_image(
                     image_data, image_info, options
                 )
@@ -504,9 +504,9 @@ class PDFOptimizer:
                 img = self._downscale_image(img, image_info, options)
                 self.stats['images_downscaled'] += 1
 
-            # حذف متادیتا
+            # حذف Metadata
             if options.get('remove_metadata', True):
-                # حذف EXIF و سایر متادیتا
+                # حذف EXIF و سایر Metadata
                 img_data = list(img.getdata())
                 img = cast(Image.Image, Image.new(img.mode, img.size))
                 img.putdata(img_data)
@@ -566,17 +566,17 @@ class PDFOptimizer:
                     img = cast(Image.Image, img.convert('P', palette=Image.Palette.ADAPTIVE, colors=256))
                     self.stats['images_converted'] += 1
 
-            # ذخیره با فشرده‌سازی بهینه
+            # ذخیره با Compression بهینه
             output = io.BytesIO()
 
-            # تنظیمات فشرده‌سازی PNG
+            # تنظیمات Compression PNG
             png_info: dict[str, Any] = {
                 'optimize': True,
             }
 
             if options.get('compress_png', True):
-                # سطح فشرده‌سازی zlib
-                png_info['compress_level'] = 9  # حداکثر فشرده‌سازی
+                # سطح Compression zlib
+                png_info['compress_level'] = 9  # حداکثر Compression
 
             img.save(output, format='PNG', **png_info)
 
@@ -625,7 +625,7 @@ class PDFOptimizer:
 
                 return output.getvalue()
 
-            # یا فشرده‌سازی TIFF
+            # یا Compression TIFF
             output = io.BytesIO()
             img.save(output, format='TIFF', compression='tiff_lzw')
 
@@ -673,7 +673,7 @@ class PDFOptimizer:
 
     def _compress_generic_image(self, image_data: bytes, image_info: dict, options: dict) -> bytes:
         """
-        فشرده‌سازی عمومی برای فرمت‌های ناشناخته
+        Compression عمومی برای فرمت‌های ناشناخته
         
         Args:
             image_data: داده‌های تصویر
@@ -684,10 +684,10 @@ class PDFOptimizer:
             داده‌های فشرده‌شده
         """
         try:
-            # استفاده از zlib برای فشرده‌سازی عمومی
+            # استفاده از zlib برای Compression عمومی
             compressed = zlib.compress(image_data, level=9)
 
-            # فقط اگر فشرده‌سازی مؤثر بود
+            # فقط اگر Compression مؤثر بود
             if len(compressed) < len(image_data):
                 return compressed
 
@@ -788,7 +788,7 @@ class PDFOptimizer:
             metadata['/Width'] = image_info['width']
             metadata['/Height'] = image_info['height']
 
-        # حذف متادیتای غیرضروری
+        # حذف Metadataی غیرضروری
         if 'remove_metadata' in getattr(self, 'optimization_options', {}):
             keys_to_remove = ['/Metadata', '/PieceInfo', '/StructParent', '/ID']
             for key in keys_to_remove:
@@ -879,7 +879,7 @@ class PDFOptimizer:
         return pdf_parts
 
     def _remove_metadata(self, pdf_parts: dict[str, Any]) -> dict[str, Any]:
-        """حذف متادیتا"""
+        """حذف Metadata"""
         # حذف دیکشنری Info و XMP metadata
         objects_data = pdf_parts.get('objects_data', b'')
 
@@ -1119,7 +1119,7 @@ class PDFOptimizer:
             # object number, offset, length, page_count
             hint_data.extend(struct.pack('>IIIH', entry[0], entry[1], entry[2], entry[3]))
 
-        # فشرده‌سازی با zlib
+        # Compression با zlib
         compressed_data = zlib.compress(hint_data)
 
         return compressed_data

@@ -14,6 +14,8 @@ from typing import Any
 
 from .base import BaseDocument
 from .media_types import MediaType
+from pydantic import Field
+
 from .media_types import DocumentStandard
 from .usdm_models import CharacterStyle
 from .usdm_models import ImageContent
@@ -310,23 +312,22 @@ class NotesMaster:
 # Top‑level PSDM Document
 # ──────────────────────────────────────────────
 
-@dataclass
 class PSDMDocument(BaseDocument):
     """Complete presentation document model."""
     title: str = ""
     document_id: str = ""
     media_type: MediaType | None = None
     kind: DocumentStandard = DocumentStandard.PSDM
-    slides: list[Slide] = field(default_factory=list)
-    slide_masters: dict[str, SlideMaster] = field(default_factory=dict)
-    presentation_properties: PresentationProperties = field(default_factory=PresentationProperties)
-    stylesheet: StyleSheet = field(default_factory=StyleSheet)
+    slides: list[Slide] = Field(default_factory=list)
+    slide_masters: dict[str, SlideMaster] = Field(default_factory=dict)
+    presentation_properties: PresentationProperties = Field(default_factory=PresentationProperties)
+    stylesheet: StyleSheet = Field(default_factory=StyleSheet)
     theme: Theme | None = None
-    sections: list[PresentationSection] = field(default_factory=list)
+    sections: list[PresentationSection] = Field(default_factory=list)
     handout_master: HandoutMaster | None = None
     notes_master: NotesMaster | None = None
     custom_shows: CustomShowList | None = None
-    psdm_meta: dict[str, Any] = field(default_factory=dict)
+    psdm_meta: dict[str, Any] = Field(default_factory=dict)
     file_extension: str | None = None
 
     @property

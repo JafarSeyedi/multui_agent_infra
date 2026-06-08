@@ -33,8 +33,8 @@ class InstructorProfile(BaseModel):
 # -------------------------------
 
 class VAKRStyle(str, Enum):
-    """مدل VARK - رایج‌ترین دسته‌بندی"""
-    VISUAL      = "visual"       # تصویر، نمودار، رنگ
+    """VARK Model - most common classification"""
+    VISUAL      = "visual"       # Image, diagram, color
     AUDITORY    = "auditory"     # شنیداری، توضیح کلامی
     READING     = "reading"      # متن، فهرست، یادداشت
     KINESTHETIC = "kinesthetic"  # مثال عملی، آزمایش، تمرین
@@ -98,7 +98,7 @@ class LearningStyle(BaseModel):
         }
     )
 
-    # متادیتا - منبع تشخیص سبک
+    # Metadata - منبع تشخیص سبک
     detected_from: str | None = None  # e.g., "quiz", "interaction_history", "manual"
 
 # --------------------------------------------------

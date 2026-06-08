@@ -6,7 +6,7 @@ from .learning_objects import LearningProgress
 from .learning_objects import LearningStyle
 from .learning_objects import StudentProfile
 
-# --- مدل‌های عامل 15: مدرس دیالوگ (Dialogue Tutor) ---
+# --- Agent Models 15: Dialogue Tutor ---
 class DialogueTutorInput(AgentInput):
     user_query: str
     conversation_history: list[dict] # History of user messages and tutor responses
@@ -21,7 +21,7 @@ class DialogueTutorOutput(AgentOutput):
     tutor_response: TutorResponse
     next_step_recommendation: str | None = None
 
-# --- مدل‌های عامل 16: سازگار کننده سبک یادگیری (Learning Style Adapter) ---
+# --- Agent Models 16: Learning Style Adapter ---
 class StyleAdaptationInput(AgentInput):
     content: str # Lesson content, explanation, etc.
     learning_style: LearningStyle

@@ -1,10 +1,10 @@
 # CSDM – CAD Structured Document Model
 # Object‑Level Fidelity
-#   هر چیزی که در DWG/DXF/DCf وجود دارد باید به شکل entity یا object مدل شود.
+#   Everything in DWG/DXF/DCF must be modeled as entity or object.
 # Geometry‑Safe
-#   هیچ داده‌ی هندسی نباید در تبدیل خراب شود (especially arcs/ellipses/splines).
+#   No geometric data should be corrupted during conversion (especially arcs/ellipses/splines).
 # Hierarchy‑Preserving
-#   لایه‌ها، بلاک‌ها، گروه‌ها، XRefها، annotationها، viewports، همه باید با ساختار واقعی DWG حفظ شوند.
+#   Layers, blocks, groups, XRefs, annotations, viewports must all be preserved with actual DWG structure.
 # csdm_core.py
 # CSDM v2.0 Ultra Core
 # Supports: 98% DWG + 100% DCF Round‑Trip
@@ -13,7 +13,7 @@
 #     ├── metadata: dict
 #     ├── layers: List[CSDMLayer]
 #     ├── blocks: List[CSDMBlock]
-#     ├── entities: List[CSDMEntity]        ← موجودیت‌های آزاد
+#     ├── entities: List[CSDMEntity]        ← Free entities
 #     ├── views: List[CSDMView]
 #     ├── materials: List[CSDMMaterial]
 #     ├── dimension_styles: List[CSDMDimStyle]
@@ -507,7 +507,7 @@ class CSDMDocument(BaseDocument):
     # ENTITIES (model space / paper space)
     entities: list[CSDMEntity] = field(default_factory=list)
 
-    # OBJECT TABLES (layouts, materials، mleader styles...)
+    # OBJECT TABLES (layouts, materials, mleader styles...)
     objects: CSDMObjectTables = field(default_factory=CSDMObjectTables)
 
     # XREFs

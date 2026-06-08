@@ -7,7 +7,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, ConfigDict
 
-from .base import BaseDocument
+from .base import BaseDocument, BinaryPayload
 from .media_types import MediaType
 from .standard import DocumentStandard
 

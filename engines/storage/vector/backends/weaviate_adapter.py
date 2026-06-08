@@ -139,5 +139,5 @@ class WeaviateAdapter(VectorDBAdapter):
         await asyncio.to_thread(_sync)
 
     def close(self) -> None:
-        """باید در پایان کار فراخوانی شود."""
+        """Must be called at the end of work."""
         self.client.close()

@@ -81,44 +81,44 @@ class CompressionMethod(str, Enum):
     ZSTD = "zstd"
 
 class BaseDocument(BaseModel):
-    """مدل پایه برای تمام اسناد"""
+    """Base model for all documents"""
 
-    title: str = Field(description="عنوان سند")
-    # شناسه‌ها
-    document_id: str = Field(description="شناسه یکتای سند")
-    version: str = Field(default="1.0", description="ورژن مدل سند")
+    title: str = Field(description="Document title")
+    # Identifiers
+    document_id: str = Field(description="Unique document identifier")
+    version: str = Field(default="1.0", description="Document model version")
 
-    # متادیتا
-    metadata: dict[str, Any] = Field(default_factory=dict, description="متادیتای سند")
-    created_at: datetime = Field(default_factory=datetime.utcnow, description="تاریخ ایجاد")
-    modified_at: datetime = Field(default_factory=datetime.utcnow, description="تاریخ آخرین تغییر")
+    # Metadata
+    metadata: dict[str, Any] = Field(default_factory=dict, description="Document metadata")
+    created_at: datetime = Field(default_factory=datetime.utcnow, description="Creation date")
+    modified_at: datetime = Field(default_factory=datetime.utcnow, description="Last modified date")
 
-    # محتوای اصلی
+    # Main content
     raw_binary: BinaryPayload | None = None
     raw_text: str | None = None
 
-    # اطلاعات کدگذاری و فشرده‌سازی
+    # Encoding and compression info
     binary_encoding: BinaryEncoding = Field(
         default=BinaryEncoding.BASE64,
-        description="روش کدگذاری باینری"
+        description="Binary encoding method"
     )
     compression_method: CompressionMethod = Field(
         default=CompressionMethod.NONE,
-        description="روش فشرده‌سازی"
+        description="Compression method"
     )
-    decompressed_size: int | None = None #"حجم اصلی قبل از فشرده‌سازی (بایت)"
+    decompressed_size: int | None = None #"Original size before compression (bytes)"
 
     media_type: MediaType | None = None
     file_extension: str | None = None
 
-    # اعتبارسنجی
-    is_valid: bool = Field(default=True, description="وضعیت اعتبار سند")
+    # Validation
+    is_valid: bool = Field(default=True, description="Document validity status")
     validation_errors: list[str] = Field(
         default_factory=list,
-        description="لیست خطاهای اعتبارسنجی"
+        description="List of validation errors"
     )
 
-    # پیکربندی Pydantic v2
+    # Pydantic v2 configuration
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
         validate_assignment=True,
@@ -130,17 +130,17 @@ class BaseDocument(BaseModel):
 
     @property
     def has_binary_content(self) -> bool:
-        """آیا سند محتوای باینری دارد؟"""
+        """Does the document have binary content?"""
         return self.raw_binary is not None and self.raw_binary.size_bytes > 0
 
     @property
     def has_text_content(self) -> bool:
-        """آیا سند محتوای متنی دارد؟"""
+        """Does the document have text content?"""
         return self.raw_text is not None and len(self.raw_text.strip()) > 0
 
     @property
     def content_size(self) -> int:
-        """حجم محتوای سند (بایت)"""
+        """Document content size (bytes)"""
         if self.raw_binary:
             return self.raw_binary.size_bytes
         elif self.raw_text:
@@ -148,35 +148,35 @@ class BaseDocument(BaseModel):
         return 0
 
     def get_effective_content(self) -> bytes | str | None:
-        """بازگرداندن محتوای مؤثر (اولویت با باینری)"""
+        """Return effective content (binary priority)"""
         if self.raw_binary:
             if self.raw_binary.bytes_content:
                 return self.raw_binary.bytes_content
             return self.raw_binary.data
         elif self.raw_text:
             return self.raw_text
-        raise ValueError("سند فاقد محتوای اصلی است")
+        raise ValueError("Document has no main content")
 
 
 class BinaryPayload(BaseModel):
     media_type: MediaType = MEDIA_TYPES["binary"]
     encoding: BinaryEncoding = BinaryEncoding.BASE64
 
-    # فقط یکی از این دو پر شود
-    bytes_content: bytes | None = None  # برای داده‌های باینری خام
-    data: str | None = None     # encoded_data برای داده‌های کدگذاری شده
+    # Only one of these should be filled
+    bytes_content: bytes | None = None  # For raw binary data
+    data: str | None = None     # encoded_data For encoded data
 
     size_bytes: int = 0
     sha256: str = ""
 
-    # برای داده‌های chunked
+    # For chunked data
     chunk_index: int = 0
     total_chunks: int = 1
 
-    # فشرده‌سازی
+    # Compression
     compressed: bool = False
     compression_algorithm: str | None = None  # "gzip", "zlib", "brotli"
-    original_size: int | None = None  # اندازه قبل از فشرده‌سازی
+    original_size: int | None = None  # Size before compression
 
     @property
     def has_content(self) -> bool:

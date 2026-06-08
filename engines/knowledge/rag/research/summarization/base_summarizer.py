@@ -6,7 +6,7 @@ from typing import Any
 from engines.knowledge.rag.research.citation_manager import CitationManager
 
 class BaseSummarizer(ABC):
-    """قرارداد مشترک تمام Summarizer ها"""
+    """Common contract for all Summarizers"""
 
     @abstractmethod
     async def summarize(
@@ -17,5 +17,5 @@ class BaseSummarizer(ABC):
         hidden_edges: list[Any] | None = None,
         citation_manager: CitationManager | None = None,
     ) -> str:
-        """تولید خلاصه از متن ورودی"""
+        """Generate summary from input text"""
         ...

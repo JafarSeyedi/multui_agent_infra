@@ -3,7 +3,7 @@ from typing import Literal
 from ...models import AgentInput
 from ...models import AgentOutput
 
-# --- مدل‌های عامل 9 ---
+# --- Agent Models 9 ---
 class QuestionRefineInput(AgentInput):
     raw_question: str
     lesson_context: str
@@ -13,7 +13,7 @@ class QuestionRefineOutput(AgentOutput):
     refined_question: str
     clarification_notes: str | None
 
-# --- مدل‌های عامل 10: پرسش‌ساز (Question Generator) ---
+# --- Agent Models 10: Question Generator ---
 QuestionType = Literal["mcq", "short_answer", "long_answer", "true_false", "fill_in_blank"]
 DifficultyLevel = Literal[1, 2, 3, 4, 5] # 1: Easy, 5: Hard
 

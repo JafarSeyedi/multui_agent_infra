@@ -8,7 +8,7 @@ from ..agents.models import AgentOutput
 from .base_strategy import InteractionStrategy
 from .interaction_models import InteractionRequest
 from .interaction_models import InteractionResult
-from engines.buses.base_message_bus import MessageBus
+from engines.communication.buses.base_message_bus import MessageBus
 
 
 class CoordinatorStrategy(InteractionStrategy):

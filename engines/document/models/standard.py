@@ -14,8 +14,9 @@ class DocumentStandard(str, Enum):
     SSDM = "ssdm"  # Service Structured Definition Model
     TSDM = "tsdm"   # Tools Standard Definition Model
     OSDM = "osdm"   # Orchestration Standard Definition Model
+    ISDM = "isdm"   # Insights Structured Definition Model
     KSDM = "ksdm"   # Knowledge Structured Definition Model
-    ISDM = "isdm"   # Insights Standard Definition Model
+    VSDM = "vsdm"   # Event Log Standard Definition Model
     GENERIC = "generic"
     UNKNOWN = "unknown"
 
@@ -31,6 +32,8 @@ class DocumentStandard(str, Enum):
             "ssdm": "Service Structured Definition Model",
             "tsdm": "Tools Standard Definition Model",
             "osdm": "Orchestration Standard Definition Model",
+            "ksdm": "Knowledge Structured Definition Model",
+            "vsdm": "Event Log Standard Definition Model",
             "generic": "Generic Text/Binary",
             "unknown": "Unknown",
         }
@@ -48,6 +51,8 @@ class DocumentStandard(str, Enum):
             "ssdm": "Structured document model for service/API definitions (OpenAPI, WSDL, etc.)",
             "tsdm": "Tools Standard Definition Model",
             "osdm": "Orchestration Standard Definition Model including workflows, orchestrations, decisions, case management, and event processing models",
+            "ksdm": "Knowledge Structured Definition Model",
+            "vsdm": "Event Log Standard Definition Model",
             "generic": "No specific structure enforced",
             "unknown": "Unknown",
         }
@@ -63,6 +68,8 @@ class MediaCategory(str, Enum):
     SERVICE_DEFINITION = "service_definition"
     TOOLS_DEFINITION = "service_definition"
     ORCHESTRATION_DEFINITION = "orchestration_definition"
+    KNOWLEDGE_EXTRACTION_DEFINITION = "knowledge_extraction_definition"
+    EVENT_LOG = "event_log"
     IMAGE = "image"
     AUDIO = "audio"
     VIDEO = "video"
@@ -82,11 +89,13 @@ STANDARD_TO_CATEGORY: dict[DocumentStandard, MediaCategory] = {
     DocumentStandard.SSDM: MediaCategory.SERVICE_DEFINITION,
     DocumentStandard.TSDM: MediaCategory.TOOLS_DEFINITION,
     DocumentStandard.OSDM: MediaCategory.ORCHESTRATION_DEFINITION,
+    DocumentStandard.KSDM: MediaCategory.KNOWLEDGE_EXTRACTION_DEFINITION,
+    DocumentStandard.VSDM: MediaCategory.EVENT_LOG,
 }
 
-# تعاریف مخفف‌ها برای مستندات
+# Abbreviation definitions for documentation
 ABBREVIATIONS: dict[str, str] = {
-    # استانداردها
+    # Standards
     "DSDM": "Data Structured Document Model",
     "USDM": "Unified Structured Document Model",
     "ESDM": "Excel/Spreadsheet Document Model",
@@ -96,6 +105,8 @@ ABBREVIATIONS: dict[str, str] = {
     "SSDM": "Service Standard Definition Model",
     "TSDM": "Tool Standard Definition Model",
     "OSDM": "Orchestration Standard Definition Model",
+    "KSDM": "Knowledge Structured Definition Model",
+    "VSDM": "Event Log Standard Definition Model",
 
     # کامپوننت‌ها
     "MIME": "Multipurpose Internet Mail Extensions",

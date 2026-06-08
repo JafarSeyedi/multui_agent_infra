@@ -13,7 +13,7 @@ class HybridRetriever(BaseRetriever):
     - Keyword Retrieval (BM25)
     - RRF Fusion (Reciprocal Rank Fusion)
 
-    هدف:
+    Goal:
         سرعت بالا، dedup سریع، scoring استاندارد، و output یکنواخت
     """
 

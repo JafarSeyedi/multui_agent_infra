@@ -6,7 +6,7 @@ from collections import defaultdict
 
 from .base_retriever import BaseRetriever
 from .retriever_result import RetrievalResult
-from engines.rag.rag_models import DocumentChunk
+from engines.knowledge.rag.rag_models import DocumentChunk
 
 # ---------------------------------------------------------
 # Keyword Retriever (BM25-style scoring)

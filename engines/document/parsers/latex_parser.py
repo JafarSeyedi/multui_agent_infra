@@ -1,5 +1,5 @@
 """
-پارسر LaTeX برای تبدیل فایل‌های .tex به مدل USDM
+LaTeX parser for converting .tex files to USDM model
 """
 from __future__ import annotations
 
@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 
 
 class LatexParser(BaseDocumentParser):
-    """پارسر LaTeX"""
+    """LaTeX parser"""
 
     name: str = "latex"
     supported_extensions: tuple[str, ...] = (".tex", ".latex")

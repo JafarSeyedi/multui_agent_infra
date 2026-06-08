@@ -12,7 +12,7 @@
 # # ------------------------------------------------------------------------------
 # class CSDMDocumentParser(BaseDocumentParser):
 #     """
-#     مسیر کامل پردازش DWG/DCF:
+#     Full DWG/DCF processing path:
 #     1) Load DWG using ODA
 #     2) Extract data → ODA snapshot
 #     3) Convert snapshot → CSDMDocument (via loader)

@@ -1,4 +1,4 @@
-# ویژگی‌های HTMLWriter
+# HTMLWriter features
 ## 1) Semantic HTML 5
 <article>, <section>, <h1>, <p>, <code>, <table>, <caption>, <img>
 بدون تداخل CSS
@@ -38,7 +38,7 @@ on_element_render
 # 6) Themeable CSS
 CSS در یک block مشخص در template است و می‌توان آن را جدا کرد.
 
-# 7) آماده برای:
+# 7) آماده For:
 تبدیل به PDF
 تبدیل به EPUB
 Render در WebView
@@ -116,7 +116,7 @@ text
 Figures → Figure 1, Figure 2
 Tables → Table 1, Table 2
 4) longtable + booktabs
-برای PDFهای خیلی سنگین و حرفه‌ای.
+For PDFهای خیلی سنگین و حرفه‌ای.
 
 5) TikZ Support
 فقط کافی است بگویی:
@@ -226,7 +226,7 @@ text
 کلاستر کردن متن‌هایی که باید کنار هم باشند
 تبدیل spans به “LineBlocks”
 تبدیل lines به “ParagraphCandidates”
-خروجی:
+Output:
 
 text
 PageBlockTree
@@ -259,7 +259,7 @@ indentation geometry
 word/char density analysis
 bounding box grouping
 heuristics + ML lightweight
-خروجی:
+Output:
 
 text
 LogicalPage {
@@ -307,13 +307,13 @@ detect duplicated page numbers
 CSDM بر سه اصل استوار است:
 
 1) Object‑Level Fidelity
-هر چیزی که در DWG/DXF/DCf وجود دارد باید به شکل entity یا object مدل شود.
+Everything in DWG/DXF/DCF must be modeled as entity or object.
 
 2) Geometry‑Safe
-هیچ داده‌ی هندسی نباید در تبدیل خراب شود (especially arcs/ellipses/splines).
+No geometric data should be corrupted during conversion (especially arcs/ellipses/splines).
 
 3) Hierarchy‑Preserving
-لایه‌ها، بلاک‌ها، گروه‌ها، XRefها، annotationها، viewports، همه باید با ساختار واقعی DWG حفظ شوند.
+Layers, blocks, groups, XRefs, annotations, viewports must all be preserved with actual DWG structure.
 
 2) ساختار اصلی CSDM
 ساختار پایه این‌گونه است:
@@ -324,7 +324,7 @@ CSDMDocument
     ├── metadata: dict
     ├── layers: List[CSDMLayer]
     ├── blocks: List[CSDMBlock]
-    ├── entities: List[CSDMEntity]        ← موجودیت‌های آزاد
+    ├── entities: List[CSDMEntity]        ← Free entities
     ├── views: List[CSDMView]
     ├── materials: List[CSDMMaterial]
     ├── dimension_styles: List[CSDMDimStyle]

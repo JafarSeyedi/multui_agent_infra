@@ -6,8 +6,8 @@ from typing import Any
 import pytest
 
 from engines.agents.base_agents.base_agent import BaseAgent
-from engines.buses.base_message_bus import HandlerType
-from engines.buses.base_message_bus import MessageBus
+from engines.communication.buses.base_message_bus import HandlerType
+from engines.communication.buses.base_message_bus import MessageBus
 from engines.interaction.interaction_models import AgentMessage
 
 

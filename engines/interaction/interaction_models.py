@@ -9,42 +9,42 @@ from typing import Literal
 from pydantic import BaseModel
 from pydantic import Field
 
-from engines.buses.message_models import AgentMessage
+from engines.communication.buses.message_models import AgentMessage
 
 from ..agents.base_agents.base_agent import BaseAgent
 from ..agents.models import AgentOutput
 
 
 class InteractionRequest(BaseModel):
-    """ورودی اصلی به InteractionAgent"""
+    """Main input to InteractionAgent"""
     workflow_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     scenario: str = "pipeline"
     agents: list[BaseAgent]
 
-    # context مشترک برای همه استراتژی‌ها
+    # Common context for all strategies
     context: dict[str, Any] = Field(default_factory=dict)
 
-    # متادیتای تکمیلی
+    # Supplementary metadata
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 class InteractionResult(BaseModel):
-    """خروجی کامل orchestration"""
+    """Complete orchestration output"""
     workflow_id: str | None = None
     scenario: str | None = None
 
     results: list[AgentOutput]
     success: bool = True
 
-    # context نهایی که توسط استراتژی ها آپدیت شده
+    # Final context updated by strategies
     final_context: dict[str, Any] = Field(default_factory=dict)
 
-    # tracking اجرا
+    # Execution tracking
     backend_used: str = "native"
     status: Literal["success", "partial", "failed"] = "success"
     started_at: datetime | None = None
     completed_at: datetime | None = None
 
-    # یادداشت‌ها و لاگ‌ها
+    # Notes and logs
     notes: list[str] = Field(default_factory=list)
 
     metadata: dict[str, Any] = Field(default_factory=dict)

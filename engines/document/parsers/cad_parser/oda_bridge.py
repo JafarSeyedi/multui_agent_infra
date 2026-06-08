@@ -4,8 +4,8 @@
 # import traceback
 # from dataclasses import dataclass
 # from typing import Any, Dict, Iterable, List, Optional
-# # مهم: API اصلی ODA
-# # اگر در سیستم نام دیگری داشته باشد، فقط این import را تغییر دهید.
+# # Important: Main ODA API
+# # If it has a different name in the system, just change this import.
 # import odapython as oda # type: ignore
 # # -------------------------------------------------------------
 # # Handle Wrapper
@@ -23,7 +23,7 @@
 #         except Exception:
 #             return ODAHandle("0")
 # # -------------------------------------------------------------
-# # Object Proxy - یک wrapper عمومی برای هر ODA DbObject
+# # Object Proxy - A general wrapper for any ODA DbObject
 # # -------------------------------------------------------------
 # class ODAObjectProxy:
 #     def __init__(self, obj: Any):
@@ -77,7 +77,7 @@
 #     def __repr__(self):
 #         return f"<ODAObjectProxy {self.object_class} {self.handle}>"
 # # -------------------------------------------------------------
-# # ODADocumentHandle - wrapper برای دیتابیس DWG/DCF
+# # ODADocumentHandle - wrapper for DWG/DCF database
 # # -------------------------------------------------------------
 # class ODADocumentHandle:
 #     def __init__(self, db: Any):
@@ -211,7 +211,7 @@
 #             pass
 #         return out
 # # -------------------------------------------------------------
-# # ODABridge - لایه اصلی مدیریت دیتابیس ODA
+# # ODABridge - Main layer for managing ODA database
 # # -------------------------------------------------------------
 # class ODABridge:
 #     def __init__(self):

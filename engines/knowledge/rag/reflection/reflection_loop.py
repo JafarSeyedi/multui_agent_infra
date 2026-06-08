@@ -1,4 +1,4 @@
-from engines.rag.rag_models import RetrievedDocument
+from engines.knowledge.rag.rag_models import RetrievedDocument
 
 
 class ReflectionLoop:

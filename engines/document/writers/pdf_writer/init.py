@@ -1,5 +1,5 @@
 """
-ماژول PDF Writer - تبدیل USDMDocument به PDF
+PDF Writer module - Convert USDMDocument to PDF
 """
 from .content_writer import ContentWriter
 from .font_manager import FontManager

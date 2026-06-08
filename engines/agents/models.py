@@ -6,8 +6,8 @@ from pydantic import BaseModel
 from pydantic import Field
 
 
-# message = داده طبیعی (مثل user message یا query)
-# message برای انسان‌خوان
+# message = natural data (like user message or query)
+# message for human readable
 # payload برای ماشین‌خوان
 # payload = داده ساخت‌یافته Agent-specificمثل:
 #   - search_query
@@ -20,10 +20,10 @@ from pydantic import Field
 class AgentInput(BaseModel):
     agent_name: str
 
-    # پیام اصلی یا هدف
+    # Main message or Objective
     message: str | None = None
 
-    # ورودی‌های ساخت‌یافته
+    # Structured inputs
     payload: dict[str, Any] = Field(default_factory=dict)
 
     # کانتکست مشترک (shared context)

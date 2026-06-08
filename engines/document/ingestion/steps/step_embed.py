@@ -29,7 +29,7 @@ async def step_embed(ctx: IngestionContext) -> IngestionContext:
         for chunk in ctx.chunks:
             emb_vector = embed_map.get(chunk.chunk_id)
             if emb_vector is None:
-                continue  # یا raise EmbeddingFailed
+                continue  # or raise EmbeddingFailed
 
             emb_record = EmbeddingRecord(
                 document_id=chunk.document_id,

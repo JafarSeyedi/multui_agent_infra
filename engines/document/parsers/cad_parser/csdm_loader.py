@@ -55,10 +55,10 @@
 #     CSDMTableEntity,
 #     CSDMImageRaster,
 #     CSDMUnderlay,
-#     # ... (تمام entity های دیگر CSDM v2)
+#     # ... (all other CSDM v2 entities)
 # )
 # # ------------------------------------------------------------------------------
-# #  CSDMLoader - تبدیل یکپارچه ODA → CSDM
+# #  CSDMLoader - Unified ODA → CSDM conversion
 # # ------------------------------------------------------------------------------
 # class CSDMLoader:
 #     """

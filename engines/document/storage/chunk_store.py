@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from ..ingestion.ingestion_models import ChunkRecord
-from engines.rag.rag_models import DocumentChunk
+from engines.knowledge.rag.rag_models import DocumentChunk
 from engines.storage.key_value.base import KeyValueStorage
 from engines.storage.vector.base import VectorDBAdapter
 

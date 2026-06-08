@@ -476,7 +476,7 @@ class AnnotationWriter:
         return type_specific
 
     def _format_custom_value(self, value: Any) -> str:
-        """فرمت‌دهی مقدار سفارشی برای PDF"""
+        """فرمت‌دهی مقدار سفارشی For PDF"""
         if isinstance(value, bool):
             return str(value).lower()
         elif isinstance(value, (int, float)):
@@ -495,7 +495,7 @@ class AnnotationWriter:
             return f'({str(value)})'
 
     def _escape_pdf_string(self, text: str) -> str:
-        """فرار کردن رشته برای PDF"""
+        """فرار کردن رشته For PDF"""
         # جایگزینی کاراکترهای خاص
         replacements = {
             '(': '\\(',

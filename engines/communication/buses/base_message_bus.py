@@ -1,4 +1,4 @@
-# engines/buses/base_message_bus.py
+# engines/communication/buses/base_message_bus.py
 from __future__ import annotations
 
 from abc import ABC
@@ -9,7 +9,7 @@ from typing import Optional
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from engines.buses.message_models import AgentMessage
+    from engines.communication.buses.message_models import AgentMessage
 
 HandlerType = Callable[["AgentMessage"], Awaitable[Optional["AgentMessage"]]]
 

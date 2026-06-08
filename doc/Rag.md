@@ -4,7 +4,7 @@
 - ✅ Hybrid Retrieval
 - ✅ BM25 + Vector + RRF
 - ✅ Deduplication O(n)
-- ✅ Dynamic RRF weighting با کمک LLM (adaptive fusion)
+- ✅ Dynamic RRF weighting with LLM help (adaptive fusion)
 - ✅ Score normalization به سبک ColBERT
 - ✅ BM25+Vector Cross-Filtering
 - ✅ Frequency boosting
@@ -508,7 +508,7 @@ reflection score = 0.8
 این باعث می‌شود graph retrieval باعث noise نشود.
 
  Evidence Scoring — لایه وزن‌دهی به منابع Retrieval
-هدف:
+Goal:
 
 وزن‌دهی بین نتایج:
 
@@ -863,7 +863,7 @@ text
 The Transformer architecture introduced by Vaswani et al.
 uses self-attention and is widely used in models like BERT
 and GPT.
-خروجی:
+Output:
 
 text
 Transformer Architecture (concept)
@@ -943,9 +943,9 @@ GraphAwareAnswerPlanner
 
 
 1️⃣ Relation Ranking Engine
-هدف: حذف روابط noisy که از LLM یا regex می‌آیند.
+Goal: حذف روابط noisy که از LLM یا regex می‌آیند.
 2️⃣ Graph Deduplication + Canonicalization
-هدف: یکی کردن entity هایی مثل:
+Goal: یکی کردن entity هایی مثل:
 
 text
 GPT4

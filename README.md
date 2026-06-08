@@ -1,9 +1,9 @@
 # Flow:
 ## Agent execution Data flow
  Orchestrator → AgentInput (base model)
- اگر agent subclass نیاز دارد → convert
+ if agent subclass needs it → convert
  Agent → AgentOutputSubclass
- Orchestrator فقط Base  AgentOutput را ذخیره می‌کند
+ Orchestrator only saves Base AgentOutput
  ExecutionTrace هم فقط base formats را log می‌کند
  Orchestration → فقط workflow را مدیریت می‌کند
  Interaction → فقط گفتگو و نوبت‌ها را مدیریت می‌کند

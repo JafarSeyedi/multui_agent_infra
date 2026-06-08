@@ -1,4 +1,4 @@
-# رفتار اجرای Pipeline
+# Pipeline Run behavior
 فرض کن این workflow را داریم:
 
 ```
@@ -473,7 +473,7 @@ TaskResult
 3) Aggregation
 یک تابع نهایی (انتخابی و قابل تنظیم) کارهای زیر را انجام می‌دهد:
 
-- merge نتایج
+- merge Results
 - vote
 - rank
 - score
@@ -548,7 +548,7 @@ broadcast_task_completed
 این استراتژی در واقع چیزی است که یک workflow ساده را تبدیل می‌کند به یک dynamic decision graph. یعنی مسیر اجرا در زمان اجرا (runtime) بر اساس خروجی agentها تغییر می‌کند.
 
 ## ایدهٔ اصلی Conditional Strategy
-### ساختار کلی:
+### Overall Structure:
 
 ```text
             Router Agent
@@ -718,7 +718,7 @@ RuntimeError
 
 
 ## ایدهٔ اصلی Event‑Driven Strategy
-### ساختار کلی:
+### Overall Structure:
 
 ```text
 User Input
@@ -1054,7 +1054,7 @@ GroupChatStrategy باید:
 - شرط پایان:
   - max_rounds (یا max_turns)
   - یا فلگ done در خروجی هر agent
-  - یا termination از طریق متادیتا (مثلاً "stop_on_role": "moderator")
+  - یا termination از طریق Metadata (مثلاً "stop_on_role": "moderator")
 ## شکل context و metadata
 ### Context (ورودی/خروجی):
 

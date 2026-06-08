@@ -115,8 +115,8 @@ class QdrantAdapter(VectorDBAdapter):
             filter_conditions: list[models.FieldCondition] = []
 
             for key, value in filters.items():
-                # ── نکته: bool باید قبل از int چک شود ──
-                # چون bool زیرکلاس int است و isinstance(True, int) → True
+                # ── Note: bool must be checked before int ──
+                # Because bool is a subclass of int and isinstance(True, int) → True
                 if isinstance(value, bool):
                     filter_conditions.append(
                         models.FieldCondition(

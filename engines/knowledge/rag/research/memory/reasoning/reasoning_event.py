@@ -19,7 +19,7 @@ class ReasoningEvent:
     group: str
     step: int
     phase: str
-    event_type: str          # مقدار .value از ReasoningEventType ذخیره می‌شه
+    event_type: str          # .value from ReasoningEventType is stored
     level: str
     message: str
     meta: dict[str, Any] = field(default_factory=dict)

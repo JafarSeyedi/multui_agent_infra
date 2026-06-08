@@ -1,5 +1,5 @@
 """
-ماژول ساخت فهرست مطالب (Outline/Bookmarks) برای PDF
+Module for building Table of Contents (Outline/Bookmarks) for PDF
 """
 import uuid
 from dataclasses import dataclass
@@ -9,7 +9,7 @@ from typing import Any
 
 
 class OutlineStyle(Enum):
-    """سبک‌های فهرست مطالب"""
+    """Table of contents styles"""
     DEFAULT = "default"      # پیش‌فرض
     BOLD = "bold"           # پررنگ
     ITALIC = "italic"       # ایتالیک
@@ -245,7 +245,7 @@ class OutlineBuilder:
             return f'[{page_ref} /XYZ 0 0 null]'
 
     def _escape_pdf_string(self, text: str) -> str:
-        """فرار کردن رشته برای PDF"""
+        """فرار کردن رشته For PDF"""
         # جایگزینی کاراکترهای خاص
         replacements = {
             '(': '\\(',

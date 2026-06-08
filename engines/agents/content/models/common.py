@@ -11,8 +11,8 @@ class ContentVersion(BaseModel):
     version: str
 
     type: str                 # raw / rewritten / narrative / structured / ...
-    language_level: str       # سطح زبان
-    body: str                 # متن محتوا
+    language_level: str       # Language level
+    body: str                 # Content text
     created_at: datetime
 
     created_by_agent: str | None

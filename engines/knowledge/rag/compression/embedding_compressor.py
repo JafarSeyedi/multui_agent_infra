@@ -1,8 +1,8 @@
 import numpy as np
 
 from .base import BaseCompressor
-from engines.rag.rag_models import DocumentChunk
-from engines.rag.services.embedding import EmbeddingModel
+from ..rag_models import DocumentChunk
+from ..embedding import EmbeddingModel
 
 
 class EmbeddingCompressor(BaseCompressor):

@@ -1,5 +1,5 @@
 """
-نویسنده متادیتای PDF
+نویسنده Metadataی PDF
 """
 import hashlib
 import uuid
@@ -15,7 +15,7 @@ from .pdf_objects import PDFStream
 
 @dataclass
 class XMPMetadata:
-    """متادیتای XMP"""
+    """Metadataی XMP"""
     title: str | None = None
     author: str | None = None
     subject: str | None = None
@@ -57,7 +57,7 @@ class XMPMetadata:
 
 
 class MetadataWriter:
-    """کلاس نوشتن متادیتای PDF"""
+    """کلاس نوشتن Metadataی PDF"""
 
     def __init__(self):
         self._next_obj_id = 1
@@ -72,9 +72,9 @@ class MetadataWriter:
 
     def create_pdf_metadata(self, document: USDMDocument,
                            options: Any) -> PDFInfo:
-        """ایجاد متادیتای PDF از سند USDM"""
+        """ایجاد Metadataی PDF از سند USDM"""
 
-        # استخراج متادیتا از سند
+        # استخراج Metadata از سند
         metadata = document.metadata if hasattr(document, 'metadata') else None
 
         # ایجاد شیء PDFInfo
@@ -95,9 +95,9 @@ class MetadataWriter:
 
     def create_xmp_metadata(self, document: USDMDocument,
                            options: Any) -> PDFStream | None:
-        """ایجاد متادیتای XMP"""
+        """ایجاد Metadataی XMP"""
 
-        # استخراج متادیتا
+        # استخراج Metadata
         metadata = document.metadata if hasattr(document, 'metadata') else None
 
         # ایجاد XMPMetadata
@@ -250,7 +250,7 @@ class MetadataWriter:
         return "en-US"  # پیش‌فرض
 
     def _generate_xmp_xml(self, xmp: XMPMetadata) -> str:
-        """تولید XML متادیتای XMP"""
+        """تولید XML Metadataی XMP"""
 
         xml_parts = []
 
@@ -345,10 +345,10 @@ class MetadataWriter:
 
     def create_custom_metadata(self, document: USDMDocument,
                               custom_fields: dict[str, Any]) -> dict[str, Any]:
-        """ایجاد متادیتای سفارشی"""
+        """ایجاد Metadataی سفارشی"""
         metadata_dict = {}
 
-        # متادیتای استاندارد
+        # Metadataی استاندارد
         if hasattr(document, 'metadata') and document.metadata:
             metadata = document.metadata
 
@@ -382,7 +382,7 @@ class MetadataWriter:
         return metadata_dict
 
     def validate_metadata(self, metadata_dict: dict[str, Any]) -> list[str]:
-        """اعتبارسنجی متادیتا"""
+        """Validation Metadata"""
         warnings = []
 
         # بررسی فیلدهای اجباری

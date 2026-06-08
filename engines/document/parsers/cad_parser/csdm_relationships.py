@@ -28,7 +28,7 @@
 # # ------------------------------------------------------------------------------
 # class CSDMRelationshipResolver:
 #     """
-#     مسؤولیت:
+#     Responsibility:
 #     - resolve تمام Handleها
 #     - owner resolution
 #     - block reference resolution

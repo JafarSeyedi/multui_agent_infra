@@ -104,7 +104,7 @@ class PDFStream(PDFObject):
             entries=dict_entries
         )
 
-        # فشرده‌سازی اگر نیاز باشد
+        # Compression اگر نیاز باشد
         stream_data = self.data
         if 'FlateDecode' in self.filters:
             stream_data = zlib.compress(stream_data)
@@ -188,7 +188,7 @@ class PDFCatalog(PDFObject):
 
 @dataclass
 class PDFInfo(PDFObject):
-    """اطلاعات متادیتای PDF"""
+    """اطلاعات Metadataی PDF"""
     title: str | None = None
     author: str | None = None
     subject: str | None = None
@@ -229,7 +229,7 @@ class PDFInfo(PDFObject):
         return dict_obj.to_bytes()
 
     def _format_pdf_date(self, dt: datetime) -> str:
-        """فرمت‌بندی تاریخ برای PDF"""
+        """فرمت‌بندی تاریخ For PDF"""
         return f"D:{dt.strftime('%Y%m%d%H%M%S')}Z"
 
 
@@ -327,7 +327,7 @@ class PDFObjectFactory:
         return obj
 
     def create_info(self, **kwargs) -> PDFInfo:
-        """ایجاد اطلاعات متادیتا"""
+        """ایجاد اطلاعات Metadata"""
         obj = PDFInfo(obj_id=self.next_obj_id, **kwargs)
         self.next_obj_id += 1  # اصلاح: اضافه کردن +=
         self.objects.append(obj)
@@ -491,7 +491,7 @@ class PDFWriter:
 #     page1 = writer.add_page()
 
 #     # افزودن متن فارسی
-#     writer.add_text(page1, "سلام دنیا!", 100, 700, font_size=20)
+#     writer.add_text(page1, "Hello دنیا!", 100, 700, font_size=20)
 #     writer.add_text(page1, "این یک سند PDF تست است.", 100, 650, font_size=14)
 #     writer.add_text(page1, "This is English text.", 100, 600, font_size=14)
 

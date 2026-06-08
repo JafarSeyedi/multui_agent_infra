@@ -48,8 +48,7 @@ from engines.document.models.ksdm_models import (
     Domain,
 )
 from engines.document.models.media_types import (
-    KnowledgeMediaType,
-    KNOWLEDGE_MEDIA_TYPES,
+    MediaType, MEDIA_TYPES,
 )
 from engines.document.models.media_types import MEDIA_TYPES
 
@@ -159,12 +158,12 @@ def test_knowledge_graph_document():
 
 
 def test_media_types_registry():
-    assert "xmla_discover_xml" in KNOWLEDGE_MEDIA_TYPES
-    assert "pmml_xml" in KNOWLEDGE_MEDIA_TYPES
-    assert "xes_xml" in KNOWLEDGE_MEDIA_TYPES
-    assert "rdf_turtle" in KNOWLEDGE_MEDIA_TYPES
-    assert isinstance(KNOWLEDGE_MEDIA_TYPES["pmml_xml"], KnowledgeMediaType)
-    assert ".pmml" in KNOWLEDGE_MEDIA_TYPES["pmml_xml"].extensions
+    assert "xmla_discover_xml" in MEDIA_TYPES
+    assert "pmml_xml" in MEDIA_TYPES
+    assert "xes_xml" in MEDIA_TYPES
+    assert "rdf_turtle" in MEDIA_TYPES
+    assert isinstance(MEDIA_TYPES["pmml_xml"], MediaType)
+    assert ".pmml" in MEDIA_TYPES["pmml_xml"].extensions
 
 
 def test_domain_enum():

@@ -32,3 +32,5 @@ mypy_errors.txt
 .upgrade_backup/
 .upgrade_reports/
 prompts/
+user_messages.txt
+research_graph.db

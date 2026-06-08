@@ -11,8 +11,8 @@ from .interaction_models import InteractionResult
 
 class RoundRobinStrategy(InteractionStrategy):
     """
-    استراتژی Round Robin (Turn-Taking).
-    ترتیب اجرای عامل‌ها بر اساس لیست ورودی و به صورت دوره‌ای (Rounds) انجام می‌شود.
+    Round Robin Strategy (Turn-Taking).
+    Agent execution order is based on the input list and performed periodically (Rounds).
     """
 
     scenario_name = "round_robin"
@@ -37,12 +37,12 @@ class RoundRobinStrategy(InteractionStrategy):
                 metadata={"note": "No agents provided for round robin strategy."},
             )
 
-        # استخراج تنظیمات از متادیتا
+        # Extract settings from metadata
         max_rounds = int(request.metadata.get("rounds", self.default_rounds))
         max_rounds = max(1, max_rounds)
         stop_on_failure = bool(request.metadata.get("stop_on_failure", False))
 
-        # مدیریت حافظه و کانتکست
+        # Memory and context management
         history: list[dict[str, Any]] = list(request.context.get("history", []))
         shared_context: dict[str, Any] = dict(request.context)
         results: list[AgentOutput] = []
@@ -53,7 +53,7 @@ class RoundRobinStrategy(InteractionStrategy):
             for turn_index, agent_spec in enumerate(agents, start=1):
                 agent_id = agent_spec.agent_id or f"{agent_spec.agent_name}_{round_index}_{turn_index}"
 
-                # آماده‌سازی Payload برای ارسال به عامل
+                # Prepare Payload for sending to agent
                 execution_payload = {
                     "history": list(history),
                     "round_index": round_index,
@@ -61,7 +61,7 @@ class RoundRobinStrategy(InteractionStrategy):
                     "total_rounds": max_rounds
                 }
 
-                # اجرای عامل از طریق متد استاندارد لایه پایه
+                # Execute agent via standard base layer method
                 output = await self._run_agent(
                     agent_name=agent_spec.agent_name,
                     agent_id=agent_id,
@@ -71,7 +71,7 @@ class RoundRobinStrategy(InteractionStrategy):
 
                 results.append(output)
 
-                # بررسی وقوع خطا
+                # Check for errors
                 if output.error:
                     error_entry = {
                         "agent": agent_spec.agent_name,
@@ -94,7 +94,7 @@ class RoundRobinStrategy(InteractionStrategy):
                             }
                         )
                 else:
-                    # در صورت موفقیت، خروجی را به تاریخچه و کانتکست اضافه می‌کنیم
+                    # On success, add output to history and context
                     agent_data = output.payload or {"message": output.message}
 
                     history_entry = {
@@ -106,10 +106,10 @@ class RoundRobinStrategy(InteractionStrategy):
                     }
                     history.append(history_entry)
 
-                    # ثبت خروجی در کانتکست برای دسترسی سایر لایه‌ها
+                    # Record output in context for other layers to access
                     shared_context[f"round_{round_index}_{agent_spec.agent_name}"] = agent_data
 
-                # اطلاع‌رسانی روی Bus
+                # Notify on Bus
                 await self._emit(
                     message_type="turn_completed",
                     payload={
@@ -122,7 +122,7 @@ class RoundRobinStrategy(InteractionStrategy):
                     message_id=f"broadcast_start_{agent_id}",
                 )
 
-        # محاسبه موفقیت کلی: اگر هیچ عاملی خطا نداده باشد
+        # Calculate overall success: if no agent had errors
         overall_success = all(res.error is None for res in results)
 
         final_context = dict(shared_context)

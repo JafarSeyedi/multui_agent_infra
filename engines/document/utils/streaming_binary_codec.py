@@ -1,5 +1,5 @@
 # engnes/document/utils/streaming_binary_codec.py
-import hashlib  # رفع خطای مربوط به نام hashlib
+import hashlib  # Fix error related to hashlib name
 
 from ..models.base import BinaryEncoding
 from ..models.base import BinaryPayload

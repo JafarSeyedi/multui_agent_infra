@@ -1,5 +1,5 @@
 """
-رایتر LaTeX برای تبدیل مدل USDM به فایل .tex
+LaTeX writer for converting USDM model to .tex file
 """
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ from ...base import WriteOptions
 
 
 class LatexWriter(BaseDocumentWriter):
-    """رایتر LaTeX"""
+    """LaTeX writer"""
 
     def __init__(self, options: WriteOptions | None = None):
         super().__init__(options)
@@ -43,56 +43,56 @@ class LatexWriter(BaseDocumentWriter):
 
     async def write(self, document: BaseDocument) -> bytes:
         """
-        تبدیل سند به LaTeX (بایت)
+        Convert document to LaTeX (bytes)
         """
         if self.options is None:
             raise DocumentWriteError("WriteOptions not initialized")
         if not isinstance(document, USDMDocument):
-            raise DocumentWriteError("سند باید از نوع USDMDocument باشد")
+            raise DocumentWriteError("Document must be of type USDMDocument")
 
         try:
             latex_content = self._convert_usdm_to_latex(document)
             return latex_content.encode(self.options.encoding)
 
         except Exception as e:
-            raise DocumentWriteError(f"خطا در نوشتن LaTeX: {e}")
+            raise DocumentWriteError(f"Error writing LaTeX: {e}")
 
     async def write_stream(self, document: BaseDocument) -> AsyncIterator[bytes]:
         """
-        نوشتن به صورت استریم
+        Write as stream
         """
         try:
             data = await self.write(document)
             yield data
 
         except Exception as e:
-            raise DocumentWriteError(f"خطا در نوشتن استریم LaTeX: {e}")
+            raise DocumentWriteError(f"Error writing LaTeX stream: {e}")
 
     async def write_to_file(self, document: BaseDocument, target: Path,
                            options: dict[str, Any] | None = None) -> None:
         """
-        نوشتن سند به فایل
+        Write document to file
         """
         try:
             data = await self.write(document)
             target.write_bytes(data)
 
         except Exception as e:
-            raise DocumentWriteError(f"خطا در نوشتن فایل LaTeX: {e}")
+            raise DocumentWriteError(f"Error writing LaTeX file: {e}")
 
     def get_supported_media_types(self) -> list[str]:
-        """دریافت انواع رسانه پشتیبانی شده"""
+        """Get supported media types"""
         return ["application/x-latex", "text/x-tex"]
 
     def get_supported_extensions(self) -> list[str]:
-        """دریافت پسوندهای پشتیبانی شده"""
+        """Get supported extensions"""
         return [".tex", ".latex"]
 
     def _convert_usdm_to_latex(self, document: USDMDocument) -> str:
-        """تبدیل USDM به LaTeX"""
+        """Convert USDM to LaTeX"""
         lines: list[str] = []
 
-        # افزودن پیش‌آمده LaTeX
+        # Add LaTeX preamble
         lines.append(r"\\documentclass{article}")
         lines.append(r"\\usepackage[utf8]{inputenc}")
         lines.append(r"\\usepackage{graphicx}")
@@ -101,11 +101,11 @@ class LatexWriter(BaseDocumentWriter):
         lines.append(r"\\usepackage{hyperref}")
         lines.append(r"\\usepackage{listings}")
         lines.append(r"\\usepackage{xcolor}")
-        lines.append(r"\\usepackage{booktabs}")  # برای جداول بهتر
-        lines.append(r"\\usepackage{multirow}")  # برای سلول‌های ادغامی
+        lines.append(r"\\usepackage{booktabs}")  # For better tables
+        lines.append(r"\\usepackage{multirow}")  # For merged cells
         lines.append("")
 
-        # تنظیمات listings برای کد
+        # Listings settings for code
         lines.append(r"\\lstset{")
         lines.append(r"  basicstyle=\\ttfamily\small,")
         lines.append(r"  breaklines=true,")
@@ -118,7 +118,7 @@ class LatexWriter(BaseDocumentWriter):
         lines.append(r"}")
         lines.append("")
 
-        # افزودن عنوان
+        # Add title
         if document.title:
             lines.append(r"\\title{" + self._escape_latex(document.title) + "}")
             lines.append(r"\\author{}")
@@ -132,15 +132,15 @@ class LatexWriter(BaseDocumentWriter):
             lines.append(r"\\maketitle")
             lines.append("")
 
-        # پردازش بخش‌ها
+        # Process sections
         for section in document.sections:
             section_latex = self._section_to_latex(section, document)
             if section_latex:
                 lines.append(section_latex)
 
-        # پردازش المنت‌های مستقل
+        # Process standalone elements
         for elem in document.elements:
-            # بررسی اینکه آیا المنت در بخشی قرار دارد
+            # Check if element is in a section
             in_section = False
             for section in document.sections:
                 if any(se.element_id == elem.element_id for se in section.elements):
@@ -160,14 +160,14 @@ class LatexWriter(BaseDocumentWriter):
         return "\n".join(lines)
 
     def _find_logical_element(self, document: USDMDocument, element_id: str) -> LogicalElement | None:
-        """یافتن المنت منطقی بر اساس شناسه"""
+        """Find logical element by ID"""
         for elem in document.logical_elements:
             if elem.element_id == element_id:
                 return elem
         return None
 
     def _escape_latex(self, text: str) -> str:
-        """فرار کردن کاراکترهای خاص LaTeX"""
+        """Escape special LaTeX characters"""
         if not text:
             return ""
 
@@ -192,7 +192,7 @@ class LatexWriter(BaseDocumentWriter):
         while i < len(text):
             char = text[i]
 
-            # بررسی دستورات LaTeX
+            # Check LaTeX commands
             if char == '\\' and i + 1 < len(text):
                 next_char = text[i + 1]
                 if next_char in escape_chars:
@@ -210,10 +210,10 @@ class LatexWriter(BaseDocumentWriter):
         return ''.join(result)
 
     def _section_to_latex(self, section: Section, document: USDMDocument) -> str:
-        """تبدیل بخش به LaTeX"""
+        """Convert section to LaTeX"""
         lines: list[str] = []
 
-        # افزودن عنوان بخش
+        # Add section title
         if section.title and isinstance(section.title, HeadingContent):
             heading_text = self._rich_text_to_latex(section.title.text)
             level = section.title.level
@@ -235,7 +235,7 @@ class LatexWriter(BaseDocumentWriter):
 
             lines.append("")
 
-        # پردازش المنت‌های بخش
+        # Process section elements
         for elem in section.elements:
             logical_elem = self._find_logical_element(document, elem.element_id)
             if logical_elem:
@@ -246,7 +246,7 @@ class LatexWriter(BaseDocumentWriter):
         return "\n".join(lines)
 
     def _element_to_latex(self, element: LogicalElement) -> str:
-        """تبدیل المنت منطقی به LaTeX"""
+        """Convert logical element to LaTeX"""
         content = element.content
 
         if element.element_type == ElementType.PARAGRAPH and isinstance(content, ParagraphContent):
@@ -282,7 +282,7 @@ class LatexWriter(BaseDocumentWriter):
         return ""
 
     def _rich_text_to_latex(self, rich_text: RichTextContent) -> str:
-        """تبدیل RichText به LaTeX"""
+        """Convert RichText to LaTeX"""
         if not rich_text or not rich_text.spans:
             return ""
 
@@ -294,17 +294,17 @@ class LatexWriter(BaseDocumentWriter):
 
             text_to_format = span.math if span.math else self._escape_latex(span.text)
 
-            # اعمال فرمت‌بندی LaTeX
+            # Apply LaTeX formatting
             formatted_text = text_to_format
 
-            # اولویت با math
+            # Priority with math
             if span.math:
                 if span.display_math:
                     formatted_text = r"\\[" + formatted_text + r"\\]"
                 else:
                     formatted_text = r"$" + formatted_text + r"$"
 
-            # اعمال استایل‌های متنی
+            # Apply text styles
             elif span.text:
                 if span.code:
                     formatted_text = r"\\texttt{" + formatted_text + "}"
@@ -320,7 +320,7 @@ class LatexWriter(BaseDocumentWriter):
                     if "monospace" in style_lower or "texttt" in style_lower:
                         formatted_text = r"\\texttt{" + formatted_text + "}"
 
-                # افزودن لینک
+                # Add link
                 if span.href:
                     formatted_text = r"\\href{" + self._escape_latex(span.href) + "}{" + formatted_text + "}"
 
@@ -329,7 +329,7 @@ class LatexWriter(BaseDocumentWriter):
         return "".join(result_parts)
 
     def _paragraph_to_latex(self, content: ParagraphContent) -> str:
-        """تبدیل پاراگراف به LaTeX"""
+        """Convert paragraph to LaTeX"""
         if not content or not content.text:
             return ""
 
@@ -340,7 +340,7 @@ class LatexWriter(BaseDocumentWriter):
         return latex_text + "\n\n"
 
     def _heading_to_latex(self, content: HeadingContent) -> str:
-        """تبدیل هدینگ به LaTeX"""
+        """Convert heading to LaTeX"""
         if not content or not content.text:
             return ""
 
@@ -366,7 +366,7 @@ class LatexWriter(BaseDocumentWriter):
             return r"\\section*{" + heading_text + "}\n"
 
     def _code_to_latex(self, content: CodeContent) -> str:
-        """تبدیل کد به LaTeX"""
+        """Convert code to LaTeX"""
         if not content or not content.code:
             return ""
 
@@ -376,7 +376,7 @@ class LatexWriter(BaseDocumentWriter):
 
         lines: list[str] = []
 
-        # تعیین محیط مناسب
+        # Determine appropriate environment
         if content.language:
             language = content.language.lower()
             if language in ["python", "java", "c++", "c", "javascript", "typescript"]:
@@ -392,23 +392,23 @@ class LatexWriter(BaseDocumentWriter):
             lines.append(code)
             lines.append(r"\\end{verbatim}")
 
-        lines.append("")  # خط خالی بعد از کد
+        lines.append("")  # Blank line after code
         return "\n".join(lines)
 
     def _list_to_latex(self, content: ListContent) -> str:
-        """تبدیل لیست به LaTeX"""
+        """Convert list to LaTeX"""
         if not content or not content.items:
             return ""
 
         lines: list[str] = []
 
-        # تعیین نوع لیست
+        # Determine list type
         if content.ordered:
             lines.append(r"\\begin{enumerate}")
         else:
             lines.append(r"\\begin{itemize}")
 
-        # پردازش آیتم‌ها
+        # Process items
         for item in content.items:
             if isinstance(item, LogicalElement) and item.element_type == ElementType.LIST_ITEM:
                 if isinstance(item.content, ListItemContent):
@@ -425,21 +425,21 @@ class LatexWriter(BaseDocumentWriter):
         else:
             lines.append(r"\\end{itemize}")
 
-        lines.append("")  # خط خالی بعد از لیست
+        lines.append("")  # Blank line after list
         return "\n".join(lines)
 
     def _list_item_to_latex(self, content: ListItemContent) -> str:
-        """تبدیل آیتم لیست به LaTeX"""
+        """Convert list item to LaTeX"""
         return self._list_item_content_to_latex(content)
 
     def _list_item_content_to_latex(self, content: ListItemContent) -> str:
-        """تبدیل محتوای آیتم لیست به LaTeX"""
+        """Convert list item content to LaTeX"""
         if not content or not content.elements:
             return r"\\item"
 
         lines: list[str] = []
 
-        # پردازش اولین المنت برای \item
+        # Process first element for \item
         first_elem = content.elements[0]
         if isinstance(first_elem, LogicalElement):
             if first_elem.element_type == ElementType.PARAGRAPH and isinstance(first_elem.content, ParagraphContent):
@@ -453,7 +453,7 @@ class LatexWriter(BaseDocumentWriter):
         else:
             lines.append(r"\\item")
 
-        # پردازش المنت‌های باقی‌مانده
+        # Process remaining elements
         for elem in content.elements[1:]:
             if isinstance(elem, LogicalElement):
                 elem_latex = self._element_to_latex(elem)
@@ -463,7 +463,7 @@ class LatexWriter(BaseDocumentWriter):
         return "\n".join(lines)
 
     def _quote_to_latex(self, content: QuoteContent) -> str:
-        """تبدیل نقل قول به LaTeX"""
+        """Convert quote to LaTeX"""
         if not content or not content.elements:
             return ""
 
@@ -477,17 +477,17 @@ class LatexWriter(BaseDocumentWriter):
                     lines.append(elem_latex)
 
         lines.append(r"\\end{quote}")
-        lines.append("")  # خط خالی بعد از نقل قول
+        lines.append("")  # Blank line after quote
         return "\n".join(lines)
 
     def _image_to_latex(self, content: ImageContent) -> str:
-        """تبدیل تصویر به LaTeX"""
+        """Convert image to LaTeX"""
         if not content or not content.src:
             return ""
 
         lines: list[str] = []
 
-        # ساخت options
+        # Build options
         options_parts = []
         if content.width:
             width = content.width
@@ -503,7 +503,7 @@ class LatexWriter(BaseDocumentWriter):
         if options_parts:
             options_str = "[" + ",".join(options_parts) + "]"
 
-        # ساخت دستور includegraphics
+        # Build includegraphics command
         src_escaped = self._escape_latex(content.src)
         alt_escaped = self._escape_latex(content.alt) if content.alt else ""
 
@@ -515,12 +515,12 @@ class LatexWriter(BaseDocumentWriter):
             lines.append(r"  \\caption{" + alt_escaped + "}")
 
         lines.append(r"\\end{figure}")
-        lines.append("")  # خط خالی بعد از تصویر
+        lines.append("")  # Blank line after image
 
         return "\n".join(lines)
 
     def _link_to_latex(self, content: LinkContent) -> str:
-        """تبدیل لینک به LaTeX"""
+        """Convert link to LaTeX"""
         if not content or not content.url:
             return ""
 
@@ -533,14 +533,14 @@ class LatexWriter(BaseDocumentWriter):
             return r"\\url{" + href_escaped + "}"
 
     def _math_to_latex(self, content: MathContent) -> str:
-        """تبدیل ریاضی به LaTeX"""
+        """Convert math to LaTeX"""
         if not content or not content.latex:
             return ""
 
         latex_math = content.latex.strip()
 
         if content.display:
-            # محیط‌های نمایشی
+            # Display environments
             return r"\\[" + latex_math + r"\\]"
             # if content.metadata and content.metadata.get("environment") == "align":
             #     lines = []
@@ -557,17 +557,17 @@ class LatexWriter(BaseDocumentWriter):
             # else:
             #     return r"\\[" + latex_math + r"\\]"
         else:
-            # ریاضی درون خطی
+            # Inline math
             return r"$" + latex_math + r"$"
 
     def _table_to_latex(self, content: TableContent) -> str:
-        """تبدیل جدول به LaTeX"""
+        """Convert table to LaTeX"""
         if not content or not content.rows:
             return ""
 
         lines: list[str] = []
 
-        # تعیین تعداد ستون‌ها
+        # Determine column count
         num_columns = 0
         if content.rows:
             num_columns = max(len(row.cells) for row in content.rows)
@@ -575,7 +575,7 @@ class LatexWriter(BaseDocumentWriter):
         if num_columns == 0:
             return ""
 
-        # ساخت مشخصات ستون‌ها
+        # Build column specifications
         column_spec = content.metadata.get("column_specification", "l") if content.metadata else "l"
         if len(column_spec) < num_columns:
             column_spec = column_spec[0] * num_columns
@@ -585,7 +585,7 @@ class LatexWriter(BaseDocumentWriter):
         lines.append(r"  \\begin{tabular}{" + column_spec + "}")
         lines.append(r"    \\toprule")
 
-        # پردازش سطرها
+        # Process rows
         for i, row in enumerate(content.rows):
             if not row.cells:
                 continue
@@ -595,32 +595,32 @@ class LatexWriter(BaseDocumentWriter):
                 cell_content = self._table_cell_to_latex(cell)
                 row_cells.append(cell_content)
 
-            # پر کردن سلول‌های خالی
+            # Fill empty cells
             while len(row_cells) < num_columns:
                 row_cells.append("")
 
             lines.append("    " + " & ".join(row_cells) + r" \\")
 
-            # خط جداکننده
+            # Separator line
             if i == 0 and content.metadata and content.metadata.get("has_header", False):
                 lines.append(r"    \\midrule")
 
         lines.append(r"    \\bottomrule")
         lines.append(r"  \\end{tabular}")
 
-        # کپشن
+        # Caption
         caption_text = content.caption
         if caption_text:
             caption_text_escaped = self._escape_latex(caption_text)
             lines.append(r"  \\caption{" + caption_text_escaped + "}")
 
         lines.append(r"\\end{table}")
-        lines.append("")  # خط خالی بعد از جدول
+        lines.append("")  # Blank line after table
 
         return "\n".join(lines)
 
     def _table_cell_to_latex(self, cell: TableCell) -> str:
-        """تبدیل سلول جدول به LaTeX"""
+        """Convert table cell to LaTeX"""
         if not cell or not cell.content:
             return ""
 
@@ -629,7 +629,7 @@ class LatexWriter(BaseDocumentWriter):
             if isinstance(elem, LogicalElement):
                 elem_latex = self._element_to_latex(elem)
                 if elem_latex:
-                    # حذف خطوط خالی اضافی
+                    # Remove extra blank lines
                     elem_lines = elem_latex.strip().split('\n')
                     cell_parts.append(' '.join(line.strip() for line in elem_lines if line.strip()))
 

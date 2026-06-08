@@ -13,8 +13,8 @@ TStrategy = TypeVar("TStrategy", bound=InteractionStrategy)
 
 class InteractionStrategyRegistry(Generic[TStrategy]):
     """
-    نگهبان استراتژی‌های تعامل. برای جلوگیری از ثبت همزمان‌ی استراتژی‌های یکسان
-    و ارائه‌ی قابلیت‌های کمکی مثل فهرست‌برداری و حذفِ ایمن طراحی شده است.
+    Guardian of interaction strategies. Prevents duplicate strategy registration
+    Provides auxiliary features like listing and safe removal.
     """
 
     def __init__(self) -> None:
@@ -23,8 +23,8 @@ class InteractionStrategyRegistry(Generic[TStrategy]):
 
     def register(self, strategy: TStrategy, *, replace: bool = False) -> TStrategy:
         """
-        یک استراتژی جدید ثبت می‌کند. در صورت تکراری بودن و
-        replace=False خطا می‌دهد؛ در غیر این صورت جایگزین می‌کند.
+        Registers a new strategy. If duplicate and
+        replace=False raises error; otherwise replaces.
         """
         scenario = strategy.scenario_name
         with self._lock:
@@ -34,19 +34,19 @@ class InteractionStrategyRegistry(Generic[TStrategy]):
         return strategy
 
     def unregister(self, scenario: str) -> None:
-        """استراتژی با نام سناریو مشخص را حذف می‌کند (اگر وجود داشت)."""
+        """Removes strategy with specified scenario name (if exists)."""
         with self._lock:
             self._strategies.pop(scenario, None)
 
     def get(self, scenario: str) -> TStrategy | None:
-        """استراتژی را بدون خطا دادن برمی‌گرداند (اگر ثبت شده باشد)."""
+        """Returns strategy without error (if registered)."""
         with self._lock:
             return self._strategies.get(scenario)
 
     def require(self, scenario: str) -> TStrategy:
         """
-        استراتژی را برمی‌گرداند یا اگر وجود نداشت، خطای معنی‌داری می‌اندازد.
-        برای زمانی که حضور استراتژی الزامی است بسیار مفید است.
+        Returns strategy or raises meaningful error if not found.
+        Useful when strategy presence is required.
         """
         strategy = self.get(scenario)
         if strategy is None:
@@ -54,11 +54,11 @@ class InteractionStrategyRegistry(Generic[TStrategy]):
         return strategy
 
     def list_scenarios(self) -> list[str]:
-        """تمام سناریوهای ثبت‌شده را برمی‌گرداند."""
+        """Returns all registered scenarios."""
         with self._lock:
             return list(self._strategies.keys())
 
     def all_strategies(self) -> Iterable[TStrategy]:
-        """دایره‌المعارف همهٔ استراتژی‌ها برای بررسی یا تست."""
+        """Encyclopedia of all strategies for review or testing."""
         with self._lock:
             return list(self._strategies.values())

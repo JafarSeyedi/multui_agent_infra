@@ -1,5 +1,5 @@
 """
-ابزارهای کمکی برای PDF Writer
+ابزارهای کمکی For PDF Writer
 """
 import base64
 import io
@@ -232,7 +232,7 @@ class ImageProcessor:
                 else:
                     image = image.convert('RGB')
 
-            # فشرده‌سازی
+            # Compression
             output_buffer = io.BytesIO()
 
             if format.lower() in ['jpeg', 'jpg']:
@@ -420,15 +420,15 @@ class PDFColor:
         return cls(r=r, g=g, b=b, c=c, m=m, y=y, k=k, a=alpha)
 
     def to_pdf_rgb(self) -> str:
-        """تبدیل به رشته RGB برای PDF"""
+        """تبدیل به رشته RGB For PDF"""
         return f"{self.r:.3f} {self.g:.3f} {self.b:.3f} rg"
 
     def to_pdf_cmyk(self) -> str:
-        """تبدیل به رشته CMYK برای PDF"""
+        """تبدیل به رشته CMYK For PDF"""
         return f"{self.c:.3f} {self.m:.3f} {self.y:.3f} {self.k:.3f} k"
 
     def to_pdf_gray(self) -> str:
-        """تبدیل به خاکستری برای PDF"""
+        """تبدیل به خاکستری For PDF"""
         gray = 0.299 * self.r + 0.587 * self.g + 0.114 * self.b
         return f"{gray:.3f} g"
 

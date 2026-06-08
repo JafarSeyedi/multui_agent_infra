@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ماژول استخراج محتوای PDF
+PDF content Extraction module
 استخراج متن، جداول، تصاویر، لینک‌ها و سایر محتوا از فایل‌های PDF
 """
 import base64
@@ -197,7 +197,7 @@ class ContentExtractor:
         
         Args:
             pdf_path: مسیر فایل PDF
-            use_ocr: استفاده از OCR برای PDFهای اسکن شده
+            use_ocr: استفاده از OCR For PDFهای اسکن شده
             ocr_languages: زبان‌های OCR (پیش‌فرض: ['fas', 'eng'])
             table_method: روش استخراج جداول ('lattice', 'stream')
             image_dpi: کیفیت تصاویر استخراج شده
@@ -208,7 +208,7 @@ class ContentExtractor:
         self.table_method = table_method
         self.image_dpi = image_dpi
 
-        # ذخیره نتایج
+        # ذخیره Results
         self.extracted_texts: list[ExtractedText] = []
         self.extracted_tables: list[ExtractedTable] = []
         self.extracted_images: list[ExtractedImage] = []
@@ -259,7 +259,7 @@ class ContentExtractor:
         }
 
         try:
-            # استخراج متادیتا
+            # استخراج Metadata
             results['metadata'] = self.extract_metadata()
 
             # استخراج متن
@@ -337,7 +337,7 @@ class ContentExtractor:
 
         try:
             if self.use_ocr:
-                # استفاده از OCR برای PDFهای اسکن شده
+                # استفاده از OCR For PDFهای اسکن شده
                 self._extract_text_with_ocr()
             else:
                 # استخراج متن مستقیم
@@ -441,7 +441,7 @@ class ContentExtractor:
                     config=config
                 )
 
-                # پردازش نتایج OCR
+                # پردازش Results OCR
                 n_boxes = len(ocr_result['text'])
                 for i in range(n_boxes):
                     if int(ocr_result['conf'][i]) > 60:  # اطمینان بالای 60%
@@ -807,16 +807,16 @@ class ContentExtractor:
 
     def extract_metadata(self) -> dict[str, Any]:
         """
-        استخراج متادیتای PDF
+        استخراج Metadataی PDF
         
         Returns:
-            دیکشنری متادیتا
+            دیکشنری Metadata
         """
         metadata = {}
 
         try:
             with pdfplumber.open(self.pdf_path) as pdf:
-                # متادیتای اصلی
+                # Metadataی اصلی
                 metadata.update({
                     'num_pages': len(pdf.pages),
                     'author': pdf.metadata.get('Author', ''),
@@ -846,14 +846,14 @@ class ContentExtractor:
                 metadata['fonts'] = list(fonts)
 
         except Exception as e:
-            print(f"خطا در استخراج متادیتا: {e}")
+            print(f"خطا در استخراج Metadata: {e}")
             metadata['error'] = str(e)
 
         return metadata
 
     def export_to_json(self, output_path: str):
         """
-        خروجی نتایج به فرمت JSON
+        خروجی Results به فرمت JSON
         
         Args:
             output_path: مسیر فایل خروجی
@@ -878,7 +878,7 @@ class ContentExtractor:
 
     def export_to_csv(self, output_dir: str | Path):
         """
-        خروجی نتایج به فرمت CSV
+        خروجی Results به فرمت CSV
         
         Args:
             output_dir: دایرکتوری خروجی
@@ -966,10 +966,10 @@ class ContentExtractor:
 
     def get_summary(self) -> dict[str, Any]:
         """
-        دریافت خلاصه‌ای از نتایج استخراج
+        دریافت خلاصه‌ای از Results استخراج
         
         Returns:
-            دیکشنری خلاصه نتایج
+            دیکشنری خلاصه Results
         """
         return {
             'total_pages': self.stats.total_pages,
@@ -1002,7 +1002,7 @@ def extract_content_from_pdf(pdf_path: str,
         output_dir: دایرکتوری ذخیره CSV و تصاویر (اختیاری)
         
     Returns:
-        نتایج استخراج
+        Results استخراج
     """
     extractor = ContentExtractor(pdf_path, use_ocr=use_ocr)
     results = extractor.extract_all()
@@ -1042,8 +1042,8 @@ def extract_content_from_pdf(pdf_path: str,
 #     for key, value in summary.items():
 #         print(f"  {key}: {value}")
 
-#     # ذخیره نتایج
+#     # ذخیره Results
 #     extractor.export_to_json("extraction_results.json")
 #     extractor.export_to_csv("extraction_output")
 
-#     print(f"✅ استخراج کامل شد! نتایج در extraction_results.json ذخیره شد.")
+#     print(f"✅ استخراج کامل شد! Results در extraction_results.json ذخیره شد.")

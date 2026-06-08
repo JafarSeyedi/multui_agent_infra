@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from dataclasses import field
 from typing import Any
 
-from engines.rag.rag_models import DocumentChunk
+from engines.knowledge.rag.rag_models import DocumentChunk
 
 
 @dataclass

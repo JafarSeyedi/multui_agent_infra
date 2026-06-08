@@ -1,5 +1,5 @@
 """
-پارسر HTML برای تبدیل فایل‌های HTML به مدل USDM
+HTML parser for converting HTML files to USDM model
 """
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ from .base import ParseOptions
 
 
 class HTMLDocumentParser(HTMLParser):
-    """پارسر HTML داخلی برای پردازش ساختار"""
+    """Internal HTML parser for structure processing"""
 
     def __init__(self) -> None:
         super().__init__()
@@ -692,11 +692,11 @@ class HtmlParser(BaseDocumentParser):
             raise DocumentParseError(f"خطا در تجزیه استریم HTML: {e}")
 
     def get_supported_media_types(self) -> list[str]:
-        """دریافت انواع رسانه پشتیبانی شده"""
+        """Get supported media types"""
         return ["text/html", "application/xhtml+xml"]
 
     def get_supported_extensions(self) -> list[str]:
-        """دریافت پسوندهای پشتیبانی شده"""
+        """Get supported extensions"""
         return [".html", ".htm", ".xhtml"]
 
     def _extract_math_from_html(self, html_content: str) -> list[dict[str, Any]]:

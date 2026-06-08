@@ -8,7 +8,7 @@ from .interaction_models import InteractionResult
 
 class SelfRefineStrategy(InteractionStrategy):
     """
-    Strategy برای الگوی Self-Refinement:
+    Strategy for Self-Refinement pattern:
 
     Generator → Critic → Refiner → (loop)
     """

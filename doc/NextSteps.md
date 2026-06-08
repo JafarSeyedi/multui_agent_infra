@@ -25,7 +25,7 @@ Remaining Work
 
 
 
-قدم بعدی برای قوی‌تر شدن سیستم تو
+Next step to make your system stronger
 اگر بخواهیم این لایه را واقعاً در حد Perplexity / DeepSearch RAG کنیم، باید اضافه کنیم:
 
 LLM caching
@@ -105,7 +105,7 @@ class AgentMessage(BaseModel):
 enforce کردن مدل ورودی/خروجی
 اتصال به LLM + RAG
 مدیریت لاگ اجرا
-مدیریت متادیتا و نسخه عامل
+مدیریت Metadata و نسخه عامل
 سازگاری با AgentRegistry
 BaseAgent — نسخه استاندارد و حرفه‌ای
 python
@@ -730,7 +730,7 @@ text
 
 
 3️⃣ Execution Tracing
-برای:
+For:
 
 text
 debug

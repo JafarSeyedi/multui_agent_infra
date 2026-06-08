@@ -20,9 +20,9 @@ class USDMDocument(BaseDocument):
     kind: DocumentStandard = DocumentStandard.USDM
     sections: list[Section] = field(default_factory=list)
     pages: list[Page] = field(default_factory=list)
-# elements: لایه‌ی منطقی (Logical tree) → محتوای واقعی سند
-# sections: لایه‌ی سازمانی/سرفصلی → ساختار معنایی سند
-# pages: لایه‌ی فیزیکی/صفحه‌بندی → خروجی صفحه‌بندی شده (PDF-like)
+# elements: Logical layer → actual document content
+# sections: Organizational layer → semantic document structure
+# pages: Physical/pagination layer → paginated output (PDF-like)
     elements: Sequence[DocumentElement | LogicalElement] = field(default_factory=list)
     logical_elements: list[LogicalElement] = field(default_factory=list)
     stylesheet: "StyleSheet" = field(default_factory=lambda: StyleSheet())
@@ -396,7 +396,7 @@ class PDFVectorPath:
 
 @dataclass
 class LaTeXEnvironmentContent:
-    """محیط‌های LaTeX مانند theorem, proof, figure"""
+    """LaTeX environments like theorem, proof, figure"""
     environment_type: str  # "theorem", "lemma", "figure", "table"
     label: str | None
     caption: str | None
@@ -412,9 +412,9 @@ class LaTeXCommandContent:
 
 @dataclass
 class SemanticHTMLContent:
-    """عناصر معنایی HTML5"""
+    """Semantic HTML5 elements"""
     element_type: Literal["article", "section", "nav", "aside", "header", "footer"]
-    role: str | None  # برای ARIA roles
+    role: str | None  # For ARIA roles
     aria_attributes: dict[str, str] = field(default_factory=dict)
 
 @dataclass
@@ -435,14 +435,14 @@ class Change:
 
 @dataclass
 class CanvasContent:
-    """محتوای <canvas> در HTML5"""
+    """<canvas> content in HTML5"""
     canvas_id: str
     drawing_operations: list[CanvasOperation]
 
 @dataclass
 class DocumentMetadata:
-    """متادیتای جامع برای همه فرمت‌ها"""
-    # متادیتای عمومی
+    """Comprehensive metadata for all formats"""
+    # General metadata
     title: str | None = None
     authors: list[str] = field(default_factory=list)
     creation_date: datetime | None = None
@@ -456,21 +456,21 @@ class DocumentMetadata:
     # copyright: Optional[str] = None
     # language: Optional[str] = None
 
-    # متادیتای فرمت‌خاص
+    # Format-specific metadata
     format_specific: dict[str, Any] = field(default_factory=dict)
 
-    # برای PDF
+    # For PDF
     pdf_info: PDFInfo | None = None
 
-    # برای DOCX
+    # For DOCX
     docx_properties: DOCXProperties | None = None
 
-    # برای HTML
+    # For HTML
     meta_tags: dict[str, str] = field(default_factory=dict)
 
 @dataclass
 class CrossReference:
-    """سیستم ارجاع متقابل بین عناصر"""
+    """Cross-reference system between elements"""
     source_id: str
     target_id: str
     reference_type: Literal["internal", "external", "bibliography", "footnote"]
@@ -478,14 +478,14 @@ class CrossReference:
 
 @dataclass
 class BibliographyEntry:
-    """ورودی‌های کتاب‌شناسی"""
+    """Bibliography entries"""
     key: str
     entry_type: str  # "article", "book", "inproceedings"
     fields: dict[str, str] = field(default_factory=dict)
 
 @dataclass
 class ChangeTracking:
-    """ردیابی تغییرات (مهم برای DOCX و Google Docs)"""
+    """Change tracking (important for DOCX and Google Docs)"""
     revisions: list[Revision] = field(default_factory=list)
     comments: list[CommentContent] = field(default_factory=list)
     track_changes_enabled: bool = False
@@ -499,10 +499,10 @@ class Revision:
 
 @dataclass
 class PresentationHint:
-    """نشانه‌های ارائه برای تبدیل بین فرمت‌ها"""
+    """Presentation hints for format conversion"""
     css_classes: list[str] = field(default_factory=list)
     latex_packages: list[str] = field(default_factory=list)
-    priority: int = 0  # اولویت در تبدیل
+    priority: int = 0  # Priority in conversion
 
 class FormatPlugin(ABC):
     @abstractmethod
@@ -530,7 +530,7 @@ class ConversionQuality:
     semantic_preservation: float  # 0.0 to 1.0
     style_preservation: float
     layout_preservation: float
-    information_loss: list[str]  # لیست اطلاعات از دست رفته
+    information_loss: list[str]  # List of lost information
     warnings: list[str]
 
 

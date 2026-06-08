@@ -151,7 +151,7 @@ class TypeHint:
 
 
 # =============================================================================
-# SymbolIndex &إ FunctionLocation
+# SymbolIndex & FunctionLocation
 # =============================================================================
 
 @dataclass
@@ -376,7 +376,7 @@ class IsInstanceUnionDetector(cst.CSTVisitor):
     def _process_instance_check(self, test: cst.BaseExpression) -> None:
         if isinstance(test, cst.Call) and isinstance(test.func, cst.Name) and test.func.value == "isinstance":
             if len(test.args) == 2:
-                # mypy به‌تنهایی نمی‌تواند نوع Arg.value را BaseExpression تشخیص دهد،
+                # mypy alone cannot recognize Arg.value type as BaseExpression,
                 # بنابراین با یک annotation کمکی صریح‌ش کنید
                 arg0: cst.BaseExpression = test.args[0].value
                 arg1: cst.BaseExpression = test.args[1].value
@@ -1707,7 +1707,7 @@ class PipelineSupervisor:
             ["xargs", "-0", "-n", "100"] + cmd_parts,
             input=input_bytes,           # bytes
             capture_output=capture,
-            text=False,                  # ← مهم
+            text=False,                  # ← Important
         )
         # خروجی‌ها را دستی decode می‌کنیم
         out = proc.stdout.decode(errors="replace") if proc.stdout else ""

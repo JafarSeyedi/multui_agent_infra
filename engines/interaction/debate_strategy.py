@@ -16,7 +16,7 @@ class DebateStrategy(InteractionStrategy):
         if len(agents) < 2:
             raise ValueError("DebateStrategy requires at least two agents (proposer & critic).")
 
-        # استخراج نام عامل‌ها
+        # Extract agent names
         proposer_agent_meta = agents[0]
         critic_agent_meta = agents[1]
 
@@ -30,7 +30,7 @@ class DebateStrategy(InteractionStrategy):
         approved_round: int | None = None
 
         for round_id in range(1, max_rounds + 1):
-            # ✅ حل خطای Missing recipient
+            # ✅ Fix Missing recipient error
             await self._emit(
                 message_type="debate_round_started",
                 payload={"round": round_id},
@@ -39,7 +39,7 @@ class DebateStrategy(InteractionStrategy):
                 message_id=f"debate_start_{round_id}",
             )
 
-            # --- گام اول: Proposer ---
+            # --- Step 1: Proposer ---
             proposer_output = await self._run_agent(
                 agent_name=proposer_name,
                 agent_id=f"proposer_round_{round_id}",
@@ -53,12 +53,12 @@ class DebateStrategy(InteractionStrategy):
             results.append(proposer_output)
 
             if proposer_output.error:
-                break  # توقف در صورت خطا
+                break  # Stop on error
 
-            # استخراج پاسخ فعلی از خروجی عامل
+            # Extract current response from agent output
             current_answer = proposer_output.payload or proposer_output.message
 
-            # --- گام دوم: Critic ---
+            # --- Step 2: Critic ---
             critic_output = await self._run_agent(
                 agent_name=critic_name,
                 agent_id=f"critic_round_{round_id}",
@@ -75,7 +75,7 @@ class DebateStrategy(InteractionStrategy):
             if critic_output.error:
                 break
 
-            # ثبت در تاریخچه برای دور بعد
+            # Record in history for next round
             critic_data = critic_output.payload or critic_output.message
             history.append({
                 "round": round_id,
@@ -83,7 +83,7 @@ class DebateStrategy(InteractionStrategy):
                 "critique": critic_data
             })
 
-            # ✅ منطق تایید (بررسی خروجی Critic)
+            # ✅ Confirmation logic (check Critic output)
             if isinstance(critic_data, dict) and critic_data.get("approved") is True:
                 approved_round = round_id
                 await self._emit(
@@ -95,7 +95,7 @@ class DebateStrategy(InteractionStrategy):
                 )
                 break
 
-            # ✅ اطلاع‌رسانی پایان دور
+            # ✅ Notify end of round
             await self._emit(
                 message_type="debate_round_completed",
                 payload={"round": round_id},
@@ -104,11 +104,11 @@ class DebateStrategy(InteractionStrategy):
                 message_id=f"debate_round_{round_id}",
             )
 
-        # آپدیت کانتکست نهایی
+        # Update final context
         context["debate_history"] = history
         context["final_answer"] = current_answer
 
-        # محاسبه موفقیت کلی: اگر هیچ عاملی خطا نداده باشد
+        # Calculate overall success: if no agent had errors
         is_overall_success = all(res.error is None for res in results)
 
         return InteractionResult(

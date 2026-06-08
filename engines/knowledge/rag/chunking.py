@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from engines.rag.rag_models import Document
-from engines.rag.rag_models import DocumentChunk
+from engines.knowledge.rag.rag_models import Document
+from engines.knowledge.rag.rag_models import DocumentChunk
 
 
 class Chunker:

@@ -115,7 +115,7 @@ class FontInfo:
     glyph_widths: dict[int, int] | None = None  # عرض گلیف‌ها
 
     def __post_init__(self):
-        """اعتبارسنجی و تنظیم مقادیر پیش‌فرض"""
+        """Validation و تنظیم مقادیر پیش‌فرض"""
         if not self.pdf_name:
             self.pdf_name = f"/F{hash(self.name) % 10000:04d}"
 
@@ -273,7 +273,7 @@ class FontInfo:
         return self.ttf_data or b""
 
     def get_encoding_name(self) -> str:
-        """دریافت نام انکودینگ برای PDF"""
+        """دریافت نام انکودینگ For PDF"""
         if self.encoding == FontEncoding.IDENTITY_H:
             return "/Identity-H"
         elif self.encoding == FontEncoding.IDENTITY_V:
@@ -739,7 +739,7 @@ class FontManager:
             if not font_data:
                 return None
 
-            # فشرده‌سازی داده‌های فونت
+            # Compression داده‌های فونت
             compressed_data = zlib.compress(font_data)
 
             # ایجاد دیکشنری فونت
@@ -867,7 +867,7 @@ class FontManager:
         return widths
 
     def get_font_resources_dict(self) -> dict:
-        """دریافت دیکشنری منابع فونت برای PDF"""
+        """دریافت دیکشنری منابع فونت For PDF"""
         resources = {'Font': {}}
 
         for font_key, font_info in self.fonts.items():
@@ -1232,7 +1232,7 @@ class FontManager:
             output.append("=" * 80)
             output.append("گزارش مدیریت فونت‌های PDF")
             output.append("=" * 80)
-            output.append(f"تاریخ: {self._get_current_date()}")
+            output.append(f"Date: {self._get_current_date()}")
             output.append(f"تعداد کل فونت‌ها: {stats['total_fonts']}")
             output.append(f"فونت‌های تعبیه شده: {stats['embedded_fonts']} ({stats['embedded_percentage']:.1f}%)")
             output.append(f"فونت‌های زیرمجموعه: {stats['subset_fonts']} ({stats['subset_percentage']:.1f}%)")
@@ -1344,7 +1344,7 @@ class FontManager:
         return font_list
 
     def validate_fonts(self) -> dict[str, list[str]]:
-        """اعتبارسنجی فونت‌های ثبت شده"""
+        """Validation فونت‌های ثبت شده"""
         validation_results = {
             'valid': [],
             'invalid': [],
@@ -1385,7 +1385,7 @@ class FontManager:
                 validation_results['valid'].append(font_key)
 
             except Exception as e:
-                validation_results['errors'].append(f"خطا در اعتبارسنجی فونت {font_key}: {str(e)}")
+                validation_results['errors'].append(f"خطا در Validation فونت {font_key}: {str(e)}")
                 validation_results['invalid'].append(font_key)
 
         return validation_results

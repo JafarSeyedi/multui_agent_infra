@@ -3,6 +3,6 @@ class GraphTraverser:
         self.graph = graph_index
 
     async def find_connections(self, start_entity: str, max_hops=2):
-        # الگوریتم جستجوی multi-hop برای پیدا کردن evidence‌های پنهان
+        # Search algorithm multi-hop for finding hidden evidence
         connections = self.graph.get_neighbors(start_entity, depth=max_hops)
         return connections

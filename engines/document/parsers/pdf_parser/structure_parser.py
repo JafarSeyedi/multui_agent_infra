@@ -1,5 +1,5 @@
 """
-ماژول تحلیل ساختاری PDF
+PDF Structure Analysis module
 """
 import logging
 import re
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class StructuralElementType(Enum):
-    """انواع عناصر ساختاری"""
+    """Types of structural elements"""
     TITLE = "title"
     HEADING = "heading"
     SUBHEADING = "subheading"

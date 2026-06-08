@@ -1,9 +1,9 @@
 #                 item_content_lines.append(elem_html.strip())
     #         elif isinstance(elem, str):
     #             item_content_lines.append(self._escape_html(elem))
-    #     # ترکیب محتوای آیتم
+    #     # Combine item content
     #     item_content = " ".join(item_content_lines)
-    #     # افزودن ویژگی‌ها
+    #     # Add attributes
     #     attrs = ""
     #     if content.metadata:
     #         if content.metadata.get("value"):
@@ -121,7 +121,7 @@
     #     if content.caption:
     #         caption_escaped = self._escape_html(content.caption)
     #         lines.append(f'    <caption>{caption_escaped}</caption>')
-    #     # پردازش سطرها
+    #     # Process rows
     #     in_header = False
     #     in_body = False
     #     in_footer = False
@@ -207,7 +207,7 @@
     #             cell_content = self._escape_html(cell.content)
     #     return f'        <{tag}{attrs}>{cell_content}</{tag}>'
     # def _format_metadata(self, metadata: Dict[str, Any]) -> str:
-    #     """قالب‌بندی metadata برای HTML"""
+    #     """قالب‌بندی metadata For HTML"""
     #     if not metadata:
     #         return ""
     #     attrs = []

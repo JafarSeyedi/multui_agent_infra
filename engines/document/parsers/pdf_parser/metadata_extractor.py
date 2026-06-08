@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-metadata_extractor.py - استخراج متادیتا از فایل‌های PDF
-ماژول استخراج اطلاعات متادیتا، XMP، و اطلاعات فنی PDF
+metadata_extractor.py - استخراج Metadata از فایل‌های PDF
+ماژول استخراج اطلاعات Metadata، XMP، و اطلاعات فنی PDF
 """
 import hashlib
 import json
@@ -46,7 +46,7 @@ except ImportError:
 
 
 class MetadataType(Enum):
-    """انواع متادیتا"""
+    """انواع Metadata"""
     BASIC = "basic"
     XMP = "xmp"
     TECHNICAL = "technical"
@@ -85,7 +85,7 @@ class PDFConformance(Enum):
 
 @dataclass
 class PDFMetadata:
-    """کلاس اصلی متادیتای PDF"""
+    """کلاس اصلی Metadataی PDF"""
 
     # اطلاعات پایه
     title: str | None = None
@@ -177,7 +177,7 @@ class PDFMetadata:
         return json.dumps(self.to_dict(), indent=indent, ensure_ascii=False)
 
     def get_summary(self) -> dict[str, Any]:
-        """دریافت خلاصه متادیتا"""
+        """دریافت خلاصه Metadata"""
         return {
             "title": self.title,
             "author": self.author,
@@ -191,11 +191,11 @@ class PDFMetadata:
 
 
 class PDFMetadataExtractor:
-    """کلاس اصلی استخراج متادیتا از PDF"""
+    """کلاس اصلی استخراج Metadata از PDF"""
 
     def __init__(self, pdf_path: str | None = None, pdf_bytes: bytes | None = None):
         """
-        مقداردهی اولیه استخراج‌کننده متادیتا
+        مقداردهی اولیه استخراج‌کننده Metadata
         
         Args:
             pdf_path: مسیر فایل PDF
@@ -212,7 +212,7 @@ class PDFMetadataExtractor:
             raise ValueError("یکی از pdf_path یا pdf_bytes باید مشخص شود")
 
     def extract_all(self) -> PDFMetadata:
-        """استخراج تمام متادیتاها"""
+        """استخراج تمام Metadataها"""
         try:
             # استخراج اطلاعات پایه
             self._extract_basic_metadata()
@@ -247,10 +247,10 @@ class PDFMetadataExtractor:
             return self.metadata
 
         except Exception as e:
-            raise PDFMetadataError(f"خطا در استخراج متادیتا: {str(e)}")
+            raise PDFMetadataError(f"خطا در استخراج Metadata: {str(e)}")
 
     def _extract_basic_metadata(self):
-        """استخراج متادیتای پایه"""
+        """استخراج Metadataی پایه"""
         if HAS_PYPDF2:
             self._extract_with_pypdf2()
         elif HAS_PIKEPDF:
@@ -408,7 +408,7 @@ class PDFMetadataExtractor:
             else:
                 data = self.pdf_bytes
 
-            # جستجوی متادیتا در داده‌های باینری
+            # جستجوی Metadata در داده‌های باینری
             self._scan_binary_for_metadata(data)
 
         except Exception as e:
@@ -493,7 +493,7 @@ class PDFMetadataExtractor:
             warnings.warn(f"خطا در استخراج اطلاعات امنیتی: {str(e)}")
 
     def _extract_xmp_metadata(self):
-        """استخراج متادیتای XMP"""
+        """استخراج Metadataی XMP"""
         try:
             if self.pdf_path:
                 with open(self.pdf_path, 'rb') as file:
@@ -657,16 +657,16 @@ class PDFMetadataExtractor:
             warnings.warn(f"خطا در استخراج اطلاعات انطباق: {str(e)}")
 
     def _extract_custom_metadata(self):
-        """استخراج متادیتای سفارشی"""
+        """استخراج Metadataی سفارشی"""
         try:
-            # جستجوی متادیتای سفارشی در کل فایل
+            # جستجوی Metadataی سفارشی در کل فایل
             if self.pdf_path:
                 with open(self.pdf_path, 'rb') as file:
                     data = file.read()
             else:
                 data = self.pdf_bytes
 
-            # الگوهای متادیتای سفارشی
+            # الگوهای Metadataی سفارشی
             patterns = {
                 'custom_metadata': rb'/(\w+)\s*\(([^)]+)\)',
                 'properties': rb'/<(\w+)>\s*\(([^)]+)\)',
@@ -680,7 +680,7 @@ class PDFMetadataExtractor:
                     self.metadata.custom_metadata[key] = value
 
         except Exception as e:
-            warnings.warn(f"خطا در استخراج متادیتای سفارشی: {str(e)}")
+            warnings.warn(f"خطا در استخراج Metadataی سفارشی: {str(e)}")
 
     def _extract_accessibility_metadata(self):
         """استخراج اطلاعات دسترسی"""
@@ -883,12 +883,12 @@ class PDFMetadataExtractor:
             warnings.warn(f"خطا در پارس XMP: {str(e)}")
 
     def _scan_binary_for_metadata(self, data: bytes):
-        """اسکن باینری برای یافتن متادیتا"""
+        """اسکن باینری برای یافتن Metadata"""
         try:
             # تبدیل به متن برای جستجو
             text = data.decode('latin-1', errors='ignore')
 
-            # جستجوی متادیتای استاندارد PDF
+            # جستجوی Metadataی استاندارد PDF
             patterns = {
                 'title': r'/Title\s*\(([^)]+)\)',
                 'author': r'/Author\s*\(([^)]+)\)',
@@ -961,11 +961,11 @@ class PDFMetadataExtractor:
 
 
 class PDFMetadataError(Exception):
-    """خطای استخراج متادیتای PDF"""
+    """خطای استخراج Metadataی PDF"""
 
 
 class MetadataExtractor:
-    """کلاس اصلی برای استخراج متادیتا"""
+    """کلاس اصلی برای استخراج Metadata"""
 
     @staticmethod
     def extract_from_file(
@@ -973,14 +973,14 @@ class MetadataExtractor:
         extract_types: list[MetadataType] | None = None
     ) -> dict[str, Any]:
         """
-        استخراج متادیتا از فایل
+        استخراج Metadata از فایل
         
         Args:
             pdf_path: مسیر فایل PDF
-            extract_types: لیست انواع متادیتا برای استخراج
+            extract_types: لیست انواع Metadata برای استخراج
             
         Returns:
-            دیکشنری حاوی متادیتاهای استخراج شده
+            دیکشنری حاوی Metadataهای استخراج شده
         """
         if extract_types is None:
             extract_types = [MetadataType.BASIC, MetadataType.TECHNICAL, MetadataType.XMP]
@@ -1061,14 +1061,14 @@ class MetadataExtractor:
         extract_types: list[MetadataType] | None = None
     ) -> dict[str, Any]:
         """
-        استخراج متادیتا از داده‌های بایت
+        استخراج Metadata از داده‌های بایت
         
         Args:
             pdf_bytes: داده‌های PDF به صورت بایت
-            extract_types: لیست انواع متادیتا برای استخراج
+            extract_types: لیست انواع Metadata برای استخراج
             
         Returns:
-            دیکشنری حاوی متادیتاهای استخراج شده
+            دیکشنری حاوی Metadataهای استخراج شده
         """
         if extract_types is None:
             extract_types = [MetadataType.BASIC, MetadataType.TECHNICAL, MetadataType.XMP]
@@ -1146,13 +1146,13 @@ class MetadataExtractor:
     @staticmethod
     def extract_summary(pdf_path: str) -> dict[str, Any]:
         """
-        استخراج خلاصه متادیتا
+        استخراج خلاصه Metadata
         
         Args:
             pdf_path: مسیر فایل PDF
             
         Returns:
-            دیکشنری حاوی خلاصه متادیتا
+            دیکشنری حاوی خلاصه Metadata
         """
         extractor = PDFMetadataExtractor(pdf_path=pdf_path)
         metadata = extractor.extract_all()
@@ -1167,13 +1167,13 @@ class MetadataExtractor:
     @staticmethod
     def validate_pdf(pdf_path: str) -> dict[str, Any]:
         """
-        اعتبارسنجی فایل PDF
+        Validation فایل PDF
         
         Args:
             pdf_path: مسیر فایل PDF
             
         Returns:
-            دیکشنری حاوی نتایج اعتبارسنجی
+            دیکشنری حاوی Results Validation
         """
         validation_result: dict[str, Any] = {
             "file_path": pdf_path,
@@ -1207,7 +1207,7 @@ class MetadataExtractor:
                     validation_result["errors"].append("فایل PDF معتبر نیست (هدر نادرست)")
                     return validation_result
 
-            # استخراج متادیتا برای اعتبارسنجی بیشتر
+            # استخراج Metadata برای Validation بیشتر
             extractor = PDFMetadataExtractor(pdf_path=pdf_path)
             metadata = extractor.extract_all()
 
@@ -1220,7 +1220,7 @@ class MetadataExtractor:
             if metadata.conformance:
                 validation_result["compliance"] = metadata.conformance
 
-            # بررسی خطاهای اعتبارسنجی
+            # بررسی خطاهای Validation
             if metadata.validation_errors:
                 validation_result["errors"].extend(metadata.validation_errors)
 
@@ -1244,21 +1244,21 @@ class MetadataExtractor:
                 validation_result["warnings"].append("PDF بدون ساختار منطقی")
 
         except Exception as e:
-            validation_result["errors"].append(f"خطا در اعتبارسنجی: {str(e)}")
+            validation_result["errors"].append(f"خطا در Validation: {str(e)}")
 
         return validation_result
 
     @staticmethod
     def compare_metadata(pdf_path1: str, pdf_path2: str) -> dict[str, Any]:
         """
-        مقایسه متادیتای دو فایل PDF
+        مقایسه Metadataی دو فایل PDF
         
         Args:
             pdf_path1: مسیر فایل PDF اول
             pdf_path2: مسیر فایل PDF دوم
             
         Returns:
-            دیکشنری حاوی نتایج مقایسه
+            دیکشنری حاوی Results مقایسه
         """
         extractor1 = PDFMetadataExtractor(pdf_path=pdf_path1)
         extractor2 = PDFMetadataExtractor(pdf_path=pdf_path2)
@@ -1334,14 +1334,14 @@ class MetadataExtractor:
 # توابع کمکی
 def extract_metadata(pdf_path: str, detailed: bool = False) -> dict[str, Any]:
     """
-    تابع ساده برای استخراج متادیتا
+    تابع ساده برای استخراج Metadata
     
     Args:
         pdf_path: مسیر فایل PDF
-        detailed: اگر True باشد، تمام متادیتا استخراج می‌شود
+        detailed: اگر True باشد، تمام Metadata استخراج می‌شود
         
     Returns:
-        دیکشنری حاوی متادیتا
+        دیکشنری حاوی Metadata
     """
     if detailed:
         extractor = PDFMetadataExtractor(pdf_path=pdf_path)
@@ -1353,14 +1353,14 @@ def extract_metadata(pdf_path: str, detailed: bool = False) -> dict[str, Any]:
 
 def batch_extract_metadata(pdf_files: list[str], output_format: str = 'json') -> list[dict[str, Any]]:
     """
-    استخراج متادیتا از چندین فایل PDF
+    استخراج Metadata از چندین فایل PDF
     
     Args:
         pdf_files: لیست مسیر فایل‌های PDF
         output_format: فرمت خروجی ('json' یا 'dict')
         
     Returns:
-        لیست دیکشنری‌های متادیتا
+        لیست دیکشنری‌های Metadata
     """
     results: list[dict[str, Any]] = []
 
@@ -1398,7 +1398,7 @@ def batch_extract_metadata(pdf_files: list[str], output_format: str = 'json') ->
 
 def export_metadata_to_json(pdf_path: str, output_path: str | None = None) -> str:
     """
-    صادر کردن متادیتا به فایل JSON
+    صادر کردن Metadata به فایل JSON
     
     Args:
         pdf_path: مسیر فایل PDF
@@ -1423,7 +1423,7 @@ def export_metadata_to_json(pdf_path: str, output_path: str | None = None) -> st
 
 def export_metadata_to_csv(pdf_files: list[str], output_path: str) -> str:
     """
-    صادر کردن متادیتای چندین فایل به CSV
+    صادر کردن Metadataی چندین فایل به CSV
     
     Args:
         pdf_files: لیست مسیر فایل‌های PDF
@@ -1500,13 +1500,13 @@ def export_metadata_to_csv(pdf_files: list[str], output_path: str) -> str:
 #         sys.exit(1)
 
 #     try:
-#         # استخراج متادیتا
+#         # استخراج Metadata
 #         extractor = PDFMetadataExtractor(pdf_path=pdf_path)
 #         metadata = extractor.extract_all()
 
 #         # نمایش خلاصه
 #         print("=" * 80)
-#         print("خلاصه متادیتای PDF")
+#         print("خلاصه Metadataی PDF")
 #         print("=" * 80)
 #         print(f"فایل: {os.path.basename(pdf_path)}")
 #         print(f"اندازه: {metadata.file_size:,} بایت")
@@ -1515,17 +1515,17 @@ def export_metadata_to_csv(pdf_files: list[str], output_path: str) -> str:
 #         print(f"عنوان: {metadata.title or 'ندارد'}")
 #         print(f"نویسنده: {metadata.author or 'ندارد'}")
 #         print(f"موضوع: {metadata.subject or 'ندارد'}")
-#         print(f"تاریخ ایجاد: {metadata.creation_date or 'ندارد'}")
+#         print(f"Creation date: {metadata.creation_date or 'ندارد'}")
 #         print(f"تاریخ ویرایش: {metadata.modification_date or 'ندارد'}")
 #         print(f"رمزگذاری شده: {'بله' if metadata.encrypted else 'خیر'}")
 #         print(f"انطباق: {metadata.conformance or 'ندارد'}")
 
 #         # ذخیره به JSON
 #         json_path = export_metadata_to_json(pdf_path)
-#         print(f"\nمتادیتا در فایل {json_path} ذخیره شد.")
+#         print(f"\nMetadata در فایل {json_path} ذخیره شد.")
 
 #     except Exception as e:
-#         print(f"خطا در استخراج متادیتا: {str(e)}")
+#         print(f"خطا در استخراج Metadata: {str(e)}")
 #         sys.exit(1)
 
 

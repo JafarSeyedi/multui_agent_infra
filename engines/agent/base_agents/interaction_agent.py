@@ -9,7 +9,7 @@ from .base_agent import BaseAgent
 
 class InteractionAgent(BaseAgent):
     """
-    Agent سطح بالا برای اجرای workflowهای چندعامله
+    High-level agent for executing multi-agent workflows
     """
 
     def __init__(self, id: str, name: str, agent_registry, message_bus: MessageBus | None):
@@ -22,11 +22,11 @@ class InteractionAgent(BaseAgent):
 
     async def run(self, payload: dict[str, Any]) -> dict[str, Any]:
 
-        # تبدیل ورودی به model
+        # Convert input to model
         request = InteractionRequest(**payload)
 
-        # اجرای استراتژی انتخاب‌شده
+        # Execute selected strategy
         result: InteractionResult = await self.backend.execute(request)
 
-        # خروجی باید raw dict باشد
+        # Output must be raw dict
         return result.model_dump()

@@ -26,7 +26,7 @@ class BroadcastStrategy(InteractionStrategy):
         coroutines = [self._execute_agent(agent, dict(context)) for agent in agents]
         raw_results = await asyncio.gather(*coroutines, return_exceptions=True)
 
-        # ✅ فیلتر با _normalize_gather_results - خطای broadcast 28/29
+        # ✅ Filter with _normalize_gather_results - broadcast error 28/29
         results: list[AgentOutput] = self._normalize_gather_results(raw_results)
 
         final_output = self._aggregate_outputs(results, mode)
@@ -90,12 +90,12 @@ class BroadcastStrategy(InteractionStrategy):
 
     @staticmethod
     def _normalize_gather_results(results: Iterable[Any]) -> list[AgentOutput]:
-        """✅ حل خطای assignment و extend - تبدیل Exception به AgentOutput"""
+        """✅ Fix assignment and extend error - convert Exception to AgentOutput"""
         normalized: list[AgentOutput] = []
         for item in results:
             if isinstance(item, AgentOutput):
                 normalized.append(item)
-            elif isinstance(item, BaseException):  # BaseException نه فقط Exception
+            elif isinstance(item, BaseException):  # BaseException not just Exception
                 normalized.append(
                     AgentOutput(
                         agent_id="unknown",

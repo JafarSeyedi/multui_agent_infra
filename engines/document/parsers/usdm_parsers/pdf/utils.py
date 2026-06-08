@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ماژول ابزارهای کمکی برای PDF Parser
+Helper Tools module for PDF Parser
 شامل توابع کاربردی برای پردازش متن، تصویر، و عملیات کمکی
 """
 import base64
@@ -583,13 +583,13 @@ class ImageUtils:
     @staticmethod
     def extract_image_metadata(image_data: bytes) -> dict[str, Any]:
         """
-        استخراج متادیتای تصویر
+        استخراج Metadataی تصویر
         
         Args:
             image_data: داده‌های تصویر
             
         Returns:
-            دیکشنری متادیتا
+            دیکشنری Metadata
         """
         metadata: dict[str, Any] = {
             'format': None,
@@ -646,7 +646,7 @@ class ImageUtils:
                             metadata['exif'][tag_name] = exif[tag_id]
 
         except Exception as e:
-            warnings.warn(f"خطا در استخراج متادیتای تصویر: {e}")
+            warnings.warn(f"خطا در استخراج Metadataی تصویر: {e}")
 
         return metadata
 
@@ -816,7 +816,7 @@ class FileUtils:
 
 
 class ValidationUtils:
-    """ابزارهای اعتبارسنجی"""
+    """ابزارهای Validation"""
 
     @staticmethod
     def is_valid_pdf(filepath: str) -> tuple[bool, str]:
@@ -887,7 +887,7 @@ class ValidationUtils:
     def validate_bbox(bbox: tuple[float, float, float, float],
                      page_size: tuple[float, float]) -> bool:
         """
-        اعتبارسنجی محدوده (Bounding Box)
+        Validation محدوده (Bounding Box)
         
         Args:
             bbox: محدوده (x0, y0, x1, y1)
@@ -1140,6 +1140,6 @@ class Logger:
 #     print(f"   مساحت: {bbox.area}")
 #     print(f"   مرکز: {bbox.center}")
 
-#     print("\n📊 تست اعتبارسنجی:")
+#     print("\n📊 تست Validation:")
 #     is_valid, msg = ValidationUtils.is_valid_pdf("test.pdf")
 #     print(f"   اعتبار PDF: {is_valid} - {msg}")

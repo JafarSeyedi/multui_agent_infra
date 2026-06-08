@@ -6,7 +6,7 @@ from ...models import AgentInput
 from ...models import AgentOutput
 
 
-# Agent1: بازنویس متون (Text Rewriter)
+# Agent1: Text Rewriter (Text Rewriter)
 ## Input
 class TextRewriteInput(AgentInput):
 
@@ -39,7 +39,7 @@ class TextRewriteOutput(AgentOutput):
     created_at: datetime
 
 
-# Agent2 اعتبارسنج محتوا (Content Validator)
+# Agent2 Content Validator
 ## Input
 class ContentValidationInput(AgentInput):
 

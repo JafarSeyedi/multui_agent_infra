@@ -5,9 +5,9 @@ from abc import abstractmethod
 from engines.knowledge.rag.retrieval.retriever_result import RetrievalResult
 
 class BaseRetriever(ABC):
-    """قرارداد مشترک تمام Retriever ها"""
+    """Common contract for all Retrievers"""
 
     @abstractmethod
     async def search(self, query: str, top_k: int = 10) -> list[RetrievalResult]:
-        """جستجو و برگرداندن نتایج"""
+        """Search and return Results"""
         ...

@@ -3,7 +3,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from engines.buses.in_memory_message_bus import InMemoryMessageBus
+from engines.communication.buses.in_memory_message_bus import InMemoryMessageBus
 
 
 @pytest.mark.asyncio

@@ -1,5 +1,5 @@
 # 1️⃣ Key‑Value
-## برای:
+## For:
 
 state
 session
@@ -8,7 +8,7 @@ config
 short memory
 
 # 2️⃣ Relational
-## برای:
+## For:
 
 users
 workflow
@@ -17,7 +17,7 @@ transactions
 structured data
 
 # 3️⃣ Object / Blob
-## برای:
+## For:
 
 PDF
 DOCX
@@ -29,34 +29,34 @@ video
 فایل خام.
 
 # 4️⃣ Vector
-## برای:
+## For:
 
 embeddings
 semantic search
 similarity
 
 # 5️⃣ Graph
-## برای:
+## For:
 
 knowledge graph
 entity relationships
 
 # 6️⃣ Time‑Series
-## برای:
+## For:
 
 metrics
 observability
 events timeline
 
 # 7️⃣ Log / Event Stream
-## برای:
+## For:
 
 event sourcing
 message replay
 pipelines
 
 # 8️⃣ Cache
-## برای:
+## For:
 
 temporary computed data
 fast retrieval
@@ -105,7 +105,7 @@ PostgreSQL
 MongoDB
 
 # 3️⃣ Vector Storage
-## برای:
+## For:
 
 embeddings
 semantic search
@@ -118,7 +118,7 @@ Pinecone
 FAISS
 
 # 4️⃣ Graph Storage
-## برای:
+## For:
 
 knowledge graph
 entity relations
@@ -129,7 +129,7 @@ Neo4j
 ArangoDB
 
 # 5️⃣ Cache / Streams
-## برای:
+## For:
 
 events
 queues

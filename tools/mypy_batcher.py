@@ -2,12 +2,12 @@ import re
 from pathlib import Path
 from collections import defaultdict
 
-# ═════════════════ تنظیمات ═════════════════
+# ═════════════════ Settings ═════════════════
 BATCH_SIZE = 5
 ERRORS_FILE = Path("mypy_errors.txt")
 PROMPTS_DIR = Path("prompts")
 
-# الگوی خطاهای mypy
+# mypy error patterns
 ERROR_PATTERN = re.compile(
     r"(?P<file>.*?):(?P<line>\d+): error: (?P<msg>.*?) \[(?P<code>.*?)\]"
 )

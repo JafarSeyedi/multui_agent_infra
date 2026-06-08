@@ -1,5 +1,5 @@
 """
-font_handler.py - مدیریت فونت‌های فارسی در PDF
+font_handler.py - Managing Persian fonts in PDF
 
 این ماژول مسئولیت استخراج، تحلیل و مدیریت فونت‌های فارسی در فایل‌های PDF را بر عهده دارد.
 """
@@ -116,17 +116,17 @@ class FontInfo:
     char_count: int = 0
     is_subset: bool = False
 
-    # متادیتا
+    # Metadata
     metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class FontAnalysisResult:
-    """نتایج تحلیل فونت‌ها"""
+    """Results تحلیل فونت‌ها"""
     # لیست فونت‌ها
     fonts: list[FontInfo] = field(default_factory=list)
 
-    # آمار کلی
+    # Overall Statistics
     total_fonts: int = 0
     embedded_fonts: int = 0
     subset_fonts: int = 0
@@ -249,7 +249,7 @@ class FontHandler:
             pdf_path: مسیر فایل PDF
             
         Returns:
-            FontAnalysisResult: نتایج تحلیل فونت‌ها
+            FontAnalysisResult: Results تحلیل فونت‌ها
         """
         logger.info(f"استخراج فونت‌ها از فایل: {pdf_path}")
 
@@ -291,7 +291,7 @@ class FontHandler:
         Args:
             page: صفحه PDF
             page_num: شماره صفحه
-            result: شیء نتایج
+            result: شیء Results
         """
         try:
             # استخراج منابع صفحه
@@ -752,7 +752,7 @@ class FontHandler:
         تحلیل فونت‌های استخراج شده
         
         Args:
-            result: شیء نتایج
+            result: شیء Results
         """
         result.total_fonts = len(result.fonts)
 
@@ -814,7 +814,7 @@ class FontHandler:
         
         Args:
             pdf_path: مسیر فایل PDF
-            result: شیء نتایج
+            result: شیء Results
         """
         logger.info("استفاده از روش fallback برای استخراج فونت‌ها")
 

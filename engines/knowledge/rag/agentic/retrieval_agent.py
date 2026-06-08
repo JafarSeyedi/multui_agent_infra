@@ -17,14 +17,14 @@ class RetrievalAgent:
 
         for _ in range(self.max_steps):
 
-            # ✅ استفاده از raw retrieval
+            # ✅ Using raw retrieval
             results = await vector_service.raw_retrieve(
                 query=current_query,
                 top_k=top_k,
                 filters=filters
             )
 
-            # ✅ تبدیل به agentic evidence
+            # ✅ Convert to agentic evidence
             for r in results:
 
                 r.source = "agentic"

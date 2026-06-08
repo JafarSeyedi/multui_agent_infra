@@ -1,5 +1,5 @@
 """
-ماژول تحلیل لایه‌بندی PDF
+PDF layout Analysis module
 """
 import logging
 from collections import defaultdict
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class LayoutBlock:
-    """بلوک لایه‌بندی"""
+    """Layout block"""
     id: str
     bbox: tuple[float, float, float, float]  # x0, y0, x1, y1
     content_type: str  # 'text', 'image', 'table', 'header', 'footer', 'sidebar'

@@ -2,7 +2,7 @@
 from datetime import datetime
 
 from .base_backend import BaseOrchestrationBackend
-from engines.buses.base_message_bus import MessageBus
+from engines.communication.buses.base_message_bus import MessageBus
 from engines.interaction.base_strategy import InteractionStrategy
 from engines.interaction.broadcast_strategy import BroadcastStrategy
 from engines.interaction.coordinator_strategy import CoordinatorStrategy
@@ -13,10 +13,10 @@ from engines.interaction.interaction_models import InteractionRequest
 from engines.interaction.interaction_models import InteractionResult
 from engines.interaction.round_robin_strategy import RoundRobinStrategy
 from engines.interaction.self_refine_strategy import SelfRefineStrategy
-# import همه استراتژی‌ها
+# import all strategies
 
 
-# نگاشت سناریو → کلاس استراتژی
+# Scenario to Strategy class mapping
 STRATEGY_REGISTRY: dict[str, type[InteractionStrategy]] = {
     "broadcast":         BroadcastStrategy,
     "round_robin":       RoundRobinStrategy,
@@ -40,7 +40,7 @@ class NativeOrchestrationBackend(BaseOrchestrationBackend):
         self.message_bus = message_bus
         self.storage = storage
 
-        # امکان override کردن استراتژی‌ها از بیرون (برای تست یا توسعه)
+        # Ability to override strategies externally (for testing or development)
         self._strategy_map = {**STRATEGY_REGISTRY, **(strategy_overrides or {})}
 
     def _build_strategy(self, scenario: str) -> InteractionStrategy:
@@ -61,7 +61,7 @@ class NativeOrchestrationBackend(BaseOrchestrationBackend):
 
         completed_at = datetime.utcnow()
 
-        # اطمینان از پر بودن فیلدهای tracking
+        # Ensure tracking fields are filled
         return result.model_copy(
             update={
                 "workflow_id": request.workflow_id,

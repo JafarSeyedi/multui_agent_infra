@@ -18,7 +18,7 @@ from .utils import UnitConverter
 
 @dataclass
 class TextState:
-    """وضعیت متن برای PDF"""
+    """وضعیت متن For PDF"""
     font_name: str = "/F1"
     font_size: float = 12.0
     color: tuple[float, float, float] = (0.0, 0.0, 0.0)  # RGB
@@ -108,7 +108,7 @@ class ContentWriter:
         stream.write(b"ET\n")
 
     def _encode_pdf_text(self, text: str, language: str | None = "en") -> str:
-        """کدگذاری متن برای PDF با پشتیبانی از فارسی"""
+        """کدگذاری متن For PDF با پشتیبانی از فارسی"""
         if not text:
             return ""
 

@@ -7,7 +7,7 @@ from functools import cached_property
 from ...agents.models import AgentOutput
 from .base_backend import BaseOrchestrationBackend
 from .native_backend import NativeOrchestrationBackend
-from engines.buses.base_message_bus import MessageBus
+from engines.communication.buses.base_message_bus import MessageBus
 from engines.interaction.base_strategy import InteractionStrategy
 from engines.interaction.interaction_models import InteractionRequest
 from engines.interaction.interaction_models import InteractionResult
@@ -17,7 +17,7 @@ class AutoGenOrchestrationBackend(BaseOrchestrationBackend):
     """
     AutoGen backend wrapper.
 
-    اگر autogen نصب نباشد، به native backend fallback می‌کند.
+    If autogen is not installed, falls back to native backend.
     """
 
     def __init__(
@@ -85,13 +85,13 @@ class AutoGenOrchestrationBackend(BaseOrchestrationBackend):
             {"model": "gpt-4"}
         )
 
-        # 2) system_message را از metadata/context بگیر
+        # 2) Get system_message from metadata/context
         default_system = request.metadata.get(
             "default_system_message",
             "You are an AI assistant in a multi-agent conversation."
         )
 
-        # 3) ساخت AutoGen agents
+        # 3) Build AutoGen agents
         autogen_agents: list[autogen.AssistantAgent] = []
 
         for agent_spec in request.agents:
@@ -109,7 +109,7 @@ class AutoGenOrchestrationBackend(BaseOrchestrationBackend):
             )
             autogen_agents.append(a)
 
-        # 4) ساخت GroupChat
+        # 4) Build GroupChat
         group_chat = autogen.GroupChat(
             agents=autogen_agents,
             messages=[],
@@ -129,7 +129,7 @@ class AutoGenOrchestrationBackend(BaseOrchestrationBackend):
             message=str(initial_message),
         )
 
-        # 6) نتایج
+        # 6) Results
         chat_messages = group_chat.messages
         results: list[AgentOutput] = []
 

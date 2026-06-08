@@ -1,5 +1,5 @@
 """
-سازنده layout صفحات PDF
+PDF page layout builder
 """
 import math
 from dataclasses import dataclass
@@ -12,7 +12,7 @@ from .utils import UnitConverter
 
 @dataclass
 class PageLayout:
-    """طرح‌بندی صفحه"""
+    """Page layout"""
     page_number: int
     width: float
     height: float
@@ -44,7 +44,7 @@ class PageLayout:
 
 
 class LayoutBuilder:
-    """سازنده layout صفحات PDF"""
+    """PDF page layout builder"""
 
     def __init__(self, unit_converter: UnitConverter):
         self.unit_converter = unit_converter

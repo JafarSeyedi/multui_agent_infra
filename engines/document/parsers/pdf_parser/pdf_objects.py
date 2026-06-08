@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-pdf_objects.py - کلاس‌های اشیاء PDF برای پارسر
+pdf_objects.py - PDF object classes for parser
 پیاده‌سازی کامل مدل اشیاء PDF مطابق با استاندارد PDF 1.7
 """
 import re
@@ -76,7 +76,7 @@ class PDFTextRenderingMode(Enum):
 
 
 class PDFError(Exception):
-    """خطای پایه برای PDF"""
+    """خطای پایه For PDF"""
 
 
 class PDFParseError(PDFError):
@@ -84,7 +84,7 @@ class PDFParseError(PDFError):
 
 
 class PDFValidationError(PDFError):
-    """خطای اعتبارسنجی PDF"""
+    """خطای Validation PDF"""
 
 
 @dataclass

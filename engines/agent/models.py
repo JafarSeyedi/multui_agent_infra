@@ -39,10 +39,10 @@ class AgentDefinition(BaseModel):
 class AgentInput(BaseModel):
     agent_name: str
 
-    # پیام اصلی یا هدف
+    # Main message or Objective
     message: str | None = None
 
-    # ورودی‌های ساخت‌یافته
+    # Structured inputs
     payload: dict[str, Any] = Field(default_factory=dict)
 
     # کانتکست مشترک (shared context)
