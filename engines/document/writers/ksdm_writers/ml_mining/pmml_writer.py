@@ -1,19 +1,21 @@
-import xml.etree.ElementTree as ET
-from pathlib import Path
-from typing import Any, cast, BinaryIO, TextIO
+from __future__ import annotations
 
-from engines.document.writers.base import BaseDocumentWriter, BaseDocument
-from engines.document.models.media_types import MEDIA_TYPES
+import xml.etree.ElementTree as ET
+from collections.abc import AsyncIterator
+from pathlib import Path
+from typing import Any, BinaryIO, TextIO, cast
+
 from engines.document.models.ksdm_models import MlMiningDocument
+from engines.document.writers.base import BaseDocument, BaseDocumentWriter
 
 
 class PmmlWriter(BaseDocumentWriter):
-    supported_format = MEDIA_TYPES["pmml_xml"]
+    supported_format = None
 
     def can_write(self, document) -> bool:
         return isinstance(document, MlMiningDocument)
 
-    async def write(self, document: BaseDocument, destination: str | Path | BinaryIO | TextIO | None = None, **options: Any) -> bytes:
+    def write(self, document: BaseDocument, destination: str | Path | BinaryIO | TextIO | None = None, **options: Any) -> bytes:
         pmml_ns = 'http://www.dmg.org/PMML-4_2'
         root = ET.Element('PMML')
         root.set('version', '4.2')
@@ -45,3 +47,15 @@ class PmmlWriter(BaseDocumentWriter):
             else:
                 cast(BinaryIO, destination).write(xml_bytes)
         return xml_bytes
+
+    async def write_stream(self, document: BaseDocument) -> AsyncIterator[bytes]:
+        yield self.write(document)
+
+    async def write_to_file(self, document: BaseDocument, target: Path, options: dict[str, Any] | None = None) -> None:
+        target.write_bytes(self.write(document))
+
+    def get_supported_media_types(self) -> list[str]:
+        return ["application/xml"]
+
+    def get_supported_extensions(self) -> list[str]:
+        return [".pmml"]

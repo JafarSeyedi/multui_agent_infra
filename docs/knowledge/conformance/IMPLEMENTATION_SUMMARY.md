@@ -77,7 +77,24 @@
 - EntityExtractor class - Rule-based entity extraction
 - RelationExtractor class - Rule-based relation extraction
 
-### 5. Compliance Documentation
+### 5a. LSDM (Log Standard Definition Model)
+
+- New `lsdm_models.py` with `EventLogDocument`, `LogEvent`, XES/Syslog/CEF/ES models
+- `lsdm_parsers/` (xes, syslog, cef, es_bulk) — all inherit `BaseDocumentParser`
+- `lsdm_writers/` (xes, syslog, cef, es_bulk) — all inherit `BaseDocumentWriter`
+- Added `SYSLOG`, `CEF`, `ES_BULK` to `DocumentFormat` and `MEDIA_TYPES`
+
+### 5b. Agentic BPMN Extension (OSDM)
+
+- 6 new enums: `ReflectionStrategy`, `CollaborationStrategyType`, `MergeStrategyType`, `VotingRule`, `RoleStrategyType`, `CompetitionRule`
+- 5 new strategy config dataclasses: `VotingConfig`, `RoleConfig`, `CompetitionConfig`, `CollaborationStrategy`, `MergeStrategy`
+- 5 new BPMN element subclasses: `AgenticTask(Task)`, `AgenticLane(Lane)`, `DivergingAgenticGateway(Gateway)`, `MergingAgenticGateway(Gateway)`, `AgenticMessageFlow(MessageFlow)`
+- All 16 new symbols exported from `engines.document.models`
+- Full design documentation in `docs/orchestration/agentic_bpmn_extension.md`
+- BPMN 2.0 extension compliance in `docs/orchestration/compliance/COMPLIANCE_AGENTIC_BPMN.md`
+- Interaction layer overlap analysis in `docs/orchestration/compliance/COMPARISON_AGENTIC_BPMN.md`
+
+### 6. Compliance Documentation
 
 - `COMPLIANCE.md` - Main compliance document
 - `COMPLIANCE_MODELS.md` - Models vs reference standards compliance

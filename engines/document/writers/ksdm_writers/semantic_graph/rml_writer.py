@@ -1,19 +1,22 @@
-import yaml
+from __future__ import annotations
+
+from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Any, BinaryIO, TextIO
 
-from engines.document.writers.base import BaseDocumentWriter, BaseDocument
-from engines.document.models.media_types import MEDIA_TYPES
+import yaml
+
 from engines.document.models.ksdm_models import KsdDocument
+from engines.document.writers.base import BaseDocument, BaseDocumentWriter
 
 
 class RmlWriter(BaseDocumentWriter):
-    supported_format = MEDIA_TYPES["rml_yaml"]
+    supported_format = None
 
     def can_write(self, document) -> bool:
         return isinstance(document, KsdDocument) and bool(getattr(document, 'rml_mappings', []))
 
-    async def write(self, document: BaseDocument, destination: str | Path | BinaryIO | TextIO | None = None, **options: Any) -> bytes:
+    def write(self, document: BaseDocument, destination: str | Path | BinaryIO | TextIO | None = None, **options: Any) -> bytes:
         mappings = []
         for m in getattr(document, 'rml_mappings', []):
             mapping = {'baseIRI': m.base_iri, 'prefixes': dict(m.prefixes)}
@@ -57,3 +60,15 @@ class RmlWriter(BaseDocumentWriter):
             else:
                 destination.write(output_bytes.decode('utf-8'))  # type: ignore
         return output_bytes
+
+    async def write_stream(self, document: BaseDocument) -> AsyncIterator[bytes]:
+        yield self.write(document)
+
+    async def write_to_file(self, document: BaseDocument, target: Path, options: dict[str, Any] | None = None) -> None:
+        target.write_bytes(self.write(document))
+
+    def get_supported_media_types(self) -> list[str]:
+        return ["application/x-yaml"]
+
+    def get_supported_extensions(self) -> list[str]:
+        return [".rml.yaml", ".rml.yml"]

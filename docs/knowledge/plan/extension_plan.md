@@ -5,11 +5,13 @@ Generated: 2026-06-05
 ## Current State Summary
 The Knowledge Layer has been reorganized into `engines/knowledge/` with:
 - 3 complete document model hierarchies (BI Aggregation, ML Mining, Process Mining + KSDM)
+- LSDM model and parsers/writers (XES, Syslog, CEF, ES Bulk)
 - 12 parser stubs + partial implementations
 - 11 writer stubs + partial implementations
 - 7 runtime engine skeletons
 - Unified Graph Engine integrating RAG graph and Semantic Graph
-- 38 passing tests
+- Agentic BPMN extension in OSDM (5 new element classes, 6 enums, 5 config dataclasses)
+- 19 passing tests
 
 ---
 
@@ -160,3 +162,32 @@ The Knowledge Layer has been reorganized into `engines/knowledge/` with:
 - [ ] Integration tests for end-to-end parser→engine→writer pipelines
 - [ ] Performance benchmarks for graph operations
 - [ ] User guides for each engine domain
+
+---
+
+## Agentic BPMN Roadmap (OSDM)
+
+### Current (Completed)
+- [x] AgenticTask with reflection strategy and agent binding
+- [x] AgenticLane with agent metadata (capabilities, model provider, system prompt)
+- [x] DivergingAgenticGateway / MergingAgenticGateway with strategy configs
+- [x] AgenticMessageFlow with communication protocol
+- [x] Design documentation and compliance/overlap docs
+
+### Phase A: Runtime Compiler (Next Sprint)
+- [ ] Compiler: `AgenticTask` + `DivergingAgenticGateway` → `NativeOrchestrationBackend.execute(InteractionRequest)`
+- [ ] Compiler: `MergeStrategy` → result aggregation in `InteractionResult`
+- [ ] Compiler: `AgenticLane` → agent registration in `InteractionStrategy` registry
+
+### Phase B: Visual Notation & Serialization (Target: +2 Sprints)
+- [ ] Define BPMN 2.0 extension namespace for agentic attributes
+- [ ] XML serialization via `extensionElements`
+- [ ] Custom BPMN shape markers for agentic elements
+
+### Phase C: Simplification (Future)
+- [ ] Evaluate `AgenticTask` overload — consider `AgentTask` / `SkillTask` / `AgentInteractionTask` split
+- [ ] Dynamic agent discovery (capability-based `agent_ids` resolution)
+
+### Phase D: Integration
+- [ ] Wire `InteractionStrategy` enum in `osdm_models.py` to `engines.interaction.strategy_registry`
+- [ ] Remove duplicate `InteractionStrategy` enum (replace with shared constant or import)

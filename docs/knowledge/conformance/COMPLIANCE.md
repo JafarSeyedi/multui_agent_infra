@@ -190,8 +190,25 @@ The knowledge engines follow Model Driver Architecture (MDA2) where:
 - Coverage: models, parsers, writers, engines
 - Legacy tests: `tests/document/test_isdm_*.py`, `test_ksdm_*.py` remain unchanged
 
-## 10. Integration Points
+## 10. OSDM Agentic BPMN Extension Compliance
+
+The agentic BPMN extension is defined in `engines/document/models/osdm_models.py` and follows the BPMN 2.0 extension mechanism (§14):
+
+| Element | BPMN 2.0 Compliant | Extension Type |
+|---|---|---|
+| `AgenticTask` | ✅ | Standard extension of `Task` (§8.5) |
+| `AgenticLane` | ✅ | Standard extension of `Lane` (§11.1) |
+| `DivergingAgenticGateway` | ⚠️ | Extension of `Gateway` (§10.5) with custom routing |
+| `MergingAgenticGateway` | ⚠️ | Extension of `Gateway` (§10.5) with custom merge |
+| `AgenticMessageFlow` | ✅ | Standard extension of `MessageFlow` (§15.2.2) |
+
+All classes inherit full BPMN 2.0 semantics from their parents. Gateway extensions require custom runtime logic beyond standard XOR/AND semantics.
+
+See `docs/orchestration/compliance/COMPLIANCE_AGENTIC_BPMN.md` for full per-element compliance details.
+
+## 11. Integration Points
 - Memory integrates with graph via shared `UnifiedGraphEngine`
 - RAG integration preserved via `KnowledgeRagEngine` re-export
 - Semantic graph merged with RAG graph into unified `UnifiedGraphEngine`
 - All parsers/writers register via `BaseDocumentParser`/`BaseDocumentWriter` contracts
+- Agentic BPMN elements integrate with `engines/interaction/` at runtime via future compiler adapter

@@ -106,6 +106,7 @@ class DocumentFormat(str, Enum):
     PMML_XML = "pmml_xml"
     ONNX_PROTOBUF = "onnx_protobuf"
     RDF_TURTLE = "rdf_turtle"
+    RML_YAML = "rml_yaml"
     
     # LSDM formats
     XES_XML = "xes_xml"
@@ -888,6 +889,15 @@ MEDIA_TYPES: dict[str, MediaType] = {
         kind=MediaContentKind.KNOWLEDGE_EXTRACTION_DEFINITION,
         raw_type=MediaRawType.TEXT, 
         description="Open Neural Network Exchange",
+    ),
+    "rml_yaml": MediaType(
+        mime="application/x-yaml",
+        format=DocumentFormat.RML_YAML,
+        standard=DocumentStandard.KSDM,
+        extensions=[".rml.yaml", ".rml.yml"],
+        kind=MediaContentKind.KNOWLEDGE_EXTRACTION_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="RDF Mapping Language (YAML)",
     ),
     "rdf_turtle": MediaType(
         mime="text/turtle",

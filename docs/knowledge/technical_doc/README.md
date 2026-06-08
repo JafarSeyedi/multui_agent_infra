@@ -218,11 +218,33 @@ Memory stores use `UnifiedGraphEngine` as shared graph substrate.
 
 ---
 
-## 8. Extension Points
+## 8. OSDM Agentic BPMN Extension
+
+The OSDM model (`engines/document/models/osdm_models.py`) has been extended with **agentic BPMN elements** that subclass standard BPMN 2.0 types:
+
+| Agentic Class | BPMN Base | Extension |
+|---|---|---|
+| `AgenticTask` | `Task` | Reflection strategy, agent binding, trust threshold |
+| `AgenticLane` | `Lane` | Agent ID, capabilities, model provider, system prompt |
+| `DivergingAgenticGateway` | `Gateway` | Collaboration strategy (voting/role/debate/competition) |
+| `MergingAgenticGateway` | `Gateway` | Merge strategy (majority/leader/fastest) |
+| `AgenticMessageFlow` | `MessageFlow` | Agent communication protocol, reflection toggle |
+
+Strategy config objects (`CollaborationStrategy`, `MergeStrategy`, `VotingConfig`, `RoleConfig`, `CompetitionConfig`) are plain `@dataclass` values embedded in gateway elements.
+
+### Relationship with Interaction Layer
+
+The BPMN extension models **what** collaboration pattern to use (design-time), while `engines/interaction/` provides the runtime strategy execution (**how**). The `InteractionStrategy` enum in `osdm_models.py` mirrors `engines/interaction/` scenario names for future compiler integration.
+
+See `docs/orchestration/agentic_bpmn_extension.md` for full design rationale and `docs/orchestration/compliance/COMPARISON_AGENTIC_BPMN.md` for overlap analysis.
+
+---
+
+## 9. Extension Points
 
 ### Adding a New Format
 
-1. **Define model** in `engines/knowledge/models/isdm_models.py` or `ksdm_models.py`
+1. **Define model** in `engines/knowledge/models/ksdm_models.py` or `lsdm_models.py`
 2. **Add media type** to `engines/knowledge/models/media_types.py`
 3. **Create parser** in `engines/knowledge/parsers/{category}/`
 4. **Create writer** in `engines/knowledge/writers/{category}/`

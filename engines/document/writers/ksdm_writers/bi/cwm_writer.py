@@ -1,23 +1,25 @@
+from __future__ import annotations
+
 import xml.etree.ElementTree as ET
+from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Any, BinaryIO, TextIO, cast
 
-from engines.document.writers.base import BaseDocumentWriter, BaseDocument
-from engines.document.models.media_types import MEDIA_TYPES
 from engines.document.models.ksdm_models import (
     BiAggregationDocument,
     BiAggregationKind,
     CwmSchema,
 )
+from engines.document.writers.base import BaseDocument, BaseDocumentWriter
 
 
 class CwmWriter(BaseDocumentWriter):
-    supported_format = MEDIA_TYPES["cwm_xmi"]
+    supported_format = None
 
     def can_write(self, document) -> bool:
         return isinstance(document, BiAggregationDocument) and document.bi_aggregation_kind == BiAggregationKind.CWM_WAREHOUSE
 
-    async def write(self, document: BaseDocument, destination: str | Path | BinaryIO | TextIO | None = None, **options: Any) -> bytes:
+    def write(self, document: BaseDocument, destination: str | Path | BinaryIO | TextIO | None = None, **options: Any) -> bytes:
         schema = getattr(document, 'cwm_schema', CwmSchema())
         root = ET.Element('XMI')
         root.set('xmlns:xmi', 'http://www.omg.org/XMI')
@@ -54,3 +56,15 @@ class CwmWriter(BaseDocumentWriter):
             else:
                 cast(BinaryIO, destination).write(xml_bytes)
         return xml_bytes
+
+    async def write_stream(self, document: BaseDocument) -> AsyncIterator[bytes]:
+        yield self.write(document)
+
+    async def write_to_file(self, document: BaseDocument, target: Path, options: dict[str, Any] | None = None) -> None:
+        target.write_bytes(self.write(document))
+
+    def get_supported_media_types(self) -> list[str]:
+        return ["application/xml"]
+
+    def get_supported_extensions(self) -> list[str]:
+        return [".xmi", ".cwm"]
