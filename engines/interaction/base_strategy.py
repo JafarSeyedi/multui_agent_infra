@@ -4,8 +4,8 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from ..agents.models import AgentInput
-from ..agents.models import AgentOutput
+from ..agent.models import AgentInput
+from ..agent.models import AgentOutput
 from ..communication.buses.base_message_bus import MessageBus
 from .interaction_models import AgentMessage
 

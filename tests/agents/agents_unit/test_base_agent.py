@@ -1,9 +1,9 @@
 # tests/agents/unit/test_base_agent.py
 import pytest
 
-from engines.agents.base_agents.base_agent import BaseAgent
-from engines.agents.models import AgentInput
-from engines.agents.models import AgentOutput
+from engines.agent.base_agents.base_agent import BaseAgent
+from engines.agent.models import AgentInput
+from engines.agent.models import AgentOutput
 
 
 class InputModel(AgentInput):
@@ -35,7 +35,7 @@ async def test_run_validates_and_logs_success(monkeypatch):
     async def fake_log(self, *args, **kwargs):
         log_calls.append(kwargs)
 
-    monkeypatch.setattr("engines.agents.base_agent.BaseAgent._log_execution", fake_log)
+    monkeypatch.setattr("engines.agent.base_agents.base_agent.BaseAgent._log_execution", fake_log)
 
     result = await agent.run({"value": 3})
 
@@ -52,7 +52,7 @@ async def test_run_logs_failure_and_raises(monkeypatch):
     async def fake_log(self, *args, **kwargs):
         log_calls.append(kwargs)
 
-    monkeypatch.setattr("engines.agents.base_agent.BaseAgent._log_execution", fake_log)
+    monkeypatch.setattr("engines.agent.base_agents.base_agent.BaseAgent._log_execution", fake_log)
 
     with pytest.raises(RuntimeError):
         await agent.run({"value": 1})
@@ -68,7 +68,7 @@ def test_run_sync_outside_event_loop(monkeypatch):
     async def fake_log(*args, **kwargs):
         pass # intentionally empty
 
-    monkeypatch.setattr("engines.agents.base_agent.BaseAgent._log_execution", fake_log)
+    monkeypatch.setattr("engines.agent.base_agents.base_agent.BaseAgent._log_execution", fake_log)
 
     result = agent.run_sync({"value": 5})
     assert result.doubled == 10
@@ -81,7 +81,7 @@ async def test_run_sync_inside_running_loop_raises(monkeypatch):
     async def fake_log(*args, **kwargs):
         pass # intentionally empty
 
-    monkeypatch.setattr("engines.agents.base_agent.BaseAgent._log_execution", fake_log)
+    monkeypatch.setattr("engines.agent.base_agents.base_agent.BaseAgent._log_execution", fake_log)
 
     with pytest.raises(RuntimeError):
         agent.run_sync({"value": 2})

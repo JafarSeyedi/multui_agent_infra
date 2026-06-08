@@ -1,6 +1,6 @@
 from typing import Any
 
-from ..agents.models import AgentOutput
+from ..agent.models import AgentOutput
 from .base_strategy import InteractionStrategy
 from .interaction_models import InteractionRequest
 from .interaction_models import InteractionResult

@@ -9,7 +9,7 @@ from typing import Any
 from xml.etree.ElementTree import Element
 from xml.etree.ElementTree import SubElement
 
-from .pptx_writer.constants import NAMESPACES
+from .psdm_writers.pptx.constants import NAMESPACES
 
 A = f"{{{NAMESPACES['a']}}}"
 R = f"{{{NAMESPACES['r']}}}"

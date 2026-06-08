@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections import Counter
 from typing import Any
 
-from ..agents.models import AgentOutput
+from ..agent.models import AgentOutput
 from ..communication.buses.base_message_bus import MessageBus
 from .base_strategy import InteractionStrategy
 from .interaction_models import AgentMessage

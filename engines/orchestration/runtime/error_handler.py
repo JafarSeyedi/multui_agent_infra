@@ -150,7 +150,7 @@ class CrossLayerErrorHandler:
         escalation_code: str | None = None,
         payload: dict[str, Any] | None = None,
     ) -> CrossLayerErrorEvent:
-        """Handle an error from engines/buses layer."""
+        """Handle an error from engines/communication/buses layer."""
         event = CrossLayerErrorEvent(
             error_code=error_code,
             error_message=error_message,

@@ -1,7 +1,7 @@
 # tests/agents/orchestration/interaction/unit/test_debate_strategy.py
 import pytest
 
-from engines.agents.base_agents.base_agent import BaseAgent
+from engines.agent.base_agents.base_agent import BaseAgent
 from engines.interaction.debate_strategy import DebateStrategy
 from engines.interaction.interaction_models import InteractionRequest
 from tests.agents.interaction.interaction_unit.conftest import TestAgent

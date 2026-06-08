@@ -3,8 +3,8 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Any
 
-from ..agents.base_agents.base_agent import BaseAgent
-from ..agents.models import AgentOutput
+from ..agent.base_agents.base_agent import BaseAgent
+from ..agent.models import AgentOutput
 from .base_strategy import InteractionStrategy
 from .interaction_models import InteractionRequest
 from .interaction_models import InteractionResult

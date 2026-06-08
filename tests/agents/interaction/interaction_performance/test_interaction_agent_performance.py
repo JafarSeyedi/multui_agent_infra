@@ -3,7 +3,7 @@ import time
 
 import pytest
 
-from engines.agents.base_agents.interaction_agent import InteractionAgent
+from engines.agent.base_agents.interaction_agent import InteractionAgent
 from engines.interaction.backends.base_backend import BaseOrchestrationBackend
 from engines.interaction.interaction_models import InteractionRequest
 from engines.interaction.interaction_models import InteractionResult
@@ -25,7 +25,7 @@ class DummyBackend(BaseOrchestrationBackend):
 async def test_run_handles_multiple_invocations_quickly(monkeypatch):
     dummy_backend = DummyBackend()
     monkeypatch.setattr(
-        "engines.agents.base_agents.interaction_agent.NativeOrchestrationBackend",
+        "engines.agent.base_agents.interaction_agent.NativeOrchestrationBackend",
         lambda *args, **kwargs: dummy_backend,
     )
 

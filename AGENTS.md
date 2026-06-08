@@ -14,18 +14,17 @@ python3 -m pytest tests/knowledge/test_writers.py -v
 
 ## Architecture
 
-Monorepo under `engines/` with 11 engine packages:
+Monorepo under `engines/` with 10 engine packages:
 
 | Engine | Location | Purpose |
 |--------|----------|---------|
 | orchestration | `engines/orchestration/` | Workflow DAG execution, task dispatch |
 | interaction | `engines/interaction/` | Multi-agent conversation patterns (debate, group-chat) |
-| agents | `engines/agents/` | Agent registry, adapter pattern (AgentInput → AgentSpecificInput) |
+| agents | `engines/agent/` | Agent registry, adapter pattern (AgentInput → AgentSpecificInput) |
 | tools | `engines/tools/` | Tool layer (LLM, RAG, MCP, local, remote) |
 | document | `engines/document/` | Document parsing/writing, media types, models (USD/PSD/ESD/…SDM) |
 | knowledge | `engines/knowledge/` | RAG, graph, BI, ML mining, process mining engines |
-| buses | `engines/buses/` | Message buses (Redis, Kafka, RabbitMQ, in-memory) |
-| communication | `engines/communication/` | Communication patterns |
+| communication | `engines/communication/` | Message buses, communication patterns |
 | storage | `engines/storage/` | Storage backends |
 | skill | `engines/skill/` | Skill engine |
 | memory | `engines/memory/` | Memory engine |

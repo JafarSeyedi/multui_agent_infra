@@ -10,9 +10,9 @@ from pydantic import BaseModel
 from pydantic import Field
 
 from engines.communication.buses.message_models import AgentMessage
+from ..agent.base_agents.base_agent import BaseAgent
 
-from ..agents.base_agents.base_agent import BaseAgent
-from ..agents.models import AgentOutput
+from ..agent.models import AgentOutput
 
 
 class InteractionRequest(BaseModel):

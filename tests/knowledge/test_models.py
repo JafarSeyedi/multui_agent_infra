@@ -41,7 +41,6 @@ from engines.document.models.ksdm_models import (
 from engines.document.models.media_types import (
     MediaType, MEDIA_TYPES,
 )
-from engines.document.models.media_types import MEDIA_TYPES
 
 
 def test_metrics_document_creation():

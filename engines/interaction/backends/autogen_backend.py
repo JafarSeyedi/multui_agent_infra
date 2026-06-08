@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import datetime
 from functools import cached_property
 
-from ...agents.models import AgentOutput
+from ...agent.models import AgentOutput
 from .base_backend import BaseOrchestrationBackend
 from .native_backend import NativeOrchestrationBackend
 from engines.communication.buses.base_message_bus import MessageBus

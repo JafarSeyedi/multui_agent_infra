@@ -1,7 +1,7 @@
 # agents/base_agents/interaction_agent.py
 from typing import Any
 
-from ...buses.base_message_bus import MessageBus
+from ...communication.buses.base_message_bus import MessageBus
 from ...interaction.backends.native_backend import NativeOrchestrationBackend
 from ...interaction.interaction_models import InteractionRequest
 from ...interaction.interaction_models import InteractionResult

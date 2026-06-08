@@ -2,8 +2,8 @@
 import pytest
 from pydantic import ValidationError
 
-from engines.agents.base_agents.base_agent import BaseAgent
-from engines.agents.models import AgentOutput
+from engines.agent.base_agents.base_agent import BaseAgent
+from engines.agent.models import AgentOutput
 from engines.interaction.interaction_models import InteractionRequest
 
 

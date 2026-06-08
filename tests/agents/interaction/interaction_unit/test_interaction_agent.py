@@ -2,7 +2,7 @@
 import pytest
 from pydantic import ValidationError
 
-from engines.agents.base_agents.interaction_agent import InteractionAgent
+from engines.agent.base_agents.interaction_agent import InteractionAgent
 from engines.interaction.backends.base_backend import BaseOrchestrationBackend
 from engines.interaction.interaction_models import InteractionRequest
 from engines.interaction.interaction_models import InteractionResult
@@ -24,7 +24,7 @@ class DummyBackend(BaseOrchestrationBackend):
 async def test_run_returns_serialized_result(monkeypatch):
     dummy_backend = DummyBackend()
     monkeypatch.setattr(
-        "engines.agents.base_agents.interaction_agent.NativeOrchestrationBackend",
+        "engines.agent.base_agents.interaction_agent.NativeOrchestrationBackend",
         lambda *args, **kwargs: dummy_backend,
     )
 
@@ -41,7 +41,7 @@ async def test_run_returns_serialized_result(monkeypatch):
 async def test_run_raises_when_request_invalid(monkeypatch):
     dummy_backend = DummyBackend()
     monkeypatch.setattr(
-        "engines.agents.base_agents.interaction_agent.NativeOrchestrationBackend",
+        "engines.agent.base_agents.interaction_agent.NativeOrchestrationBackend",
         lambda *args, **kwargs: dummy_backend,
     )
 

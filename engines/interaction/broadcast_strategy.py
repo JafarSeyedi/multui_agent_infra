@@ -3,9 +3,9 @@ import asyncio
 from collections.abc import Iterable
 from typing import Any
 
-from ..agents.base_agents.base_agent import BaseAgent
-from ..agents.models import AgentInput
-from ..agents.models import AgentOutput
+from ..agent.base_agents.base_agent import BaseAgent
+from ..agent.models import AgentInput
+from ..agent.models import AgentOutput
 from .base_strategy import InteractionStrategy
 from .interaction_models import InteractionRequest
 from .interaction_models import InteractionResult
