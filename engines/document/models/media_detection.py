@@ -357,7 +357,7 @@ def _is_xpd(text: str) -> bool:
 # ------------------------------------------------------
 # MAIN CONTENT DETECTOR (strictly ordered)
 # ------------------------------------------------------
-def detect_by_content(data: bytes) -> MediaType | None:
+def detect_by_content(data: bytes) -> MediaType:
 
     # 1. Binary signatures first
     if _is_pdf(data):

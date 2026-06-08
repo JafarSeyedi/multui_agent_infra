@@ -211,9 +211,6 @@ class KnowledgeGraph(BaseModel):
 # ==========================================================
 
 class KsdDocument(BaseDocument):
-    title: str = ""
-    document_id: str = ""
-    media_type: MediaType | None = None
     rdf_graphs: list[RdfGraph] = Field(default_factory=list)
     rml_mappings: list[RmlMapping] = Field(default_factory=list)
     gql_schemas: list[GqlSchema] = Field(default_factory=list)

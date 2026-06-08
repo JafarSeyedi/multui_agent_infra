@@ -20,7 +20,7 @@ class ProcessMiningEngine:
     Supports process discovery, conformance checking, and decision mining.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._parsers: Dict[str, BaseKnowledgeParser] = {}
         self._writers: Dict[str, BaseKnowledgeWriter] = {}
         self.event_logs: Dict[str, Any] = {}

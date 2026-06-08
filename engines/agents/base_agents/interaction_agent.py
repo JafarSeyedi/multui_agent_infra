@@ -1,7 +1,7 @@
 # agents/base_agents/interaction_agent.py
 from typing import Any
 
-from ...buses.base_message_bus import MessageBus
+from ...communication.buses.base_message_bus import MessageBus
 from ...interaction.backends.native_backend import NativeOrchestrationBackend
 from ...interaction.interaction_models import InteractionRequest
 from ...interaction.interaction_models import InteractionResult
@@ -12,7 +12,7 @@ class InteractionAgent(BaseAgent):
     High-level agent for executing multi-agent workflows
     """
 
-    def __init__(self, id: str, name: str, agent_registry, message_bus: MessageBus | None):
+    def __init__(self, id: str, name: str, agent_registry, message_bus: MessageBus | None) -> None:
         super().__init__(id, name)
 
         self.backend = NativeOrchestrationBackend(

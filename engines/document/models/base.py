@@ -108,7 +108,7 @@ class BaseDocument(BaseModel):
     )
     decompressed_size: int | None = None #"Original size before compression (bytes)"
 
-    media_type: MediaType | None = None
+    media_type: MediaType
     file_extension: str | None = None
 
     # Validation

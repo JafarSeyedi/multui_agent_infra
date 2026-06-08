@@ -282,9 +282,6 @@ class BiAggregationDocument(BIAggregatorModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
     )
-    title: str = ""
-    document_id: str = ""
-    media_type: MediaType | None = None
     bi_aggregation_kind: BiAggregationKind = BiAggregationKind.XMLA_CUBE
     xmla_discover_request: XmlaDiscoverRequest = Field(default_factory=XmlaDiscoverRequest)
     xmla_discover_response: XmlaDiscoverResponse = Field(default_factory=XmlaDiscoverResponse)
@@ -298,9 +295,6 @@ class BiAggregationDocument(BIAggregatorModel):
 # ============================================================
 
 class MlMiningDocument(BaseDocument):
-    title: str = ""
-    document_id: str = ""
-    media_type: MediaType | None = None
     model_type: MiningModelType
     model_data: bytes = b""
     pmml_model: PmmlModel | None = None
@@ -402,9 +396,6 @@ class DdDecisionDiscoveryFramework(BaseModel):
 
 
 class ProcessMiningDocument(BaseDocument):
-    title: str = ""
-    document_id: str = ""
-    media_type: MediaType | None = None
     xes_log: XesEventLog | None = None
     dmn_decision_table: DmnDecisionTable | None = None
     ddf_framework: DdDecisionDiscoveryFramework | None = None

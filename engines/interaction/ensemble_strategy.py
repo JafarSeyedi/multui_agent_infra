@@ -4,7 +4,7 @@ from collections import Counter
 from typing import Any
 
 from ..agents.models import AgentOutput
-from ..buses.base_message_bus import MessageBus
+from ..communication.buses.base_message_bus import MessageBus
 from .base_strategy import InteractionStrategy
 from .interaction_models import AgentMessage
 from .interaction_models import InteractionRequest

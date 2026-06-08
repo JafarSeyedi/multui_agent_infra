@@ -40,7 +40,7 @@ from engines.document.parsers.base import BaseDocumentParser, ParseOptions
 class _SourcePos:
     __slots__ = ("line", "col")
 
-    def __init__(self, line: int = 1, col: int = 1):
+    def __init__(self, line: int = 1, col: int = 1) -> None:
         self.line = line
         self.col = col
 
@@ -48,7 +48,7 @@ class _SourcePos:
 class _BlockNode:
     __slots__ = ("type", "children", "data", "pos")
 
-    def __init__(self, type_: str, data: dict[str, Any] | None = None, pos: _SourcePos | None = None):
+    def __init__(self, type_: str, data: dict[str, Any] | None = None, pos: _SourcePos | None = None) -> None:
         self.type = type_
         self.children: list[_BlockNode] = []
         self.data = data or {}
@@ -102,7 +102,7 @@ class MarkdownInlineParser:
     """Recursive-descent inline parser for emphasis, links, images, code spans, and more."""
 
     def __init__(self, link_refs: dict[str, tuple[str, str | None]] | None = None,
-                 footnotes: dict[str, list[_BlockNode]] | None = None):
+                 footnotes: dict[str, list[_BlockNode]] | None = None) -> None:
         self.link_refs = link_refs or {}
         self.footnotes: dict[str, list[_BlockNode]] = footnotes or {}
         self._pos = 0
@@ -590,7 +590,7 @@ class MarkdownInlineParser:
 class MarkdownBlockParser:
     """Block-level parser implementing CommonMark 0.30 + GFM."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.lines: list[str] = []
         self.pos = 0
         self.link_refs: dict[str, tuple[str, str | None]] = {}
@@ -1268,7 +1268,7 @@ class MarkdownBlockParser:
 class MarkdownTreeProcessor:
     """Converts the block tree into USDM elements."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.sections: list[Section] = []
         self.elements: list[DocumentElement] = []
         self.logical_elements: list[LogicalElement] = []

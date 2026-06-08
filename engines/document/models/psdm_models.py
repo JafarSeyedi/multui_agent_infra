@@ -314,10 +314,6 @@ class NotesMaster:
 
 class PSDMDocument(BaseDocument):
     """Complete presentation document model."""
-    title: str = ""
-    document_id: str = ""
-    media_type: MediaType | None = None
-    kind: DocumentStandard = DocumentStandard.PSDM
     slides: list[Slide] = Field(default_factory=list)
     slide_masters: dict[str, SlideMaster] = Field(default_factory=dict)
     presentation_properties: PresentationProperties = Field(default_factory=PresentationProperties)
