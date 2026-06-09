@@ -4,26 +4,9 @@ import time
 from collections import defaultdict
 from collections import deque
 from collections.abc import Iterable
-from dataclasses import dataclass
-from dataclasses import field
 from typing import Deque
 
-
-@dataclass
-class GraphNode:
-    name: str
-    type: str
-    timestamp: float = field(default_factory=time.time)
-
-
-@dataclass
-class GraphEdge:
-    src: str
-    dst: str
-    relation: str
-    confidence: float
-    evidence_chunk: str
-    timestamp: float = field(default_factory=time.time)
+from engines.document.models.ksdm_models import GraphNode, GraphEdge
 
 
 class GraphIndex:
@@ -33,10 +16,15 @@ class GraphIndex:
 
     def add_entities(self, entities: Iterable[GraphNode]) -> None:
         for entity in entities:
-            key = entity.name.lower()
+            key = entity.id.lower()
             existing = self.nodes.get(key)
             if existing is None or existing.type != entity.type:
-                self.nodes[key] = GraphNode(name=entity.name, type=entity.type)
+                self.nodes[key] = GraphNode(
+                    id=entity.id,
+                    label=entity.label,
+                    type=entity.type,
+                    timestamp=entity.timestamp or time.time(),
+                )
 
     def add_relation(
         self,
@@ -52,11 +40,12 @@ class GraphIndex:
             return
         self.adj[src_key].append(
             GraphEdge(
-                src=src,
-                dst=dst,
+                source=src,
+                target=dst,
                 relation=relation,
                 confidence=confidence,
                 evidence_chunk=evidence_chunk,
+                timestamp=time.time(),
             )
         )
 
@@ -74,7 +63,7 @@ class GraphIndex:
             if hop >= depth:
                 continue
             for edge in self.adj.get(node, []):
-                next_node = edge.dst.lower()
+                next_node = edge.target.lower()
                 results.append(edge)
                 if next_node not in visited:
                     visited.add(next_node)

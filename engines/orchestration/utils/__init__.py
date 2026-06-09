@@ -1,6 +1,6 @@
 """Shared utility helpers for orchestration engines."""
 
-from .graph_utils import Edge, GraphNode, topological_sort, has_cycle, shortest_path
+from .graph_utils import DagNode, DagEdge, topological_sort, has_cycle, shortest_path
 from .id_generator import IdGenerator
 from .json_parser import JsonParseError, dumps_json, loads_json
 from .time_utils import DurationError, parse_duration, to_epoch_ms, utc_now
@@ -9,11 +9,11 @@ from .xml_parser import XmlParseError, parse_xml, xml_to_dict
 
 __all__ = [
     "ConversionError",
+    "DagEdge",
+    "DagNode",
     "DestinationError",
     "DestinationMapping",
     "DurationError",
-    "Edge",
-    "GraphNode",
     "IdGenerator",
     "JsonParseError",
     "XmlParseError",

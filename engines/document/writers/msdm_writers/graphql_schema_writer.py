@@ -10,14 +10,35 @@ from __future__ import annotations
 import json
 
 from ...models.msdm_models import Attribute
+from ...models.msdm_models import ConstraintType
 from ...models.msdm_models import DataType
 from ...models.msdm_models import Entity
+from ...models.msdm_models import EntityKind
+from ...models.msdm_models import EntityRelationship
 from ...models.msdm_models import MSDMDocument
 from ...models.msdm_models import ScalarType, CompositionType
 from ..base import WriteOptions
 from .base_msdm_writer import BaseMSDMWriter
 from .base_msdm_writer import SoftDeleteStrategy
 from .base_msdm_writer import WriteTarget
+
+# Mapping from ScalarType to GQL type names (ISO/IEC 39075)
+SCALAR_TO_GQL = {
+    ScalarType.STRING: "STRING",
+    ScalarType.INT: "INT",
+    ScalarType.LONG: "INT",
+    ScalarType.FLOAT: "FLOAT",
+    ScalarType.DOUBLE: "DOUBLE",
+    ScalarType.BOOLEAN: "BOOLEAN",
+    ScalarType.DATE: "DATE",
+    ScalarType.DATETIME: "DATETIME",
+    ScalarType.TIMESTAMP: "TIMESTAMP",
+    ScalarType.TIME: "TIME",
+    ScalarType.DURATION: "DURATION",
+    ScalarType.UUID: "UUID",
+    ScalarType.JSON: "JSON",
+    ScalarType.ANY: "ANY",
+}
 
 
 class GraphQLSchemaWriter(BaseMSDMWriter):
@@ -34,6 +55,14 @@ class GraphQLSchemaWriter(BaseMSDMWriter):
         super().__init__(options, target_mode, soft_delete_strategy)
 
     async def _write_design(self, document: MSDMDocument) -> bytes:
+        # Auto-detect: if any entity has GRAPH_NODE or GRAPH_EDGE kind, use GQL DDL output
+        has_graph_kinds = any(
+            e.kind in (EntityKind.GRAPH_NODE, EntityKind.GRAPH_EDGE)
+            for e in document.entities
+        )
+        if has_graph_kinds:
+            return self._write_gql_ddl(document)
+
         lines = []
         # Schema definition
         schema_def = self._build_schema_def(document)
@@ -307,3 +336,54 @@ class GraphQLSchemaWriter(BaseMSDMWriter):
             ScalarType.ANY:       "String",
         }
         return mapping.get(base, "String")
+
+    # ── GQL DDL output (ISO/IEC 39075) ─────────────────────────────
+    def _write_gql_ddl(self, document: MSDMDocument) -> bytes:
+        lines: list[str] = []
+        entity_map = {e.name: e for e in document.entities}
+        rel_map: dict[str, EntityRelationship] = {}
+        for rel in document.relationships:
+            rel_map[rel.name or ""] = rel
+
+        for entity in document.entities:
+            if entity.kind == EntityKind.GRAPH_NODE:
+                lines.append(self._write_gql_node_type(entity))
+            elif entity.kind == EntityKind.GRAPH_EDGE:
+                lines.append(self._write_gql_edge_type(entity, rel_map, entity_map))
+
+        gql_text = "\n\n".join(lines) + "\n" if lines else ""
+        return gql_text.encode(getattr(self.options, "encoding", "utf-8") or "utf-8")
+
+    def _write_gql_node_type(self, entity: Entity) -> str:
+        props = self._write_gql_properties(entity)
+        key_attr = next(
+            (a for a in entity.attributes if any(
+                c.type == ConstraintType.PRIMARY_KEY for c in a.constraints
+            )),
+            None,
+        )
+        key_clause = f" KEY `{key_attr.name}`" if key_attr else ""
+        return f"DEFINE NODE TYPE `{entity.name}` ({props}){key_clause}"
+
+    def _write_gql_edge_type(
+        self, entity: Entity, rel_map: dict[str, EntityRelationship],
+        entity_map: dict[str, Entity],
+    ) -> str:
+        props = self._write_gql_properties(entity)
+        rel = rel_map.get(entity.name)
+        from_to = ""
+        if rel:
+            src = rel.from_ref_id or (rel.from_entity.name if rel.from_entity else "")
+            tgt = rel.to_ref_id or (rel.to_entity.name if rel.to_entity else "")
+            if src and tgt:
+                from_to = f" FROM `{src}` TO `{tgt}`"
+        return f"DEFINE EDGE TYPE `{entity.name}` ({props}){from_to}"
+
+    def _write_gql_properties(self, entity: Entity) -> str:
+        parts: list[str] = []
+        for attr in entity.attributes:
+            gql_type = SCALAR_TO_GQL.get(attr.data_type.base, "STRING")
+            req = " REQUIRED" if attr.required else " OPTIONAL"
+            parts.append(f"  `{attr.name}` {gql_type}{req}")
+        indent = "\n" if parts else ""
+        return indent + ",\n".join(parts) + ("\n" if parts else "")

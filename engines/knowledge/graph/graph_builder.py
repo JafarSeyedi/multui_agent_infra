@@ -1,5 +1,4 @@
-from .graph_models import GraphEdge
-from .graph_models import GraphNode
+from engines.document.models.ksdm_models import GraphEdge, GraphNode
 
 
 class GraphBuilder:
@@ -9,7 +8,6 @@ class GraphBuilder:
         self.store = graph_store
 
     async def extract(self, text: str):
-
         prompt = f"""
 Extract entities and relationships from the text.
 
@@ -26,7 +24,6 @@ edges: [{{
 source, target, relation
 }}]
 """
-
         result = await self.llm.generate_json(prompt)
 
         nodes = result["nodes"]

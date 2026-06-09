@@ -25,8 +25,9 @@ from typing import Optional, Any, Dict, List, Tuple
 
 from ...models.media_types import MEDIA_TYPES
 from ...models.msdm_models import (
-    Annotation, Attribute, Constraint, ConstraintType, DataType,
-    Entity, EntityKind, MSDMDocument, ScalarType, Namespace, EntityComposition, CompositionType
+    Annotation, Attribute, Cardinality, Constraint, ConstraintType, DataType,
+    Entity, EntityKind, EntityRelationship, MSDMDocument, ScalarType,
+    Namespace, EntityComposition, CompositionType,
 )
 from ..base import ParseOptions
 from .base_msdm_parser import BaseMSDMParser
@@ -133,11 +134,46 @@ class GraphQLSchemaParser(BaseMSDMParser):
     name = "graphql_schema"
     supported_extensions = (".graphql", ".gql")
 
+    # ── GQL DDL constants (ISO/IEC 39075 graph schema) ─────────────
+    GQL_TYPE_MAP = {
+        "STRING":  ScalarType.STRING,
+        "INT":     ScalarType.INT,
+        "INTEGER": ScalarType.INT,
+        "FLOAT":   ScalarType.FLOAT,
+        "DOUBLE":  ScalarType.DOUBLE,
+        "BOOL":    ScalarType.BOOLEAN,
+        "BOOLEAN": ScalarType.BOOLEAN,
+        "DATE":    ScalarType.DATE,
+        "DATETIME": ScalarType.TIMESTAMP,
+        "TIMESTAMP": ScalarType.TIMESTAMP,
+        "TIME":    ScalarType.TIME,
+        "DURATION": ScalarType.DURATION,
+        "UUID":    ScalarType.UUID,
+        "JSON":    ScalarType.JSON,
+        "ANY":     ScalarType.ANY,
+    }
+    RE_GQL_NODE_TYPE = re.compile(
+        r"DEFINE\s+NODE\s+TYPE\s+`?(\w+)`?\s*(?:\(([^)]*)\))?\s*(?:KEY\s+`?(\w+)`?)?",
+        re.IGNORECASE,
+    )
+    RE_GQL_EDGE_TYPE = re.compile(
+        r"DEFINE\s+EDGE\s+TYPE\s+`?(\w+)`?\s*(?:\(([^)]*)\))?\s*(?:FROM\s+`?(\w+)`?\s+TO\s+`?(\w+)`?)?",
+        re.IGNORECASE,
+    )
+    RE_GQL_PROP = re.compile(
+        r"`?(\w+)`?\s+(\w+(?:\([^)]*\))?)\s*(REQUIRED|OPTIONAL)?",
+        re.IGNORECASE,
+    )
+
     async def _parse_to_msdm(
         self, data: bytes, source_name: str, options: ParseOptions
     ) -> MSDMDocument:
         encoding = options.encoding or "utf-8"
         text = data.decode(encoding)
+
+        # Auto-detect GQL DDL (DEFINE NODE TYPE / DEFINE EDGE TYPE)
+        if "DEFINE NODE TYPE" in text.upper() or "DEFINE EDGE TYPE" in text.upper():
+            return self._parse_gql_ddl(text, source_name)
 
         doc = MSDMDocument(
             title=source_name,
@@ -173,6 +209,71 @@ class GraphQLSchemaParser(BaseMSDMParser):
 
         self.resolve_references(doc)
         return doc
+
+    # ── GQL DDL parsing (ISO/IEC 39075) ────────────────────────────
+    def _parse_gql_ddl(self, text: str, source_name: str) -> MSDMDocument:
+        doc = MSDMDocument(
+            document_id=Path(source_name).stem,
+            title=Path(source_name).stem,
+            media_type=MEDIA_TYPES.get("graphql_schema", MEDIA_TYPES["txt"]),
+        )
+        entities: dict[str, Entity] = {}
+        relationships: dict[str, EntityRelationship] = {}
+
+        for match in self.RE_GQL_NODE_TYPE.finditer(text):
+            name = match.group(1)
+            props_str = match.group(2)
+            key = match.group(3)
+            entity = Entity(name=name, kind=EntityKind.GRAPH_NODE)
+            if props_str:
+                self._parse_gql_properties(props_str, entity)
+            if key:
+                for attr in entity.attributes:
+                    if attr.name == key:
+                        attr.constraints.append(
+                            Constraint(type=ConstraintType.PRIMARY_KEY)
+                        )
+            entities[name] = entity
+
+        for match in self.RE_GQL_EDGE_TYPE.finditer(text):
+            name = match.group(1)
+            props_str = match.group(2)
+            source = match.group(3)
+            target = match.group(4)
+            entity = Entity(name=name, kind=EntityKind.GRAPH_EDGE)
+            if props_str:
+                self._parse_gql_properties(props_str, entity)
+            entities[name] = entity
+            if source and target:
+                rel = EntityRelationship(
+                    name=name,
+                    from_ref_id=source,
+                    to_ref_id=target,
+                    cardinality_from=Cardinality.ONE,
+                    cardinality_to=Cardinality.MANY,
+                )
+                relationships[name] = rel
+
+        doc.entities = list(entities.values())
+        doc.relationships = list(relationships.values())
+        self.resolve_references(doc)
+        return doc
+
+    def _parse_gql_properties(self, props_str: str, entity: Entity) -> None:
+        for match in self.RE_GQL_PROP.finditer(props_str):
+            prop_name = match.group(1)
+            type_str = match.group(2)
+            req_str = match.group(3)
+            scalar = self.GQL_TYPE_MAP.get(type_str.upper(), ScalarType.CUSTOM)
+            data_type = DataType(base=scalar)
+            if scalar == ScalarType.CUSTOM:
+                data_type.ref_entity_id = type_str
+            attr = Attribute(
+                name=prop_name,
+                data_type=data_type,
+                required=(req_str or "").upper() == "REQUIRED",
+            )
+            entity.attributes.append(attr)
 
     # ------------------------------------------------------------------
     # Helpers with safe None checks

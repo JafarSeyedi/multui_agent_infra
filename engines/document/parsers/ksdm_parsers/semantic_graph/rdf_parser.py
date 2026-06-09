@@ -4,7 +4,10 @@ from typing import Any, BinaryIO, TextIO
 
 from engines.document.parsers.base import BaseDocumentParser, ParseResult
 from engines.document.models.media_types import MEDIA_TYPES
-from engines.document.models.ksdm_models import SemanticGraphDocument, RdfGraph, RdfTriple
+from engines.document.models.ksdm_models import SemanticGraphDocument
+from engines.document.model_tools.model_standard_converters.ksdm_to_rdf_converter import (
+    RdfGraph, RdfTriple,
+)
 
 RDFLIB_AVAILABLE = importlib.util.find_spec('rdflib') is not None
 
@@ -41,8 +44,15 @@ class RdfParser(BaseDocumentParser):
             for s, p, o in g:
                 triples.append(RdfTriple(subject=str(s), predicate=str(p), object_=str(o)))
             rdf_graph = RdfGraph(graph_name=None, triples=triples)
+
+            # Build KnowledgeGraph from triples via converter
+            from engines.document.model_tools.model_standard_converters.ksdm_to_rdf_converter import (
+                KsdmToRdfConverter,
+            )
+            kg = KsdmToRdfConverter.rdf_to_knowledge_graph(rdf_graph)
+
             doc = SemanticGraphDocument(
-                rdf_graphs=[rdf_graph],
+                knowledge_graph=kg,
                 title=str(Path(source).stem) if isinstance(source, (str, Path)) else "Untitled",
                 document_id=str(Path(source).stem) if isinstance(source, (str, Path)) else "unknown",
                 media_type=MEDIA_TYPES["rdf_turtle"]

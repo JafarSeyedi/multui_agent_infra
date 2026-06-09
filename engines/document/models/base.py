@@ -181,3 +181,7 @@ class BinaryPayload(BaseModel):
     @property
     def has_content(self) -> bool:
         return self.bytes_content is not None or self.data is not None
+
+
+# Resolve forward references for pydantic v2 with from __future__ import annotations
+BaseDocument.model_rebuild()

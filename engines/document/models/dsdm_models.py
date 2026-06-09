@@ -206,3 +206,8 @@ class DataDocument(BaseDocument):
             if node.value is None:
                 return DataType(base=ScalarType.NULL)
             return DataType(base=node.value.scalar_type)
+
+
+# Resolve forward references for pydantic v2
+DataNode.model_rebuild()
+DataDocument.model_rebuild()

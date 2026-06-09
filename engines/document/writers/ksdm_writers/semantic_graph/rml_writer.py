@@ -6,7 +6,7 @@ from typing import Any, BinaryIO, TextIO
 
 import yaml
 
-from engines.document.models.ksdm_models import SemanticGraphDocument
+from engines.document.models.ksdm_models import TransformationModelDocument
 from engines.document.writers.base import BaseDocument, BaseDocumentWriter
 
 
@@ -14,11 +14,11 @@ class RmlWriter(BaseDocumentWriter):
     supported_format = None
 
     def can_write(self, document) -> bool:
-        return isinstance(document, SemanticGraphDocument) and bool(getattr(document, 'rml_mappings', []))
+        return isinstance(document, TransformationModelDocument) and bool(getattr(document, 'mappings', []))
 
     async def write(self, document: BaseDocument, destination: str | Path | BinaryIO | TextIO | None = None, **options: Any) -> bytes:
         mappings = []
-        for m in getattr(document, 'rml_mappings', []):
+        for m in getattr(document, 'mappings', []):
             mapping = {'baseIRI': m.base_iri, 'prefixes': dict(m.prefixes)}
             logical_sources = {}
             for ls in m.logical_sources:
@@ -58,7 +58,7 @@ class RmlWriter(BaseDocumentWriter):
             if isinstance(destination, (str, Path)):
                 Path(destination).write_bytes(output_bytes)
             else:
-                destination.write(output_bytes.decode('utf-8'))  # type: ignore
+                destination.write(output_bytes.decode('utf-8'))
         return output_bytes
 
     async def write_stream(self, document: BaseDocument) -> AsyncIterator[bytes]:

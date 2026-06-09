@@ -9,24 +9,24 @@ NodeId = TypeVar("NodeId", bound=str)
 
 
 @dataclass(frozen=True)
-class GraphNode:
-    """Directed graph node."""
+class DagNode:
+    """Directed graph node for workflow DAG operations."""
 
     node_id: str
     payload: dict[str, Any] | None = None
 
 
 @dataclass(frozen=True)
-class Edge:
-    """Directed graph edge."""
+class DagEdge:
+    """Directed graph edge for workflow DAG operations."""
 
     source: str
     target: str
     condition: str | None = None
 
 
-def _build_index(edges: Iterable[Edge]) -> tuple[dict[str, list[Edge]], dict[str, int]]:
-    adjacency: dict[str, list[Edge]] = {}
+def _build_index(edges: Iterable[DagEdge]) -> tuple[dict[str, list[DagEdge]], dict[str, int]]:
+    adjacency: dict[str, list[DagEdge]] = {}
     indegree: dict[str, int] = {}
     for edge in edges:
         adjacency.setdefault(edge.source, []).append(edge)
@@ -37,7 +37,7 @@ def _build_index(edges: Iterable[Edge]) -> tuple[dict[str, list[Edge]], dict[str
     return adjacency, indegree
 
 
-def topological_sort(nodes: Iterable[GraphNode], edges: Iterable[Edge]) -> list[str]:
+def topological_sort(nodes: Iterable[DagNode], edges: Iterable[DagEdge]) -> list[str]:
     """Return nodes in topological order; raises on cycles."""
     node_ids = {node.node_id for node in nodes}
     adjacency, indegree = _build_index(edges)
@@ -57,7 +57,7 @@ def topological_sort(nodes: Iterable[GraphNode], edges: Iterable[Edge]) -> list[
     return result
 
 
-def has_cycle(nodes: Iterable[GraphNode], edges: Iterable[Edge]) -> bool:
+def has_cycle(nodes: Iterable[DagNode], edges: Iterable[DagEdge]) -> bool:
     """Check if directed graph has a cycle."""
     try:
         topological_sort(nodes, edges)
@@ -66,7 +66,7 @@ def has_cycle(nodes: Iterable[GraphNode], edges: Iterable[Edge]) -> bool:
         return True
 
 
-def shortest_path(nodes: Iterable[GraphNode], edges: Iterable[Edge], start: str, end: str) -> list[str]:
+def shortest_path(nodes: Iterable[DagNode], edges: Iterable[DagEdge], start: str, end: str) -> list[str]:
     """Find shortest path via BFS on an unweighted graph."""
     adjacency, _ = _build_index(edges)
     available = {node.node_id for node in nodes}

@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Literal
+from typing import Any
 
 from pydantic import BaseModel, Field, ConfigDict
 
@@ -13,92 +13,53 @@ from .osdm_models import CatchEvent, FlowElement, Process
 from .standard import DocumentStandard
 
 # ==========================================================
-# RDF Triples
+# Transformation Models (formerly RML Mapping)
 # ==========================================================
 
-class RdfTriple(BaseModel):
-    subject: str
-    predicate: str
-    object_: str
-    graph: str | None = None  # named graph
-
-class RdfGraph(BaseModel):
-    graph_name: str | None = None
-    triples: list[RdfTriple] = field(default_factory=list)
-
-# ==========================================================
-# RML Mapping
-# ==========================================================
-class RmlLogicalSource(BaseModel):
+class TransformationLogicalSource(BaseModel):
     source_name: str | None = None
     iterator: str | None = None
     reference_formulation: str | None = None
     query: str | None = None
     table_name: str | None = None
 
-class RmlSubjectMap(BaseModel):
+class TransformationSubjectMap(BaseModel):
     class_type: str | None = None
     graph_map: str | None = None
     uri_template: str | None = None
     prefix_iri: str | None = None
 
-class RmlPredicateObjectMap(BaseModel):
+class TransformationPredicateObjectMap(BaseModel):
     predicate: str | None = None
     object_map: str | None = None
     datatype: str | None = None
     language: str | None = None
     parent_triples_map: str | None = None
 
-class RmlSubjectMapRef(BaseModel):
+class TransformationSubjectMapRef(BaseModel):
     parent_triples_map: str
 
-class RmlMapping(BaseModel):
+class TransformationMapping(BaseModel):
     base_iri: str | None = None
     prefixes: dict[str, str] = field(default_factory=dict)
-    logical_sources: list[RmlLogicalSource] = field(default_factory=list)
-    subject_maps: list[RmlSubjectMap] = field(default_factory=list)
-    predicate_object_maps: list[RmlPredicateObjectMap] = field(default_factory=list)
-    references: list[RmlSubjectMapRef] = field(default_factory=list)
+    logical_sources: list[TransformationLogicalSource] = field(default_factory=list)
+    subject_maps: list[TransformationSubjectMap] = field(default_factory=list)
+    predicate_object_maps: list[TransformationPredicateObjectMap] = field(default_factory=list)
+    references: list[TransformationSubjectMapRef] = field(default_factory=list)
 
 # ==========================================================
-# GQL Schema
+# Knowledge Graph – instance-level property graph model
 # ==========================================================
 
-class GqlProperty(BaseModel):
-    name: str
-    type_name: str
-    cardinality: Literal["REQUIRED", "OPTIONAL", "ONE", "MANY"] = "OPTIONAL"
-    default_value: Any | None = None
-
-
-class GqlNodeType(BaseModel):
-    name: str
-    properties: list[GqlProperty] = field(default_factory=list)
-    key: str | None = None
-
-
-class GqlEdgeType(BaseModel):
-    name: str
-    source: str
-    target: str
-    properties: list[GqlProperty] = field(default_factory=list)
-
-
-class GqlSchema(BaseModel):
-    node_types: list[GqlNodeType] = field(default_factory=list)
-    edge_types: list[GqlEdgeType] = field(default_factory=list)
-
-
-# ==========================================================
-# Unified Graph Engine entities
-# ==========================================================
-# TODO unification of the semantic graph models
 class GraphNode(BaseModel):
     id: str
     label: str
     type: str
     url: str | None = None
     properties: dict[str, Any] = field(default_factory=dict)
+    # Complementary fields for research/evidence tracking
+    confidence: float | None = None
+    timestamp: float | None = None
 
 
 class GraphEdge(BaseModel):
@@ -106,6 +67,10 @@ class GraphEdge(BaseModel):
     target: str
     relation: str
     properties: dict[str, Any] = field(default_factory=dict)
+    # Complementary fields for research/evidence tracking
+    confidence: float | None = None
+    evidence_chunk: str | None = None
+    timestamp: float | None = None
 
 
 class KnowledgeGraph(BaseModel):
@@ -114,18 +79,34 @@ class KnowledgeGraph(BaseModel):
 
 
 # ==========================================================
-# KSDM Composite Documents
+# KSDM Semantic Graph Composite Documents
 # ==========================================================
 
 class SemanticGraphDocument(BaseDocument):
-    rdf_graphs: list[RdfGraph] = Field(default_factory=list)
-    rml_mappings: list[RmlMapping] = Field(default_factory=list)
-    gql_schemas: list[GqlSchema] = Field(default_factory=list)
     knowledge_graph: KnowledgeGraph | None = None
 
     model_config = ConfigDict(
         populate_by_name=True,
     )
+
+# ============================================================
+# Transformation Model Document
+# ============================================================
+
+class TransformationModelDocument(BaseDocument):
+    mappings: list[TransformationMapping] = Field(default_factory=list)
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
+
+
+
+
+
+
+# ==============================================================================================================================
+
+
 
 # ============================================================
 # BI Aggregation Models
@@ -263,6 +244,15 @@ class CWMDocument(BaseDocument):
 
 class MondrianDocument(BaseDocument):
     mondrian_schema: MondrianSchema | None = None
+
+
+
+
+
+
+
+# ==============================================================================================================================
+
 
 # ============================================================
 # ML Mining Models

@@ -5,12 +5,12 @@ from typing import Any, BinaryIO, TextIO
 from engines.document.parsers.base import BaseDocumentParser, ParseResult
 from engines.document.models.media_types import MEDIA_TYPES
 from engines.document.models.ksdm_models import (
-    SemanticGraphDocument,
-    RmlLogicalSource,
-    RmlMapping,
-    RmlPredicateObjectMap,
-    RmlSubjectMap,
-    RmlSubjectMapRef,
+    TransformationModelDocument,
+    TransformationLogicalSource,
+    TransformationMapping,
+    TransformationPredicateObjectMap,
+    TransformationSubjectMap,
+    TransformationSubjectMapRef,
 )
 
 
@@ -43,7 +43,7 @@ class RmlParser(BaseDocumentParser):
             logical_sources = []
             for name, src in data.get('logicalSources', {}).items() if isinstance(data.get('logicalSources'), dict) else []:
                 if isinstance(src, dict):
-                    logical_sources.append(RmlLogicalSource(
+                    logical_sources.append(TransformationLogicalSource(
                         source_name=name,
                         iterator=src.get('iterator'),
                         reference_formulation=src.get('referenceFormulation', src.get('reference_formulation')),
@@ -53,7 +53,7 @@ class RmlParser(BaseDocumentParser):
             subject_maps = []
             for m in data.get('subjectMaps', data.get('subject_maps', [])):
                 if isinstance(m, dict):
-                    subject_maps.append(RmlSubjectMap(
+                    subject_maps.append(TransformationSubjectMap(
                         class_type=m.get('class'),
                         graph_map=m.get('graphMap', m.get('graph_map')),
                         uri_template=m.get('template', m.get('uri_template')),
@@ -62,7 +62,7 @@ class RmlParser(BaseDocumentParser):
             pomaps = []
             for m in data.get('predicateObjectMaps', data.get('predicate_object_maps', [])):
                 if isinstance(m, dict):
-                    pomaps.append(RmlPredicateObjectMap(
+                    pomaps.append(TransformationPredicateObjectMap(
                         predicate=m.get('predicate'),
                         object_map=m.get('objectMap', m.get('object_map')),
                         datatype=m.get('datatype'),
@@ -73,8 +73,8 @@ class RmlParser(BaseDocumentParser):
             for m in data.get('references', []):
                 if isinstance(m, dict):
                     ptm: str = m.get('parentTriplesMap', m.get('parent_triples_map', '')) or ''
-                    refs.append(RmlSubjectMapRef(parent_triples_map=ptm))
-            mapping = RmlMapping(
+                    refs.append(TransformationSubjectMapRef(parent_triples_map=ptm))
+            mapping = TransformationMapping(
                 base_iri=data.get('baseIRI', data.get('base_iri')),
                 prefixes=data.get('prefixes', {}),
                 logical_sources=logical_sources,
@@ -82,8 +82,8 @@ class RmlParser(BaseDocumentParser):
                 predicate_object_maps=pomaps,
                 references=refs
             )
-            doc = SemanticGraphDocument(
-                rml_mappings=[mapping],
+            doc = TransformationModelDocument(
+                mappings=[mapping],
                 title=str(Path(source).stem) if isinstance(source, (str, Path)) else "Untitled",
                 document_id=str(Path(source).stem) if isinstance(source, (str, Path)) else "unknown",
                 media_type=MEDIA_TYPES["rml_yaml"]
