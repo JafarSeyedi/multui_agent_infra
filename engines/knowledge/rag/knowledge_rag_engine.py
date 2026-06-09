@@ -8,8 +8,7 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from engines.document.models.ksdm_models import KSDMMetricsDocument
-from engines.document.models.ksdm_models import KsdDocument
+from engines.document.models.base import BaseDocument
 from engines.document.parsers.base import BaseDocumentParser
 from engines.document.writers.base import BaseDocumentWriter, WriteResult
 
@@ -19,6 +18,7 @@ from .retrieval.hybrid_retriever import HybridRetriever
 from .retrieval.bm25_retriever import BM25KeywordRetriever
 from .retrieval.keyword_retriever import KeywordRetriever
 from .retrieval.retriever_result import RetrievalResult
+from .rag_models import RetrievedDocument
 from .reranking.reranker import Reranker
 from .planner.adaptive_planner import AdaptiveRetrievalPlanner
 from .planner.retrieval_plan import RetrievalPlan
@@ -38,6 +38,8 @@ from .embedding import EmbeddingModel
 from .chunking import Chunker
 from .query_rewriter import QueryRewriter
 from .llm_factory import create_llm
+from ...storage.vector.base import VectorDBAdapter
+from ...document.storage.document_store import DocumentStore
 
 
 class _StubLLM:
@@ -64,7 +66,7 @@ class KnowledgeRagEngine:
     - Graph-enhanced retrieval (via knowledge graph)
     """
     
-    def __init__(self, config: Optional[dict] = None) -> None:
+    def __init__(self, document_store: DocumentStore, vector_db: VectorDBAdapter, config: Optional[dict] = None) -> None:
         self.config = config or {}
         
         # Core services
@@ -72,7 +74,14 @@ class KnowledgeRagEngine:
         self._llm = _StubLLM()
         self.embedding_service = EmbeddingModel()
         self.chunking_service = Chunker()
-        self.vector_service = VectorService()  # type: ignore[call-arg]
+        self.vector_db=vector_db
+        self.document_store=document_store
+        self.vector_service = VectorService(
+            document_store=document_store,
+            vector_db=vector_db,
+            embedding_model=self.embedding_service,
+            chunker=self.chunking_service,
+        )
         self.query_rewriter = QueryRewriter(self._llm)
         
         # Retrieval components
@@ -116,21 +125,22 @@ class KnowledgeRagEngine:
     def _initialize_defaults(self) -> None:
         """Initialize default retrieval components."""
         # Vector retriever
-        vector_retriever = VectorRetriever(  # type: ignore[call-arg]
-            vector_service=self.vector_service,
-            embedding_service=self.embedding_service,
+        vector_retriever = VectorRetriever(
+            vector_db=self.vector_db,
+            embedding_model=self.embedding_service,
         )
         self.register_retriever("vector", vector_retriever)
         self._default_retriever = vector_retriever
         
         # BM25 retriever
-        self.register_retriever("bm25", BM25KeywordRetriever())  # type: ignore[call-arg]
+        bm25_retriever = BM25KeywordRetriever(document_store=self.document_store)
+        self.register_retriever("bm25", bm25_retriever)
         
         # Keyword retriever
-        self.register_retriever("keyword", KeywordRetriever())  # type: ignore[call-arg]
+        self.register_retriever("keyword", KeywordRetriever(document_store=self.document_store))
         
         # Hybrid retriever
-        self.register_retriever("hybrid", HybridRetriever())  # type: ignore[call-arg]
+        self.register_retriever("hybrid", HybridRetriever(vector_retriever=vector_retriever, keyword_retriever=bm25_retriever))
         
         # Reranker
         self.reranker = Reranker()
@@ -154,8 +164,8 @@ class KnowledgeRagEngine:
         self.retrieval_policy = RetrievalPolicy()
         
         # Trainers
-        self.reranker_trainer = RerankerTrainer()  # type: ignore[abstract,call-arg]
-        self.fusion_trainer = FusionTrainer()
+        self.reranker_trainer = RerankerTrainer(model=None, optimizer=None)
+        self.fusion_trainer = FusionTrainer(fusion_mlp=None, lr=0.001, batch_size=32)
         
         # Reflection
         self.reflection_critic = RetrievalCritic(self._llm)
@@ -230,7 +240,7 @@ class KnowledgeRagEngine:
         if self.retrieval_agent is None:
             raise RuntimeError("Retrieval agent not initialized")
         
-        return await self.retrieval_agent.answer(query, max_hops=max_hops, **options)  # type: ignore[attr-defined]
+        return await self.retrieval_agent.answer(query, max_hops=max_hops, **options)
     
     async def decompose_query(self, query: str) -> list[str]:
         """Decompose a complex query into sub-queries."""
@@ -247,7 +257,7 @@ class KnowledgeRagEngine:
         """Perform multi-hop reasoning."""
         if self.multihop_reasoner is None:
             raise RuntimeError("Multi-hop reasoner not initialized")
-        return await self.multihop_reasoner.reason(query, initial_evidence, max_hops)  # type: ignore[attr-defined]
+        return await self.multihop_reasoner.reason(query, initial_evidence, max_hops)
     
     # ============================================================
     # Planning Interface
@@ -263,11 +273,11 @@ class KnowledgeRagEngine:
     # Evidence Processing
     # ============================================================
     
-    async def cluster_evidence(self, evidence: list[RetrievalResult]) -> dict[str, list[RetrievalResult]]:
+    async def cluster_evidence(self, evidence: list[RetrievedDocument]) -> list[RetrievedDocument]:
         """Cluster evidence by topic/similarity."""
         if self.evidence_clusterer is None:
             raise RuntimeError("Evidence clusterer not initialized")
-        return await self.evidence_clusterer.cluster(evidence)  # type: ignore[return-value,arg-type]
+        return await self.evidence_clusterer.cluster(evidence)
     
     # ============================================================
     # Learning & Optimization
@@ -281,12 +291,12 @@ class KnowledgeRagEngine:
     async def train_reranker(self, training_data: list[dict]) -> None:
         """Train the reranker."""
         if self.reranker_trainer:
-            await self.reranker_trainer.train(training_data)  # type: ignore[call-arg]
-    
+            await self.reranker_trainer.train(training_data, epochs=10)
+
     async def train_fusion(self, training_data: list[dict]) -> None:
         """Train the fusion model."""
         if self.fusion_trainer:
-            await self.fusion_trainer.train(training_data)
+            await self.fusion_trainer.train(training_data, epochs=10)
     
     # ============================================================
     # Reflection & Self-Correction
@@ -315,20 +325,23 @@ class KnowledgeRagEngine:
         """Register a writer for model-driven writing."""
         self._writers[fmt] = writer
     
-    async def parse(self, source: str, fmt: str | None = None, **options: Any) -> KSDMMetricsDocument | KsdDocument:
+    async def parse(self, source: str, fmt: str | None = None, **options: Any) -> BaseDocument:
         """Parse using model-driven parser."""
         parser = self._parsers.get(fmt or "default")
         if parser is None:
             raise NotImplementedError(f"No parser registered for format '{fmt}'")
-        return parser.parse(source, **options).document  # type: ignore[attr-defined]
+        import engines.document.parsers.base as parser_base
+        result = await parser.parse_bytes(source.encode() if isinstance(source, str) else source, document_id="", source_name=source if isinstance(source, str) else str(source))
+        return result
     
-    async def write(self, document: KSDMMetricsDocument | KsdDocument, destination: str, fmt: str | None = None, **options: Any) -> WriteResult:
+    async def write(self, document: BaseDocument, destination: str, fmt: str | None = None, **options: Any) -> WriteResult:
         """Write using model-driven writer."""
         writer = self._writers.get(fmt or "default")
         if writer is None:
             raise NotImplementedError(f"No writer registered for format '{fmt}'")
-        await writer.write(document, destination, **options)  # type: ignore[attr-defined]
-        return WriteResult(metadata={"destination": destination, "format": fmt})
+        data = await writer.write(document)
+        result = WriteResult(metadata={"destination": destination, "format": fmt, "data": data})
+        return result
     
     # ============================================================
     # Graph-Enhanced Retrieval (Integration with Knowledge Graph)

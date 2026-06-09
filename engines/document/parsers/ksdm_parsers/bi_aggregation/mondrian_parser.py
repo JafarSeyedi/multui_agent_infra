@@ -76,7 +76,13 @@ class MondrianSchemaParser(BaseDocumentParser):
                         aggregator_name=measure_elem.get('aggregator', 'sum'),
                         visible=measure_elem.get('visible', 'true').lower() != 'false'
                     ))
-            doc = BiAggregationDocument(bi_aggregation_kind=BiAggregationKind.MONDRIAN_SCHEMA, mondrian_schema=schema)
+            doc = BiAggregationDocument(
+                title=Path(source).stem if isinstance(source, (str, Path)) else "mondrian_document",
+                document_id=str(Path(source).stem) if isinstance(source, (str, Path)) else "unknown",
+                media_type=MEDIA_TYPES["mondrian_schema_xml"],
+                bi_aggregation_kind=BiAggregationKind.MONDRIAN_SCHEMA,
+                mondrian_schema=schema,
+            )
             return ParseResult(document=doc)
         except Exception as e:
             raise Exception(f"Mondrian schema parse failed: {e}")

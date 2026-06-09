@@ -7,97 +7,10 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, ConfigDict
 
-from .base import BaseDocument, BinaryPayload
+from .base import BaseDocument
 from .lsdm_models import EventLogDocument
-from .media_types import DocumentFormat, MediaType
-from .osdm_models import BusinessRuleTask, CatchEvent, FlowElement, Gateway, Process
+from .osdm_models import CatchEvent, FlowElement, Process
 from .standard import DocumentStandard
-
-
-# ==========================================================
-# Enums
-# ==========================================================
-
-class EntityType(str, Enum):
-    """High-level entity categories."""
-    PERSON = "Person"
-    ORGANIZATION = "Organization"
-    LOCATION = "Location"
-    EVENT = "Event"
-    WORK = "Work"
-    CONCEPT = "Concept"
-    # Generic
-    ITEM = "Item"
-    UNKNOWN = "Unknown"
-
-
-class RelationType(str, Enum):
-    """Common relation types."""
-    WORKS_FOR = "worksFor"
-    LOCATED_IN = "locatedIn"
-    PART_OF = "partOf"
-    FRIEND_OF = "friendOf"
-    FOLLOWS = "follows"
-    BASED_ON = "basedOn"
-    # Generic
-    RELATED_TO = "relatedTo"
-
-
-class Domain(str, Enum):
-    """Knowledge graph domain/source context."""
-    KNOWLEDGE = "knowledge"
-    FINANCE = "finance"
-    HEALTHCARE = "healthcare"
-    ECOMMERCE = "ecommerce"
-    LEGAL = "legal"
-    SCIENTIFIC = "scientific"
-    OTHER = "other"
-
-
-# ==========================================================
-# KSDM Document
-# ==========================================================
-
-@dataclass
-class Entity:
-    id: str
-    type: EntityType = EntityType.ITEM
-    label: str | None = None
-    properties: dict[str, Any] = field(default_factory=dict)
-    embedding: list[float] = field(default_factory=list)
-
-
-@dataclass
-class Relation:
-    id: str
-    source_id: str
-    target_id: str
-    type: RelationType = RelationType.RELATED_TO
-    properties: dict[str, Any] = field(default_factory=dict)
-    weight: float = field(default=1.0)
-    timestamp: datetime | None = None
-
-
-class KSDMDocument(BaseDocument):
-    """
-    A knowledge graph document containing entities and relations.
-    """
-    model_config = ConfigDict(
-        arbitrary_types_allowed=True,
-        validate_assignment=True,
-        json_encoders={
-            # Add any custom encoders if needed
-        }
-    )
-
-    kind: DocumentStandard = Field(default=DocumentStandard.KSDM)
-    title: str = ""
-    document_id: str = ""
-    ontology: dict[str, Any] = Field(default_factory=dict)
-    entities: list[Entity] = Field(default_factory=list)
-    relations: list[Relation] = Field(default_factory=list)
-    attributes: dict[str, Any] = Field(default_factory=dict)
-
 
 # ==========================================================
 # RDF Triples
@@ -109,16 +22,13 @@ class RdfTriple(BaseModel):
     object_: str
     graph: str | None = None  # named graph
 
-
 class RdfGraph(BaseModel):
     graph_name: str | None = None
     triples: list[RdfTriple] = field(default_factory=list)
 
-
 # ==========================================================
 # RML Mapping
 # ==========================================================
-
 class RmlLogicalSource(BaseModel):
     source_name: str | None = None
     iterator: str | None = None
@@ -126,13 +36,11 @@ class RmlLogicalSource(BaseModel):
     query: str | None = None
     table_name: str | None = None
 
-
 class RmlSubjectMap(BaseModel):
     class_type: str | None = None
     graph_map: str | None = None
     uri_template: str | None = None
     prefix_iri: str | None = None
-
 
 class RmlPredicateObjectMap(BaseModel):
     predicate: str | None = None
@@ -141,10 +49,8 @@ class RmlPredicateObjectMap(BaseModel):
     language: str | None = None
     parent_triples_map: str | None = None
 
-
 class RmlSubjectMapRef(BaseModel):
     parent_triples_map: str
-
 
 class RmlMapping(BaseModel):
     base_iri: str | None = None
@@ -153,7 +59,6 @@ class RmlMapping(BaseModel):
     subject_maps: list[RmlSubjectMap] = field(default_factory=list)
     predicate_object_maps: list[RmlPredicateObjectMap] = field(default_factory=list)
     references: list[RmlSubjectMapRef] = field(default_factory=list)
-
 
 # ==========================================================
 # GQL Schema
@@ -187,7 +92,7 @@ class GqlSchema(BaseModel):
 # ==========================================================
 # Unified Graph Engine entities
 # ==========================================================
-
+# TODO unification of the semantic graph models
 class GraphNode(BaseModel):
     id: str
     label: str
@@ -212,7 +117,7 @@ class KnowledgeGraph(BaseModel):
 # KSDM Composite Documents
 # ==========================================================
 
-class KsdDocument(BaseDocument):
+class SemanticGraphDocument(BaseDocument):
     rdf_graphs: list[RdfGraph] = Field(default_factory=list)
     rml_mappings: list[RmlMapping] = Field(default_factory=list)
     gql_schemas: list[GqlSchema] = Field(default_factory=list)
@@ -222,88 +127,22 @@ class KsdDocument(BaseDocument):
         populate_by_name=True,
     )
 
-
-class KnowledgeGraphDocument(KSDMDocument):
-    rdf_graphs: list[RdfGraph] = Field(default_factory=list)
-    rml_mappings: list[RmlMapping] = Field(default_factory=list)
-    gql_schemas: list[GqlSchema] = Field(default_factory=list)
-    knowledge_graph: KnowledgeGraph | None = None
-
-
 # ============================================================
-# Enums (from ISDM)
-# ============================================================
-
-class MetricType(str, Enum):
-    COUNTER = "counter"
-    GAUGE = "gauge"
-    HISTOGRAM = "histogram"
-    SUMMARY = "summary"
-
-
-class Aggregation(str, Enum):
-    SUM = "sum"
-    COUNT = "count"
-    AVG = "average"
-    MIN = "min"
-    MAX = "max"
-    PCTILE = "percentile"
-    STDDEV = "stddev"
-
-
-class TimeGranularity(str, Enum):
-    SECOND = "second"
-    MINUTE = "minute"
-    HOUR = "hour"
-    DAY = "day"
-    WEEK = "week"
-    MONTH = "month"
-    QUARTER = "quarter"
-    YEAR = "year"
-
-
-# ============================================================
-# BI Aggregator Model Definition
-# ============================================================
-
-@dataclass
-class BIAggregation:
-    name: str
-    metric: str
-    window: str
-    output: str
-    compute: str | None = None
-    dimensions: list[str] = Field(default_factory=list)
-    output_config: dict[str, str] = Field(default_factory=dict)
-
-
-class BIAggregatorModel(BaseDocument):
-    model_config = ConfigDict(
-        arbitrary_types_allowed=True,
-        validate_assignment=True,
-        json_encoders={
-            datetime: lambda v: v.isoformat(),
-        }
-    )
-
-    kind: DocumentStandard = Field(default=DocumentStandard.KSDM)
-    version: str = Field(default="1.0")
-    schedule: str = Field(default="@daily")
-    sources: list[dict[str, str]] = Field(default_factory=list)
-    aggregations: list[BIAggregation] = Field(default_factory=list)
-    targets: list[dict[str, str]] = Field(default_factory=list)
-    metadata: dict[str, str] = Field(default_factory=dict)
-
-
-# ============================================================
-# BI Aggregation Formats
+# BI Aggregation Models
 # ============================================================
 
 class BiAggregationKind(str, Enum):
     XMLA_CUBE = "xmla_cube"
-    MDX_QUERY = "mdx_query"
-    CWM_WAREHOUSE = "cwm_warehouse"
     MONDRIAN_SCHEMA = "mondrian_schema"
+    CWM_WAREHOUSE = "cwm_warehouse"
+
+
+class BiAggregationDocument(BaseDocument):
+    bi_aggregation_kind: BiAggregationKind = BiAggregationKind.XMLA_CUBE
+    xmla_discover_request: XmlaDiscoverRequest | None = None
+    xmla_discover_response: XmlaDiscoverResponse | None = None
+    mondrian_schema: MondrianSchema | None = None
+    cwm_schema: CwmSchema | None = None
 
 
 # ============================================================
@@ -405,6 +244,25 @@ class MondrianSchema(BaseModel):
     dimensions: list[MondrianDimension] = Field(default_factory=list)
     measures: list[MondrianMeasure] = Field(default_factory=list)
 
+# ============================================================
+# BI Aggregation Document
+# ============================================================
+# TODO: Unification of BI Aggregation documents
+class XMLADocument(BaseDocument):
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+    )
+    xmla_discover_request: XmlaDiscoverRequest = Field(default_factory=XmlaDiscoverRequest)
+    xmla_discover_response: XmlaDiscoverResponse = Field(default_factory=XmlaDiscoverResponse)
+
+class MDXQueryDocument(BaseDocument):
+    mdx_query: MdxQuery | None = None
+
+class CWMDocument(BaseDocument):
+    cwm_schema: CwmSchema | None = None
+
+class MondrianDocument(BaseDocument):
+    mondrian_schema: MondrianSchema | None = None
 
 # ============================================================
 # ML Mining Models
@@ -479,25 +337,9 @@ class OnnxModel(BaseModel):
 
 
 # ============================================================
-# BI Aggregation Document
-# ============================================================
-
-class BiAggregationDocument(BIAggregatorModel):
-    model_config = ConfigDict(
-        arbitrary_types_allowed=True,
-    )
-    bi_aggregation_kind: BiAggregationKind = BiAggregationKind.XMLA_CUBE
-    xmla_discover_request: XmlaDiscoverRequest = Field(default_factory=XmlaDiscoverRequest)
-    xmla_discover_response: XmlaDiscoverResponse = Field(default_factory=XmlaDiscoverResponse)
-    mdx_query: MdxQuery | None = None
-    cwm_schema: CwmSchema | None = None
-    mondrian_schema: MondrianSchema | None = None
-
-
-# ============================================================
 # ML Mining Document
 # ============================================================
-
+# TODO: unification of ML-Mining models
 class MlMiningDocument(BaseDocument):
     model_type: MiningModelType
     model_data: bytes = b""
@@ -509,51 +351,9 @@ class MlMiningDocument(BaseDocument):
 
 
 # ============================================================
-# Metrics Document
-# ============================================================
-
-@dataclass
-class Metric:
-    name: str
-    description: str | None = None
-    type: MetricType = MetricType.GAUGE
-    value: Any = None
-    labels: dict[str, str] = Field(default_factory=dict)
-    timestamp: datetime | None = None
-    buckets: list[float] = Field(default_factory=list)
-    bucket_counts: list[int] = Field(default_factory=list)
-    sum_obs: float | None = None
-    count_obs: int | None = None
-
-
-class KSDMMetricsDocument(BaseDocument):
-    """
-    A metrics/analytics document containing aggregated data.
-    """
-    model_config = ConfigDict(
-        arbitrary_types_allowed=True,
-        validate_assignment=True,
-        json_encoders={
-            datetime: lambda v: v.isoformat(),
-        }
-    )
-
-    kind: DocumentStandard = Field(default=DocumentStandard.KSDM)
-    title: str = ""
-    document_id: str = ""
-    start_time: datetime | None = Field(default=None)
-    end_time: datetime | None = Field(default=None)
-    granularity: TimeGranularity | None = Field(default=None)
-    dimensions: list[str] = Field(default_factory=list)
-    metrics: list[Metric] = Field(default_factory=list)
-    data_rows: list[dict[str, Any]] = Field(default_factory=list)
-    source_info: dict[str, Any] = Field(default_factory=dict)
-
-
-# ============================================================
 # Process Mining Definition — JPRM / YPRM Model
 # ============================================================
-
+# TODO using ML-Mining models in Process Mining
 class ClusteringAlgorithm(str, Enum):
     KMEANS = "kmeans"
     DBSCAN = "dbscan"
@@ -639,12 +439,4 @@ class ProcessMiningDefinitionDocument(BaseDocument):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
-# Rebuild model
-KSDMDocument.model_rebuild()
-KsdDocument.model_rebuild()
-KnowledgeGraphDocument.model_rebuild()
-BIAggregatorModel.model_rebuild()
-BiAggregationDocument.model_rebuild()
-MlMiningDocument.model_rebuild()
-KSDMMetricsDocument.model_rebuild()
-ProcessMiningDefinitionDocument.model_rebuild()
+

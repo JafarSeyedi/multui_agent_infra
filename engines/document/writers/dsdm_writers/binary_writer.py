@@ -39,7 +39,7 @@ class BinaryWriter(BaseDSDMWriter):
         elif fmt == "bson":
             if isinstance(py_obj, list):
                 py_obj = {"documents": py_obj}
-            return bson.dumps(py_obj)  # type: ignore[attr-defined]
+            return bson.encode(py_obj)
         elif fmt == "pickle":
             if not options.unsafe_operations_allowed:
                 raise ValueError("Pickle writing requires 'unsafe_operations_allowed' flag")

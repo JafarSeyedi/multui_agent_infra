@@ -63,7 +63,13 @@ class CwmParser(BaseDocumentParser):
                     target_class=assoc_elem.get('targetClass', assoc_elem.get('target', '')),
                     multiplicity=assoc_elem.get('multiplicity')
                 ))
-            doc = BiAggregationDocument(bi_aggregation_kind=BiAggregationKind.CWM_WAREHOUSE, cwm_schema=schema)
+            doc = BiAggregationDocument(
+                title=Path(source).stem if isinstance(source, (str, Path)) else "cwm_document",
+                document_id=str(Path(source).stem) if isinstance(source, (str, Path)) else "unknown",
+                media_type=MEDIA_TYPES["cwm_xmi"],
+                bi_aggregation_kind=BiAggregationKind.CWM_WAREHOUSE,
+                cwm_schema=schema,
+            )
             return ParseResult(document=doc)
         except Exception as e:
             raise Exception(f"CWM parse failed: {e}")

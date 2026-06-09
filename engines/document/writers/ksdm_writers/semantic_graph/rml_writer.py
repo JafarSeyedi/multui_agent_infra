@@ -6,7 +6,7 @@ from typing import Any, BinaryIO, TextIO
 
 import yaml
 
-from engines.document.models.ksdm_models import KsdDocument
+from engines.document.models.ksdm_models import SemanticGraphDocument
 from engines.document.writers.base import BaseDocument, BaseDocumentWriter
 
 
@@ -14,9 +14,9 @@ class RmlWriter(BaseDocumentWriter):
     supported_format = None
 
     def can_write(self, document) -> bool:
-        return isinstance(document, KsdDocument) and bool(getattr(document, 'rml_mappings', []))
+        return isinstance(document, SemanticGraphDocument) and bool(getattr(document, 'rml_mappings', []))
 
-    def write(self, document: BaseDocument, destination: str | Path | BinaryIO | TextIO | None = None, **options: Any) -> bytes:
+    async def write(self, document: BaseDocument, destination: str | Path | BinaryIO | TextIO | None = None, **options: Any) -> bytes:
         mappings = []
         for m in getattr(document, 'rml_mappings', []):
             mapping = {'baseIRI': m.base_iri, 'prefixes': dict(m.prefixes)}
@@ -62,10 +62,10 @@ class RmlWriter(BaseDocumentWriter):
         return output_bytes
 
     async def write_stream(self, document: BaseDocument) -> AsyncIterator[bytes]:
-        yield self.write(document)
+        yield await self.write(document)
 
     async def write_to_file(self, document: BaseDocument, target: Path, options: dict[str, Any] | None = None) -> None:
-        target.write_bytes(self.write(document))
+        target.write_bytes(await self.write(document))
 
     def get_supported_media_types(self) -> list[str]:
         return ["application/x-yaml"]

@@ -137,7 +137,9 @@ class RetryHandler:
                 import asyncio
                 await asyncio.sleep(delay)
 
-        raise last_error  # type: ignore[misc]
+        if last_error is None:
+            raise RuntimeError("Operation failed with no captured error")
+        raise last_error
 
     def execute_with_retry_sync(
         self,
@@ -163,7 +165,9 @@ class RetryHandler:
                                attempt + 1, config.max_attempts, delay, str(_e))
                 time.sleep(delay)
 
-        raise last_error  # type: ignore[misc]
+        if last_error is None:
+            raise RuntimeError("Operation failed with no captured error")
+        raise last_error
 
 
 class CircuitBreakerRegistry:

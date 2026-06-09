@@ -105,6 +105,8 @@ class Finalizer:
     def _save(self) -> bytes:
         try:
             self.ctx.log("  Serializing DWG...")
+            if self.dwg is None:
+                raise RuntimeError("DWG document not initialized")
             byte_stream = self.dwg.saveToMemory()   # returns bytes
             # optional integrity hash
             sha = hashlib.sha256(byte_stream).hexdigest()

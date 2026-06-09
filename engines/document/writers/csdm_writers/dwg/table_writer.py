@@ -21,16 +21,20 @@ from typing import Any
 from .base_context import WriterContext
 from ....models.csdm_tables import (
     LayerTable,
+    LinetypeEntry,
     LinetypeTable,
+    TextStyleEntry,
     TextStyleTable,
+    DimStyleEntry,
     DimStyleTable,
     MLineStyleTable,
     TableStyleTable,
     MLeaderStyleTable,
+    AppIDEntry,
+    AppIDTable,
     UCSTable,
     ViewTable,
     VPortTable,
-    AppIDTable,
     LightTable,
 )
 from ....models.csdm_core import CSDMDocument
@@ -43,203 +47,208 @@ class TableWriter:
         self.ctx = ctx
         self.oda = ctx.oda
         self.dwg = ctx.dwg
-    # =====================================================================
-    # Public API
-    # =====================================================================
     def write(self):
         self.ctx.log("Writing DWG tables...")
         tables = self.ctx.csdm_doc.tables
-        self._write_layers(tables.layers)
-        self._write_linetypes(tables.linetypes)
-        self._write_text_styles(tables.text_styles)
-        self._write_dimstyles(tables.dimstyles)
-        self._write_mline_styles(tables.mline_styles)
-        self._write_table_styles(tables.table_styles)
-        self._write_mleader_styles(tables.mleader_styles)
-        self._write_appids(tables.appids)
+        self._write_layers(tables.layer)
+        self._write_linetypes(tables.linetype)
+        self._write_text_styles(tables.textstyle)
+        self._write_dimstyles(tables.dimstyle)
+        self._write_mline_styles(tables.mlinestyle)
+        self._write_table_styles(tables.tablestyle)
+        self._write_mleader_styles(tables.mleaderstyle)
+        self._write_appids(tables.appid)
         self._write_ucs(tables.ucs)
-        self._write_view(tables.views)
-        self._write_vports(tables.vports)
-        self._write_lightlist(tables.lights)
+        self._write_view(tables.view)
+        self._write_vports(tables.vport)
+        self._write_lightlist(tables.light)
         self.ctx.log("DWG tables written.")
-    # =====================================================================
-    # Layer Table
-    # =====================================================================
-    def _write_layers(self, table: LayerTable):
+    def _write_layers(self, table: LayerTable | None):
+        if table is None or self.dwg is None:
+            return
         self.ctx.log("  Writing LayerTable")
         lt = self.dwg.getTable("LAYER")
-        for layer in table.items:
-            rec = lt.create(layer.name)
-            rec.setColor(layer.color)
-            rec.setLinetype(layer.linetype)
-            rec.setLineweight(layer.lineweight)
-            rec.setFrozen(layer.frozen)
-            rec.setLocked(layer.locked)
-            rec.setPlot(layer.plot)
-            rec.setTransparency(layer.transparency)
-            self.ctx.register(layer.handle, rec)
-    # =====================================================================
-    # Linetype Table
-    # =====================================================================
-    def _write_linetypes(self, table: LinetypeTable):
+        if lt is None:
+            return
+        for entry in table.entries.values():
+            rec = lt.create(entry.name)
+            rec.setColor(entry.color)
+            rec.setLinetype(entry.linetype)
+            rec.setLineweight(entry.lineweight)
+            rec.setFrozen(entry.frozen)
+            rec.setLocked(entry.locked)
+            rec.setPlot(entry.plot)
+            # transparency not in LayerEntry
+            self.ctx.register(entry.handle.value, rec)
+    def _write_linetypes(self, table: LinetypeTable | None):
+        if table is None or self.dwg is None:
+            return
         self.ctx.log("  Writing LinetypeTable")
         lt = self.dwg.getTable("LTYPE")
-        for lt_rec in table.items:
-            rec = lt.create(lt_rec.name)
-            rec.setDescription(lt_rec.description)
-            rec.setPattern(lt_rec.pattern, lt_rec.length)
-            self.ctx.register(lt_rec.handle, rec)
-    # =====================================================================
-    # TextStyle Table
-    # =====================================================================
-    def _write_text_styles(self, table: TextStyleTable):
+        if lt is None:
+            return
+        for entry in table.entries.values():
+            rec = lt.create(entry.name)
+            # description not used
+            rec.setPattern([(s.length, s.shape_index) for s in entry.segments], entry.pattern_length)
+            self.ctx.register(entry.handle.value, rec)
+    def _write_text_styles(self, table: TextStyleTable | None):
+        if table is None or self.dwg is None:
+            return
         self.ctx.log("  Writing TextStyleTable")
         st = self.dwg.getTable("STYLE")
-        for t in table.items:
-            rec = st.create(t.name)
-            rec.setFont(t.font_name, t.big_font)
-            rec.setWidthFactor(t.width_factor)
-            rec.setObliquing(t.oblique)
-            rec.setTextHeight(t.height)
-            rec.setFlag(t.flags)
-            self.ctx.register(t.handle, rec)
-    # =====================================================================
-    # DimStyle Table
-    # =====================================================================
-    def _write_dimstyles(self, table: DimStyleTable):
+        if st is None:
+            return
+        for entry in table.entries.values():
+            rec = st.create(entry.name)
+            rec.setFont(entry.font, entry.bigfont)
+            rec.setWidthFactor(entry.width_factor)
+            rec.setObliquing(entry.oblique)
+            rec.setTextHeight(entry.height)
+            rec.setFlag(entry.flags)
+            self.ctx.register(entry.handle.value, rec)
+    def _write_dimstyles(self, table: DimStyleTable | None):
+        if table is None or self.dwg is None:
+            return
         self.ctx.log("  Writing DimStyleTable")
         ds = self.dwg.getTable("DIMSTYLE")
-        for dim in table.items:
-            rec = ds.create(dim.name)
-            # Core fields
-            rec.setDimensionScale(dim.scale)
-            rec.setTextHeight(dim.text_height)
-            rec.setArrowSize(dim.arrow_size)
-            rec.setLineWeight(dim.lineweight)
-            # Numeric formatting
-            rec.setPrecision(dim.precision)
-            rec.setLinearUnit(dim.linear_unit)
-            rec.setAngularUnit(dim.angular_unit)
-            # Overrides
-            for key, value in dim.overrides.items():
-                rec.setOverride(key, value)
-            # Annotative
-            rec.setAnnotative(dim.annotative)
-            self.ctx.register(dim.handle, rec)
-    # =====================================================================
-    # MLineStyle
-    # =====================================================================
-    def _write_mline_styles(self, table: MLineStyleTable):
+        if ds is None:
+            return
+        for entry in table.entries.values():
+            rec = ds.create(entry.name)
+            rec.setDimensionScale(entry.scale)
+            rec.setTextHeight(entry.text_height)
+            rec.setArrowSize(entry.arrow_size)
+            rec.setExtLineOffset(entry.ext_line_offset)
+            rec.setPrecision(entry.decimal_precision)
+            rec.setLinearUnit(entry.linear_unit.value if entry.linear_unit else 0)
+            self.ctx.register(entry.handle.value, rec)
+
+    def _write_mline_styles(self, table: MLineStyleTable | None):
+        if table is None or self.dwg is None:
+            return
         self.ctx.log("  Writing MLineStyleTable")
-        ms = self.dwg.getRootDictionary()["ACAD_MLINESTYLE"]
-        for ml in table.items:
-            rec = ms.create(ml.name)
-            rec.setDescription(ml.description)
-            rec.setStartAngle(ml.start_angle)
-            rec.setEndAngle(ml.end_angle)
-            for element in ml.elements:
+        root_dict = self.dwg.getRootDictionary()
+        if root_dict is None:
+            return
+        ms = root_dict.get("ACAD_MLINESTYLE")
+        if ms is None:
+            return
+        for entry in table.entries.values():
+            rec = ms.create(entry.name)
+            for element in entry.elements:
                 rec.addElement(
                     offset=element.offset,
                     color=element.color,
                     linetype=element.linetype
                 )
-            self.ctx.register(ml.handle, rec)
-    # =====================================================================
-    # CADTableStyle
-    # =====================================================================
-    def _write_table_styles(self, table: TableStyleTable):
+            self.ctx.register(entry.handle.value, rec)
+    def _write_table_styles(self, table: TableStyleTable | None):
+        if table is None or self.dwg is None:
+            return
         self.ctx.log("  Writing TableStyleTable")
-        ts = self.dwg.getRootDictionary()["ACAD_TABLESTYLE"]
-        for t in table.items:
-            rec = ts.create(t.name)
-            rec.setFlowDirection(t.flow_direction)
-            rec.setHorzCellMargin(t.h_margin)
-            rec.setVertCellMargin(t.v_margin)
-            for key, cell in t.cells.items():
-                rec.setCellFormat(
-                    key,
-                    cell.text_style,
-                    cell.alignment,
-                    cell.color,
-                    cell.data_type
-                )
-            self.ctx.register(t.handle, rec)
-    # =====================================================================
-    # MLeaderStyle
-    # =====================================================================
-    def _write_mleader_styles(self, table: MLeaderStyleTable):
+        root_dict = self.dwg.getRootDictionary()
+        if root_dict is None:
+            return
+        ts = root_dict.get("ACAD_TABLESTYLE")
+        if ts is None:
+            return
+        for entry in table.entries.values():
+            rec = ts.create(entry.name)
+            rec.setFlowDirection(entry.flow_direction)
+            rec.setHorzCellMargin(entry.horz_cell_margin)
+            rec.setVertCellMargin(entry.vert_cell_margin)
+            self.ctx.register(entry.handle.value, rec)
+
+    def _write_mleader_styles(self, table: MLeaderStyleTable | None):
+        if table is None or self.dwg is None:
+            return
         self.ctx.log("  Writing MLeaderStyleTable")
-        ml = self.dwg.getRootDictionary()["ACAD_MLEADERSTYLE"]
-        for s in table.items:
-            rec = ml.create(s.name)
-            rec.setArrowSize(s.arrow_size)
-            rec.setContentType(s.content_type)
-            rec.setTextStyle(s.text_style)
-            rec.setLeaderType(s.leader_type)
-            rec.setLandingGap(s.landing_gap)
-            self.ctx.register(s.handle, rec)
-    # =====================================================================
-    # AppID Table
-    # =====================================================================
-    def _write_appids(self, table: AppIDTable):
+        root_dict = self.dwg.getRootDictionary()
+        if root_dict is None:
+            return
+        ml = root_dict.get("ACAD_MLEADERSTYLE")
+        if ml is None:
+            return
+        for entry in table.entries.values():
+            rec = ml.create(entry.name)
+            rec.setArrowSize(entry.arrow_size)
+            rec.setTextStyle(entry.text_style)
+            rec.setLeaderType(entry.leader_type)
+            rec.setLandingGap(entry.landing_gap)
+            self.ctx.register(entry.handle.value, rec)
+
+    def _write_appids(self, table: AppIDTable | None):
+        if table is None or self.dwg is None:
+            return
         self.ctx.log("  Writing AppIdTable")
         ap = self.dwg.getTable("APPID")
-        for app in table.items:
-            rec = ap.create(app.name)
-            rec.setFlag(app.flags)
-            self.ctx.register(app.handle, rec)
-    # =====================================================================
-    # UCS Table
-    # =====================================================================
-    def _write_ucs(self, table: UCSTable):
+        if ap is None:
+            return
+        for entry in table.entries.values():
+            rec = ap.create(entry.name)
+            rec.setFlag(entry.flags)
+            self.ctx.register(entry.handle.value, rec)
+
+    def _write_ucs(self, table: UCSTable | None):
+        if table is None or self.dwg is None:
+            return
         self.ctx.log("  Writing UcsTable")
         ucs = self.dwg.getTable("UCS")
-        for u in table.items:
-            rec = ucs.create(u.name)
-            rec.setOrigin(u.origin)
-            rec.setXAxis(u.x_axis)
-            rec.setYAxis(u.y_axis)
-            self.ctx.register(u.handle, rec)
-    # =====================================================================
-    # View Table
-    # =====================================================================
-    def _write_view(self, table: ViewTable):
+        if ucs is None:
+            return
+        for entry in table.entries.values():
+            rec = ucs.create(entry.name)
+            rec.setOrigin(*entry.origin)
+            rec.setXAxis(*entry.x_axis)
+            rec.setYAxis(*entry.y_axis)
+            self.ctx.register(entry.handle.value, rec)
+
+    def _write_view(self, table: ViewTable | None):
+        if table is None or self.dwg is None:
+            return
         self.ctx.log("  Writing ViewTable")
         vw = self.dwg.getTable("VIEW")
-        for v in table.items:
-            rec = vw.create(v.name)
-            rec.setCenter(v.center)
-            rec.setWidth(v.width)
-            rec.setHeight(v.height)
-            rec.setDirection(v.direction)
-            rec.setTarget(v.target)
-            self.ctx.register(v.handle, rec)
-    # =====================================================================
-    # VPORT Table
-    # =====================================================================
-    def _write_vports(self, table: VPortTable):
+        if vw is None:
+            return
+        for entry in table.entries.values():
+            rec = vw.create(entry.name)
+            rec.setCenter(*entry.center)
+            rec.setWidth(entry.width)
+            rec.setHeight(entry.height)
+            rec.setDirection(*entry.direction)
+            rec.setTarget(*entry.target)
+            self.ctx.register(entry.handle.value, rec)
+
+    def _write_vports(self, table: VPortTable | None):
+        if table is None or self.dwg is None:
+            return
         self.ctx.log("  Writing VPortTable")
         vp = self.dwg.getTable("VPORT")
-        for v in table.items:
-            rec = vp.create(v.name)
-            rec.setCenter(v.center)
-            rec.setHeight(v.height)
-            rec.setAspectRatio(v.aspect)
-            rec.setViewDirection(v.direction)
-            rec.setViewTarget(v.target)
-            rec.setTwistAngle(v.twist)
-            self.ctx.register(v.handle, rec)
-    # =====================================================================
-    # LightList Table
-    # =====================================================================
-    def _write_lightlist(self, table: LightTable):
+        if vp is None:
+            return
+        for entry in table.entries.values():
+            rec = vp.create(entry.name)
+            rec.setCenter(*entry.view_center)
+            rec.setHeight(entry.view_height)
+            rec.setAspectRatio(entry.aspect if hasattr(entry, "aspect") else 1.0)
+            rec.setViewDirection(entry.direction if hasattr(entry, 'direction') else (0, 0, 1))
+            rec.setViewTarget(entry.target if hasattr(entry, 'target') else (0, 0, 0))
+            # twist not in VPortRecord
+            self.ctx.register(entry.handle.value, rec)
+
+    def _write_lightlist(self, table: LightTable | None):
+        if table is None or self.dwg is None:
+            return
         self.ctx.log("  Writing LightList")
         ll = self.dwg.getTable("LIGHTLIST")
-        for light_entry in table.items:
-            rec = ll.create(light_entry.name)
-            rec.setType(light_entry.type)
-            rec.setIntensity(light_entry.intensity)
-            rec.setPosition(light_entry.position)
-            rec.setTarget(light_entry.target)
-            rec.setColor(light_entry.color)
-            self.ctx.register(light_entry.handle, rec)
+        if ll is None:
+            return
+        for entry in table.entries.values():
+            rec = ll.create(entry.name)
+            rec.setType(entry.light_type.value if hasattr(entry, 'light_type') else 0)
+            rec.setIntensity(entry.intensity)
+            rec.setPosition(*entry.position)
+            rec.setTarget(*entry.target)
+            rec.setColor(*entry.color)
+            self.ctx.register(entry.handle.value, rec)

@@ -4,7 +4,7 @@ from typing import Any, BinaryIO, TextIO
 
 from ...base import BaseDocumentWriter, BaseDocument
 from ....models.media_types import MEDIA_TYPES
-from ....models.ksdm_models import KsdDocument
+from ....models.ksdm_models import SemanticGraphDocument
 
 RDFLIB_AVAILABLE = importlib.util.find_spec('rdflib') is not None
 
@@ -13,7 +13,7 @@ class RdfWriter(BaseDocumentWriter):
     supported_format = MEDIA_TYPES["rdf_turtle"]
 
     def can_write(self, document) -> bool:
-        return isinstance(document, KsdDocument)
+        return isinstance(document, SemanticGraphDocument)
 
     async def write(self, document: BaseDocument, destination: str | Path | BinaryIO | TextIO | None = None, **options: Any) -> bytes:
         if not RDFLIB_AVAILABLE:

@@ -84,6 +84,7 @@ class TypedProcessModel:
     start_node_id: str | None = None
     process: Process | None = None
     _node_index: dict[str, FlowNode] = field(default_factory=dict)
+    _raw_node_index: dict[str, dict[str, Any]] = field(default_factory=dict)
     _flow_index: dict[str, list[SequenceFlow]] = field(default_factory=dict)
     _boundary_events: dict[str, list[BoundaryEvent]] = field(default_factory=dict)
 
@@ -124,7 +125,7 @@ class TypedProcessModel:
         elements = definition_xml.get("flow_elements", definition_xml.get("elements", {}))
         for element_id, element_data in elements.items():
             if isinstance(element_data, dict):
-                self._node_index[element_id] = element_data  # type: ignore[assignment]
+                self._raw_node_index[element_id] = element_data
         self.start_node_id = definition_xml.get("start_event_id")
         if not self.start_node_id:
             for element_id, element_data in elements.items():
@@ -135,8 +136,10 @@ class TypedProcessModel:
                             self.start_node_id = element_id
                             break
 
-    def get_node(self, node_id: str) -> FlowNode | Any:
-        node = self._node_index.get(node_id)
+    def get_node(self, node_id: str) -> FlowNode | dict[str, Any] | None:
+        node: FlowNode | dict[str, Any] | None = self._node_index.get(node_id)
+        if node is None:
+            node = self._raw_node_index.get(node_id)
         if node is None:
             logger.warning("Node not found: %s", node_id)
         return node

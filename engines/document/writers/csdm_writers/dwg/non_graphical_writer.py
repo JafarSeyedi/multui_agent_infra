@@ -23,11 +23,10 @@ This writer:
     - Ensures that all DB-objects exist and are registered for dependency resolution.
 """
 from __future__ import annotations
-from typing import Any, Dict, Callable
+from typing import Any, Dict, Callable, Optional
 from .base_context import WriterContext
-from ....models import csdm_core as C
-from ....models import csdm_entities as E
-from ....models import csdm_tables as T
+from ....models.csdm_core import CSDMHandle
+from ....models.csdm_entities import BaseEntity
 class NonGraphicalWriter:
     """
     Writes all NON-entity objects in DWG.
@@ -36,7 +35,6 @@ class NonGraphicalWriter:
         self.ctx = ctx
         self.oda = ctx.oda
         self.dwg = ctx.dwg
-        # Dispatch registry (CSDM type → writer method)
         self._handlers: Dict[str, Callable] = {
             "XRECORD": self._write_xrecord,
             "DICTIONARY": self._write_dictionary,
@@ -52,161 +50,94 @@ class NonGraphicalWriter:
             "PLOTSETTINGS": self._write_plot_settings,
             "LIGHT": self._write_light,
         }
-    # =====================================================================
-    # Public API
-    # =====================================================================
     def write(self):
         self.ctx.log("Writing non-graphical DWG objects...")
-        for obj in self.ctx.csdm_doc.non_graphical_objects:
+        for obj in self.ctx.csdm_doc.objects.xrecords.values():
             handler = self._handlers.get(obj.type)
             if not handler:
                 self.ctx.log(f"  WARNING: Unsupported non-graphical object: {obj.type}")
                 continue
             oda_obj = handler(obj)
             if oda_obj:
-                self.ctx.register(obj.handle, oda_obj)
+                self.ctx.register(obj.handle.value, oda_obj)
         self.ctx.log("Non-graphical objects written.")
-    # =====================================================================
-    # XRecords
-    # =====================================================================
-    def _write_xrecord(self, o: Any):
-        rec = self.dwg.newObject("XRECORD")
-        for dxf_code, value in o.data:
-            rec.addData(dxf_code, value)
+    def _write_xrecord(self, o: Any) -> Optional[Any]:
+        rec = self.dwg.newObject("XRECORD") if self.dwg else None
+        if rec:
+            for dxf_code, value in o.data:
+                rec.addData(dxf_code, value)
         return rec
-    # =====================================================================
-    # Dictionaries
-    # =====================================================================
-    def _write_dictionary(self, o: Any):
-        """
-        Dictionaries can be nested. They get created BEFORE contents are added.
-        """
-        d = self.dwg.newObject("DICTIONARY")
-        for key, value_handle in o.items.items():
-            target = self.ctx.resolve(value_handle)
-            if target:
-                d.setAt(key, target)
-        d.setHardOwnership(o.hard_ownership)
+    def _write_dictionary(self, o: Any) -> Optional[Any]:
+        d = self.dwg.newObject("DICTIONARY") if self.dwg else None
+        if d:
+            for key, value_handle in o.entries.items():
+                target = self.ctx.resolve(value_handle.value if hasattr(value_handle, 'value') else value_handle)
+                if target:
+                    d.setAt(key, target)
         return d
-    # =====================================================================
-    # Groups
-    # =====================================================================
-    def _write_group(self, o: Any):
-        g = self.dwg.newObject("GROUP")
-        g.setName(o.name)
-        g.setSelectable(o.selectable)
-        for h in o.members:
-            ent = self.ctx.resolve(h)
-            if ent:
-                g.append(ent)
+    def _write_group(self, o: Any) -> Optional[Any]:
+        g = self.dwg.newObject("GROUP") if self.dwg else None
+        if g:
+            g.setName(o.name)
+            g.setSelectable(o.selectable)
+            for h in o.members:
+                ent = self.ctx.resolve(h.value if hasattr(h, 'value') else h)
+                if ent:
+                    g.append(ent)
         return g
-    # =====================================================================
-    # Materials
-    # =====================================================================
-    def _write_material(self, o: Any):
-        m = self.dwg.newObject("MATERIAL")
-        m.setName(o.name)
-        m.setDiffuse(o.diffuse)
-        m.setAmbient(o.ambient)
-        m.setSpecular(o.specular)
-        m.setOpacity(o.opacity)
-        m.setMaps(o.texture_maps)
+    def _write_material(self, o: Any) -> Optional[Any]:
+        m = self.dwg.newObject("MATERIAL") if self.dwg else None
+        if m:
+            m.setName(o.name)
+            m.setDiffuse(*o.diffuse_color)
+            m.setAmbient(*o.ambient_color)
+            m.setSpecular(*o.specular_color)
+            m.setOpacity(o.opacity)
         return m
-    # =====================================================================
-    # Raster Definitions
-    # =====================================================================
-    def _write_raster_def(self, o: Any):
-        r = self.dwg.newObject("RASTERIMAGEDEF")
-        r.setSource(o.path)
-        r.setResolution(o.width, o.height)
-        r.setUnits(o.units)
+    def _write_raster_def(self, o: Any) -> Optional[Any]:
+        r = self.dwg.newObject("RASTERIMAGEDEF") if self.dwg else None
+        if r:
+            r.setSource(o.filepath)
+            r.setResolution(*o.resolution)
         return r
-    # =====================================================================
-    # Underlay Definitions (PDF/DWF/DGN)
-    # =====================================================================
-    def _write_underlay_def(self, o: Any):
-        u = self.dwg.newObject("UNDERLAYDEFINITION")
-        u.setFileName(o.path)
-        u.setLoaded(True)
-        u.setType(o.underlay_type)   # PDF / DGN / DWF
+    def _write_underlay_def(self, o: Any) -> Optional[Any]:
+        u = self.dwg.newObject("UNDERLAYDEFINITION") if self.dwg else None
+        if u:
+            u.setFileName(o.file_path)
+            u.setLoaded(True)
+            u.setType(o.underlay_type)
         return u
-    # =====================================================================
-    # Layout (non-viewport)
-    # =====================================================================
-    def _write_layout(self, o: Any):
-        layout = self.dwg.newObject("LAYOUT")
-        layout.setName(o.name)
-        layout.setLimits(o.limits_min, o.limits_max)
-        layout.setInsertionBase(o.insert_base)
-        if o.paper_size:
-            layout.setPlotPaperSize(o.paper_size)
-        layout.setTabSelected(o.tab_selected)
-        # Visual properties
-        layout.setShadePlotMode(o.shade_plot_mode)
-        layout.setShadePlotResLevel(o.shade_plot_res)
+    def _write_layout(self, o: Any) -> Optional[Any]:
+        layout = self.dwg.newObject("LAYOUT") if self.dwg else None
+        if layout:
+            layout.setName(o.name)
         return layout
-    # =====================================================================
-    # View definitions
-    # =====================================================================
-    def _write_view(self, o: Any):
-        v = self.dwg.newObject("VIEW")
-        v.setName(o.name)
-        v.setTarget(o.target)
-        v.setDirection(o.direction)
-        v.setLensLength(o.lens_length)
-        v.setFrontClip(o.front_clip)
-        v.setBackClip(o.back_clip)
-        v.setFieldWidth(o.width)
-        v.setFieldHeight(o.height)
+    def _write_view(self, o: Any) -> Optional[Any]:
+        v = self.dwg.newObject("VIEW") if self.dwg else None
+        if v:
+            v.setName(o.name)
         return v
-    # =====================================================================
-    # UCS
-    # =====================================================================
-    def _write_ucs(self, o: Any):
-        u = self.dwg.newObject("UCS")
-        u.setName(o.name)
-        u.setOrigin(o.origin)
-        u.setXAxis(o.x_axis)
-        u.setYAxis(o.y_axis)
+    def _write_ucs(self, o: Any) -> Optional[Any]:
+        u = self.dwg.newObject("UCS") if self.dwg else None
+        if u:
+            u.setName(o.name)
         return u
-    # =====================================================================
-    # Visual Styles
-    # =====================================================================
-    def _write_visual_style(self, o: Any):
-        vs = self.dwg.newObject("VISUALSTYLE")
-        vs.setName(o.name)
-        vs.setType(o.style_type)
-        vs.setFaceStyle(o.face_style)
-        vs.setDisplayStyle(o.display_style)
-        vs.setEdgeStyle(o.edge_style)
+    def _write_visual_style(self, o: Any) -> Optional[Any]:
+        vs = self.dwg.newObject("VISUALSTYLE") if self.dwg else None
+        if vs:
+            vs.setName(o.name)
         return vs
-    # =====================================================================
-    # RegApp (Registered Applications)
-    # =====================================================================
-    def _write_regapp(self, o: Any):
-        app = self.dwg.newTableRecord("APPID")
-        app.setName(o.name)
+    def _write_regapp(self, o: Any) -> Optional[Any]:
+        app = self.dwg.newTableRecord("APPID") if self.dwg else None
+        if app:
+            app.setName(o.name)
         return app
-    # =====================================================================
-    # Plot Settings
-    # =====================================================================
-    def _write_plot_settings(self, o: Any):
-        ps = self.dwg.newObject("PLOTSETTINGS")
-        ps.setPlotWindow(o.window_min, o.window_max)
-        ps.setPaperSize(o.paper_size)
-        ps.setPlotCentered(o.plot_centered)
-        ps.setScale(o.plot_scale)
-        ps.setPlotRotation(o.rotation)
+    def _write_plot_settings(self, o: Any) -> Optional[Any]:
+        ps = self.dwg.newObject("PLOTSETTINGS") if self.dwg else None
         return ps
-    # =====================================================================
-    # Light
-    # =====================================================================
-    def _write_light(self, o: Any):
-        light_obj = self.dwg.newObject("LIGHT")
-        light_obj.setLightType(o.light_type)
-        light_obj.setIntensity(o.intensity)
-        light_obj.setColor(o.color)
-        light_obj.setPosition(o.position)
-        light_obj.setTarget(o.target)
-        light_obj.setAttenuation(o.atten_start, o.atten_end)
+    def _write_light(self, o: Any) -> Optional[Any]:
+        light_obj = self.dwg.newObject("LIGHT") if self.dwg else None
+        if light_obj:
+            light_obj.setType(o.light_type.value if o.light_type else 0)
+            light_obj.setIntensity(o.intensity)
         return light_obj

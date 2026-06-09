@@ -28,7 +28,7 @@ class ProtobufParser(BaseDSDMParser):
         msg = msg_class()
         msg.ParseFromString(raw_bytes)
 
-        data_dict = MessageToDict(msg, preserving_proto_field_name=True)  # type: ignore[call-arg]  # including_default_value_fields removed
+        data_dict = MessageToDict(msg, preserving_proto_field_name=True)
         return build_node_from_python(data_dict, path="$")
 
     def _detect_media_type(self, source_name: str) -> str:

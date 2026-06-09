@@ -100,13 +100,19 @@ class DocumentFormat(str, Enum):
     XPDL_XML = "xpd_xml"
 
     # KSDM formats
-    XMLA_DISCOVER_XML = "xmla_discover_xml"
-    MONDRIAN_SCHEMA = "mondrian_schema"
+    #    BI Aggregation
     CWM_XMI = "cwm_xmi"
+    MONDRIAN_SCHEMA = "mondrian_schema"
+    XMLA_DISCOVER_XML = "xmla_discover_xml"
+    MDX_QUERY_XML = "mdx_query_xml"
+    #    ML-Mining
     PMML_XML = "pmml_xml"
     ONNX_PROTOBUF = "onnx_protobuf"
+    #    ML-Mining
     RDF_TURTLE = "rdf_turtle"
     RML_YAML = "rml_yaml"
+    #GQL_SCHEMA # TODO: where is the best standard for this format?
+    #    Process-Mining
     JPRM_JSON = "jprm_json"
     YPRM_YAML = "yprm_yaml"
     
@@ -855,6 +861,15 @@ MEDIA_TYPES: dict[str, MediaType] = {
         kind=MediaContentKind.KNOWLEDGE_EXTRACTION_DEFINITION,
         raw_type=MediaRawType.TEXT, 
         description="XML/A Discover Response",
+    ),
+    "mdx_query_xml": MediaType(
+        mime="application/xml",
+        format=DocumentFormat.MDX_QUERY_XML,
+        standard=DocumentStandard.KSDM, 
+        extensions=[".xml"],
+        kind=MediaContentKind.KNOWLEDGE_EXTRACTION_DEFINITION,
+        raw_type=MediaRawType.TEXT, 
+        description="MDX Query",
     ),
     "mondrian_schema": MediaType(
         mime="application/xml",

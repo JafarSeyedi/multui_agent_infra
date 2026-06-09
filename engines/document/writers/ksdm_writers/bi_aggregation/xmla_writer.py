@@ -20,7 +20,7 @@ class XmlaDiscoverWriter(BaseDocumentWriter):
     def can_write(self, document) -> bool:
         return isinstance(document, BiAggregationDocument) and document.bi_aggregation_kind == BiAggregationKind.XMLA_CUBE
 
-    def write(self, document: BaseDocument, destination: str | Path | BinaryIO | TextIO | None = None, **options: Any) -> bytes:
+    async def write(self, document: BaseDocument, destination: str | Path | BinaryIO | TextIO | None = None, **options: Any) -> bytes:
         getattr(document, 'xmla_discover_request', XmlaDiscoverRequest())
         resp = getattr(document, 'xmla_discover_response', XmlaDiscoverResponse())
         envelope = ET.Element('{http://schemas.xmlsoap.org/soap/envelope/}Envelope')
@@ -45,10 +45,10 @@ class XmlaDiscoverWriter(BaseDocumentWriter):
         return xml_bytes
 
     async def write_stream(self, document: BaseDocument) -> AsyncIterator[bytes]:
-        yield self.write(document)
+        yield await self.write(document)
 
     async def write_to_file(self, document: BaseDocument, target: Path, options: dict[str, Any] | None = None) -> None:
-        target.write_bytes(self.write(document))
+        target.write_bytes(await self.write(document))
 
     def get_supported_media_types(self) -> list[str]:
         return ["application/xml"]

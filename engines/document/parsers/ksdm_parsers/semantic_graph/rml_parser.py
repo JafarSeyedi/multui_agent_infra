@@ -5,7 +5,7 @@ from typing import Any, BinaryIO, TextIO
 from engines.document.parsers.base import BaseDocumentParser, ParseResult
 from engines.document.models.media_types import MEDIA_TYPES
 from engines.document.models.ksdm_models import (
-    KsdDocument,
+    SemanticGraphDocument,
     RmlLogicalSource,
     RmlMapping,
     RmlPredicateObjectMap,
@@ -82,7 +82,12 @@ class RmlParser(BaseDocumentParser):
                 predicate_object_maps=pomaps,
                 references=refs
             )
-            doc = KsdDocument(rml_mappings=[mapping])
+            doc = SemanticGraphDocument(
+                rml_mappings=[mapping],
+                title=str(Path(source).stem) if isinstance(source, (str, Path)) else "Untitled",
+                document_id=str(Path(source).stem) if isinstance(source, (str, Path)) else "unknown",
+                media_type=MEDIA_TYPES["rml_yaml"]
+            )
             return ParseResult(document=doc)
         except Exception as e:
             raise Exception(f"RML parse failed: {e}")

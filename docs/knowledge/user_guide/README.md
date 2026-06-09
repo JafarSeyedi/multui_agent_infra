@@ -18,7 +18,7 @@ from engines.knowledge import (
     KnowledgeRagEngine,
     KnowledgeMemoryEngine,
 )
-from engines.document.models import ISDMDocument, KsdDocument
+from engines.document.models import ISDMDocument, SemanticGraphDocument
 
 # BI Aggregation
 bi = BiAggregationEngine()

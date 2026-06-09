@@ -505,7 +505,7 @@ class CSDMDocument(BaseDocument):
     blocks: dict[str, Any] = field(default_factory=dict)
 
     # ENTITIES (model space / paper space)
-    entities: list[CSDMEntity] = field(default_factory=list)
+    entities: list[CSDMObject] = field(default_factory=list)
 
     # OBJECT TABLES (layouts, materials, mleader styles...)
     objects: CSDMObjectTables = field(default_factory=CSDMObjectTables)
@@ -525,7 +525,7 @@ class CSDMDocument(BaseDocument):
     def find_by_handle(self, handle: CSDMHandle) -> CSDMObject | None:
         return self.handle_index.get(handle.value)
 
-    def add_entity(self, entity: CSDMEntity):
+    def add_entity(self, entity: CSDMObject):
         self.entities.append(entity)
         self.register_object(entity)
 

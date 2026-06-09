@@ -74,6 +74,9 @@ class XmlaDiscoverParser(BaseDocumentParser):
             discover_resp = XmlaDiscoverResponse(request_type=request_type, rows=rows, schema_rowset=schema_rowset)
             
             doc = BiAggregationDocument(
+                title=Path(source).stem if isinstance(source, (str, Path)) else "xmla_document",
+                document_id=str(Path(source).stem) if isinstance(source, (str, Path)) else "unknown",
+                media_type=MEDIA_TYPES["xmla_discover_xml"],
                 bi_aggregation_kind=BiAggregationKind.XMLA_CUBE,
                 xmla_discover_request=discover_req,
                 xmla_discover_response=discover_resp,

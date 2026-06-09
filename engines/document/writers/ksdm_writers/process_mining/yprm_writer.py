@@ -9,7 +9,7 @@ import yaml
 from engines.document.models.base import BaseDocument
 from engines.document.models.ksdm_models import ProcessMiningDefinitionDocument
 from engines.document.writers.base import BaseDocumentWriter, WriteOptions
-from engines.document.writers.ksdm_writers.jprm_writer import _clustering_config_to_dict, _require
+from engines.document.writers.ksdm_writers.process_mining.jprm_writer import _clustering_config_to_dict, _require
 
 
 class YprmWriter(BaseDocumentWriter):

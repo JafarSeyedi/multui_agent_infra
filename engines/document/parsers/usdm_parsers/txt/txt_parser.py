@@ -331,7 +331,7 @@ class TXTParser(BaseDocumentParser):
 
             if kind == 'heading':
                 content = entry[1]
-                level = entry[2]  # type: ignore[misc]
+                level: int = entry[2] if len(entry) > 2 else 1
                 elem_id = self._next_id("heading")
 
                 heading_content = HeadingContent(

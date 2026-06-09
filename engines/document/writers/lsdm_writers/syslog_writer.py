@@ -3,10 +3,10 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from engines.document.models.lsdm_models import EventLogDocument
-from engines.document.writers.base import BaseDocumentWriter, WriteOptions
+from engines.document.writers.base import BaseDocument, BaseDocumentWriter, WriteOptions
 
 FACILITY_CODES = {
     "kern": 0, "user": 1, "mail": 2, "daemon": 3, "auth": 4,
@@ -26,12 +26,13 @@ class SyslogWriter(BaseDocumentWriter):
     def __init__(self, options: WriteOptions | None = None):
         self.options = options or WriteOptions()
 
-    async def write_stream(self, document: EventLogDocument) -> AsyncIterator[bytes]:
-        yield await self.write(document)
+    async def write_stream(self, document: BaseDocument) -> AsyncIterator[bytes]:
+        yield await self.write(cast(EventLogDocument, document))
 
-    async def write(self, document: EventLogDocument) -> bytes:
+    async def write(self, document: BaseDocument) -> bytes:
+        doc = cast(EventLogDocument, document)
         lines: list[str] = []
-        for event in document.events:
+        for event in doc.events:
             facility_code = FACILITY_CODES.get(event.syslog_facility.value if event.syslog_facility else "", 1)
             severity_code = SEVERITY_CODES.get(event.syslog_severity.value if event.syslog_severity else "", 6)
             pri = facility_code * 8 + severity_code
@@ -54,8 +55,8 @@ class SyslogWriter(BaseDocumentWriter):
             )
         return "\n".join(lines).encode("utf-8")
 
-    async def write_to_file(self, document: EventLogDocument, target: Path, options: dict[str, Any] | None = None) -> None:
-        target.write_bytes(await self.write(document))
+    async def write_to_file(self, document: BaseDocument, target: Path, options: dict[str, Any] | None = None) -> None:
+        target.write_bytes(await self.write(cast(EventLogDocument, document)))
 
     def get_supported_media_types(self) -> list[str]:
         return ["application/x-syslog"]

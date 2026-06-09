@@ -13,7 +13,7 @@ class BSONParser(BinaryParser):
     supported_extensions = (".bson",)
 
     async def _parse_to_datanode(self, raw_bytes: bytes, options=None) -> DataNode:
-        data = bson.decode(raw_bytes)  # type: ignore[attr-defined]
+        data = bson.decode(raw_bytes)
         if isinstance(data, list):
             if len(data) == 1:
                 return build_node_from_python(data[0], path="$")

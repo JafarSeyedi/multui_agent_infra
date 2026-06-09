@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from .base_trainer import BaseTrainer
 
 class RerankerTrainer(BaseTrainer):
@@ -9,6 +11,10 @@ class RerankerTrainer(BaseTrainer):
         self.model = model
         self.optimizer = optimizer
 
+    async def train(self, samples: list[Any], epochs: int = 10) -> None:
+        for _ in range(epochs):
+            for sample in samples:
+                pass
 
     def train_step(self, query, positive_doc, negative_doc):
 

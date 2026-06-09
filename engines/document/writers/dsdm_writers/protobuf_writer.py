@@ -38,7 +38,7 @@ class ProtobufWriter(BaseDSDMWriter):
         msg = msg_class()
 
         py_obj = node_to_python(root_node)
-        ParseDict(py_obj, msg)  # type: ignore[call-arg]  # including defaults handled by msg.ParseFromString after?
+        ParseDict(py_obj, msg)
         return msg.SerializeToString()
 
     async def _serialise_node(self, node: DataNode, options: DSDMWriteOptions) -> bytes:

@@ -15,7 +15,7 @@ class PmmlWriter(BaseDocumentWriter):
     def can_write(self, document) -> bool:
         return isinstance(document, MlMiningDocument)
 
-    def write(self, document: BaseDocument, destination: str | Path | BinaryIO | TextIO | None = None, **options: Any) -> bytes:
+    async def write(self, document: BaseDocument, destination: str | Path | BinaryIO | TextIO | None = None, **options: Any) -> bytes:
         pmml_ns = 'http://www.dmg.org/PMML-4_2'
         root = ET.Element('PMML')
         root.set('version', '4.2')
@@ -49,10 +49,10 @@ class PmmlWriter(BaseDocumentWriter):
         return xml_bytes
 
     async def write_stream(self, document: BaseDocument) -> AsyncIterator[bytes]:
-        yield self.write(document)
+        yield await self.write(document)
 
     async def write_to_file(self, document: BaseDocument, target: Path, options: dict[str, Any] | None = None) -> None:
-        target.write_bytes(self.write(document))
+        target.write_bytes(await self.write(document))
 
     def get_supported_media_types(self) -> list[str]:
         return ["application/xml"]

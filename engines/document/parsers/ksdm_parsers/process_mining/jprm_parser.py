@@ -1,9 +1,8 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any, cast
-
-import yaml
 
 from engines.document.models.ksdm_models import (
     CatchEventMiningDefinition,
@@ -15,21 +14,19 @@ from engines.document.models.ksdm_models import (
     ProcessMiningDefinitionDocument,
 )
 from engines.document.models.media_types import MEDIA_TYPES, MediaType
-from ..base import BaseDocumentParser, ParseOptions
+from ...base import BaseDocumentParser, ParseOptions
 
 
-class YprmParser(BaseDocumentParser):
-    name = "yprm_parser"
-    supported_extensions = [".yprm"]
+class JprmParser(BaseDocumentParser):
+    name = "jprm_parser"
+    supported_extensions = [".jprm"]
 
     async def parse_bytes(
         self, data: bytes, document_id: str, source_name: str,
         metadata: dict[str, Any] | None = None,
         options: ParseOptions | None = None,
     ) -> ProcessMiningDefinitionDocument:
-        raw = yaml.safe_load(data.decode("utf-8"))
-        if raw is None:
-            raw = {}
+        raw = json.loads(data.decode("utf-8"))
         processes = {}
         for pid, pdata in raw.get("processes", {}).items():
             dps = {}
@@ -78,7 +75,7 @@ class YprmParser(BaseDocumentParser):
             processes=processes,
             default_clustering_config=dcc,
             metadata=raw.get("metadata", {}),
-            media_type=cast(MediaType, MEDIA_TYPES.get("yprm_yaml")),
+            media_type=cast(MediaType, MEDIA_TYPES.get("jprm_json")),
         )
 
     async def parse_path(

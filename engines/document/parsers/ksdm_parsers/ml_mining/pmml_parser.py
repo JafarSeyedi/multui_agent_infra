@@ -77,7 +77,10 @@ class PmmlParser(BaseDocumentParser):
             doc = MlMiningDocument(
                 model_type=model_type,
                 model_data=data,
-                pmml_model=pmml_model
+                pmml_model=pmml_model,
+                title=str(Path(source).stem) if isinstance(source, (str, Path)) else "Untitled",
+                document_id=str(Path(source).stem) if isinstance(source, (str, Path)) else "unknown",
+                media_type=MEDIA_TYPES["pmml_xml"]
             )
             return ParseResult(document=doc)
         except Exception as e:

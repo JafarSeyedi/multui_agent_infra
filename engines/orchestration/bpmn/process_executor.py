@@ -25,7 +25,7 @@ from ..core.instance import ProcessInstance
 from ..core.token import Token, TokenState
 from ..runtime.state_manager import StateManager
 from .activity_handler import ActivityHandler, ActivityExecutionResult
-from .sequence_flow import compute_next_nodes
+from .sequence_flow import compute_next_nodes, HandlerSequenceFlow
 from .bpmn_execution_semantics import (
     BpmnEventSubProcessHandler,
     BpmnTransactionHandler,
@@ -67,7 +67,7 @@ class ProcessModel:
     definition_id: str
     start_node: str | None
     activities: list[dict[str, Any]]
-    flows: list[dict[str, Any]]
+    flows: list[HandlerSequenceFlow]
 
 
 @dataclass(frozen=True)
@@ -361,7 +361,7 @@ class BPMNProcessExecutor:
         if all_outgoing:
             return all_outgoing
         return [f for f in model.flows
-                if (f.get("target") or f.get("targetRef")) == node_id]
+                if f.target_ref == node_id]
 
     def _resolve_ref_id(self, ref: Any) -> str | None:
         if ref is None:
@@ -405,7 +405,13 @@ class BPMNProcessExecutor:
 
     def _normalize_model(self, payload: dict[str, Any]) -> ProcessModel:
         activities = list(payload.get("activities", []))
-        flows = list(payload.get("flows", []))
+        raw_flows = list(payload.get("flows", []))
+        typed_flows: list[HandlerSequenceFlow] = []
+        for f in raw_flows:
+            if isinstance(f, HandlerSequenceFlow):
+                typed_flows.append(f)
+            elif isinstance(f, dict):
+                typed_flows.append(self._dict_to_handler_flow(f))
         start_node = payload.get("start_event_id")
         if not start_node:
             for item in activities:
@@ -424,7 +430,17 @@ class BPMNProcessExecutor:
                         break
         return ProcessModel(
             definition_id=str(payload.get("id", "process")),
-            start_node=start_node, activities=activities, flows=flows,
+            start_node=start_node, activities=activities, flows=typed_flows,
+        )
+
+    @staticmethod
+    def _dict_to_handler_flow(d: dict[str, Any]) -> HandlerSequenceFlow:
+        return HandlerSequenceFlow(
+            flow_id=str(d.get("id", "")),
+            source_ref=str(d.get("source") or d.get("sourceRef") or d.get("source_id") or ""),
+            target_ref=str(d.get("target") or d.get("targetRef") or d.get("target_id") or ""),
+            condition_expression=str(d.get("condition") or d.get("conditionExpression") or "") or None,
+            is_default=d.get("isDefault", d.get("is_default", False)),
         )
 
     def _normalize_model_osdm(self, definition_xml: dict[str, Any], definition_id: str) -> TypedProcessModel:
@@ -569,8 +585,8 @@ class BPMNProcessExecutor:
     def _get_flow_source(self, flow_id: str, model: ProcessModel, typed_model: TypedProcessModel) -> str | None:
         """Get the source node ID for a given sequence flow."""
         for f in model.flows:
-            if f.get("id") == flow_id:
-                return f.get("sourceRef") or f.get("source")
+            if f.flow_id == flow_id:
+                return f.source_ref if f.source_ref else None
         return None
 
     # ── Gateway condition evaluation (typed) ─────────────────────────
@@ -666,30 +682,36 @@ class BPMNProcessExecutor:
         return "parallel" in t or "inclusive" in t
 
     def _evaluate_gateway_split(
-        self, gateway_id: str, targets: list[str], context: dict[str, Any], gateway_type: str,
+        self, gateway_id: str, targets: list[str], context: dict[str, Any], gateway_type: str, model: ProcessModel | None = None,
     ) -> list[str]:
         from ..expression.evaluator import EvaluationContext
         from ..expression.python_evaluator import PythonEvaluator
         evaluator = PythonEvaluator()
         if gateway_type == "exclusive":
             for target in targets:
-                flow = self._find_flow_to_target(gateway_id, target)
-                if flow and flow.get("condition"):
+                if model:
+                    flow = self._find_flow_to_target(gateway_id, target, model)
+                else:
+                    flow = None
+                if flow and flow.condition_expression:
                     try:
-                        if bool(evaluator.evaluate(flow["condition"], EvaluationContext(variables=context))):
+                        if bool(evaluator.evaluate(flow.condition_expression, EvaluationContext(variables=context))):
                             return [target]
                     except Exception:
                         continue
-                elif not flow or not flow.get("condition"):
+                elif not flow or not flow.condition_expression:
                     return [target]
             return [targets[-1]] if targets else []
         elif gateway_type == "inclusive":
             selected = []
             for target in targets:
-                flow = self._find_flow_to_target(gateway_id, target)
-                if flow and flow.get("condition"):
+                if model:
+                    flow = self._find_flow_to_target(gateway_id, target, model)
+                else:
+                    flow = None
+                if flow and flow.condition_expression:
                     try:
-                        if bool(evaluator.evaluate(flow["condition"], EvaluationContext(variables=context))):
+                        if bool(evaluator.evaluate(flow.condition_expression, EvaluationContext(variables=context))):
                             selected.append(target)
                     except Exception:
                         continue
@@ -698,7 +720,10 @@ class BPMNProcessExecutor:
             return selected if selected else ([targets[-1]] if targets else [])
         return targets
 
-    def _find_flow_to_target(self, source_id: str, target_id: str) -> dict[str, Any] | None:
+    def _find_flow_to_target(self, source_id: str, target_id: str, model: ProcessModel) -> HandlerSequenceFlow | None:
+        for f in model.flows:
+            if f.source_ref == source_id and f.target_ref == target_id:
+                return f
         return None
 
     # ── Token and variable persistence ───────────────────────────────

@@ -27,7 +27,7 @@ class BSONWriter(BaseDSDMWriter):
             # We'll serialize the list as a top-level document with key "documents"
             wrapper_key = options.custom.get("bson_wrapper_key", "documents") if options.custom else "documents"
             py_obj = {wrapper_key: py_obj}
-        return bson.encode(py_obj)  # type: ignore[attr-defined]
+        return bson.encode(py_obj)
 
     async def _serialise_node(self, node: DataNode, options: DSDMWriteOptions) -> bytes:
         return await self._serialise_root(node, options)

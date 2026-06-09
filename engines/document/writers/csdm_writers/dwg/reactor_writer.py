@@ -41,7 +41,7 @@ class ReactorWriter:
     # =====================================================================
     def _attach_reactor(self, owner_obj: Any, reactor_link: ReactorLink):
         try:
-            target = self.ctx.resolve(reactor_link.target)
+            target = self.ctx.resolve(reactor_link.target.value)
             if not target:
                 self.ctx.warn(f"Reactor target not found: {reactor_link.target}")
                 return

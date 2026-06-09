@@ -19,7 +19,7 @@ class MondrianSchemaWriter(BaseDocumentWriter):
     def can_write(self, document) -> bool:
         return isinstance(document, BiAggregationDocument) and document.bi_aggregation_kind == BiAggregationKind.MONDRIAN_SCHEMA
 
-    def write(self, document: BaseDocument, destination: str | Path | BinaryIO | TextIO | None = None, **options: Any) -> bytes:
+    async def write(self, document: BaseDocument, destination: str | Path | BinaryIO | TextIO | None = None, **options: Any) -> bytes:
         schema = getattr(document, 'mondrian_schema', MondrianSchema())
         root = ET.Element('Schema')
         root.set('xmlns', 'http://mondrian.sourceforge.net')
@@ -62,10 +62,10 @@ class MondrianSchemaWriter(BaseDocumentWriter):
         return xml_bytes
 
     async def write_stream(self, document: BaseDocument) -> AsyncIterator[bytes]:
-        yield self.write(document)
+        yield await self.write(document)
 
     async def write_to_file(self, document: BaseDocument, target: Path, options: dict[str, Any] | None = None) -> None:
-        target.write_bytes(self.write(document))
+        target.write_bytes(await self.write(document))
 
     def get_supported_media_types(self) -> list[str]:
         return ["application/xml"]

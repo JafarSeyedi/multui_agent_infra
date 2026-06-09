@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, cast
+
+from qdrant_client import models as qdrant_models
 
 from qdrant_client import models
 from qdrant_client import QdrantClient
@@ -162,8 +164,7 @@ class QdrantAdapter(VectorDBAdapter):
 
             if filter_conditions:
                 # ── FIX Error 2: cast to Sequence to fix invariance ──
-                must_seq: Sequence[models.FieldCondition] = filter_conditions
-                qdrant_filter = models.Filter(must=must_seq)  # type: ignore[arg-type]
+                qdrant_filter = models.Filter(must=cast(list[Any], filter_conditions))
 
         try:
             # ── FIX Error 3: replace client.search with client.query_points ──
@@ -209,7 +210,7 @@ class QdrantAdapter(VectorDBAdapter):
             self.client.delete(
                 collection_name=self.collection_name,
                 wait=True,
-                points_selector=models.PointIdsList(points=ids),  # type: ignore[arg-type]
+                points_selector=models.PointIdsList(points=cast(list[Any], ids)),
             )
             print(
                 f"QdrantAdapter: Deleted {len(ids)} items "

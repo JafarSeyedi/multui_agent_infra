@@ -409,7 +409,7 @@ class DOCXParser:
 
     def _convert_sections(self, logical_elements: list[LogicalElement]) -> list[Section]:
         sections: list[Section] = []
-        current_section_elements: list[DocumentElement] = []
+        current_section_elements: list[DocumentElement | LogicalElement] = []
         current_title: HeadingContent | None = None
 
         for elem in logical_elements:
@@ -417,12 +417,12 @@ class DOCXParser:
             if elem.element_type == ElementType.HEADING and getattr(elem.metadata, 'level', 0) == 1:
                 # Save previous section if any
                 if current_section_elements:
-                    sections.append(Section(title=current_title, elements=current_section_elements))  # type: ignore[arg-type]
+                    sections.append(Section(title=current_title, elements=current_section_elements))
                     current_section_elements = []
                 current_title = cast(HeadingContent, elem.content) if isinstance(elem.content, HeadingContent) else None
             elif elem.element_type in (ElementType.PAGE_BREAK, ElementType.SECTION_BREAK):
                 if current_section_elements:
-                    sections.append(Section(title=current_title, elements=current_section_elements))  # type: ignore[arg-type]
+                    sections.append(Section(title=current_title, elements=current_section_elements))
                     current_section_elements = []
                 current_title = None
             else:
@@ -430,7 +430,7 @@ class DOCXParser:
 
         # Final section
         if current_section_elements:
-            sections.append(Section(title=current_title, elements=current_section_elements))  # type: ignore[arg-type]
+            sections.append(Section(title=current_title, elements=current_section_elements))
 
         return sections
 

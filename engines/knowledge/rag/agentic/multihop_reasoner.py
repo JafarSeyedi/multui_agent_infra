@@ -1,7 +1,13 @@
+from typing import Any
+
+
 class MultiHopReasoner:
 
     def __init__(self, llm):
         self.llm = llm
+
+    async def reason(self, query: str, evidence: list[Any], max_hops: int = 3) -> dict[str, Any]:
+        return {"query": query, "conclusion": "", "evidence": evidence}
 
     async def generate_followup(self, query: str, evidence_text: str) -> str:
         prompt = f"""

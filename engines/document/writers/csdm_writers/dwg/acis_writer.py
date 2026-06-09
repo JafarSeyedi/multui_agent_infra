@@ -44,16 +44,12 @@ class ACISWriter:
     # Detect ACIS-bearing objects
     # =====================================================================
     def _collect_acis_objects(self) -> List[CSDMObject]:
-        out = []
+        out: List[CSDMObject] = []
         # geometry entities
         for e in self.ctx.csdm_doc.entities:
-            if isinstance(e, (E.Solid3D, E.Surface, E.Body)) and \
+            if isinstance(e, (E.Solid3DEntity, E.SurfaceACISEntity, E.BodyEntity)) and \
                (hasattr(e, "acis_data") or hasattr(e, "brep_data")):
                 out.append(e)
-        # non-graphical ACIS storage
-        for obj in self.ctx.csdm_doc.non_graphical_objects:
-            if hasattr(obj, "acis_data") or hasattr(obj, "brep_data"):
-                out.append(obj)
         return out
     # =====================================================================
     # Apply ACIS data to ODA object

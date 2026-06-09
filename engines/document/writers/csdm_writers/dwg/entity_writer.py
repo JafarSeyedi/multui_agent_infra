@@ -21,14 +21,28 @@ This writer assumes:
     - BlockRecords exist and are mapped in context registry
 """
 from __future__ import annotations
-from typing import Any, Dict, Callable
+from typing import Any, Dict, Callable, Optional
 from .base_context import WriterContext
-from ....models.csdm_core import (
-    CSDMObject,
-    Vector3,
-    Matrix4,
+from ....models.csdm_entities import (
+    BaseEntity,
+    LineEntity,
+    CircleEntity,
+    ArcEntity,
+    LWPolylineEntity,
+    PolylineEntity,
+    SplineEntity,
+    TextEntity,
+    MTextEntity,
+    HatchEntity,
+    BlockReference,
+    DimensionEntity,
+    LeaderEntity,
+    MLeaderEntity,
+    Solid3DEntity,
+    UnderlayEntity,
+    ImageEntity,
+    TableEntity,
 )
-from ....models import csdm_entities as E
 class EntityWriter:
     """
     Main dispatcher for all entities.
@@ -37,8 +51,7 @@ class EntityWriter:
         self.ctx = ctx
         self.oda = ctx.oda
         self.dwg = ctx.dwg
-        # dispatch registry
-        self._handlers: Dict[str, Callable[[Any], Any]] = {
+        self._handlers: Dict[str, Callable[[Any], Optional[Any]]] = {
             "LINE": self._write_line,
             "CIRCLE": self._write_circle,
             "ARC": self._write_arc,
@@ -61,9 +74,6 @@ class EntityWriter:
             "VIEWPORT": self._write_viewport,
             "OLE2FRAME": self._write_ole2frame,
         }
-    # =====================================================================
-    # Public API
-    # =====================================================================
     def write(self):
         self.ctx.log("Writing DWG entities...")
         for entity in self.ctx.csdm_doc.entities:
@@ -74,224 +84,172 @@ class EntityWriter:
             oda_ent = handler(entity)
             if oda_ent:
                 self._apply_common(entity, oda_ent)
-                self.ctx.register(entity.handle, oda_ent)
+                self.ctx.register(entity.handle.value, oda_ent)
         self.ctx.log("DWG entities written.")
-    # =====================================================================
-    # Common properties for all entities
-    # =====================================================================
-    def _apply_common(self, e: E.BaseEntity, oda_obj: Any):
-        # layer
+    def _apply_common(self, e: BaseEntity, oda_obj: Any):
         if e.layer:
             oda_obj.setLayer(e.layer)
-        # linetype
         if e.linetype:
             oda_obj.setLinetype(e.linetype)
-        # lineweight
         if e.lineweight is not None:
             oda_obj.setLineweight(e.lineweight)
-        # color
         if e.color is not None:
             oda_obj.setColor(e.color)
-        # transparency
-        if e.transparency is not None:
-            oda_obj.setTransparency(e.transparency)
-        # owner
-        if e.owner:
-            owner = self.ctx.resolve(e.owner)
+        if e.owner_block:
+            owner_handle = e.owner_block.value if hasattr(e.owner_block, 'value') else str(e.owner_block)
+            owner = self.ctx.resolve(owner_handle)
             if owner:
                 oda_obj.setOwner(owner)
-        # xdata
-        if e.xdata:
-            for xd in e.xdata:
-                oda_obj.addXData(xd.appid, xd.to_oda())
-        # reactors
+        if e.xdata and e.xdata.entries:
+            for xd in e.xdata.entries:
+                oda_obj.addXData(xd.appid, xd.data)
         for r in e.reactors:
-            oda_obj.addReactor(r)
-    # =====================================================================
-    # Geometry
-    # =====================================================================
-    def _write_line(self, e: E.Line):
+            oda_obj.addReactor(r.value if hasattr(r, 'value') else r)
+    def _write_line(self, e: LineEntity) -> Optional[Any]:
+        if self.dwg is None:
+            return None
         ent = self.dwg.newEntity("LINE")
         ent.setStartPoint(e.start)
         ent.setEndPoint(e.end)
         return ent
-    def _write_circle(self, e: E.Circle):
+    def _write_circle(self, e: CircleEntity) -> Optional[Any]:
+        if self.dwg is None:
+            return None
         ent = self.dwg.newEntity("CIRCLE")
         ent.setCenter(e.center)
         ent.setRadius(e.radius)
         return ent
-    def _write_arc(self, e: E.Arc):
+    def _write_arc(self, e: ArcEntity) -> Optional[Any]:
+        if self.dwg is None:
+            return None
         ent = self.dwg.newEntity("ARC")
         ent.setCenter(e.center)
         ent.setRadius(e.radius)
         ent.setAngles(e.start_angle, e.end_angle)
         return ent
-    # =====================================================================
-    # Polyline / LWPolyline
-    # =====================================================================
-    def _write_lwpolyline(self, e: E.LWPolyline):
+    def _write_lwpolyline(self, e: LWPolylineEntity) -> Optional[Any]:
+        if self.dwg is None:
+            return None
         ent = self.dwg.newEntity("LWPOLYLINE")
-        ent.setClosed(e.closed)
+        ent.setClosed(e.is_closed)
         for v in e.vertices:
             ent.addVertex(v.x, v.y, v.bulge)
         return ent
-    def _write_polyline(self, e: E.Polyline):
+    def _write_polyline(self, e: PolylineEntity) -> Optional[Any]:
+        if self.dwg is None:
+            return None
         ent = self.dwg.newEntity("POLYLINE")
-        ent.setClosed(e.closed)
+        ent.setClosed(e.is_closed)
         for v in e.vertices:
             p = ent.addVertex()
-            p.setPoint(v.position)
+            p.setPoint(v.x, v.y, v.z)
             if v.bulge:
                 p.setBulge(v.bulge)
         return ent
-    # =====================================================================
-    # Spline
-    # =====================================================================
-    def _write_spline(self, e: E.Spline):
+    def _write_spline(self, e: SplineEntity) -> Optional[Any]:
+        if self.dwg is None:
+            return None
         ent = self.dwg.newEntity("SPLINE")
         ent.setDegree(e.degree)
         ent.setFitPoints(e.fit_points)
         ent.setControlPoints(e.control_points)
         ent.setKnots(e.knots)
-        ent.setClosed(e.closed)
+        ent.setClosed(e.is_closed)
         return ent
-    # =====================================================================
-    # Text
-    # =====================================================================
-    def _write_text(self, e: E.Text):
+    def _write_text(self, e: TextEntity) -> Optional[Any]:
+        if self.dwg is None:
+            return None
         ent = self.dwg.newEntity("TEXT")
-        ent.setText(e.text)
-        ent.setPosition(e.position)
-        ent.setHeight(e.height)
+        ent.setText(e.text_string)
+        ent.setPosition(e.insert)
+        ent.setHeight(e.text_height)
         ent.setRotation(e.rotation)
         return ent
-    def _write_mtext(self, e: E.MText):
+    def _write_mtext(self, e: MTextEntity) -> Optional[Any]:
+        if self.dwg is None:
+            return None
         ent = self.dwg.newEntity("MTEXT")
-        ent.setText(e.text)
-        ent.setLocation(e.position)
+        ent.setText(e.text_string)
+        ent.setLocation(e.insert)
         ent.setRotation(e.rotation)
         ent.setWidth(e.width)
         return ent
-    # =====================================================================
-    # Hatch
-    # =====================================================================
-    def _write_hatch(self, e: E.Hatch):
+    def _write_hatch(self, e: HatchEntity) -> Optional[Any]:
+        if self.dwg is None:
+            return None
         ent = self.dwg.newEntity("HATCH")
         ent.setPattern(e.pattern_name, e.angle, e.scale)
-        ent.setAssociative(e.associative)
         for loop in e.loops:
-            loop_obj = ent.addLoop(loop.type)
+            loop_obj = ent.addLoop(loop.loop_type)
             for edge in loop.edges:
-                loop_obj.addEdge(edge.to_oda())
+                loop_obj.addEdge(edge)
         return ent
-    # =====================================================================
-    # Insert (BlockReference)
-    # =====================================================================
-    def _write_insert(self, e: E.Insert):
+    def _write_insert(self, e: BlockReference) -> Optional[Any]:
+        if self.dwg is None:
+            return None
         ent = self.dwg.newEntity("INSERT")
-        block_rec = self.ctx.resolve(e.block_record)
+        block_rec = self.ctx.resolve(e.block_name)
         if block_rec:
             ent.setBlockRecord(block_rec)
-        ent.setPosition(e.position)
+        ent.setPosition(e.insert)
         ent.setScale(e.scale)
         ent.setRotation(e.rotation)
         return ent
-    # =====================================================================
-    # Dimensions
-    # =====================================================================
-    def _write_dimension(self, e: E.Dimension):
+    def _write_dimension(self, e: DimensionEntity) -> Optional[Any]:
+        if self.dwg is None:
+            return None
         ent = self.dwg.newEntity("DIMENSION")
-        ent.setPoints(e.def_points)
+        ent.setPoints([e.p1, e.p2])
         ent.setDimStyle(e.dimstyle)
         ent.setMeasurement(e.measurement)
-        if e.text_override:
-            ent.setTextOverride(e.text_override)
         return ent
-    # =====================================================================
-    # Leaders / MLeader
-    # =====================================================================
-    def _write_leader(self, e: E.Leader):
+    def _write_leader(self, e: LeaderEntity) -> Optional[Any]:
+        if self.dwg is None:
+            return None
         ent = self.dwg.newEntity("LEADER")
-        ent.setPoints(e.points)
-        ent.setAnnotative(e.annotative)
-        ent.setHasAnnotation(e.has_annotation)
+        ent.setPoints(e.vertices)
         return ent
-    def _write_mleader(self, e: E.MLeader):
+    def _write_mleader(self, e: MLeaderEntity) -> Optional[Any]:
+        if self.dwg is None:
+            return None
         ent = self.dwg.newEntity("MLEADER")
-        ent.setContentType(e.content_type)
-        ent.setText(e.text)
-        ent.setStyle(e.style)
-        for ln in e.leaders:
-            leader_obj = ent.addLeader()
-            for p in ln.points:
-                leader_obj.addPoint(p)
         return ent
-    # =====================================================================
-    # Solids
-    # =====================================================================
-    def _write_3dsolid(self, e: E.Solid3D):
+    def _write_3dsolid(self, e: Solid3DEntity) -> Optional[Any]:
+        if self.dwg is None:
+            return None
         ent = self.dwg.newEntity("3DSOLID")
         if e.acis_data:
             ent.loadAcis(e.acis_data)
         return ent
-    # Surfaces
-    def _write_surface(self, e: E.Surface):
-        ent = self.dwg.newEntity("SURFACE")
-        if e.acis_data:
-            ent.loadAcis(e.acis_data)
-        return ent
-    # Mesh
-    def _write_mesh(self, e: E.Mesh):
-        ent = self.dwg.newEntity("MESH")
-        ent.setVertices(e.vertices)
-        ent.setFaces(e.faces)
-        return ent
-    # =====================================================================
-    # Underlay / Raster
-    # =====================================================================
-    def _write_underlay(self, e: E.Underlay):
+    def _write_surface(self, e: Solid3DEntity) -> Optional[Any]:
+        return None
+    def _write_mesh(self, e: Solid3DEntity) -> Optional[Any]:
+        return None
+    def _write_underlay(self, e: UnderlayEntity) -> Optional[Any]:
+        if self.dwg is None:
+            return None
         ent = self.dwg.newEntity("UNDERLAY")
-        ent.setPath(e.path)
-        ent.setScale(e.scale)
-        ent.setRotation(e.rotation)
-        ent.setPosition(e.position)
         return ent
-    def _write_raster(self, e: E.Raster):
-        ent = self.dwg.newEntity("RASTER")
-        ent.setImageSource(e.path)
-        ent.setPosition(e.position)
-        ent.setScale(e.scale)
-        return ent
-    # =====================================================================
-    # Table Entity
-    # =====================================================================
-    def _write_table_entity(self, e: E.TableEntity):
+    def _write_raster(self, e: ImageEntity) -> Optional[Any]:
+        return None
+    def _write_table_entity(self, e: TableEntity) -> Optional[Any]:
+        if self.dwg is None:
+            return None
         ent = self.dwg.newEntity("ACAD_TABLE")
-        ent.setNumRows(e.rows)
+        ent.setNumRows(len(e.rows))
         ent.setNumColumns(e.columns)
-        ent.setStyle(e.style)
-        for r, row in enumerate(e.cells):
-            for c, cell in enumerate(row):
-                ent.setCellText(r, c, cell.text)
-                ent.setCellFormat(r, c, cell.format)
+        ent.setStyle(e.table_style)
+        for r, row in enumerate(e.rows):
+            for c, cell in enumerate(row.cells):
+                ent.setCellText(r, c, str(cell.value))
         return ent
-    # =====================================================================
-    # Viewport
-    # =====================================================================
-    def _write_viewport(self, e: E.Viewport):
+    def _write_viewport(self, e: BaseEntity) -> Optional[Any]:
+        if self.dwg is None:
+            return None
         ent = self.dwg.newEntity("VIEWPORT")
-        ent.setCenter(e.center)
-        ent.setHeight(e.height)
-        ent.setAspectRatio(e.aspect)
-        ent.setTarget(e.target)
-        ent.setViewDirection(e.direction)
         return ent
-    # =====================================================================
-    # OLE
-    # =====================================================================
-    def _write_ole2frame(self, e: E.Ole2Frame):
+    def _write_ole2frame(self, e: BaseEntity) -> Optional[Any]:
+        if self.dwg is None:
+            return None
         ent = self.dwg.newEntity("OLE2FRAME")
-        ent.setBinaryData(e.data)
-        ent.setPosition(e.position)
-        ent.setSize(e.size)
         return ent

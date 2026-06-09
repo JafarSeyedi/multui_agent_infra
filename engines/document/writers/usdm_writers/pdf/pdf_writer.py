@@ -50,7 +50,7 @@ else:
     _FontStyleObj = _RealFontStyle
 
 
-class FontManager:  # type: ignore[no-redef]
+class FontManager:
     """Fallback font manager when reportlab is not available."""
 
     def __init__(self, embed_fonts: bool = True, subset_fonts: bool = True) -> None:
@@ -70,7 +70,7 @@ class FontManager:  # type: ignore[no-redef]
         return "/F1"
 
 
-class FontStyle:  # type: ignore[no-redef]
+class FontStyle:
     """Font style enumeration (re-export for API compatibility)."""
     NORMAL: str = "normal"
     BOLD: str = "bold"

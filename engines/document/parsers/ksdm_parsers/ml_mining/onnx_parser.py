@@ -46,7 +46,10 @@ class OnnxParser(BaseDocumentParser):
             doc = MlMiningDocument(
                 model_type=MiningModelType.ONNX_MODEL,
                 model_data=b'',
-                onnx_model=None
+                onnx_model=None,
+                title=str(Path(source).stem) if isinstance(source, (str, Path)) else "Untitled",
+                document_id=str(Path(source).stem) if isinstance(source, (str, Path)) else "unknown",
+                media_type=MEDIA_TYPES["onnx_proto"]
             )
             return ParseResult(document=doc)
         except ImportError:

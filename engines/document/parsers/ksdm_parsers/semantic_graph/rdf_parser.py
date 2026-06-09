@@ -4,7 +4,7 @@ from typing import Any, BinaryIO, TextIO
 
 from engines.document.parsers.base import BaseDocumentParser, ParseResult
 from engines.document.models.media_types import MEDIA_TYPES
-from engines.document.models.ksdm_models import KsdDocument, RdfGraph, RdfTriple
+from engines.document.models.ksdm_models import SemanticGraphDocument, RdfGraph, RdfTriple
 
 RDFLIB_AVAILABLE = importlib.util.find_spec('rdflib') is not None
 
@@ -41,7 +41,12 @@ class RdfParser(BaseDocumentParser):
             for s, p, o in g:
                 triples.append(RdfTriple(subject=str(s), predicate=str(p), object_=str(o)))
             rdf_graph = RdfGraph(graph_name=None, triples=triples)
-            doc = KsdDocument(rdf_graphs=[rdf_graph])
+            doc = SemanticGraphDocument(
+                rdf_graphs=[rdf_graph],
+                title=str(Path(source).stem) if isinstance(source, (str, Path)) else "Untitled",
+                document_id=str(Path(source).stem) if isinstance(source, (str, Path)) else "unknown",
+                media_type=MEDIA_TYPES["rdf_turtle"]
+            )
             return ParseResult(document=doc)
         except ImportError:
             raise Exception("RDF parsing requires 'rdflib' package. Install with: pip install rdflib")

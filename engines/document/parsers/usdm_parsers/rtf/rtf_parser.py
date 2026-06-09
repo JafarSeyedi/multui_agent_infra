@@ -322,9 +322,12 @@ class RtfInterpreter:
         }
         if self.info:
             metadata["info"] = self.info
-        for key, val in [("headers", self.headers), ("footers", self.footers), ("footnotes", self.footnotes)]:
-            if val:
-                metadata[f"{key}_count"] = len(val)  # type: ignore[arg-type]
+        if self.headers:
+            metadata["headers_count"] = len(self.headers)
+        if self.footers:
+            metadata["footers_count"] = len(self.footers)
+        if self.footnotes:
+            metadata["footnotes_count"] = len(self.footnotes)
         if not self.sections:
             self._ensure_section()
         return USDMDocument(

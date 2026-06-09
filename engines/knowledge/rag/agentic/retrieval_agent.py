@@ -1,8 +1,15 @@
+from typing import Any
+
+
 class RetrievalAgent:
 
     def __init__(self, planner, max_steps=3):
         self.planner = planner
         self.max_steps = max_steps
+
+    async def answer(self, query: str, max_hops: int = 3, **options) -> dict[str, Any]:
+        results = await self.run(query=query, vector_service=None, top_k=options.get("top_k", 10), filters=None)
+        return {"query": query, "answer": "", "evidence": results}
 
     async def run(
         self,
