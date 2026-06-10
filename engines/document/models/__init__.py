@@ -20,6 +20,8 @@ from .media_detection import detect_by_content, detect_by_extension, detect_by_f
 
 from .media_types import DocumentFormat, MediaContentKind, MediaRawType, MediaType, MediaTypeRegistry
 
+from .ksdm_models import AttributeValue, DatasetSplit, EvaluationStage, FeatureImportance, FieldUsageType, ImportanceMethod, LossFunction, MiningField, MiningModelType, MiningSchema, ModelFormat, ModelGraph, ModelMetric, ModelNode, ModelParameter, ModelResult, MlMiningDocument, OpType, OptimizationAlgorithm, OutlierTreatment, ParameterName, Port, RegularizationConfig, TrainingConfig, TrainingTask
+
 from .msdm_capabilities import AnnotationSupport, CompositeSupport, ConstraintCapability, EnumCapability, IndexCapability, InheritanceSupport, MSDM_FormatCapability, NamespaceSupport, NestingDepth, RelationshipModel, ScalarSupport, TimeSeriesSupport
 
 from .msdm_models import Annotation, Attribute, Cardinality, CompositionType, Constraint, ConstraintType, DataType, Entity, EntityComposition, EntityKind, EntityRelationship, Index, IndexMethod, MSDMDocument, Namespace, ScalarType, VersionStatus, VisibilityKind
@@ -75,6 +77,7 @@ __all__ = [
     "Attribute",
     "AttributeDefEntity",
     "AttributeEntity",
+    "AttributeValue",
     "AudioContent",
     "Auditing",
     "AuthConfig",
@@ -321,6 +324,7 @@ __all__ = [
     "EntityRelationship",
     "EntityType",
     "EntryCriterion",
+    "EvaluationStage",
     "EnumCapability",
     "Error",
     "ErrorEventDefinition",
@@ -353,6 +357,7 @@ __all__ = [
     "Extrusion",
     "Face3DEntity",
     "FieldEntity",
+    "FieldUsageType",
     "FileReadTool",
     "FileWriteTool",
     "Fill",
@@ -414,6 +419,7 @@ __all__ = [
     "ImageEntity",
     "ImageObject",
     "ImplicitThrowEvent",
+    "ImportanceMethod",
     "InclusiveGateway",
     "Index",
     "IndexCapability",
@@ -469,6 +475,7 @@ __all__ = [
     "LoadBalancerConfig",
     "Locator",
     "LogicalElement",
+    "LossFunction",
     "LoopCharacteristics",
     "LoopType",
     "MCPClientToolBinding",
@@ -803,4 +810,27 @@ __all__ = [
     "get_common_formats",
     "get_standard_info",
     "register_entity",
+    "MlMiningDocument",
+    "MiningModelType",
+    "ModelFormat",
+    "TrainingTask",
+    "DatasetSplit",
+    "FeatureImportance",
+    "FieldUsageType",
+    "ImportanceMethod",
+    "LossFunction",
+    "MiningField",
+    "MiningSchema",
+    "ModelGraph",
+    "ModelMetric",
+    "ModelNode",
+    "ModelParameter",
+    "ModelResult",
+    "OpType",
+    "OptimizationAlgorithm",
+    "OutlierTreatment",
+    "ParameterName",
+    "Port",
+    "RegularizationConfig",
+    "TrainingConfig",
 ]

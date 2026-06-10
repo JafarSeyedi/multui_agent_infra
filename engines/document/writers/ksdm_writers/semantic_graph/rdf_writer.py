@@ -3,7 +3,7 @@ from __future__ import annotations
 import importlib.util
 from collections.abc import AsyncIterator
 from pathlib import Path
-from typing import Any, BinaryIO, TextIO
+from typing import Any, BinaryIO, TextIO, cast
 
 from ...base import BaseDocument, BaseDocumentWriter
 from ....models.media_types import MEDIA_TYPES
@@ -28,7 +28,8 @@ class RdfWriter(BaseDocumentWriter):
 
         from rdflib import Graph as RdfLibGraph, Literal, URIRef
 
-        kg = document.knowledge_graph
+        doc = cast(SemanticGraphDocument, document)
+        kg = doc.knowledge_graph
         if kg is None:
             return b""
 
@@ -46,7 +47,7 @@ class RdfWriter(BaseDocumentWriter):
             if isinstance(destination, (str, Path)):
                 Path(destination).write_bytes(output_bytes)
             else:
-                destination.write(output_bytes.decode('utf-8'))
+                cast(Any, destination).write(output_bytes.decode('utf-8'))
         return output_bytes
 
     async def write_stream(self, document: BaseDocument) -> AsyncIterator[bytes]:

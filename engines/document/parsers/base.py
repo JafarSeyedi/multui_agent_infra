@@ -89,6 +89,9 @@ class BaseDocumentParser(ABC):
                           options: ParseOptions | None = None) -> BaseDocument:
         """Parse from a stream of bytes."""
 
+    def can_parse(self, source: str | Path) -> bool:
+        return False
+
     def supports_extension(self, extension: str) -> bool:
         return extension.lower() in {item.lower() for item in self.supported_extensions}
 

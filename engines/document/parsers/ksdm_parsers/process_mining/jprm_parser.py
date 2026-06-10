@@ -6,10 +6,9 @@ from typing import Any, cast
 
 from engines.document.models.ksdm_models import (
     CatchEventMiningDefinition,
-    ClusteringAlgorithm,
     ClusteringConfig,
     DecisionPointDefinition,
-    MiningAlgorithm,
+    MiningModelType,
     MiningProcessDefinition,
     ProcessMiningDefinitionDocument,
 )
@@ -38,7 +37,7 @@ class JprmParser(BaseDocumentParser):
                     id=dpid,
                     description=dpdata.get("description"),
                     flow_element=None,
-                    mining_algorithm=MiningAlgorithm(dpdata.get("mining_algorithm", "decision_tree_induction")),
+                    mining_algorithm=MiningModelType(dpdata.get("mining_algorithm", "decision_tree")),
                     clustering_config=cc,
                     min_support=dpdata.get("min_support"),
                     min_confidence=dpdata.get("min_confidence"),
@@ -94,7 +93,7 @@ class JprmParser(BaseDocumentParser):
 
 def _parse_clustering_config(data: dict[str, Any]) -> ClusteringConfig:
     return ClusteringConfig(
-        algorithm=ClusteringAlgorithm(data.get("algorithm", "kmeans")),
+        algorithm=MiningModelType(data.get("algorithm", "clustering")),
         n_clusters=data.get("n_clusters"),
         eps=data.get("eps"),
         dbscan_min_samples=data.get("dbscan_min_samples"),

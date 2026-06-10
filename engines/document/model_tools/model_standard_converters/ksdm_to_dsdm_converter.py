@@ -250,7 +250,7 @@ class KsdmToDsdmConverter:
     def _get_properties(node: DataNode) -> dict[str, Any]:
         for c in node.children:
             if c.name == "properties" and c.kind == DataNodeKind.OBJECT:
-                return {prop.name: prop.value.value if prop.value else None for prop in c.children}
+                return {prop.name or "": prop.value.value if prop.value else None for prop in c.children}
         return {}
 
     @staticmethod

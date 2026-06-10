@@ -11,14 +11,29 @@ The knowledge layer implements a unified runtime for BI Aggregation, ML Mining, 
 ```python
 from engines.knowledge import (
     BiAggregationEngine,
+    QueryEngine,
     MlMiningEngine,
     ProcessMiningEngine,
     SemanticGraphEngine,
     UnifiedGraphEngine,
-    KnowledgeRagEngine,
-    KnowledgeMemoryEngine,
 )
-from engines.document.models import ISDMDocument, SemanticGraphDocument
+```
+
+### QueryEngine Usage
+
+```python
+# Parse MDX query
+engine = QueryEngine()
+doc = await engine.async_parse("SELECT [Measures].[Sales] ON COLUMNS FROM [AdventureWorks]")
+print(doc.mdx.cube_name)  # AdventureWorks
+
+# Detect language
+lang = engine.detect_language("SELECT * FROM Cube")  # QueryLanguage.MDX
+
+# Convert between formats
+await engine.async_parse("EVALUATE 'Sales'")
+dax_text = await engine.async_convert(QueryLanguage.DAX)
+```
 
 # BI Aggregation
 bi = BiAggregationEngine()
@@ -53,9 +68,24 @@ neighbors = graph.get_neighbors("n1")
 | Format | Extension | Standard |
 |--------|-----------|----------|
 | XMLA Discover | `.xmla_discover.xml`, `.xmla.xml` | XMLA (OLE DB for OLAP) |
+| XMLA Execute | `.xmla.xml` | XMLA |
+| MDX Query | `.mdx` | Microsoft MDX |
+| DAX Query | `.dax` | Microsoft DAX |
+| DAX REST JSON | `.json` | Power BI REST API |
+| SQL Tabular | `.sql.tabular`, `.tsql` | Transact-SQL |
+| M/Power Query | `.m`, `.pq` | Power Query M |
+| JPQL | `.jpql` | Java Persistence Query Language |
+| OQL | `.oql` | Object Query Language |
+| GraphQL Query | `.gql` | GraphQL Query |
 | Mondrian Schema | `.mondrian.xml`, `.schema.xml` | Mondrian ROLAP |
 | CWM XMI | `.cwm`, `.cwm.xml` | OMG CWM 1.1 |
-| MDX Query | `.mdx` | Microsoft MDX |
+| TMSL JSON | `.tmsl.json` | Microsoft Tabular Model Scripting Language |
+| CDM JSON | `.cdm.json` | Common Data Model |
+| Calcite JSON | `.calcite.json` | Apache Calcite |
+| AWXML | `.aw.xml` | Analysis Services |
+| SAP CDS XML | `.cds.xml` | SAP Core Data Services |
+| Cognos FMF | `.fmf`, `.fmf.xml` | IBM Cognos Framework Manager |
+| Tableau Hyper | `.hyper` | Tableau Hyper |
 
 ### ML Mining
 | Format | Extension | Standard |
@@ -80,12 +110,12 @@ neighbors = graph.get_neighbors("n1")
 
 ## 4. Model Reference
 
-### BiAggregationDocument
+### UnifiedBiAggregationDocument
 ```python
-BiAggregationDocument(
+UnifiedBiAggregationDocument(
     title="BI Aggregation",
     document_id="bi-001",
-    bi_aggregation_kind=BiAggregationKind.MONDRIAN_SCHEMA,
+    bi_format=BiAggregationFormat.MONDRIAN_SCHEMA_XML,
     mondrian_schema=MondrianSchema(...),  # or xmla_discover_request, etc.
     media_type=MEDIA_TYPES["mondrian_schema_xml"],
 )
@@ -125,6 +155,19 @@ KSDMDocument(
 ```
 
 ## 5. Engine Reference
+
+### QueryEngine
+```python
+engine = QueryEngine()
+doc = await engine.async_parse("SELECT [Measures].[Sales] ON COLUMNS FROM [AdventureWorks]")
+# or detect language first
+lang = engine.detect_language("EVALUATE 'Sales'")  # QueryLanguage.DAX
+doc = await engine.async_parse("EVALUATE 'Sales'", language=lang)
+
+# Convert between query languages
+output = await engine.async_convert(QueryLanguage.MDX)
+table = engine.to_flat_table()
+```
 
 ### BiAggregationEngine
 ```python

@@ -129,7 +129,7 @@ class ThriftIDLParser(BaseMSDMParser):
 
         for m in RE_NAMESPACE.finditer(text):
             lang = m.group(1)
-            ns = Namespace(m.group(2))
+            ns = Namespace(uri=m.group(2))
             if ns and ns.uri:
                 doc.annotations.append(Annotation(key=f"namespace_{lang}", value=ns.uri))
             if lang == '*' or lang == doc.namespace or not doc.namespace:

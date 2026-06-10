@@ -112,28 +112,15 @@ The Knowledge Layer has been reorganized into `engines/knowledge/` with:
 
 ### P3 — Nice to Have / Future
 
-#### [KNG-010] MDX Query Parser/Writer
-- **File**: `engines/knowledge/parsers/bi/` (new file needed)
+#### [KNG-010] MDX Query Parser/Writer ✅ DONE
+- **File**: `engines/knowledge/query_models/parsers/mdx_parser.py`, `writers/mdx_writer.py`
 - **Description**: MDX query string parsing and generation for OLAP systems
-- **Action**: Implement MDX parser for `MdxQuery` model
-- **Estimate**: Medium
+- **Status**: Implemented with regex-based parsing, axis extraction, roundtrip support
 
-#### [KNG-011] Mondrian Schema — Full Put/Create/Update Support
-- **File**: `engines/knowledge/writers/bi/mondrian_writer.py`
-- **Description**: Writer handles dimension/measure serialization but doesn't produce fully valid Mondrian schema output for all cases.
-- **Action**: Enhance writer with full Mondrian XML structure support
-- **Estimate**: Small
-
-#### [KNG-012] Compliance Reports Automation
-- **File**: `docs/engines/knowledge/conformance/`
-- **Description**: Compliance docs are currently static markdown. Could benefit from automated validation.
-- **Action**: Add scriptable compliance checker that validates model ↔ standard mappings
-- **Estimate**: Medium
-
-#### [KNG-013] Integration with existing `engines/document/` ecosystem
-- **Description**: Knowledge parsers/writers live outside the `engines/document/` parser/writer registry. Integration needed.
-- **Action**: Add knowledge parsers/writers to the central `engines/document/` registry
-- **Estimate**: Small
+#### [KNG-010a] Query Language Parsers ✅ DONE
+- **Files**: `engines/knowledge/query_models/parsers/{dax,jpql,oql,sql_tabular,power_query_m,graphql_query}_parser.py`
+- **Description**: DAX, JPQL, OQL, SQL Tabular, M/Power Query, GraphQL query parsers
+- **Status**: Implemented with QueryEngine in `engines/knowledge/query_models/`
 
 ---
 
@@ -154,7 +141,8 @@ The Knowledge Layer has been reorganized into `engines/knowledge/` with:
 ### Phase 3: Engine Integration (Target: +3 Sprints)
 - [ ] [KNG-008] Wire up SemanticGraphPipeline into UnifiedGraphEngine
 - [ ] [KNG-009] Implement KnowledgeMemoryEngine
-- [ ] [KNG-010] MDX parser
+- [X] [KNG-010] MDX parser — **COMPLETED**
+- [X] [KNG-010a] Query Language Parsers — **COMPLETED**
 - [ ] [KNG-013] Document registry integration
 
 ### Phase 4: Quality and Documentation (Target: +4 Sprints)

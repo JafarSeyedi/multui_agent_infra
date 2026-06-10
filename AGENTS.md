@@ -38,6 +38,7 @@ Monorepo under `engines/` with 10 engine packages:
 - **Knowledge `__init__.py`** only eagerly imports the 5 stable engines (bi_aggregation, ml_mining, process_mining, semantic_graph, graph). RAG and memory engines are excluded because they have missing transitive dependencies.
 - **`KnowledgeRagEngine`** cannot be imported directly — it depends on `engines.knowledge.rag.{services,llm,research}` modules that don't exist. If you need it, create stubs first.
 - **`UnifiedGraphEngine` ↔ `SemanticGraphEngine` circular dependency**: `UnifiedGraphEngine.__init__` must pass `unified_engine=self` to `SemanticGraphEngine()` to avoid infinite recursion. This is already fixed.
+- **Semantic graph parsers** (`RdfParser`, `RmlParser`) implement sync `parse()` + async `parse_bytes()`/`parse_path()`/`parse_stream()` (had to add abstract method impls to make them instantiable). `SemanticGraphEngine` wraps sync `parse()` in `loop.run_in_executor()`.
 
 ## Test conventions
 
@@ -45,6 +46,9 @@ Monorepo under `engines/` with 10 engine packages:
 - `asyncio_mode = auto` in pyproject.toml — async tests are auto-detected.
 - No integration test prerequisites (no DB, no external services needed for knowledge tests).
 - 2 tests in `test_engines.py` are skipped (RAG/memory) due to missing dependencies.
+- 96 total knowledge tests (67 ML mining + 15 BI aggregation + 14 query models) + 36 Phase E + 44 semantic graph = 146 total.
+- Phase E tests in `test_ml_mining_phase_e.py` — sklearn/PyTorch parser, converter→ORT inference, engine predict/evaluate, metrics, validation, full pipeline.
+- Semantic graph tests in `test_semantic_graph.py` — RDF parse, graph API, traversal, shortest path, subgraph, statistics, validate, convert, write round-trip, edge cases.
 
 ## Framework & toolchain quirks
 

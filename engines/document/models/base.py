@@ -9,8 +9,13 @@ from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import Field
 
-from .media_types import MEDIA_TYPES
-from .media_types import MediaType
+from .media_types import (
+    DocumentFormat,
+    DocumentStandard,
+    MediaContentKind,
+    MediaRawType,
+    MediaType,
+)
 
 # ============================================================
 # LEVEL 1 — ELEMENT TYPES
@@ -159,7 +164,15 @@ class BaseDocument(BaseModel):
 
 
 class BinaryPayload(BaseModel):
-    media_type: MediaType = MEDIA_TYPES["binary"]
+    media_type: MediaType = MediaType(
+        mime="application/octet-stream",
+        format=DocumentFormat.UNKNOWN,
+        standard=DocumentStandard.UNKNOWN,
+        extensions=[".bin"],
+        kind=MediaContentKind.BINARY,
+        raw_type=MediaRawType.BINARY,
+        description="Generic Binary Data",
+    )
     encoding: BinaryEncoding = BinaryEncoding.BASE64
 
     # Only one of these should be filled

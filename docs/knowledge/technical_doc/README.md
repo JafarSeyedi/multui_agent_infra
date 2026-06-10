@@ -52,13 +52,12 @@ The knowledge layer follows the **MDA2 (Model Driven Architecture)** pattern:
 
 | Class | Purpose |
 |-------|---------|
-| `BiAggregationKind` | Enum: XMLA_CUBE, MDX_QUERY, CWM_WAREHOUSE, MONDRIAN_SCHEMA |
+| `UnifiedBiAggregationDocument` | Unified document container for BI aggregation data |
 | `XmlaDiscoverRequest` | XMLA Discover SOAP request parameters |
 | `XmlaDiscoverResponse` | XMLA Discover response: rows + schema |
 | `MdxAxis` / `MdxQuery` | MDX query structure (cube, axes, measures) |
 | `CwmSchema` / `CwmClass` / `CwmAttribute` / `CwmAssociation` | CWM warehouse metamodel |
 | `MondrianSchema` / `MondrianDimension` / `MondrianLevel` / `MondrianMeasure` | Mondrian OLAP schema |
-| `BiAggregationDocument` | Document container for BI aggregation data |
 | `BIAggregatorModel` | Base aggregator model (schedule, sources, targets) |
 
 ### 2.2 ML Mining Models
@@ -126,10 +125,27 @@ KnowledgeMediaType
   │   ├─ XMLA_DISCOVER_XML  → eng/knowledge/parsers/bi/xmla_parser.py
   │   ├─ MDX_QUERY         → eng/knowledge/parsers/bi/mdx_parser.py (stub)
   │   ├─ CWM_XMI           → eng/knowledge/parsers/bi/cwm_parser.py
-  │   └─ MONDRIAN_SCHEMA_XML → eng/knowledge/parsers/bi/mondrian_parser.py
+  │   ├─ MONDRIAN_SCHEMA_XML → eng/knowledge/parsers/bi/mondrian_parser.py
+  │   ├─ TMSL_JSON         → eng/knowledge/parsers/bi/tmsl_parser.py
+  │   ├─ CDM_JSON          → eng/knowledge/parsers/bi/cdm_parser.py
+  │   ├─ CALCITE_JSON      → eng/knowledge/parsers/bi/calcite_parser.py
+  │   ├─ AWXML             → eng/knowledge/parsers/bi/awxml_parser.py
+  │   ├─ SAP_CDS_XML       → eng/knowledge/parsers/bi/sap_cds_parser.py
+  │   ├─ COGNOS_FMF        → eng/knowledge/parsers/bi/cognos_fmf_parser.py
+  │   └─ TABLEAU_HYPER     → eng/knowledge/parsers/bi/tableau_hyper_parser.py
   ├─ MlMiningFormat
   │   ├─ PMML_XML          → eng/knowledge/parsers/ml_mining/pmml_parser.py
   │   └─ ONNX_PROTO        → eng/knowledge/parsers/ml_mining/onnx_parser.py
+  ├─ QueryFormat (query_models/)
+  │   ├─ XMLA_EXECUTE_XML  → engines/knowledge/query_models/parsers/xmla_parser.py
+  │   ├─ MDX_QUERY_TEXT    → engines/knowledge/query_models/parsers/mdx_parser.py
+  │   ├─ DAX_QUERY_TEXT    → engines/knowledge/query_models/parsers/dax_parser.py
+  │   ├─ DAX_REST_JSON     → engines/knowledge/query_models/parsers/dax_parser.py
+  │   ├─ SQL_TABULAR_TEXT  → engines/knowledge/query_models/parsers/sql_tabular_parser.py
+  │   ├─ M_POWER_QUERY_TEXT → engines/knowledge/query_models/parsers/power_query_m_parser.py
+  │   ├─ JPQL_TEXT         → engines/knowledge/query_models/parsers/jpql_parser.py
+  │   ├─ OQL_TEXT          → engines/knowledge/query_models/parsers/oql_parser.py
+  │   └─ GRAPHQL_QUERY_TEXT → engines/knowledge/query_models/parsers/graphql_query_parser.py
   ├─ ProcessMiningFormat
   │   ├─ XES_XML           → eng/knowledge/parsers/process_mining/xes_parser.py
   │   ├─ DMN_XML           → eng/knowledge/parsers/process_mining/dmn_parser.py
@@ -147,7 +163,13 @@ KnowledgeMediaType
 ### BiAggregationEngine
 - **Location**: `engines/knowledge/apps/bi_aggregation/engine.py`
 - **Responsibility**: BI aggregation job orchestration
-- **Registered formats**: xmla_discover_xml, mdx_query, cwm_xmi, mondrian_schema_xml
+- **Registered formats**: xmla_discover_xml, mdx_query, cwm_xmi, mondrian_schema_xml, tmsl_json, cdm_json, calcite_json, awxml, sap_cds_xml, cognos_fmf, tableau_hyper
+
+### QueryEngine
+- **Location**: `engines/knowledge/query_models/__init__.py`
+- **Responsibility**: Query parsing, conversion, and execution for MDX/DAX/SQL/OQL/JPQL/GraphQL/XMLA
+- **Registered formats**: xmla_execute_xml, mdx_query_text, dax_query_text, dax_rest_json, sql_tabular_text, m_power_query_text, jpql_text, oql_text, graphql_query_text
+- **Key methods**: `detect_language()`, `async_parse()`, `async_convert()`, `async_load()`, `async_write()`, `to_flat_table()`, `to_mdx_cellset()`
 
 ### MlMiningEngine
 - **Location**: `engines/knowledge/apps/ml_mining/engine.py`

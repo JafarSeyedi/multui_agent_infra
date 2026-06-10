@@ -1,6 +1,6 @@
 import yaml
 from pathlib import Path
-from typing import Any, BinaryIO, TextIO
+from typing import Any, BinaryIO, TextIO, cast
 
 from engines.document.parsers.base import BaseDocumentParser, ParseResult
 from engines.document.models.media_types import MEDIA_TYPES
@@ -16,6 +16,30 @@ from engines.document.models.ksdm_models import (
 
 class RmlParser(BaseDocumentParser):
     supported_format = MEDIA_TYPES["rml_yaml"]
+
+    async def parse_bytes(self, data: bytes, document_id: str, source_name: str,
+                         metadata: dict[str, Any] | None = None,
+                         options: Any = None) -> TransformationModelDocument:
+        from io import BytesIO
+        buf = BytesIO(data)
+        result = self.parse(buf)
+        doc = cast(TransformationModelDocument, result.document)
+        doc.document_id = document_id
+        return doc
+
+    async def parse_path(self, path: str | Path, document_id: str,
+                        metadata: dict[str, Any] | None = None,
+                        options: Any = None) -> TransformationModelDocument:
+        result = self.parse(Path(path))
+        doc = cast(TransformationModelDocument, result.document)
+        doc.document_id = document_id
+        return doc
+
+    async def parse_stream(self, stream: Any, document_id: str,
+                          source_name: str, metadata: dict[str, Any] | None = None,
+                          options: Any = None) -> TransformationModelDocument:
+        data = b''.join([chunk async for chunk in stream])
+        return await self.parse_bytes(data, document_id, source_name, metadata, options)
 
     def can_parse(self, source: str | Path) -> bool:
         if isinstance(source, str) and source.endswith(('.rml.yaml', '.rml.yml', '.rml.json')):

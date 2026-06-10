@@ -1,6 +1,6 @@
 import importlib.util
 from pathlib import Path
-from typing import Any, BinaryIO, TextIO
+from typing import Any, BinaryIO, TextIO, cast
 
 from engines.document.parsers.base import BaseDocumentParser, ParseResult
 from engines.document.models.media_types import MEDIA_TYPES
@@ -14,6 +14,30 @@ RDFLIB_AVAILABLE = importlib.util.find_spec('rdflib') is not None
 
 class RdfParser(BaseDocumentParser):
     supported_format = MEDIA_TYPES["rdf_turtle"]
+
+    async def parse_bytes(self, data: bytes, document_id: str, source_name: str,
+                         metadata: dict[str, Any] | None = None,
+                         options: Any = None) -> SemanticGraphDocument:
+        from io import BytesIO
+        buf = BytesIO(data)
+        result = self.parse(buf)
+        doc = cast(SemanticGraphDocument, result.document)
+        doc.document_id = document_id
+        return doc
+
+    async def parse_path(self, path: str | Path, document_id: str,
+                        metadata: dict[str, Any] | None = None,
+                        options: Any = None) -> SemanticGraphDocument:
+        result = self.parse(Path(path))
+        doc = cast(SemanticGraphDocument, result.document)
+        doc.document_id = document_id
+        return doc
+
+    async def parse_stream(self, stream: Any, document_id: str,
+                          source_name: str, metadata: dict[str, Any] | None = None,
+                          options: Any = None) -> SemanticGraphDocument:
+        data = b''.join([chunk async for chunk in stream])
+        return await self.parse_bytes(data, document_id, source_name, metadata, options)
 
     def can_parse(self, source: str | Path) -> bool:
         if isinstance(source, str) and source.endswith(('.ttl', '.rdf', '.nt', '.owl', '.jsonld')):

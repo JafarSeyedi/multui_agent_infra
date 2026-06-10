@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from pathlib import Path
-from typing import Any, BinaryIO, TextIO
+from typing import Any, BinaryIO, TextIO, cast
 
 import yaml
 
@@ -58,7 +58,7 @@ class RmlWriter(BaseDocumentWriter):
             if isinstance(destination, (str, Path)):
                 Path(destination).write_bytes(output_bytes)
             else:
-                destination.write(output_bytes.decode('utf-8'))
+                cast(Any, destination).write(output_bytes.decode('utf-8'))
         return output_bytes
 
     async def write_stream(self, document: BaseDocument) -> AsyncIterator[bytes]:

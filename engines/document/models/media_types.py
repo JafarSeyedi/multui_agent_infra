@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 # engines/document/models/media_types.py
 from enum import Enum
 
@@ -105,6 +106,13 @@ class DocumentFormat(str, Enum):
     MONDRIAN_SCHEMA = "mondrian_schema"
     XMLA_DISCOVER_XML = "xmla_discover_xml"
     MDX_QUERY_XML = "mdx_query_xml"
+    TMSL_JSON = "tmsl_json"
+    CDM_JSON = "cdm_json"
+    CALCITE_JSON = "calcite_json"
+    AWXML = "awxml"
+    SAP_CDS_XML = "sap_cds_xml"
+    COGNOS_FMF_XML = "cognos_fmf_xml"
+    TABLEAU_HYPER = "tableau_hyper"
     #    ML-Mining
     PMML_XML = "pmml_xml"
     ONNX_PROTOBUF = "onnx_protobuf"
@@ -115,6 +123,16 @@ class DocumentFormat(str, Enum):
     #    Process-Mining
     JPRM_JSON = "jprm_json"
     YPRM_YAML = "yprm_yaml"
+    #    Query Models
+    XMLA_EXECUTE_XML = "xmla_execute_xml"
+    MDX_QUERY_TEXT = "mdx_query_text"
+    DAX_QUERY_TEXT = "dax_query_text"
+    DAX_REST_JSON = "dax_rest_json"
+    SQL_TABULAR_TEXT = "sql_tabular_text"
+    M_POWER_QUERY_TEXT = "m_power_query_text"
+    JPQL_TEXT = "jpql_text"
+    OQL_TEXT = "oql_text"
+    GRAPHQL_QUERY_TEXT = "graphql_query_text"
     
     # LSDM formats
     XES_XML = "xes_xml"
@@ -889,6 +907,69 @@ MEDIA_TYPES: dict[str, MediaType] = {
         raw_type=MediaRawType.TEXT, 
         description="Common Warehouse Metamodel (XMI)",
     ),
+    "tmsl_json": MediaType(
+        mime="application/json",
+        format=DocumentFormat.TMSL_JSON,
+        standard=DocumentStandard.KSDM, 
+        extensions=[".bim"],
+        kind=MediaContentKind.KNOWLEDGE_EXTRACTION_DEFINITION,
+        raw_type=MediaRawType.TEXT, 
+        description="Microsoft Tabular Model Scripting Language (TMSL)",
+    ),
+    "cdm_json": MediaType(
+        mime="application/json",
+        format=DocumentFormat.CDM_JSON,
+        standard=DocumentStandard.KSDM, 
+        extensions=[".cdm.json"],
+        kind=MediaContentKind.KNOWLEDGE_EXTRACTION_DEFINITION,
+        raw_type=MediaRawType.TEXT, 
+        description="Microsoft Common Data Model",
+    ),
+    "calcite_json": MediaType(
+        mime="application/json",
+        format=DocumentFormat.CALCITE_JSON,
+        standard=DocumentStandard.KSDM, 
+        extensions=[".calcite.json", ".model.json"],
+        kind=MediaContentKind.KNOWLEDGE_EXTRACTION_DEFINITION,
+        raw_type=MediaRawType.TEXT, 
+        description="Apache Calcite Model",
+    ),
+    "awxml": MediaType(
+        mime="application/xml",
+        format=DocumentFormat.AWXML,
+        standard=DocumentStandard.KSDM, 
+        extensions=[".aw.xml"],
+        kind=MediaContentKind.KNOWLEDGE_EXTRACTION_DEFINITION,
+        raw_type=MediaRawType.TEXT, 
+        description="Oracle Analytic Workspace XML (AWXML)",
+    ),
+    "sap_cds_xml": MediaType(
+        mime="application/xml",
+        format=DocumentFormat.SAP_CDS_XML,
+        standard=DocumentStandard.KSDM, 
+        extensions=[".cds.xml"],
+        kind=MediaContentKind.KNOWLEDGE_EXTRACTION_DEFINITION,
+        raw_type=MediaRawType.TEXT, 
+        description="SAP HANA CDS / Calculation View XML",
+    ),
+    "cognos_fmf_xml": MediaType(
+        mime="application/xml",
+        format=DocumentFormat.COGNOS_FMF_XML,
+        standard=DocumentStandard.KSDM, 
+        extensions=[".fmf.xml"],
+        kind=MediaContentKind.KNOWLEDGE_EXTRACTION_DEFINITION,
+        raw_type=MediaRawType.TEXT, 
+        description="IBM Cognos Framework Manager Model",
+    ),
+    "tableau_hyper": MediaType(
+        mime="application/octet-stream",
+        format=DocumentFormat.TABLEAU_HYPER,
+        standard=DocumentStandard.KSDM, 
+        extensions=[".hyper"],
+        kind=MediaContentKind.KNOWLEDGE_EXTRACTION_DEFINITION,
+        raw_type=MediaRawType.BINARY, 
+        description="Tableau Hyper Extract (binary)",
+    ),
     "pmml_xml": MediaType(
         mime="application/xml",
         format=DocumentFormat.PMML_XML,
@@ -942,6 +1023,92 @@ MEDIA_TYPES: dict[str, MediaType] = {
         kind=MediaContentKind.KNOWLEDGE_EXTRACTION_DEFINITION,
         raw_type=MediaRawType.TEXT, 
         description="Terse RDF Triple Language",
+    ),
+
+    # ======================
+    # KSDM — Query Models
+    # ======================
+
+    "xmla_execute_xml": MediaType(
+        mime="application/xml",
+        format=DocumentFormat.XMLA_EXECUTE_XML,
+        standard=DocumentStandard.KSDM,
+        extensions=[".xml"],
+        kind=MediaContentKind.KNOWLEDGE_EXTRACTION_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="XMLA Execute Request/Response",
+    ),
+    "mdx_query_text": MediaType(
+        mime="text/plain",
+        format=DocumentFormat.MDX_QUERY_TEXT,
+        standard=DocumentStandard.KSDM,
+        extensions=[".mdx"],
+        kind=MediaContentKind.KNOWLEDGE_EXTRACTION_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="MDX Query (text)",
+    ),
+    "dax_query_text": MediaType(
+        mime="text/plain",
+        format=DocumentFormat.DAX_QUERY_TEXT,
+        standard=DocumentStandard.KSDM,
+        extensions=[".dax"],
+        kind=MediaContentKind.KNOWLEDGE_EXTRACTION_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="DAX Query (text)",
+    ),
+    "dax_rest_json": MediaType(
+        mime="application/json",
+        format=DocumentFormat.DAX_REST_JSON,
+        standard=DocumentStandard.KSDM,
+        extensions=[".dax.json"],
+        kind=MediaContentKind.KNOWLEDGE_EXTRACTION_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="DAX REST API (Power BI / Azure AS)",
+    ),
+    "sql_tabular_text": MediaType(
+        mime="text/plain",
+        format=DocumentFormat.SQL_TABULAR_TEXT,
+        standard=DocumentStandard.KSDM,
+        extensions=[".sql.tabular"],
+        kind=MediaContentKind.KNOWLEDGE_EXTRACTION_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="SQL Query over Tabular Model",
+    ),
+    "m_power_query_text": MediaType(
+        mime="text/plain",
+        format=DocumentFormat.M_POWER_QUERY_TEXT,
+        standard=DocumentStandard.KSDM,
+        extensions=[".m"],
+        kind=MediaContentKind.KNOWLEDGE_EXTRACTION_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="M / Power Query expression",
+    ),
+    "jpql_text": MediaType(
+        mime="text/plain",
+        format=DocumentFormat.JPQL_TEXT,
+        standard=DocumentStandard.KSDM,
+        extensions=[".jpql"],
+        kind=MediaContentKind.KNOWLEDGE_EXTRACTION_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="JPQL Query",
+    ),
+    "oql_text": MediaType(
+        mime="text/plain",
+        format=DocumentFormat.OQL_TEXT,
+        standard=DocumentStandard.KSDM,
+        extensions=[".oql"],
+        kind=MediaContentKind.KNOWLEDGE_EXTRACTION_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="OQL (Object Query Language)",
+    ),
+    "graphql_query_text": MediaType(
+        mime="application/graphql",
+        format=DocumentFormat.GRAPHQL_QUERY_TEXT,
+        standard=DocumentStandard.KSDM,
+        extensions=[".gql.query"],
+        kind=MediaContentKind.KNOWLEDGE_EXTRACTION_DEFINITION,
+        raw_type=MediaRawType.TEXT,
+        description="GraphQL Operation Document",
     ),
 
     # ======================

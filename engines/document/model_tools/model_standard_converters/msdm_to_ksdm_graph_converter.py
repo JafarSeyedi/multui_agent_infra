@@ -117,6 +117,6 @@ class MsdmToKsdmGraphConverter:
             return False
         elif base in (ScalarType.ARRAY,):
             return []
-        elif base in (ScalarType.MAP, ScalarType.STRUCT, ScalarType.OBJECT):
+        elif base in (ScalarType.MAP, ScalarType.STRUCT):
             return {}
         return None

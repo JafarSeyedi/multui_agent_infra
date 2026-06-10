@@ -10,16 +10,56 @@ The ISDM model now supports three distinct BI Aggregation, ML Mining, and Proces
 
 #### BI Aggregation (Aggregated Analytics)
 - **XMLA (XML for Analysis)**: Industry standard for data access in analytical systems using XML, SOAP, HTTP.
-  - Model: `XmlaDiscoverRequest`, `XmlaDiscoverResponse`, `BiAggregationKind.XMLA_CUBE`
-  - Parser/Writers: `xmla_parser.py`, `xmla_writer.py`
+  - Model: `XmlaDiscoverRequest`, `XmlaDiscoverResponse`, `UnifiedBiAggregationDocument`, `XmlaTransport`
+  - Parser/Writers: `xmla_parser.py`, `xmla_writer.py` (query_models/)
 - **MDX (MultiDimensional eXpressions)**: Query language for OLAP cubes, Microsoft de facto standard.
-  - Model: `MdxQuery`, `MdxAxis`
+  - Model: `MdxQuery`, `MdxAxis`, `UnifiedQueryDocument`
+  - Parser/Writers: `mdx_parser.py`, `mdx_writer.py` (query_models/)
+- **DAX (Data Analysis Expressions)**: Power BI/SSAS tabular query language.
+  - Model: `DaxQuery`, `UnifiedQueryDocument`
+  - Parser/Writers: `dax_parser.py`, `dax_writer.py` (query_models/)
+- **SQL Tabular**: Transact-SQL for SSAS tabular models.
+  - Model: `SqlTabularQuery`, `UnifiedQueryDocument`
+  - Parser/Writers: `sql_tabular_parser.py`, `sql_tabular_writer.py` (query_models/)
+- **M/Power Query**: Power Query formula language.
+  - Model: `PowerQueryM`, `UnifiedQueryDocument`
+  - Parser/Writers: `power_query_m_parser.py`, `power_query_m_writer.py` (query_models/)
+- **JPQL (Java Persistence Query Language)**: ORM query language.
+  - Model: `JpqlQuery`, `UnifiedQueryDocument`
+  - Parser/Writers: `jpql_parser.py`, `jpql_writer.py` (query_models/)
+- **OQL (Object Query Language)**: Object database query language.
+  - Model: `OqlQuery`, `UnifiedQueryDocument`
+  - Parser/Writers: `oql_parser.py`, `oql_writer.py` (query_models/)
+- **GraphQL Query**: Query operation language for APIs.
+  - Model: `GraphqlQueryDocument`, `UnifiedQueryDocument`
+  - Parser/Writers: `graphql_query_parser.py`, `graphql_query_writer.py` (query_models/)
 - **CWM (Common Warehouse Metamodel)**: OMG standard for metadata exchange in data warehousing.
   - Model: `CwmSchema`, `CwmClass`, `CwmAttribute`, `CwmAssociation`
   - Parser/Writers: `cwm_parser.py`, `cwm_writer.py`
 - **Mondrian Schema XML**: XML format for Mondrian ROLAP server.
   - Model: `MondrianSchema`, `MondrianDimension`, `MondrianDimensionHierarchy`, `MondrianLevel`, `MondrianMeasure`
   - Parser/Writers: `mondrian_parser.py`, `mondrian_writer.py`
+- **TMSL JSON**: Microsoft Tabular Model Scripting Language for SSAS tabular models.
+  - Model: `TmslModel`, `TmslCommand`
+  - Parser/Writers: `tmsl_parser.py`, `tmsl_writer.py`
+- **CDM JSON**: Common Data Model standard for data schema and metadata.
+  - Model: `CdmModel`, `CdmEntity`
+  - Parser/Writers: `cdm_parser.py`, `cdm_writer.py`
+- **Calcite JSON**: Apache Calcite model specification for relational algebra.
+  - Model: `CalciteModel`, `CalciteSchema`
+  - Parser/Writers: `calcite_parser.py`, `calcite_writer.py`
+- **AWXML**: Analysis Services XML for SSAS instance configuration.
+  - Model: `AwXmlModel`, `AwXmlDatabase`
+  - Parser/Writers: `awxml_parser.py`, `awxml_writer.py`
+- **SAP CDS XML**: SAP Core Data Services for data modeling.
+  - Model: `SapCdsModel`, `SapCdsEntity`
+  - Parser/Writers: `sap_cds_parser.py`, `sap_cds_writer.py`
+- **Cognos FMF**: IBM Cognos Framework Manager metadata model.
+  - Model: `CognosFmfModel`, `CognosPackage`
+  - Parser/Writers: `cognos_fmf_parser.py`, `cognos_fmf_writer.py`
+- **Tableau Hyper**: Tableau Hyper file format for in-memory data engine.
+  - Model: `TableauHyperModel`, `TableauHyperTable`
+  - Parser/Writers: `tableau_hyper_parser.py`, `tableau_hyper_writer.py`
 
 #### ML Mining (Data Mining & Machine Learning)
 - **PMML (Predictive Model Markup Language)**: XML-based standard (DMG, 1998, v4.2 2014).
@@ -71,53 +111,53 @@ The ISDM model now supports three distinct BI Aggregation, ML Mining, and Proces
 
 ```
 engines/knowledge/
-├── __init__.py                        # Unified exports
-├── base/                              # Base knowledge abstractions (empty)
-├── documents/                         # Document-level abstractions (empty)
-├── fusion/                            # Data fusion layer (empty)
+├── __init__.py                    # Unified exports (QueryEngine, BiAggregationEngine, etc.)
+├── base/                          # Base knowledge abstractions (empty)
+├── documents/                     # Document-level abstractions (empty)
+├── fusion/                        # Data fusion layer (empty)
+├── query_models/                  # QueryEngine + parsers/writers for MDX/DAX/SQL/OQL/JPQL/GraphQL/XMLA
+│   ├── __init__.py               # QueryEngine
+│   ├── parsers/                  # 8 parser files (mdx, dax, sql_tabular, power_query_m, jpql, oql, graphql_query, xmla)
+│   └── writers/                  # 8 writer files
 ├── graph/
-│   ├── engine.py                      # UnifiedGraphEngine
-│   ├── graph_models.py               # GraphNode, GraphEdge
-│   ├── graph_builder.py              # RAG-style graph builder
-│   ├── graph_store.py                # In-memory graph store
-│   └── graph_retriever.py            # Graph retrieval
-├── rules/                             # Rule engine (empty)
-├── vector/                            # Vector engine (empty)
+│   ├── engine.py                 # UnifiedGraphEngine
+│   ├── graph_models.py            # GraphNode, GraphEdge
+│   ├── graph_builder.py           # RAG-style graph builder
+│   ├── graph_store.py             # In-memory graph store
+│   └── graph_retriever.py         # Graph retrieval
+├── rules/                         # Rule engine (empty)
+├── vector/                        # Vector engine (empty)
 ├── models/
-│   ├── __init__.py                   # All model exports
-│   ├── isdm_models.py               # BI/ML/Process Mining models
-│   ├── ksdm_models.py               # Knowledge graph models
-│   └── media_types.py               # Knowledge media type registry
+│   ├── __init__.py               # All model exports
+│   ├── isdm_models.py            # BI/ML/Process Mining models
+│   ├── ksdm_models.py            # Knowledge graph models
+│   └── media_types.py            # Knowledge media type registry (includes query format enums)
 ├── parsers/
-│   ├── __init__.py                   # All parser exports
-│   ├── base.py                       # BaseDocumentParser
-│   ├── bi/                           # XMLA, CWM, Mondrian parsers
-│   ├── ml_mining/                    # PMML, ONNX parsers
-│   ├── process_mining/               # XES, DMN, DDF parsers
-│   └── semantic_graph/               # RDF, RML, GQL parsers
+│   ├── __init__.py               # All parser exports (including query_models re-exports)
+│   ├── base.py                   # BaseDocumentParser
+│   ├── bi/                       # CWM, Mondrian parsers (schema models)
+│   ├── ml_mining/                # PMML, ONNX parsers
+│   ├── process_mining/           # XES, DMN, DDF parsers
+│   └── semantic_graph/           # RDF, RML, GQL parsers
 ├── writers/
-│   ├── __init__.py                   # All writer exports
-│   ├── base.py                       # BaseDocumentWriter
-│   ├── bi/                           # XMLA, CWM, Mondrian writers
-│   ├── ml_mining/                    # PMML, ONNX writers
-│   ├── process_mining/               # XES, DMN, DDF writers
-│   └── semantic_graph/               # RDF, RML, GQL writers
+│   ├── __init__.py               # All writer exports
+│   ├── base.py                   # BaseDocumentWriter
+│   ├── bi/                       # CWM, Mondrian writers (schema models)
+│   ├── ml_mining/                # PMML, ONNX writers
+│   ├── process_mining/           # XES, DMN, DDF writers
+│   └── semantic_graph/           # RDF, RML, GQL writers
 └── apps/
-    ├── __init__.py                   # All engine exports
+    ├── __init__.py               # All engine exports
     ├── bi_aggregation/
-    │   └── engine.py                 # BiAggregationEngine
+    │   └── engine.py             # BiAggregationEngine
     ├── ml_mining/
-    │   └── engine.py                 # MlMiningEngine
+    │   └── engine.py             # MlMiningEngine
     ├── process_mining/
-    │   └── engine.py                 # ProcessMiningEngine
+    │   └── engine.py             # ProcessMiningEngine
     ├── semantic_graph/
-    │   ├── engine.py                 # SemanticGraphEngine
+    │   └── engine.py             # SemanticGraphEngine
     └── graph/
-        └── engine.py                 # UnifiedGraphEngine
-    ├── rag/
-    │   └── knowledge_rag_engine.py   # KnowledgeRagEngine
-    └── memory/
-        └── knowledge_memory_engine.py # KnowledgeMemoryEngine
+        └── engine.py             # UnifiedGraphEngine
 ```
 
 ## 6. Removed from Original Structure
@@ -131,7 +171,7 @@ engines/knowledge/
 ### Models
 | Domain | Status |
 |--------|--------|
-| BI Aggregation (XMLA/MDX/CWM/Mondrian) | ✅ Defined |
+| BI Aggregation (XMLA/MDX/CWM/Mondrian/TMSL/CDM/Calcite/AWXML/SAP CDS/Cognos FMF/Tableau Hyper) | ✅ Defined |
 | ML Mining (PMML/ONNX) | ✅ Defined |
 | Process Mining (XES/DMN/DDF) | ✅ Defined |
 | KG Pipeline (RDF/RML/GQL) | ✅ Defined |
@@ -143,6 +183,13 @@ engines/knowledge/
 | XMLA Discover | ✅ Stub (SOAP/XML parsing) |
 | CWM XMI | ✅ Stub (XML parsing) |
 | Mondrian Schema | ✅ Stub (XML parsing) |
+| TMSL JSON | 🔲 Stub (requires TMSL schema) |
+| CDM JSON | 🔲 Stub (requires CDM definitions) |
+| Calcite JSON | 🔲 Stub (requires Calcite model) |
+| AWXML | 🔲 Stub (requires AS config) |
+| SAP CDS XML | 🔲 Stub (requires CDS schema) |
+| Cognos FMF | 🔲 Stub (requires FMF spec) |
+| Tableau Hyper | 🔲 Stub (requires Hyper API) |
 | PMML | ✅ Partial (MiningModel header) |
 | ONNX | 🔲 Stub (requires onnx package) |
 | XES | ✅ Partial (IEEE 1849-2016 basic) |
@@ -158,6 +205,13 @@ engines/knowledge/
 | XMLA Discover | ✅ Stub |
 | CWM XMI | ✅ Stub |
 | Mondrian Schema | ✅ Partial (basic structure) |
+| TMSL JSON | 🔲 Stub (requires TMSL schema) |
+| CDM JSON | 🔲 Stub (requires CDM definitions) |
+| Calcite JSON | 🔲 Stub (requires Calcite model) |
+| AWXML | 🔲 Stub (requires AS config) |
+| SAP CDS XML | 🔲 Stub (requires CDS schema) |
+| Cognos FMF | 🔲 Stub (requires FMF spec) |
+| Tableau Hyper | 🔲 Stub (requires Hyper API) |
 | PMML | ✅ Partial (MiningModel output) |
 | ONNX | 🔲 Stub (requires onnx package) |
 | XES | ✅ Partial (basic log structure) |
@@ -186,9 +240,10 @@ The knowledge engines follow Model Driver Architecture (MDA2) where:
 - Each engine registers its parsers/writers via the unified interface
 
 ## 9. Test Coverage
-- **38 tests passing** in `tests/knowledge/`
-- Coverage: models, parsers, writers, engines
+- **29 tests passing** in `tests/knowledge/`
+- Coverage: models, parsers, writers, engines (QueryEngine, BiAggregationEngine)
 - Legacy tests: `tests/document/test_isdm_*.py`, `test_ksdm_*.py` remain unchanged
+- Query model tests: 14 tests in `tests/knowledge/test_query_models.py` (MDX/DAX/SQL/OQL/JPQL/GraphQL/XMLA)
 
 ## 10. OSDM Agentic BPMN Extension Compliance
 
