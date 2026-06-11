@@ -43,6 +43,15 @@ from .tsdm_models import AiModelTool, CliTool, CompositeTool, DbQueryTool, DbSta
 
 from .usdm_models import AnnotationObject, AudioContent, BibliographyEntry, BinaryContent, BookmarkContent, CanvasContent, CanvasOperation, Change, ChangeTracking, CharacterStyle, ChartAxisContent, ChartContent, ChartSeriesContent, CodeContent, ColumnBreakContent, CommentContent, ConversionQuality, CrossReference, DOCXProperties, DataContent, DocumentElement, DocumentMetadata, DrawingContent, EmbeddedObjectContent, EndnoteContent, FootnoteContent, FormatPlugin, FormulaContent, HeadingContent, ImageContent, ImageObject, LaTeXCommandContent, LaTeXEnvironmentContent, LineBreakContent, LinkContent, ListContent, ListItemContent, ListStyle, LogicalElement, MathContent, OLEObjectContent, PDFInfo, PDFTextRun, PDFVectorPath, Page, PageBreakContent, PageContent, ParagraphContent, ParagraphStyle, PresentationHint, QuoteContent, Revision, RichTextContent, RichTextSpan, Section, SemanticHTMLContent, ShapeContent, SpreadsheetContent, StyleSheet, TableCell, TableContent, TableRow, TableStyle, TextRun, TransformationPipeline, TransformationRule, USDMDocument, VectorPath, VideoContent
 
+from .bam_models import (
+    AlertNotification, AlertRule, AlertSeverity, AlertState,
+    AgentReport, BusinessMetric, Dashboard, DashboardWidget,
+    KPI, KpiResult, KpiStatus, MetricAggregation, MetricCategory,
+    MetricValue, MonitoringAgentDefinition, MonitoringAgentType,
+    MonitoringDashboardDocument, SlaComplianceReport, SlaDefinition,
+    TrendDirection,
+)
+
 __all__ = [
     "ACISInterface",
     "ActionList",
@@ -833,4 +842,24 @@ __all__ = [
     "Port",
     "RegularizationConfig",
     "TrainingConfig",
+    "AlertNotification",
+    "AlertRule",
+    "AlertSeverity",
+    "AlertState",
+    "AgentReport",
+    "BusinessMetric",
+    "Dashboard",
+    "DashboardWidget",
+    "KPI",
+    "KpiResult",
+    "KpiStatus",
+    "MetricAggregation",
+    "MetricCategory",
+    "MetricValue",
+    "MonitoringAgentDefinition",
+    "MonitoringAgentType",
+    "MonitoringDashboardDocument",
+    "SlaComplianceReport",
+    "SlaDefinition",
+    "TrendDirection",
 ]
