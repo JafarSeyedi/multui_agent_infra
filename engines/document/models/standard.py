@@ -16,6 +16,7 @@ class DocumentStandard(str, Enum):
     OSDM = "osdm"   # Orchestration Standard Definition Model
     KSDM = "ksdm"   # Knowledge Structured Definition Model
     LSDM = "lsdm"   # Event Log Standard Definition Model
+    BAM = "bam"     # Business Activity Monitoring Model
     GENERIC = "generic"
     UNKNOWN = "unknown"
 
@@ -33,6 +34,7 @@ class DocumentStandard(str, Enum):
             "osdm": "Orchestration Standard Definition Model",
             "ksdm": "Knowledge Structured Definition Model",
             "lsdm": "Event Log Standard Definition Model",
+            "bam": "Business Activity Monitoring Model",
             "generic": "Generic Text/Binary",
             "unknown": "Unknown",
         }
@@ -52,6 +54,7 @@ class DocumentStandard(str, Enum):
             "osdm": "Orchestration Standard Definition Model including workflows, orchestrations, decisions, case management, and event processing models",
             "ksdm": "Knowledge Structured Definition Model",
             "lsdm": "Event Log Standard Definition Model",
+            "bam": "Business Activity Monitoring model for metrics, KPIs, SLAs, dashboards, alert rules, and monitoring agent definitions",
             "generic": "No specific structure enforced",
             "unknown": "Unknown",
         }
@@ -90,6 +93,7 @@ STANDARD_TO_CATEGORY: dict[DocumentStandard, MediaCategory] = {
     DocumentStandard.OSDM: MediaCategory.ORCHESTRATION_DEFINITION,
     DocumentStandard.KSDM: MediaCategory.KNOWLEDGE_EXTRACTION_DEFINITION,
     DocumentStandard.LSDM: MediaCategory.EVENT_LOG,
+    DocumentStandard.BAM: MediaCategory.STRUCTURED_DATA,
 }
 
 # Abbreviation definitions for documentation
@@ -106,6 +110,7 @@ ABBREVIATIONS: dict[str, str] = {
     "OSDM": "Orchestration Standard Definition Model",
     "KSDM": "Knowledge Structured Definition Model",
     "LSDM": "Event Log Standard Definition Model",
+    "BAM": "Business Activity Monitoring Model",
 
     # Components
     "MIME": "Multipurpose Internet Mail Extensions",
@@ -156,6 +161,7 @@ def get_common_formats(standard: DocumentStandard) -> list[str]:
         DocumentStandard.TSDM: ["tsdm_json"],
         DocumentStandard.OSDM: ["bpmn", "cmmn", "dmn", "pnml", "graphml", "serverless_workflow_json", "serverless_workflow_yaml"],
         DocumentStandard.LSDM: ["xes", "syslog", "cef", "es_bulk"],
+        DocumentStandard.BAM: ["bam_json", "bam_yaml"],
         DocumentStandard.KSDM: [
             "xmla_discover_xml", "mondrian_schema", "cwm_xmi",
             "pmml_xml", "onnx_protobuf", "rdf_turtle", "rml_yaml",

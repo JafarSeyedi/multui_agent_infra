@@ -140,6 +140,10 @@ class DocumentFormat(str, Enum):
     CEF = "cef"
     ES_BULK = "es_bulk"
 
+    # BAM formats
+    BAM_JSON = "bam_json"
+    BAM_YAML = "bam_yaml"
+
     UNKNOWN = "unknown"
 
 
@@ -1151,6 +1155,28 @@ MEDIA_TYPES: dict[str, MediaType] = {
         description="Elasticsearch Bulk API Format",
     ),
     
+    # ======================
+    # BAM
+    # ======================
+    "bam_json": MediaType(
+        mime="application/json",
+        format=DocumentFormat.BAM_JSON,
+        standard=DocumentStandard.BAM,
+        extensions=[".bam.json"],
+        kind=MediaContentKind.STRUCTURED,
+        raw_type=MediaRawType.TEXT,
+        description="Business Activity Monitoring Definition (JSON)"
+    ),
+    "bam_yaml": MediaType(
+        mime="application/x-yaml",
+        format=DocumentFormat.BAM_YAML,
+        standard=DocumentStandard.BAM,
+        extensions=[".bam.yaml", ".bam.yml"],
+        kind=MediaContentKind.STRUCTURED,
+        raw_type=MediaRawType.TEXT,
+        description="Business Activity Monitoring Definition (YAML)"
+    ),
+
     # ======================
     # FALLBACK TYPES
     # ======================
