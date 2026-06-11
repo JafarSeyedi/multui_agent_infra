@@ -33,6 +33,19 @@ TIMER_RECORD = "timer"
 JOB_RECORD = "job"
 
 
+def _runtime_entity(name: str, attributes: list[Attribute]) -> Entity:
+    return Entity(
+        name=name,
+        kind=EntityKind.TIMESERIES,
+        description=f"Runtime record entity for {name}.",
+        attributes=attributes,
+    )
+
+
+def _attr(name: str, scalar_type: ScalarType, *, required: bool = False) -> Attribute:
+    return Attribute(name=name, data_type=DataType(base=scalar_type), required=required)
+
+
 def build_runtime_schema() -> MSDMDocument:
     """Return the shared MSDM schema for orchestration runtime records."""
     entities = [
@@ -264,16 +277,3 @@ def snapshot_payload(instance_id: str, state: str, created_at: datetime, updated
 
 def utc_isoformat() -> str:
     return datetime.utcnow().isoformat()
-
-
-def _runtime_entity(name: str, attributes: list[Attribute]) -> Entity:
-    return Entity(
-        name=name,
-        kind=EntityKind.TIMESERIES,
-        description=f"Runtime record entity for {name}.",
-        attributes=attributes,
-    )
-
-
-def _attr(name: str, scalar_type: ScalarType, *, required: bool = False) -> Attribute:
-    return Attribute(name=name, data_type=DataType(base=scalar_type), required=required)
