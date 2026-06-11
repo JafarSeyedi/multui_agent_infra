@@ -214,6 +214,16 @@ class BamEngine:
     async def get_widget_data(self, widget_id: str) -> dict[str, Any] | None:
         return None
 
+    async def execute_instance(self, instance: Any, definition: Any) -> None:
+        if not self._running:
+            await self.start()
+        doc = await self.parse(
+            definition.definition_xml,
+            "json" if ".json" in definition.resource_name else "yaml",
+        )
+        doc.document_id = instance.id
+        await self.deploy(doc)
+
     async def _flush_metrics(self) -> None:
         async with self._metric_lock:
             self._metric_buffer.clear()

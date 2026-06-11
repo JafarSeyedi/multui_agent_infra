@@ -93,6 +93,10 @@ class EngineConfig:
     cep_buffer_size: int = 10000
     enable_multi_agent: bool = True
     agent_timeout_seconds: int = 300
+    enable_bam: bool = True
+    bam_metric_buffer_size: int = 100000
+    bam_persistence_interval: int = 60
+    bam_enable_predictive: bool = True
 
 
 @dataclass
@@ -192,11 +196,18 @@ class OrchestrationEngine:
         self.migrator = ProcessInstanceMigrator(self)
         self.batch_manager = BatchOperationManager(self)
 
+        self.engine_handlers: Dict[str, Any] = {}
+
+        self._bam_engine: Any | None = None
+        if self.config.enable_bam:
+            from ..bam.engine import BamEngine
+            self._bam_engine = BamEngine(engine=self)
+            self.register_engine_handler("bam", self._bam_engine)
+
         self.deployments: Dict[str, Deployment] = {}
         self.definitions: Dict[str, ProcessDefinition] = {}
         self.definition_versions: Dict[str, List[ProcessDefinition]] = {}
         self.instances: Dict[str, ProcessInstance] = {}
-        self.engine_handlers: Dict[str, Any] = {}
         self.active_instances: Set[str] = set()
         self.suspended_instances: Set[str] = set()
         self._executor_tasks: List[asyncio.Task] = []
@@ -216,6 +227,8 @@ class OrchestrationEngine:
                 self._executor_tasks.append(asyncio.create_task(self._async_executor_loop(i)))
             if self.config.enable_monitoring:
                 self._executor_tasks.append(asyncio.create_task(self._monitoring_loop()))
+            if self._bam_engine:
+                await self._bam_engine.start()
             self.state = EngineState.RUNNING
             await self.event_bus.publish(
                 Event(type=EventType.ENGINE_STARTED, data={"engine_id": self.engine_id, "timestamp": datetime.utcnow()})
@@ -235,6 +248,8 @@ class OrchestrationEngine:
             self._executor_tasks.clear()
         await self.scheduler.stop()
         await self.event_bus.stop()
+        if self._bam_engine:
+            await self._bam_engine.stop()
         self.state = EngineState.STOPPED
 
     async def pause(self) -> None:
@@ -471,6 +486,8 @@ class OrchestrationEngine:
     def _detect_definition_type(self, resource_name: str, content: str) -> str:
         lower_name = resource_name.lower()
         preview = content[:200].lower()
+        if ".bam.json" in lower_name or ".bam.yaml" in lower_name or ".bam.yml" in lower_name:
+            return "bam"
         if ".bpmn" in lower_name or "bpmn" in preview:
             return "bpmn"
         if ".cmmn" in lower_name or "cmmn" in preview:
