@@ -9,10 +9,11 @@ from ...models.bam_models import MonitoringDashboardDocument
 from ..base import BaseDocumentWriter
 
 
+_yaml: Any = None
 try:
     import yaml as _yaml
 except ImportError:
-    _yaml = None
+    pass
 
 
 class BamYamlWriter(BaseDocumentWriter):

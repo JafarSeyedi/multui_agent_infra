@@ -7,8 +7,9 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from engines.document.models.bam_models import (
-    AlertNotification, AlertState, KpiResult, KpiStatus,
-    MetricValue, MonitoringDashboardDocument, TrendDirection,
+    AgentReport, AlertNotification, AlertState, KpiResult,
+    KpiStatus, MetricValue, MonitoringDashboardDocument,
+    SlaComplianceReport, TrendDirection,
 )
 
 
@@ -33,22 +34,22 @@ class BamEngine:
 
     async def load(self, path: str) -> MonitoringDashboardDocument:
         from pathlib import Path
+        parser: Any
         p = Path(path)
         if p.suffix == ".json" or ".bam.json" in str(p):
             from engines.document.parsers.bam_parsers.bam_json_parser import BamJsonParser
             parser = BamJsonParser()
-            doc = await parser.parse_path(p)
-            assert isinstance(doc, MonitoringDashboardDocument)
-            return doc
         elif ".bam.yaml" in str(p) or ".bam.yml" in str(p):
             from engines.document.parsers.bam_parsers.bam_yaml_parser import BamYamlParser
             parser = BamYamlParser()
-            doc = await parser.parse_path(p)
-            assert isinstance(doc, MonitoringDashboardDocument)
-            return doc
-        raise ValueError(f"Unsupported BAM file: {path}")
+        else:
+            raise ValueError(f"Unsupported BAM file: {path}")
+        doc = await parser.parse_path(p)
+        assert isinstance(doc, MonitoringDashboardDocument)
+        return doc
 
     async def parse(self, content: str, fmt: str) -> MonitoringDashboardDocument:
+        parser: Any
         if fmt == "json":
             from engines.document.parsers.bam_parsers.bam_json_parser import BamJsonParser
             parser = BamJsonParser()
@@ -132,7 +133,6 @@ class BamEngine:
         return None
 
     async def track_sla_compliance(self, sla_id: str) -> SlaComplianceReport | None:
-        from engines.document.models.bam_models import SlaComplianceReport
         for dep in self._deployments.values():
             sla = dep.slas.get(sla_id)
             if sla is not None:
@@ -148,7 +148,6 @@ class BamEngine:
         return None
 
     async def get_sla_dashboard(self) -> list[SlaComplianceReport]:
-        from engines.document.models.bam_models import SlaComplianceReport
         reports: list[SlaComplianceReport] = []
         for dep in self._deployments.values():
             for sla_id in dep.slas:
@@ -158,7 +157,6 @@ class BamEngine:
         return reports
 
     async def evaluate_alerts(self) -> list[AlertNotification]:
-        from engines.document.models.bam_models import AlertNotification
         notifications: list[AlertNotification] = []
         for dep in self._deployments.values():
             for rid, rule in dep.alert_rules.items():
@@ -182,7 +180,6 @@ class BamEngine:
         pass
 
     async def run_monitoring_agents(self) -> list[AgentReport]:
-        from engines.document.models.bam_models import AgentReport
         reports: list[AgentReport] = []
         for dep in self._deployments.values():
             for aid, agent_def in dep.monitoring_agents.items():

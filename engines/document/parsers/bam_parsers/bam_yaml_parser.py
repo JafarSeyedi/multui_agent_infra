@@ -13,10 +13,11 @@ from ...models.bam_models import (
 from ..base import BaseDocumentParser
 
 
+_yaml: Any = None
 try:
     import yaml as _yaml
 except ImportError:
-    _yaml = None
+    pass
 
 
 class BamYamlParser(BaseDocumentParser):

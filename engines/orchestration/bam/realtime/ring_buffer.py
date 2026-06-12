@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from typing import Any, TypeVar
+from typing import Any, Generic, TypeVar
 
 T = TypeVar("T")
 
 
-class RingBuffer:
+class RingBuffer(Generic[T]):
     def __init__(self, capacity: int = 100000) -> None:
         self._capacity = capacity
         self._buffer: list[T] = []
