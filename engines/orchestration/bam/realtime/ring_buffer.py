@@ -7,6 +7,8 @@ T = TypeVar("T")
 
 class RingBuffer(Generic[T]):
     def __init__(self, capacity: int = 100000) -> None:
+        if capacity <= 0:
+            raise ValueError(f"RingBuffer capacity must be > 0, got {capacity}")
         self._capacity = capacity
         self._buffer: list[T] = []
         self._head = 0

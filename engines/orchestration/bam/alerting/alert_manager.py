@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import logging
 import time
 from datetime import datetime
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 from engines.document.models.bam_models import (
     AlertNotification, AlertRule, AlertSeverity, AlertState,
