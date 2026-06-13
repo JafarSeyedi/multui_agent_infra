@@ -7,6 +7,7 @@ from typing import Any
 from typing import Literal
 
 from pydantic import BaseModel
+from pydantic import ConfigDict
 from pydantic import Field
 
 from .._types import FeelContext, Metadata
@@ -18,6 +19,9 @@ from ..agent.models import AgentOutput
 
 class InteractionRequest(BaseModel):
     """Main input to InteractionAgent"""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     workflow_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     scenario: str = "pipeline"
     agents: list[BaseAgent]

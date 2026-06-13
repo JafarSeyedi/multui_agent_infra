@@ -60,15 +60,22 @@ class TestBpmnEngineLifecycle:
     @pytest.mark.asyncio
     async def test_deploy_and_start_instance(self):
         engine, _ = _make_engine()
-        deployment = await engine.deploy("test", {"test.bpmn": "<bpmn></bpmn>"})
+        bpmn_xml = """<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="proc1" isExecutable="true">
+    <bpmn:startEvent id="start1" name="Start"/>
+    <bpmn:sequenceFlow id="flow1" sourceRef="start1" targetRef="task1"/>
+    <bpmn:task id="task1" name="Task 1"/>
+    <bpmn:endEvent id="end1" name="End"/>
+    <bpmn:sequenceFlow id="flow2" sourceRef="task1" targetRef="end1"/>
+  </bpmn:process>
+</bpmn:definitions>"""
+        deployment = await engine.deploy("test", {"test.bpmn": bpmn_xml})
         assert deployment.id in engine.deployments
-        definition = _definition(key="proc1", definition_xml=str({
-            "id": "proc1", "start_event_id": "start1",
-            "activities": [{"id": "start1", "type": "startEvent", "payload": {}}],
-        }))
+        definition = _definition(key="proc1", definition_xml=bpmn_xml)
         engine.definitions["proc1"] = definition
         instance = await engine.start_process_instance("proc1", variables={"x": 1})
-        assert instance.state == InstanceState.ACTIVE
+        assert instance.state == InstanceState.COMPLETED
         assert instance.variables["x"] == 1
 
 
@@ -213,6 +220,7 @@ class TestEventBasedGateway:
     @pytest.mark.asyncio
     async def test_event_based_gateway_waits_for_events(self):
         from engines.orchestration.bpmn.gateway_handler import GatewayHandler
+        from engines.orchestration.models.osdm_models import GatewayType
         handler = GatewayHandler()
         gateway = {
             "id": "gw1", "type": "eventBasedGateway",
@@ -223,7 +231,7 @@ class TestEventBasedGateway:
         }
         result = handler.choose(gateway=gateway, context={})
         # Event-based gateway doesn't immediately select a path
-        assert result.gateway_type == "eventBasedGateway"
+        assert result.gateway_type == GatewayType.EVENT_BASED
 
     @pytest.mark.asyncio
     async def test_event_based_gateway_resolves_to_triggered_event(self):

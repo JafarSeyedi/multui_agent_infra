@@ -97,9 +97,9 @@ class TestOsdmEnumsImported:
         assert ChoreographyLoopType.MULTI_INSTANCE_SEQUENTIAL == "MultiInstanceSequential"
 
     def test_transaction_method_values(self):
-        assert TransactionMethod.COMPENSATE == "compensate"
-        assert TransactionMethod.STORE == "store"
-        assert TransactionMethod.IMAGE == "image"
+        assert TransactionMethod.COMPENSATE == "##compensate"
+        assert TransactionMethod.STORE == "##store"
+        assert TransactionMethod.IMAGE == "##image"
 
     def test_gateway_direction_values(self):
         assert GatewayDirection.UNSPECIFIED == "Unspecified"
@@ -129,8 +129,8 @@ class TestOsdmEnumsImported:
         assert TaskType.RECEIVE == "Receive"
 
     def test_call_activity_type_values(self):
-        assert CallActivityType.PROCESS == "process"
-        assert CallActivityType.GLOBAL_TASK == "globalTask"
+        assert CallActivityType.PROCESS == "Process"
+        assert CallActivityType.GLOBAL_TASK == "GlobalTask"
 
 
 class TestOsdmHandlerImports:

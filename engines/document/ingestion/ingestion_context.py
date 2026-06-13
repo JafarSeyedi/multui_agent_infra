@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import uuid
 from typing import Any
+from typing import Optional
 
 from pydantic import BaseModel
 from pydantic import ConfigDict
@@ -15,7 +16,6 @@ from ..embedding.service import DocumentEmbeddingService
 from ..models.base import BaseDocument
 from ..models.document_registry import DocumentRegistry
 from ..models.media_types import MediaType
-from ..storage.chunk_store import ChunkStore
 from ..storage.document_store import DocumentStore
 from ..storage.metadata_store import MetadataStore
 from .ingestion_models import ChunkRecord
@@ -84,7 +84,7 @@ class IngestionContext(BaseModel):
     # ------------------------------------------------------------------
     registry: DocumentRegistry | None = None
     document_store: DocumentStore | None = None
-    chunk_store: ChunkStore | None = None
+    chunk_store: Optional["ChunkStore"] = None
     metadata_store: MetadataStore | None = None
     object_storage: ObjectStorage | None = None
     chunker: BaseChunker | None = None
