@@ -11,6 +11,8 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Any
 
+from ..._types import Metadata, RawData
+
 logger = logging.getLogger(__name__)
 
 
@@ -18,11 +20,11 @@ class StorageBackend(ABC):
     """Abstract storage backend interface."""
 
     @abstractmethod
-    async def save(self, collection: str, key: str, value: dict[str, Any]) -> None:
+    async def save(self, collection: str, key: str, value: RawData) -> None:
         ...
 
     @abstractmethod
-    async def load(self, collection: str, key: str) -> dict[str, Any] | None:
+    async def load(self, collection: str, key: str) -> RawData | None:
         ...
 
     @abstractmethod
@@ -30,7 +32,7 @@ class StorageBackend(ABC):
         ...
 
     @abstractmethod
-    async def list(self, collection: str) -> list[dict[str, Any]]:
+    async def list(self, collection: str) -> list[RawData]:
         ...
 
     @abstractmethod
@@ -42,20 +44,20 @@ class InMemoryBackend(StorageBackend):
     """In-memory dict-based storage backend."""
 
     def __init__(self) -> None:
-        self._stores: dict[str, dict[str, dict[str, Any]]] = {}
+        self._stores: dict[str, dict[str, RawData]] = {}
 
-    async def save(self, collection: str, key: str, value: dict[str, Any]) -> None:
+    async def save(self, collection: str, key: str, value: RawData) -> None:
         if collection not in self._stores:
             self._stores[collection] = {}
         self._stores[collection][key] = value
 
-    async def load(self, collection: str, key: str) -> dict[str, Any] | None:
+    async def load(self, collection: str, key: str) -> RawData | None:
         return self._stores.get(collection, {}).get(key)
 
     async def delete(self, collection: str, key: str) -> None:
         self._stores.get(collection, {}).pop(key, None)
 
-    async def list(self, collection: str) -> list[dict[str, Any]]:
+    async def list(self, collection: str) -> list[RawData]:
         return list(self._stores.get(collection, {}).values())
 
     async def clear(self, collection: str) -> None:
@@ -66,7 +68,7 @@ class StorageBackendFactory(ABC):
     """Abstract factory for creating storage backends."""
 
     @abstractmethod
-    def create_backend(self, config: dict[str, Any] | None = None) -> StorageBackend:
+    def create_backend(self, config: Metadata | None = None) -> StorageBackend:
         ...
 
     @classmethod
@@ -97,12 +99,12 @@ class StorageBackendFactory(ABC):
 
 
 class MemoryBackendFactory(StorageBackendFactory):
-    def create_backend(self, config: dict[str, Any] | None = None) -> StorageBackend:
+    def create_backend(self, config: Metadata | None = None) -> StorageBackend:
         return InMemoryBackend()
 
 
 class SQLBackendFactory(StorageBackendFactory):
-    def create_backend(self, config: dict[str, Any] | None = None) -> StorageBackend:
+    def create_backend(self, config: Metadata | None = None) -> StorageBackend:
         try:
             from engines.storage.sql_storage import SQLStorage  # type: ignore[import-not-found]
             instance = SQLStorage(str(config.get("db_path", "engine.db")) if config else "engine.db")
@@ -113,7 +115,7 @@ class SQLBackendFactory(StorageBackendFactory):
 
 
 class FileBackendFactory(StorageBackendFactory):
-    def create_backend(self, config: dict[str, Any] | None = None) -> StorageBackend:
+    def create_backend(self, config: Metadata | None = None) -> StorageBackend:
         try:
             from engines.storage.file_storage import FileStorage  # type: ignore[import-not-found]
             instance = FileStorage(str(config.get("base_path", "./data")) if config else "./data")
@@ -124,20 +126,20 @@ class FileBackendFactory(StorageBackendFactory):
 
 
 class _SQLBackendAdapter(StorageBackend):
-    def __init__(self, wrapped: Any) -> None:
+    def __init__(self, wrapped: Any) -> None:  # duck-typed
         self._wrapped = wrapped
 
-    async def save(self, collection: str, key: str, value: dict[str, Any]) -> None:
+    async def save(self, collection: str, key: str, value: RawData) -> None:
         self._wrapped.save(collection + "_" + key, value)
 
-    async def load(self, collection: str, key: str) -> dict[str, Any] | None:
+    async def load(self, collection: str, key: str) -> RawData | None:
         result = self._wrapped.get(collection + "_" + key)
         return result if result else None
 
     async def delete(self, collection: str, key: str) -> None:
         self._wrapped.delete(collection + "_" + key)
 
-    async def list(self, collection: str) -> list[dict[str, Any]]:
+    async def list(self, collection: str) -> list[RawData]:
         return list(self._wrapped.list(collection))
 
     async def clear(self, collection: str) -> None:
@@ -146,19 +148,19 @@ class _SQLBackendAdapter(StorageBackend):
 
 
 class _FileBackendAdapter(StorageBackend):
-    def __init__(self, wrapped: Any) -> None:
+    def __init__(self, wrapped: Any) -> None:  # duck-typed
         self._wrapped = wrapped
 
-    async def save(self, collection: str, key: str, value: dict[str, Any]) -> None:
+    async def save(self, collection: str, key: str, value: RawData) -> None:
         self._wrapped.save(collection, key, value)
 
-    async def load(self, collection: str, key: str) -> dict[str, Any] | None:
+    async def load(self, collection: str, key: str) -> RawData | None:
         return self._wrapped.load(collection, key)
 
     async def delete(self, collection: str, key: str) -> None:
         self._wrapped.delete(collection, key)
 
-    async def list(self, collection: str) -> list[dict[str, Any]]:
+    async def list(self, collection: str) -> list[RawData]:
         return self._wrapped.list(collection)
 
     async def clear(self, collection: str) -> None:

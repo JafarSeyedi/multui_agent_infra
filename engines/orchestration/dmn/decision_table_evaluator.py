@@ -11,6 +11,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
+from ..._types import DmnValue, FeelContext, Metadata, RawData
+
 from .hit_policy_handler import HitPolicy, apply_hit_policy
 
 
@@ -27,16 +29,16 @@ class HitPolicyType(str, Enum):
 @dataclass
 class InputClause:
     input_expression: str = ""
-    input_values: list[Any] | None = None
+    input_values: list[DmnValue] | None = None
     label: str | None = None
-    allowed_values: list[Any] | None = None
+    allowed_values: list[object] | None = None
 
 
 @dataclass
 class OutputClause:
     name: str = ""
-    output_values: list[Any] | None = None
-    default_output: Any = None
+    output_values: list[DmnValue] | None = None
+    default_output: DmnValue | None = None
     label: str | None = None
     type_ref: str = "string"
 
@@ -47,8 +49,8 @@ class DecisionRule:
     input_entries: list[str] = field(default_factory=list)
     output_entries: list[str] = field(default_factory=list)
     annotation_entries: list[str] = field(default_factory=list)
-    input_values: list[Any] = field(default_factory=list)
-    output_values: dict[str, Any] = field(default_factory=dict)
+    input_values: list[DmnValue] = field(default_factory=list)
+    output_values: Metadata = field(default_factory=dict)
     is_matched: bool = False
     priority: int = 0
 
@@ -72,9 +74,9 @@ class DecisionTableEvaluator:
 
     def evaluate(
         self,
-        table: dict[str, Any],
-        context: dict[str, Any],
-    ) -> list[dict[str, Any]] | dict[str, Any] | None:
+        table: RawData,
+        context: FeelContext,
+    ) -> list[RawData] | Metadata | None:
         decision_table = self._normalize_table(table)
         input_values = self._resolve_input_values(decision_table, context)
         matched_rules = self._match_rules(decision_table, input_values, context)
@@ -85,15 +87,15 @@ class DecisionTableEvaluator:
         policy = HitPolicy(table.get("hitPolicy", self.default_policy.value))
         return apply_hit_policy(policy, matched_rules, context)
 
-    def _normalize_table(self, table: dict[str, Any]) -> DecisionTable:
+    def _normalize_table(self, table: RawData) -> DecisionTable:
         result = DecisionTable()
-        result.table_id = table.get("id", table.get("name", ""))
+        result.table_id = str(table.get("id", table.get("name", "")) or "")
         result.name = table.get("name")
         result.hit_policy = table.get("hitPolicy", "UNIQUE")
         result.aggregation = table.get("aggregation")
         result.preferred_orientation = table.get("preferredOrientation", "Rule-as-Row")
 
-        for inp in table.get("inputs", table.get("input", [])):
+        for inp in (table.get("inputs", table.get("input", [])) or []):
             clause = InputClause(
                 input_expression=inp.get("inputExpression", {}).get("text", inp.get("expression", "")),
                 input_values=inp.get("inputValues", []),
@@ -101,7 +103,7 @@ class DecisionTableEvaluator:
             )
             result.inputs.append(clause)
 
-        for out in table.get("outputs", table.get("output", [])):
+        for out in (table.get("outputs", table.get("output", [])) or []):
             out_clause = OutputClause(
                 name=out.get("name", ""),
                 output_values=out.get("outputValues", []),
@@ -111,7 +113,7 @@ class DecisionTableEvaluator:
             )
             result.outputs.append(out_clause)
 
-        for rule_data in table.get("rules", table.get("rows", [])):
+        for rule_data in (table.get("rules", table.get("rows", [])) or []):
             rule = DecisionRule(
                 rule_id=rule_data.get("id", ""),
                 input_entries=rule_data.get("inputEntry", []),
@@ -125,9 +127,9 @@ class DecisionTableEvaluator:
     def _resolve_input_values(
         self,
         table: DecisionTable,
-        context: dict[str, Any],
-    ) -> list[Any]:
-        values: list[Any] = []
+        context: FeelContext,
+    ) -> list[DmnValue]:
+        values: list[DmnValue] = []
         for clause in table.inputs:
             value = context.get(clause.input_expression)
             if value is None and not clause.input_expression:
@@ -145,10 +147,10 @@ class DecisionTableEvaluator:
     def _match_rules(
         self,
         table: DecisionTable,
-        input_values: list[Any],
-        context: dict[str, Any],
-    ) -> list[dict[str, Any]]:
-        matched: list[dict[str, Any]] = []
+        input_values: list[DmnValue],
+        context: FeelContext,
+    ) -> list[RawData]:
+        matched: list[RawData] = []
 
         for rule in table.rules:
             rule.input_values = []
@@ -183,7 +185,7 @@ class DecisionTableEvaluator:
 
         return matched
 
-    def _test_input_entry(self, entry_text: str, input_value: Any, context: dict[str, Any]) -> bool:
+    def _test_input_entry(self, entry_text: str, input_value: DmnValue, context: FeelContext) -> bool:
         text = entry_text.strip()
         if not text or text == "-" or text == "*":
             return True
@@ -232,18 +234,18 @@ class DecisionTableEvaluator:
 
         return False
 
-    def _parse_bound(self, text: str, context: dict[str, Any]) -> Any:
+    def _parse_bound(self, text: str, context: FeelContext) -> DmnValue:
         text = text.strip()
         try:
             return float(text) if "." in text else int(text)
         except ValueError:
             return context.get(text)
 
-    def _apply_default_outputs(self, table: DecisionTable) -> dict[str, Any] | None:
+    def _apply_default_outputs(self, table: DecisionTable) -> Metadata | None:
         has_defaults = any(clause.default_output is not None for clause in table.outputs)
         if not has_defaults:
             return None
-        result: dict[str, Any] = {}
+        result: Metadata = {}
         for clause in table.outputs:
             if clause.default_output is not None:
                 result[clause.name] = clause.default_output

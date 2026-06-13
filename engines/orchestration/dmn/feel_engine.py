@@ -24,6 +24,13 @@ import datetime
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
+from collections.abc import Callable
+from typing import TypeAlias
+
+from ..._types import DmnValue, FeelContext, RawData
+
+
+_AstNode: TypeAlias = str | int | float | bool | None | tuple[Any, ...]
 
 
 class FEELError(Exception):
@@ -87,7 +94,7 @@ from enum import Enum
 @dataclass
 class Token:
     type: str = ""
-    value: Any = None
+    value: str | int | float | bool | None | list | dict = None
     pos: int = 0
 
 
@@ -95,7 +102,7 @@ class Token:
 class FEELFunction:
     name: str
     parameters: list[str]
-    func: Any
+    func: Callable[..., Any]
 
 
 class FEELParser:
@@ -257,16 +264,16 @@ class FEELParser:
             raise FEELError(f"Expected {ttype}, got {tok.type} at pos {tok.pos}")
         return tok
 
-    def parse(self) -> Any:
+    def parse(self) -> _AstNode:
         result = self._parse_expression()
         if self._peek().type != TokenType.EOF:
             raise FEELError(f"Unexpected token after expression: {self._peek().type}")
         return result
 
-    def _parse_expression(self) -> Any:
+    def _parse_expression(self) -> _AstNode:
         return self._parse_or()
 
-    def _parse_or(self) -> Any:
+    def _parse_or(self) -> _AstNode:
         left = self._parse_and()
         while self._peek().type == TokenType.OR:
             self._advance()
@@ -274,7 +281,7 @@ class FEELParser:
             left = ("or", left, right)
         return left
 
-    def _parse_and(self) -> Any:
+    def _parse_and(self) -> _AstNode:
         left = self._parse_not()
         while self._peek().type == TokenType.AND:
             self._advance()
@@ -282,14 +289,14 @@ class FEELParser:
             left = ("and", left, right)
         return left
 
-    def _parse_not(self) -> Any:
+    def _parse_not(self) -> _AstNode:
         if self._peek().type == TokenType.NOT:
             self._advance()
             operand = self._parse_not()
             return ("not", operand)
         return self._parse_comparison()
 
-    def _parse_comparison(self) -> Any:
+    def _parse_comparison(self) -> _AstNode:
         left = self._parse_addition()
         tok = self._peek()
         if tok.type == TokenType.EQ:
@@ -342,7 +349,7 @@ class FEELParser:
             return ("instance_of", left, type_name)
         return left
 
-    def _parse_range(self) -> Any:
+    def _parse_range(self) -> _AstNode:
         tok = self._peek()
         left_open = tok.type == TokenType.LT
         if left_open:
@@ -357,7 +364,7 @@ class FEELParser:
         self._expect(TokenType.RBRACKET)
         return ("range", left_open, low, high, right_open)
 
-    def _parse_addition(self) -> Any:
+    def _parse_addition(self) -> _AstNode:
         left = self._parse_multiplication()
         while self._peek().type in (TokenType.PLUS, TokenType.MINUS):
             op = self._advance().type
@@ -365,7 +372,7 @@ class FEELParser:
             left = ("add" if op == TokenType.PLUS else "sub", left, right)
         return left
 
-    def _parse_multiplication(self) -> Any:
+    def _parse_multiplication(self) -> _AstNode:
         left = self._parse_unary()
         while self._peek().type in (TokenType.MULT, TokenType.DIV, TokenType.MOD):
             op = self._advance().type
@@ -378,14 +385,14 @@ class FEELParser:
                 left = ("mod", left, right)
         return left
 
-    def _parse_unary(self) -> Any:
+    def _parse_unary(self) -> _AstNode:
         if self._peek().type == TokenType.MINUS:
             self._advance()
             operand = self._parse_unary()
             return ("neg", operand)
         return self._parse_postfix()
 
-    def _parse_postfix(self) -> Any:
+    def _parse_postfix(self) -> _AstNode:
         base = self._parse_primary()
         while True:
             tok = self._peek()
@@ -402,7 +409,7 @@ class FEELParser:
                 break
         return base
 
-    def _parse_primary(self) -> Any:
+    def _parse_primary(self) -> _AstNode:
         tok = self._peek()
         if tok.type == TokenType.NUMBER:
             self._advance()
@@ -435,6 +442,7 @@ class FEELParser:
             return self._parse_context()
         elif tok.type == TokenType.IDENTIFIER:
             self._advance()
+            assert isinstance(tok.value, str)
             if self._peek().type == TokenType.LPAREN:
                 return self._parse_function_call(tok.value)
             return ("var", tok.value)
@@ -447,7 +455,7 @@ class FEELParser:
         else:
             raise FEELError(f"Unexpected token: {tok.type} at pos {tok.pos}")
 
-    def _parse_if(self) -> Any:
+    def _parse_if(self) -> _AstNode:
         self._expect(TokenType.IF)
         condition = self._parse_expression()
         self._expect(TokenType.THEN)
@@ -456,7 +464,7 @@ class FEELParser:
         else_expr = self._parse_expression()
         return ("if", condition, then_expr, else_expr)
 
-    def _parse_for(self) -> Any:
+    def _parse_for(self) -> _AstNode:
         self._expect(TokenType.FOR)
         var_name = self._expect(TokenType.IDENTIFIER).value
         self._expect(TokenType.IN)
@@ -465,7 +473,7 @@ class FEELParser:
         body = self._parse_expression()
         return ("for", var_name, collection, body)
 
-    def _parse_quantified(self, quantifier: str) -> Any:
+    def _parse_quantified(self, quantifier: str) -> _AstNode:
         self._advance()
         var_name = self._expect(TokenType.IDENTIFIER).value
         self._expect(TokenType.IN)
@@ -474,7 +482,7 @@ class FEELParser:
         body = self._parse_expression()
         return (quantifier, var_name, collection, body)
 
-    def _parse_list(self) -> Any:
+    def _parse_list(self) -> _AstNode:
         self._expect(TokenType.LBRACKET)
         items: list[Any] = []
         while self._peek().type != TokenType.RBRACKET:
@@ -484,11 +492,12 @@ class FEELParser:
         self._expect(TokenType.RBRACKET)
         return ("list", items)
 
-    def _parse_context(self) -> Any:
+    def _parse_context(self) -> _AstNode:
         self._expect(TokenType.LBRACE)
         entries: list[tuple[str, Any]] = []
         while self._peek().type != TokenType.RBRACE:
             key = self._expect(TokenType.IDENTIFIER).value
+            assert isinstance(key, str)
             self._expect(TokenType.COLON)
             value = self._parse_expression()
             entries.append((key, value))
@@ -497,7 +506,7 @@ class FEELParser:
         self._expect(TokenType.RBRACE)
         return ("context", entries)
 
-    def _parse_function_call(self, name: str) -> Any:
+    def _parse_function_call(self, name: str) -> _AstNode:
         self._expect(TokenType.LPAREN)
         args: list[Any] = []
         while self._peek().type != TokenType.RPAREN:
@@ -507,14 +516,14 @@ class FEELParser:
         self._expect(TokenType.RPAREN)
         return ("call", name, args)
 
-    def _parse_duration(self) -> Any:
+    def _parse_duration(self) -> _AstNode:
         self._expect(TokenType.DURATION)
         self._expect(TokenType.LPAREN)
         value = self._expect(TokenType.STRING).value
         self._expect(TokenType.RPAREN)
         return ("duration", value)
 
-    def _parse_date_time(self, kind: str) -> Any:
+    def _parse_date_time(self, kind: str) -> _AstNode:
         self._advance()
         self._expect(TokenType.LPAREN)
         value = self._expect(TokenType.STRING).value
@@ -527,7 +536,7 @@ class FEELEngine:
         self._functions: dict[str, FEELFunction] = {}
         self._register_builtins()
 
-    def evaluate(self, expression: str, context: EvaluationContext | dict[str, Any]) -> Any:
+    def evaluate(self, expression: str, context: EvaluationContext | FeelContext) -> DmnValue:
         if isinstance(context, EvaluationContext):
             variables = context.variables
         else:
@@ -582,7 +591,7 @@ class FEELEngine:
         "time": "_eval_date_time",
     }
 
-    def _eval_ast(self, node: Any, variables: dict[str, Any]) -> Any:
+    def _eval_ast(self, node: _AstNode, variables: FeelContext) -> DmnValue:
         if not isinstance(node, tuple):
             return node
 
@@ -592,16 +601,16 @@ class FEELEngine:
             raise FEELError(f"Unknown AST node: {op}")
         return getattr(self, handler)(node, variables)
 
-    def _eval_literal(self, node: tuple, variables: dict[str, Any]) -> Any:
+    def _eval_literal(self, node: tuple, variables: FeelContext) -> DmnValue:
         return node[1]
 
-    def _eval_var(self, node: tuple, variables: dict[str, Any]) -> Any:
+    def _eval_var(self, node: tuple, variables: FeelContext) -> DmnValue:
         name = node[1]
         if name in variables:
             return variables[name]
         raise FEELError(f"Variable not found: {name}")
 
-    def _eval_path(self, node: tuple, variables: dict[str, Any]) -> Any:
+    def _eval_path(self, node: tuple, variables: FeelContext) -> DmnValue:
         base = self._eval_ast(node[1], variables)
         member = node[2]
         if isinstance(base, dict):
@@ -610,7 +619,7 @@ class FEELEngine:
             return getattr(base, member)
         raise FEELError(f"Cannot access '{member}' on {type(base)}")
 
-    def _eval_filter(self, node: tuple, variables: dict[str, Any]) -> Any:
+    def _eval_filter(self, node: tuple, variables: FeelContext) -> DmnValue:
         collection = self._eval_ast(node[1], variables)
         index = self._eval_ast(node[2], variables)
         if isinstance(collection, list):
@@ -620,45 +629,45 @@ class FEELEngine:
             return [item for item in collection if self._matches_filter(item, index, variables)]
         return None
 
-    def _eval_or(self, node: tuple, variables: dict[str, Any]) -> Any:
+    def _eval_or(self, node: tuple, variables: FeelContext) -> DmnValue:
         return self._eval_ast(node[1], variables) or self._eval_ast(node[2], variables)
 
-    def _eval_and(self, node: tuple, variables: dict[str, Any]) -> Any:
+    def _eval_and(self, node: tuple, variables: FeelContext) -> DmnValue:
         return self._eval_ast(node[1], variables) and self._eval_ast(node[2], variables)
 
-    def _eval_not(self, node: tuple, variables: dict[str, Any]) -> Any:
+    def _eval_not(self, node: tuple, variables: FeelContext) -> DmnValue:
         return not self._eval_ast(node[1], variables)
 
-    def _eval_eq(self, node: tuple, variables: dict[str, Any]) -> Any:
+    def _eval_eq(self, node: tuple, variables: FeelContext) -> DmnValue:
         return self._eval_ast(node[1], variables) == self._eval_ast(node[2], variables)
 
-    def _eval_neq(self, node: tuple, variables: dict[str, Any]) -> Any:
+    def _eval_neq(self, node: tuple, variables: FeelContext) -> DmnValue:
         return self._eval_ast(node[1], variables) != self._eval_ast(node[2], variables)
 
-    def _eval_lt(self, node: tuple, variables: dict[str, Any]) -> Any:
+    def _eval_lt(self, node: tuple, variables: FeelContext) -> DmnValue:
         return self._eval_ast(node[1], variables) < self._eval_ast(node[2], variables)
 
-    def _eval_gt(self, node: tuple, variables: dict[str, Any]) -> Any:
+    def _eval_gt(self, node: tuple, variables: FeelContext) -> DmnValue:
         return self._eval_ast(node[1], variables) > self._eval_ast(node[2], variables)
 
-    def _eval_lte(self, node: tuple, variables: dict[str, Any]) -> Any:
+    def _eval_lte(self, node: tuple, variables: FeelContext) -> DmnValue:
         return self._eval_ast(node[1], variables) <= self._eval_ast(node[2], variables)
 
-    def _eval_gte(self, node: tuple, variables: dict[str, Any]) -> Any:
+    def _eval_gte(self, node: tuple, variables: FeelContext) -> DmnValue:
         return self._eval_ast(node[1], variables) >= self._eval_ast(node[2], variables)
 
-    def _eval_between(self, node: tuple, variables: dict[str, Any]) -> Any:
+    def _eval_between(self, node: tuple, variables: FeelContext) -> DmnValue:
         val = self._eval_ast(node[1], variables)
         low = self._eval_ast(node[2], variables)
         high = self._eval_ast(node[3], variables)
         return low <= val <= high
 
-    def _eval_in(self, node: tuple, variables: dict[str, Any]) -> Any:
+    def _eval_in(self, node: tuple, variables: FeelContext) -> DmnValue:
         val = self._eval_ast(node[1], variables)
         values = [self._eval_ast(v, variables) for v in node[2]]
         return val in values
 
-    def _eval_in_range(self, node: tuple, variables: dict[str, Any]) -> Any:
+    def _eval_in_range(self, node: tuple, variables: FeelContext) -> DmnValue:
         val = self._eval_ast(node[1], variables)
         range_info = node[2]
         if range_info[0] == "range":
@@ -669,7 +678,7 @@ class FEELEngine:
             return left_ok and right_ok
         return False
 
-    def _eval_instance_of(self, node: tuple, variables: dict[str, Any]) -> Any:
+    def _eval_instance_of(self, node: tuple, variables: FeelContext) -> DmnValue:
         val = self._eval_ast(node[1], variables)
         type_name = node[2]
         type_map: dict[str, type | tuple[type, ...]] = {
@@ -682,34 +691,34 @@ class FEELEngine:
             return isinstance(val, expected)
         return False
 
-    def _eval_add(self, node: tuple, variables: dict[str, Any]) -> Any:
+    def _eval_add(self, node: tuple, variables: FeelContext) -> DmnValue:
         return self._eval_ast(node[1], variables) + self._eval_ast(node[2], variables)
 
-    def _eval_sub(self, node: tuple, variables: dict[str, Any]) -> Any:
+    def _eval_sub(self, node: tuple, variables: FeelContext) -> DmnValue:
         return self._eval_ast(node[1], variables) - self._eval_ast(node[2], variables)
 
-    def _eval_mul(self, node: tuple, variables: dict[str, Any]) -> Any:
+    def _eval_mul(self, node: tuple, variables: FeelContext) -> DmnValue:
         return self._eval_ast(node[1], variables) * self._eval_ast(node[2], variables)
 
-    def _eval_div(self, node: tuple, variables: dict[str, Any]) -> Any:
+    def _eval_div(self, node: tuple, variables: FeelContext) -> DmnValue:
         divisor = self._eval_ast(node[2], variables)
         if divisor == 0:
             raise FEELError("Division by zero")
         return self._eval_ast(node[1], variables) / divisor
 
-    def _eval_mod(self, node: tuple, variables: dict[str, Any]) -> Any:
+    def _eval_mod(self, node: tuple, variables: FeelContext) -> DmnValue:
         return self._eval_ast(node[1], variables) % self._eval_ast(node[2], variables)
 
-    def _eval_neg(self, node: tuple, variables: dict[str, Any]) -> Any:
+    def _eval_neg(self, node: tuple, variables: FeelContext) -> DmnValue:
         return -self._eval_ast(node[1], variables)
 
-    def _eval_if(self, node: tuple, variables: dict[str, Any]) -> Any:
+    def _eval_if(self, node: tuple, variables: FeelContext) -> DmnValue:
         cond = self._eval_ast(node[1], variables)
         if cond:
             return self._eval_ast(node[2], variables)
         return self._eval_ast(node[3], variables)
 
-    def _eval_for(self, node: tuple, variables: dict[str, Any]) -> Any:
+    def _eval_for(self, node: tuple, variables: FeelContext) -> DmnValue:
         var_name = node[1]
         collection = self._eval_ast(node[2], variables)
         if not isinstance(collection, list):
@@ -721,7 +730,7 @@ class FEELEngine:
             results.append(self._eval_ast(node[3], local_vars))
         return results
 
-    def _eval_quantified(self, node: tuple, variables: dict[str, Any]) -> Any:
+    def _eval_quantified(self, node: tuple, variables: FeelContext) -> DmnValue:
         op = node[0]
         var_name = node[1]
         collection = self._eval_ast(node[2], variables)
@@ -737,16 +746,16 @@ class FEELEngine:
                 return False
         return op == "every"
 
-    def _eval_list(self, node: tuple, variables: dict[str, Any]) -> Any:
+    def _eval_list(self, node: tuple, variables: FeelContext) -> DmnValue:
         return [self._eval_ast(item, variables) for item in node[1]]
 
-    def _eval_context(self, node: tuple, variables: dict[str, Any]) -> Any:
+    def _eval_context(self, node: tuple, variables: FeelContext) -> DmnValue:
         result = {}
         for key, value_node in node[1]:
             result[key] = self._eval_ast(value_node, variables)
         return result
 
-    def _eval_call(self, node: tuple, variables: dict[str, Any]) -> Any:
+    def _eval_call(self, node: tuple, variables: FeelContext) -> DmnValue:
         func_name = node[1].lower()
         args = [self._eval_ast(a, variables) for a in node[2]]
         func = self._functions.get(func_name)
@@ -757,13 +766,13 @@ class FEELEngine:
         except Exception as e:
             raise FEELError(f"Function '{func_name}' error: {e}")
 
-    def _eval_duration(self, node: tuple, variables: dict[str, Any]) -> Any:
+    def _eval_duration(self, node: tuple, variables: FeelContext) -> DmnValue:
         return self._parse_duration_value(node[1])
 
-    def _eval_date_time(self, node: tuple, variables: dict[str, Any]) -> Any:
+    def _eval_date_time(self, node: tuple, variables: FeelContext) -> DmnValue:
         return node[1]
 
-    def _matches_filter(self, item: Any, condition: Any, variables: dict[str, Any]) -> bool:
+    def _matches_filter(self, item: _AstNode, condition: _AstNode, variables: FeelContext) -> bool:
         if isinstance(condition, dict):
             for key, expected in condition.items():
                 if isinstance(item, dict):
@@ -776,8 +785,8 @@ class FEELEngine:
             return True
         return bool(condition)
 
-    def _parse_duration_value(self, value: str) -> dict[str, Any]:
-        result: dict[str, Any] = {"years": 0, "months": 0, "days": 0, "hours": 0, "minutes": 0, "seconds": 0}
+    def _parse_duration_value(self, value: str) -> dict[str, int | float]:
+        result: dict[str, int | float] = {"years": 0, "months": 0, "days": 0, "hours": 0, "minutes": 0, "seconds": 0}
         m = re.match(r"P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?)?", value)
         if m:
             if m.group(1):

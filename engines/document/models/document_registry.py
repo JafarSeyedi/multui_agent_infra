@@ -3,8 +3,10 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
+from ..parsers.base import BaseDocumentParser
+from ..writers.base import BaseDocumentWriter
 from .media_detection import detect_media_type
 from .media_types import DocumentFormat
 from .media_types import MEDIA_TYPES
@@ -12,10 +14,6 @@ from .media_types import MediaContentKind
 from .media_types import MediaRawType
 from .media_types import MediaType
 from .media_types import MediaTypeRegistry
-
-if TYPE_CHECKING:
-    from ..parsers.base import BaseDocumentParser
-    from ..writers.base import BaseDocumentWriter
 
 
 # ==========================================================

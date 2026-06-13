@@ -53,7 +53,7 @@ class RedisMessageBus(MessageBus):
         except ValueError:
             pass
 
-    async def publish(self, message: "AgentMessage") -> None:
+    async def publish(self, message: AgentMessage) -> None:
         await self._redis.publish(message.recipient, message.model_dump_json())
 
     async def _listen(self) -> None:

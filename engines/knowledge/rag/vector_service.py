@@ -192,7 +192,7 @@ class VectorService:
         await self.vector_db.add_embeddings(
             ids=[chunk.chunk_id for chunk in chunks],
             embeddings=embeddings,
-            metadata=[chunk.dict() for chunk in chunks],
+            metadata=[chunk.model_dump() for chunk in chunks],
         )
         return chunks
 

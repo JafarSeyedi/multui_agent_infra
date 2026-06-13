@@ -50,7 +50,7 @@ class KafkaMessageBus(MessageBus):
             if task:
                 task.cancel()
 
-    async def publish(self, message: "AgentMessage") -> None:
+    async def publish(self, message: AgentMessage) -> None:
         if not self._producer:
             raise RuntimeError("Call start() before publish()")
         await self._producer.send(topic=message.recipient, value=message.model_dump_json().encode())

@@ -6,12 +6,10 @@ Generates styles.xml from fonts, fills, borders, number formats, and cell format
 from __future__ import annotations
 
 import xml.etree.ElementTree as ET
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from ..base import ESDMBaseWriter
 
 from .const import XML_NAMESPACES
+from ..base import ESDMBaseWriter
 
 
 class StylesWriter:
@@ -275,3 +273,4 @@ class StylesWriter:
         if len(color) == 3:
             color = ''.join([c*2 for c in color])
         return color if len(color) == 6 else None
+

@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Iterable, TypeVar
+from typing import Any, TypeVar
+from collections.abc import Iterable
 
 NodeId = TypeVar("NodeId", bound=str)
 

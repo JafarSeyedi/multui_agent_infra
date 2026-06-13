@@ -1,5 +1,6 @@
 from typing import Any
 
+from .._types import FeelContext, RawData, VariableValue
 from ..agent.models import AgentOutput
 from .base_strategy import InteractionStrategy
 from .interaction_models import InteractionRequest
@@ -10,7 +11,7 @@ class DebateStrategy(InteractionStrategy):
     scenario_name = "debate"
 
     async def execute(self, request: InteractionRequest) -> InteractionResult:
-        context: dict[str, Any] = dict(request.context or {})
+        context: FeelContext = dict(request.context or {})
         agents = request.agents or []
 
         if len(agents) < 2:
@@ -24,9 +25,9 @@ class DebateStrategy(InteractionStrategy):
         critic_name = critic_agent_meta.agent_name
 
         max_rounds = int(request.metadata.get("max_rounds", 5))
-        history: list[dict[str, Any]] = []
+        history: list[RawData] = []
         results: list[AgentOutput] = []
-        current_answer: Any | None = None
+        current_answer: VariableValue | None = None
         approved_round: int | None = None
 
         for round_id in range(1, max_rounds + 1):

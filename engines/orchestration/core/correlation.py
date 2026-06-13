@@ -10,21 +10,19 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Set, Tuple, TYPE_CHECKING
+from typing import Any
 from dataclasses import dataclass, field
 from uuid import uuid4
 from collections import defaultdict
 
 from ..persistence.history_repository import HistoryRepository
-
-if TYPE_CHECKING:
-    from engines.document.models.osdm_models import (
-        CorrelationKey as OsDmCorrelationKey,
-        CorrelationSubscription as OsDmCorrelationSubscription,
-        CorrelationPropertyBinding as OsDmCorrelationPropertyBinding,
-        CorrelationPropertyRetrievalExpression as OsDmCorrelationPropertyRetrievalExpression,
-        TimerEventDefinition as OsDmTimerEventDefinition,
-    )
+from engines.orchestration.models.osdm_models import (
+    CorrelationKey as OsDmCorrelationKey,
+    CorrelationSubscription as OsDmCorrelationSubscription,
+    CorrelationPropertyBinding as OsDmCorrelationPropertyBinding,
+    CorrelationPropertyRetrievalExpression as OsDmCorrelationPropertyRetrievalExpression,
+    TimerEventDefinition as OsDmTimerEventDefinition,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -58,8 +56,8 @@ class OsDmCorrelationSubscriptionBinding:
     """OSDM-aligned correlation property binding for message matching."""
     name: str
     value: str
-    property_ref_name: Optional[str] = None
-    data_path: Optional[str] = None
+    property_ref_name: str | None = None
+    data_path: str | None = None
 
     def matches(self, test_value: Any) -> bool:
         if test_value is None:
@@ -72,10 +70,10 @@ class CorrelationRule:
     """OSDM correlation rule for evaluating message correlation."""
     rule_id: str
     name: str
-    bindings: List[OsDmCorrelationSubscriptionBinding] = field(default_factory=list)
-    timer_definition: Optional[OsDmTimerEventDefinition] = None
+    bindings: list[OsDmCorrelationSubscriptionBinding] = field(default_factory=list)
+    timer_definition: OsDmTimerEventDefinition | None = None
 
-    def evaluate(self, correlation_keys: 'CorrelationKeySet') -> bool:
+    def evaluate(self, correlation_keys: CorrelationKeySet) -> bool:
         if not self.bindings:
             return True
         for binding in self.bindings:
@@ -90,13 +88,13 @@ class CorrelationRule:
 @dataclass
 class CorrelationKeySet:
     """Set of correlation keys"""
-    keys: List[CorrelationKey] = field(default_factory=list)
+    keys: list[CorrelationKey] = field(default_factory=list)
     
     def add_key(self, name: str, value: str) -> None:
         """Add a correlation key"""
         self.keys.append(CorrelationKey(name, value))
     
-    def matches(self, other: 'CorrelationKeySet') -> bool:
+    def matches(self, other: CorrelationKeySet) -> bool:
         """Check if this key set matches another"""
         if len(self.keys) != len(other.keys):
             return False
@@ -106,7 +104,7 @@ class CorrelationKeySet:
         
         return self_dict == other_dict
     
-    def to_dict(self) -> Dict[str, str]:
+    def to_dict(self) -> dict[str, str]:
         """Convert to dictionary"""
         return {k.name: k.value for k in self.keys}
     
@@ -125,12 +123,12 @@ class Message:
     message_id: str
     message_name: str
     correlation_keys: CorrelationKeySet
-    payload: Dict[str, Any] = field(default_factory=dict)
+    payload: dict[str, Any] = field(default_factory=dict)
     timestamp: datetime = field(default_factory=datetime.utcnow)
-    ttl_seconds: Optional[int] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    ttl_seconds: int | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "message_id": self.message_id,
             "message_name": self.message_name,
@@ -142,7 +140,7 @@ class Message:
         }
 
     @classmethod
-    def from_dict(cls, payload: Dict[str, Any]) -> "Message":
+    def from_dict(cls, payload: dict[str, Any]) -> Message:
         return cls(
             message_id=str(payload["message_id"]),
             message_name=str(payload["message_name"]),
@@ -165,9 +163,9 @@ class MessageSubscription:
     instance_id: str
     activity_id: str
     created_at: datetime = field(default_factory=datetime.utcnow)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "subscription_id": self.subscription_id,
             "message_name": self.message_name,
@@ -179,7 +177,7 @@ class MessageSubscription:
         }
 
     @classmethod
-    def from_dict(cls, payload: Dict[str, Any]) -> "MessageSubscription":
+    def from_dict(cls, payload: dict[str, Any]) -> MessageSubscription:
         return cls(
             subscription_id=str(payload["subscription_id"]),
             message_name=str(payload["message_name"]),
@@ -201,9 +199,9 @@ class EventSubscription:
     instance_id: str
     activity_id: str
     created_at: datetime = field(default_factory=datetime.utcnow)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "subscription_id": self.subscription_id,
             "event_name": self.event_name,
@@ -214,7 +212,7 @@ class EventSubscription:
         }
 
     @classmethod
-    def from_dict(cls, payload: Dict[str, Any]) -> "EventSubscription":
+    def from_dict(cls, payload: dict[str, Any]) -> EventSubscription:
         return cls(
             subscription_id=str(payload["subscription_id"]),
             event_name=str(payload["event_name"]),
@@ -241,17 +239,17 @@ class CorrelationEngine:
         self.history_repository = history_repository
         
         # Message subscriptions
-        self.message_subscriptions: Dict[str, MessageSubscription] = {}
-        self.message_name_index: Dict[str, Set[str]] = defaultdict(set)
-        self.instance_message_subs: Dict[str, Set[str]] = defaultdict(set)
+        self.message_subscriptions: dict[str, MessageSubscription] = {}
+        self.message_name_index: dict[str, set[str]] = defaultdict(set)
+        self.instance_message_subs: dict[str, set[str]] = defaultdict(set)
         
         # Event subscriptions
-        self.event_subscriptions: Dict[str, EventSubscription] = {}
-        self.event_name_index: Dict[str, Set[str]] = defaultdict(set)
-        self.instance_event_subs: Dict[str, Set[str]] = defaultdict(set)
+        self.event_subscriptions: dict[str, EventSubscription] = {}
+        self.event_name_index: dict[str, set[str]] = defaultdict(set)
+        self.instance_event_subs: dict[str, set[str]] = defaultdict(set)
         
         # Buffered messages (waiting for subscription)
-        self.buffered_messages: List[Message] = []
+        self.buffered_messages: list[Message] = []
         self.max_buffer_size = 10000
         
         logger.info("Correlation engine created")
@@ -262,7 +260,7 @@ class CorrelationEngine:
         correlation_keys: CorrelationKeySet,
         instance_id: str,
         activity_id: str,
-        subscription_id: Optional[str] = None
+        subscription_id: str | None = None
     ) -> str:
         """
         Subscribe to a message.
@@ -308,7 +306,7 @@ class CorrelationEngine:
         correlation_keys: CorrelationKeySet,
         instance_id: str,
         activity_id: str,
-        subscription_id: Optional[str] = None,
+        subscription_id: str | None = None,
     ) -> str:
         subscription_id = self.subscribe_message(
             message_name=message_name,
@@ -349,7 +347,7 @@ class CorrelationEngine:
         event_name: str,
         instance_id: str,
         activity_id: str,
-        subscription_id: Optional[str] = None
+        subscription_id: str | None = None
     ) -> str:
         """
         Subscribe to an event.
@@ -389,7 +387,7 @@ class CorrelationEngine:
         event_name: str,
         instance_id: str,
         activity_id: str,
-        subscription_id: Optional[str] = None,
+        subscription_id: str | None = None,
     ) -> str:
         subscription_id = self.subscribe_event(
             event_name=event_name,
@@ -428,9 +426,9 @@ class CorrelationEngine:
         self,
         message_name: str,
         correlation_keys: CorrelationKeySet,
-        payload: Optional[Dict[str, Any]] = None,
-        ttl_seconds: Optional[int] = None
-    ) -> List[Tuple[str, str]]:
+        payload: dict[str, Any] | None = None,
+        ttl_seconds: int | None = None
+    ) -> list[tuple[str, str]]:
         """
         Correlate a message with subscriptions.
         
@@ -483,8 +481,8 @@ class CorrelationEngine:
     async def throw_event(
         self,
         event_name: str,
-        payload: Optional[Dict[str, Any]] = None
-    ) -> List[Tuple[str, str]]:
+        payload: dict[str, Any] | None = None
+    ) -> list[tuple[str, str]]:
         """
         Throw an event (signal).
         
@@ -513,7 +511,7 @@ class CorrelationEngine:
         logger.info(f"Event '{event_name}' caught by {len(result)} subscriptions")
         return result
     
-    def _find_message_matches(self, message: Message) -> Set[str]:
+    def _find_message_matches(self, message: Message) -> set[str]:
         """Find subscriptions matching a message"""
         # Get subscriptions for this message name
         candidate_ids = self.message_name_index.get(message.message_name, set())
@@ -587,7 +585,7 @@ class CorrelationEngine:
         self,
         subscription: EventSubscription,
         event_name: str,
-        payload: Dict[str, Any]
+        payload: dict[str, Any]
     ) -> None:
         """Notify about an event match"""
         from .event_bus import Event, EventType
@@ -649,7 +647,7 @@ class CorrelationEngine:
         
         return len(expired)
     
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Get correlation engine statistics"""
         return {
             "message_subscriptions": len(self.message_subscriptions),
@@ -707,7 +705,7 @@ class CorrelationEngine:
                 message_id = str(payload.get("message_id", ""))
                 self.buffered_messages = [message for message in self.buffered_messages if message.message_id != message_id]
 
-    async def _append_history(self, instance_id: str, action: str, payload: Dict[str, Any]) -> None:
+    async def _append_history(self, instance_id: str, action: str, payload: dict[str, Any]) -> None:
         if self.history_repository is None:
             return
         await self.history_repository.append_persisted(

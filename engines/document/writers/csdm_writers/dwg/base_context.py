@@ -1,16 +1,16 @@
 import os
 import time
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 from ....parsers.csdm_parsers.oda_bridge import ODABridge
 from ....models.csdm_core import CSDMDocument
 
 class WriterContext:
     def __init__(self, csdm_doc: CSDMDocument):
         self.csdm_doc = csdm_doc
-        self.oda: Optional[ODABridge] = None
-        self.dwg: Optional[Any] = None
-        self.registry: Dict[str, Any] = {}
+        self.oda: ODABridge | None = None
+        self.dwg: Any | None = None
+        self.registry: dict[str, Any] = {}
         self.logger = logging.getLogger("CSDMWriter")
         self.time_start: float = 0.0
 
@@ -28,7 +28,7 @@ class WriterContext:
     def register(self, handle: str, oda_obj: Any):
         self.registry[handle] = oda_obj
 
-    def resolve(self, handle: str) -> Optional[Any]:
+    def resolve(self, handle: str) -> Any | None:
         return self.registry.get(handle)
 
     def log(self, msg: str):

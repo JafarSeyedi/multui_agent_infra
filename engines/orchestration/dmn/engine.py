@@ -14,7 +14,7 @@ from ..core.context import ContextManager, ContextScope
 from ..core.engine import OrchestrationEngine, ProcessDefinition
 from ..core.instance import ProcessInstance
 from .decision_requirements_graph import DmnDecisionServiceExecutor
-from ...document.models.osdm_models import DecisionService
+from engines.orchestration.models.osdm_models import DecisionService
 from ..core.event_bus import Event, EventType
 from .decision_executor import DecisionExecutor
 

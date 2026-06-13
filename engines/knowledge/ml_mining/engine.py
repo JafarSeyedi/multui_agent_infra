@@ -5,7 +5,7 @@ from typing import Any, Literal, overload
 
 import numpy as np
 
-from engines.document.models.ksdm_models import (
+from engines.knowledge.models.ksdm_models import (
     AttributeValue,
     EvaluationStage,
     FeatureImportance,
@@ -32,14 +32,14 @@ from engines.document.models.ksdm_models import (
 )
 from engines.document.models.msdm_models import Attribute as MsdmAttribute
 from engines.document.parsers.base import BaseDocumentParser
-from engines.document.parsers.ksdm_parsers.ml_mining import (
+from engines.knowledge.models.parsers.ml_mining import (
     OnnxParser,
     PmmlParser,
     SklearnParser,
     PyTorchParser,
 )
 from engines.document.writers.base import BaseDocumentWriter
-from engines.document.writers.ksdm_writers.ml_mining import (
+from engines.knowledge.models.writers.ml_mining import (
     OnnxWriter,
     PmmlWriter,
     SklearnWriter,

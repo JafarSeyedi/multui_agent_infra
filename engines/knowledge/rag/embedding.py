@@ -4,6 +4,7 @@ import hashlib
 import math
 from collections.abc import Iterable
 from collections.abc import Sequence
+from typing import Any
 
 
 class EmbeddingModel:
@@ -14,7 +15,7 @@ class EmbeddingModel:
     so the retrieval pipeline remains functional in local/dev environments.
     """
 
-    def __init__(self, provider: object | None = None, dimension: int = 256):
+    def __init__(self, provider: Any | None = None, dimension: int = 256):
         if dimension <= 0:
             raise ValueError("dimension must be positive")
         self.provider = provider

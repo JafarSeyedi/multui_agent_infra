@@ -2,7 +2,8 @@
 """SQL writer with connection management and UPSERT generation."""
 from __future__ import annotations
 
-from typing import Any, Protocol, runtime_checkable, Optional, Sequence, cast
+from typing import Any, Protocol, runtime_checkable, Optional, cast
+from collections.abc import Sequence
 
 from ...models.dsdm_models import DataDocument, DataNode, DataNodeKind, DataValue
 from ...models.msdm_models import Entity, Attribute, ScalarType

@@ -64,7 +64,7 @@ class RabbitMQMessageBus(MessageBus):
                 queues.remove(queue)
                 break
 
-    async def publish(self, message: "AgentMessage") -> None:
+    async def publish(self, message: AgentMessage) -> None:
         if not self._exchange:
             raise RuntimeError("Call start() before publish()")
         await self._exchange.publish(

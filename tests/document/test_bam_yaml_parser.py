@@ -1,6 +1,6 @@
 import pytest
-from engines.document.models.bam_models import MonitoringDashboardDocument
-from engines.document.parsers.bam_parsers.bam_yaml_parser import BamYamlParser
+from engines.orchestration.models.bam_models import MonitoringDashboardDocument
+from engines.orchestration.models.parsers.bam.bam_yaml_parser import BamYamlParser
 
 
 YAML_CONTENT = """

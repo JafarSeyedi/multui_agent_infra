@@ -38,7 +38,7 @@ class Validator(ModelVisitor):
     """
 
     @abstractmethod
-    def validate(self, payload: object) -> list[ValidationResult]:
+    def validate(self, payload: Any) -> list[ValidationResult]:
         ...
 
     def visit_process(self, process: Any) -> Any: ...
@@ -66,7 +66,7 @@ class ValidationChain:
         self._validators.append(validator)
         return self
 
-    def validate(self, payload: object) -> list[ValidationResult]:
+    def validate(self, payload: Any) -> list[ValidationResult]:
         results: list[ValidationResult] = []
         for validator in self._validators:
             results.extend(validator.validate(payload))

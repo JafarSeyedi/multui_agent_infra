@@ -1,7 +1,7 @@
 import os
 import re
 import yaml
-from typing import List, Optional, Dict, Any
+from typing import Any
 from .models import Skill
 
 
@@ -11,7 +11,7 @@ class SkillLoader:
         Initialize the skill loader with a root directory to search for skills.
         """
         self.skills_directory = skills_directory
-        self._skills_data: Dict[str, Dict[str, Any]] = {}  # identifier -> {skill: Skill, base_path: str}
+        self._skills_data: dict[str, dict[str, Any]] = {}  # identifier -> {skill: Skill, base_path: str}
         self._load_all_skills()
 
     def _load_all_skills(self):
@@ -32,13 +32,13 @@ class SkillLoader:
                             'base_path': skill_dir
                         }
 
-    def _load_skill_from_file(self, file_path: str) -> Optional[Skill]:
+    def _load_skill_from_file(self, file_path: str) -> Skill | None:
         """
         Load a single skill from a SKILL.md file.
         The file is expected to have a YAML frontmatter between --- lines.
         """
         try:
-            with open(file_path, 'r') as f:
+            with open(file_path) as f:
                 content = f.read()
         except Exception as e:
             print(f"Error reading skill file {file_path}: {e}")
@@ -89,7 +89,7 @@ class SkillLoader:
 
         return skill
 
-    def get_skill(self, skill_identifier: str) -> Optional[Skill]:
+    def get_skill(self, skill_identifier: str) -> Skill | None:
         """
         Get a skill by its identifier (relative path from the skills directory).
         """
@@ -98,7 +98,7 @@ class SkillLoader:
             return data['skill']
         return None
 
-    def get_skill_base_path(self, skill_identifier: str) -> Optional[str]:
+    def get_skill_base_path(self, skill_identifier: str) -> str | None:
         """
         Get the base directory (directory containing the SKILL.md file) for a skill.
         """
@@ -107,13 +107,13 @@ class SkillLoader:
             return data['base_path']
         return None
 
-    def list_skills(self) -> List[str]:
+    def list_skills(self) -> list[str]:
         """
         List all skill identifiers (relative paths) that have been loaded.
         """
         return list(self._skills_data.keys())
 
-    def get_skill_by_name(self, name: str) -> Optional[Skill]:
+    def get_skill_by_name(self, name: str) -> Skill | None:
         """
         Get a skill by its name (first match). Note: if there are multiple skills with the same name, 
         this returns the first one found.

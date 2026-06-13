@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 
 from engines.tools.base_executor import BaseToolExecutor
 from engines.tools.base_executor import ToolResult

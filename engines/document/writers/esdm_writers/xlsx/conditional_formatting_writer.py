@@ -6,11 +6,9 @@ Generates <conditionalFormatting> elements for a worksheet.
 from __future__ import annotations
 
 import xml.etree.ElementTree as ET
-from typing import TYPE_CHECKING
+from ....models.esdm_models import Worksheet, CFRule
+from ..base import ESDMBaseWriter
 
-if TYPE_CHECKING:
-    from ....models.esdm_models import Worksheet, CFRule
-    from ..base import ESDMBaseWriter
 
 
 
@@ -179,3 +177,4 @@ class ConditionalFormattingWriter:
         if len(color) == 3:
             color = ''.join([c*2 for c in color])
         return color if len(color) == 6 else None
+

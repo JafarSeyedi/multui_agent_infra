@@ -13,20 +13,20 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any, Set, cast, TYPE_CHECKING
+from typing import Any, cast
 from uuid import uuid4
 
+from ..._types import FeelContext, Metadata, RawData
+from engines.orchestration.models.osdm_models import (
+    Activity as OsDmActivity,
+    FlowNode as OsDmFlowNode,
+    SequenceFlow as OsDmSequenceFlow,
+    Gateway as OsDmGateway,
+    Event as OsDmEvent,
+)
 from ..utils.time_utils import parse_duration
 
-if TYPE_CHECKING:
-    from engines.document.models.osdm_models import (
-        Activity as OsDmActivity,
-        FlowNode as OsDmFlowNode,
-        SequenceFlow as OsDmSequenceFlow,
-        Gateway as OsDmGateway,
-        Event as OsDmEvent,
-    )
-    from .token_states import TokenState as TokenStateObj
+from .token_states import TokenState as TokenStateObj
 
 
 logger = logging.getLogger(__name__)
@@ -56,10 +56,10 @@ class TokenSnapshot:
     timestamp: datetime
     element_id: str
     element_type: str
-    state: "TokenStateEnum"
-    variables: dict[str, Any]
+    state: TokenStateEnum
+    variables: FeelContext
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> RawData:
         return {
             "timestamp": self.timestamp.isoformat(),
             "element_id": self.element_id,
@@ -69,7 +69,7 @@ class TokenSnapshot:
         }
 
     @classmethod
-    def from_dict(cls, payload: dict[str, Any]) -> TokenSnapshot:
+    def from_dict(cls, payload: RawData) -> TokenSnapshot:
         return cls(
             timestamp=_parse_datetime(payload.get("timestamp")),
             element_id=str(payload.get("element_id", "")),
@@ -127,7 +127,7 @@ class Token:
         self.child_token_ids: list[str] = []
         
         # Metadata
-        self.metadata: dict[str, Any] = {}
+        self.metadata: Metadata = {}
         
         # Waiting state
         self.waiting_for: str | None = None  # What the token is waiting for
@@ -200,7 +200,7 @@ class Token:
         if child_token_id not in self.child_token_ids:
             self.child_token_ids.append(child_token_id)
     
-    def create_snapshot(self, variables: dict[str, Any] | None = None) -> TokenSnapshot:
+    def create_snapshot(self, variables: FeelContext | None = None) -> TokenSnapshot:
         """Create a snapshot of current token state"""
         snapshot = TokenSnapshot(
             timestamp=datetime.utcnow(),
@@ -247,7 +247,7 @@ class Token:
         self.metadata[key] = value
         self.updated_at = datetime.utcnow()
     
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> RawData:
         """Convert token to dictionary representation"""
         return {
             "token_id": self.token_id,
@@ -269,7 +269,7 @@ class Token:
             "metadata": self.metadata
         }
 
-    def to_record_payload(self) -> dict[str, Any]:
+    def to_record_payload(self) -> RawData:
         return {
             "token_id": self.token_id,
             "instance_id": self.instance_id,
@@ -293,8 +293,8 @@ class Token:
         }
 
     @classmethod
-    def from_record_payload(cls, payload: dict[str, Any]) -> Token:
-        nested_payload = cast(dict[str, Any], payload.get("payload")) if isinstance(payload.get("payload"), dict) else {}
+    def from_record_payload(cls, payload: RawData) -> Token:
+        nested_payload = cast(RawData, payload.get("payload")) if isinstance(payload.get("payload"), dict) else {}
         token = cls(
             token_id=str(payload.get("token_id")),
             instance_id=str(payload.get("instance_id")),
@@ -333,10 +333,10 @@ class TokenManager:
     Handles token creation, lifecycle, splitting, and merging.
     """
     
-    def __init__(self, repository: Any | None = None) -> None:
+    def __init__(self, repository: Any | None = None) -> None:  # duck-typed
         self.tokens: dict[str, Token] = {}
-        self.instance_tokens: dict[str, Set[str]] = {}  # instance_id -> token_ids
-        self.element_tokens: dict[str, Set[str]] = {}  # element_id -> token_ids
+        self.instance_tokens: dict[str, set[str]] = {}  # instance_id -> token_ids
+        self.element_tokens: dict[str, set[str]] = {}  # element_id -> token_ids
         self.repository = repository
     
     def create_token(
@@ -517,7 +517,7 @@ class TokenManager:
         
         return len(completed)
     
-    def get_statistics(self) -> dict[str, Any]:
+    def get_statistics(self) -> RawData:
         """Get token manager statistics"""
         state_counts: dict[str, int] = {}
         type_counts: dict[str, int] = {}
@@ -537,7 +537,7 @@ class TokenManager:
             "elements_with_tokens": len(self.element_tokens)
         }
 
-    async def persist_token(self, token_id: str) -> dict[str, Any] | None:
+    async def persist_token(self, token_id: str) -> RawData | None:
         if self.repository is None:
             return None
         token = self.get_token(token_id)

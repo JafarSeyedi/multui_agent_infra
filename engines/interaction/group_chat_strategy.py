@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from .._types import FeelContext, MessagePayload, Metadata
 from ..agent.models import AgentOutput
 from ..communication.buses.base_message_bus import MessageBus
 from .base_strategy import InteractionStrategy
@@ -26,9 +27,9 @@ class GroupChatStrategy(InteractionStrategy):
 
     async def execute(self, request: InteractionRequest) -> InteractionResult:
 
-        context: dict[str, Any] = dict(request.context or {})
-        metadata: dict[str, Any] = dict(request.metadata or {})
-        messages: list[dict[str, Any]] = self._init_messages(context)
+        context: FeelContext = dict(request.context or {})
+        metadata: Metadata = dict(request.metadata or {})
+        messages: list[MessagePayload] = self._init_messages(context)
 
         participants = self._resolve_participants(request.agents, metadata)
 
@@ -159,7 +160,7 @@ class GroupChatStrategy(InteractionStrategy):
 
     # ---------------------------------------------------------
 
-    def _init_messages(self, context: dict[str, Any]) -> list[dict[str, Any]]:
+    def _init_messages(self, context: FeelContext) -> list[MessagePayload]:
 
         messages = context.get("messages")
 
@@ -181,7 +182,7 @@ class GroupChatStrategy(InteractionStrategy):
 
     # ---------------------------------------------------------
 
-    def _resolve_participants(self, agents, metadata):
+    def _resolve_participants(self, agents: list[Any], metadata: Metadata):
 
         if not agents:
             return []
@@ -250,7 +251,7 @@ class GroupChatStrategy(InteractionStrategy):
 
     # ---------------------------------------------------------
 
-    async def _publish_event(self, event: str, payload: dict[str, Any]):
+    async def _publish_event(self, event: str, payload: MessagePayload):
 
         if not self.message_bus:
             return

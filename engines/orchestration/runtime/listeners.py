@@ -9,8 +9,10 @@ import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 
+from ..._types import FeelContext, Metadata
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +49,7 @@ class TaskListener:
     delegate_expression: str | None = None
     script: str | None = None
     script_format: str = "FEEL"
-    fields: dict[str, Any] = field(default_factory=dict)
+    fields: Metadata = field(default_factory=dict)
     priority: int = 0
     enabled: bool = True
 
@@ -62,7 +64,7 @@ class ExecutionListener:
     delegate_expression: str | None = None
     script: str | None = None
     script_format: str = "FEEL"
-    fields: dict[str, Any] = field(default_factory=dict)
+    fields: Metadata = field(default_factory=dict)
     priority: int = 0
     enabled: bool = True
 
@@ -74,7 +76,7 @@ class ListenerInvocation:
     instance_id: str
     activity_id: str | None = None
     task_id: str | None = None
-    variables: dict[str, Any] = field(default_factory=dict)
+    variables: FeelContext = field(default_factory=dict)
     timestamp: str = ""
     success: bool = True
     error: str | None = None
@@ -102,7 +104,7 @@ class _BaseListenerManager:
         self._callbacks[listener_id] = callback
 
     def _build_invocation(self, event_type: str, instance_id: str, key: str,
-                          variables: dict[str, Any] | None,
+                          variables: FeelContext | None,
                           listener: Any) -> ListenerInvocation:
         return ListenerInvocation(
             listener_id=listener.listener_id,
@@ -113,7 +115,7 @@ class _BaseListenerManager:
         )
 
     async def _fire(self, event_type: str, key: str, instance_id: str,
-                    variables: dict[str, Any] | None,
+                    variables: FeelContext | None,
                     listener_type_label: str) -> list[ListenerInvocation]:
         invocations: list[ListenerInvocation] = []
         listeners = self._listeners.get(key, [])
@@ -185,7 +187,7 @@ class TaskListenerManager(_BaseListenerManager):
         instance_id: str,
         activity_id: str | None = None,
         task_id: str | None = None,
-        variables: dict[str, Any] | None = None,
+        variables: FeelContext | None = None,
     ) -> list[ListenerInvocation]:
         return await self._fire(event_type, task_definition_key, instance_id, variables, "Task")
 
@@ -198,6 +200,6 @@ class ExecutionListenerManager(_BaseListenerManager):
         event_type: str,
         activity_id: str,
         instance_id: str,
-        variables: dict[str, Any] | None = None,
+        variables: FeelContext | None = None,
     ) -> list[ListenerInvocation]:
         return await self._fire(event_type, activity_id, instance_id, variables, "Execution")

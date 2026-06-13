@@ -6,7 +6,8 @@ import msgpack  # type: ignore[import-untyped]
 import cbor2
 import bson
 import pickle
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 
 from ...models.dsdm_models import DataNode, DataNodeKind
 from ...parsers.dsdm_parsers.dsdm_utils import node_to_python

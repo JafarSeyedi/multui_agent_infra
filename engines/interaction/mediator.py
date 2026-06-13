@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from .._types import FeelContext
 from engines.agent.base_agents.base_agent import BaseAgent
 from engines.agent.models import AgentOutput
 from engines.communication.buses.base_message_bus import MessageBus
@@ -21,7 +22,7 @@ class InteractionMediator:
     """
 
     def __init__(self, message_bus: MessageBus | None = None) -> None:
-        self._strategies: dict[str, Any] = {}
+        self._strategies: dict[str, type] = {}
         self._agent_registry: dict[str, BaseAgent] = {}
         self._message_bus = message_bus
 
@@ -35,7 +36,7 @@ class InteractionMediator:
         self,
         scenario: str,
         agents: list[str],
-        context: dict[str, Any] | None = None,
+        context: FeelContext | None = None,
         **kwargs: Any,
     ) -> InteractionResult:
         strategy_cls = self._strategies.get(scenario)

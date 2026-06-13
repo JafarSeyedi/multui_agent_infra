@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from .context_builder import ExpressionContext
 from .evaluator import EvaluationContext, EvaluationError
 from .python_evaluator import PythonEvaluator
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -16,6 +17,6 @@ class JuelExpressionEvaluator:
     def __post_init__(self) -> None:
         self._python = PythonEvaluator()
 
-    def evaluate(self, expression: str, context: EvaluationContext) -> object:
+    def evaluate(self, expression: str, context: EvaluationContext) -> Any:
         normalized = expression.replace("&&", "and").replace("||", "or")
         return self._python.evaluate(normalized, context)

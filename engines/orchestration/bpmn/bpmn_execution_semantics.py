@@ -8,11 +8,12 @@ activation rules.
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
-from ...document.models.osdm_models import (
+from engines.orchestration.models.osdm_models import (
     Process,
     FlowNode,
     Activity,
@@ -39,6 +40,7 @@ from ...document.models.osdm_models import (
 
 from ..core.token import Token, TokenStateEnum
 from ..dmn.feel_engine import EvaluationContext
+from ..expression.python_evaluator import PythonEvaluator
 
 
 logger = logging.getLogger(__name__)
@@ -124,21 +126,10 @@ class BpmnGatewaySemantics:
         outgoing_flows: list[SequenceFlow],
         context: dict[str, Any],
     ) -> GatewaySplit:
-        from ..expression.evaluator import EvaluationContext
-        from ..expression.python_evaluator import PythonEvaluator
-
-        if isinstance(gateway, ExclusiveGateway):
-            return BpmnGatewaySemantics._split_exclusive(gateway, outgoing_flows, context, PythonEvaluator)
-        elif isinstance(gateway, InclusiveGateway):
-            return BpmnGatewaySemantics._split_inclusive(gateway, outgoing_flows, context, PythonEvaluator)
-        elif isinstance(gateway, ParallelGateway):
-            return BpmnGatewaySemantics._split_parallel(gateway, outgoing_flows)
-        elif isinstance(gateway, EventBasedGateway):
-            return BpmnGatewaySemantics._split_event_based(gateway, outgoing_flows)
-        elif isinstance(gateway, ComplexGateway):
-            return BpmnGatewaySemantics._split_complex(gateway, outgoing_flows, context)
-        else:
-            return BpmnGatewaySemantics._split_exclusive(gateway, outgoing_flows, context, PythonEvaluator)
+        handler = _GATEWAY_SPLIT_HANDLERS.get(type(gateway))
+        if handler:
+            return handler(gateway, outgoing_flows, context)
+        return BpmnGatewaySemantics._split_exclusive(gateway, outgoing_flows, context, PythonEvaluator)
 
     @staticmethod
     def _split_exclusive(gateway, outgoing_flows, context, evaluator) -> GatewaySplit:
@@ -236,6 +227,15 @@ class BpmnGatewaySemantics:
             return len(activated_sources) > 0
         else:
             return len(active_tokens) > 0
+
+
+_GATEWAY_SPLIT_HANDLERS: dict[type, Callable[[Gateway, list[SequenceFlow], dict[str, Any]], GatewaySplit]] = {
+    ExclusiveGateway: lambda g, f, c: BpmnGatewaySemantics._split_exclusive(g, f, c, PythonEvaluator),
+    InclusiveGateway: lambda g, f, c: BpmnGatewaySemantics._split_inclusive(g, f, c, PythonEvaluator),
+    ParallelGateway: lambda g, f, c: BpmnGatewaySemantics._split_parallel(g, f),
+    EventBasedGateway: lambda g, f, c: BpmnGatewaySemantics._split_event_based(g, f),
+    ComplexGateway: lambda g, f, c: BpmnGatewaySemantics._split_complex(g, f, c),
+}
 
 
 class BpmnEventSubProcessHandler:

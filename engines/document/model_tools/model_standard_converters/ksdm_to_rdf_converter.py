@@ -16,9 +16,11 @@ Supports two modes:
 """
 from __future__ import annotations
 
+from typing import Any
+
 from pydantic import BaseModel, Field
 
-from engines.document.models.ksdm_models import (
+from engines.knowledge.models.ksdm_models import (
     KnowledgeGraph,
     GraphNode,
     GraphEdge,
@@ -199,7 +201,7 @@ class KsdmToRdfConverter:
         return KnowledgeGraph(nodes=list(nodes.values()), edges=edges)
 
     @staticmethod
-    def _value_to_rdf_literal(value: object) -> str:
+    def _value_to_rdf_literal(value: Any) -> str:
         if isinstance(value, bool):
             return f'"{str(value).lower()}"^^http://www.w3.org/2001/XMLSchema#boolean'
         if isinstance(value, int):

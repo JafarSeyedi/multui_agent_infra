@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from ...document.models.ssdm_models import ServiceBinding, ServiceOperation, Transport
+from ..._types import MessagePayload, Metadata, RawData
 from ..common.transport.mcp_adapter import MCPAdapter
 from ..consumption.models import InvocationResult
 
@@ -18,7 +19,7 @@ class MCPService:
     async def invoke(
         self,
         operation: ServiceOperation,
-        payload: dict[str, Any],
+        payload: MessagePayload,
         binding: ServiceBinding,
     ) -> InvocationResult:
         tools = binding.mcp_tools or []
@@ -59,20 +60,20 @@ class MCPService:
         self._adapters.clear()
 
     @staticmethod
-    def _map_arguments(mappings: list[Any], payload: dict[str, Any]) -> dict[str, Any]:
+    def _map_arguments(mappings: list[Any], payload: MessagePayload) -> RawData:
         if not mappings:
             return payload
-        result: dict[str, Any] = {}
+        result: RawData = {}
         for mapping in mappings:
             result[mapping.target] = _resolve_source(payload, mapping.source)
         return result
 
     @staticmethod
-    def _map_response(mappings: list[Any], tool_result: dict[str, Any]) -> Any:
+    def _map_response(mappings: list[Any], tool_result: RawData) -> Any:
         if not mappings:
             return tool_result
-        body: dict[str, Any] = {}
-        headers: dict[str, Any] = {}
+        body: RawData = {}
+        headers: Metadata = {}
         for mapping in mappings:
             value = _resolve_source(tool_result, mapping.source)
             if mapping.target.startswith("header."):
@@ -84,7 +85,7 @@ class MCPService:
         return body
 
 
-def _resolve_source(payload: dict[str, Any], source: str) -> Any:
+def _resolve_source(payload: RawData, source: str) -> Any:
     current: Any = payload
     for part in source.split("."):
         if isinstance(current, dict):

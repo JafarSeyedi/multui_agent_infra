@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from .._types import FeelContext, RawData
 from ..agent.models import AgentOutput
 from ..communication.buses.base_message_bus import MessageBus
 from .base_strategy import InteractionStrategy
@@ -43,8 +44,8 @@ class RoundRobinStrategy(InteractionStrategy):
         stop_on_failure = bool(request.metadata.get("stop_on_failure", False))
 
         # Memory and context management
-        history: list[dict[str, Any]] = list(request.context.get("history", []))
-        shared_context: dict[str, Any] = dict(request.context)
+        history: list[RawData] = list(request.context.get("history", []))
+        shared_context: FeelContext = dict(request.context)
         results: list[AgentOutput] = []
 
         for round_index in range(max_rounds):

@@ -10,13 +10,14 @@ except ModuleNotFoundError:  # pragma: no cover - optional dependency
 from dataclasses import dataclass
 
 from .evaluator import EvaluationContext, EvaluationError
+from typing import Any
 
 
 @dataclass(frozen=True)
 class JavaScriptEvaluator:
     """Evaluate JavaScript expressions when runtime supports it."""
 
-    def evaluate(self, expression: str, context: EvaluationContext) -> object:
+    def evaluate(self, expression: str, context: EvaluationContext) -> Any:
         if js2py is None:
             raise EvaluationError(
                 "JavaScript evaluation unavailable: install `js2py` or avoid JS expressions"

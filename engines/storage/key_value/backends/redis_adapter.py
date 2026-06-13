@@ -5,8 +5,6 @@ import logging
 from collections.abc import Awaitable
 from typing import Any
 from typing import cast
-from typing import Union
-
 from redis.asyncio import Redis
 from redis.asyncio import Sentinel
 from redis.asyncio.cluster import RedisCluster
@@ -16,7 +14,7 @@ from redis.backoff import ExponentialBackoff
 from ..base import KeyValueStorage
 
 
-RedisClient = Union[Redis, RedisCluster]
+RedisClient = Redis | RedisCluster
 
 
 class RedisManager:

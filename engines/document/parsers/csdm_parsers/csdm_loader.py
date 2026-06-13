@@ -1,7 +1,8 @@
 # engines/document/parsers/csdm_parsers/csdm_loader.py
 from __future__ import annotations
 import traceback
-from typing import Any, Dict, List, Optional, Tuple, Iterable
+from typing import Any
+from collections.abc import Iterable
 from .oda_bridge import (
     ODADocumentHandle,
     ODAObjectProxy,
@@ -58,8 +59,8 @@ class CSDMLoader:
             document_id=document_id,
             media_type=media_type or MEDIA_TYPES["dwg"],
         )
-        self.entity_map: Dict[str, BaseEntity] = {}
-        self.object_map: Dict[str, CSDMObject] = {}
+        self.entity_map: dict[str, BaseEntity] = {}
+        self.object_map: dict[str, CSDMObject] = {}
 
     def load_all(self) -> CSDMDocument:
         self._load_tables()
@@ -80,7 +81,7 @@ class CSDMLoader:
         self._load_vport_table(tables.get("vports", []))
         self._load_appid_table(tables.get("appids", []))
 
-    def _load_layer_table(self, records: List[ODAObjectProxy]):
+    def _load_layer_table(self, records: list[ODAObjectProxy]):
         for rec in records:
             try:
                 o = rec._obj
@@ -98,7 +99,7 @@ class CSDMLoader:
             except Exception:
                 traceback.print_exc()
 
-    def _load_linetype_table(self, records: List[ODAObjectProxy]):
+    def _load_linetype_table(self, records: list[ODAObjectProxy]):
         for rec in records:
             try:
                 o = rec._obj
@@ -112,7 +113,7 @@ class CSDMLoader:
             except Exception:
                 traceback.print_exc()
 
-    def _load_textstyle_table(self, records: List[ODAObjectProxy]):
+    def _load_textstyle_table(self, records: list[ODAObjectProxy]):
         for rec in records:
             try:
                 o = rec._obj
@@ -128,7 +129,7 @@ class CSDMLoader:
             except Exception:
                 traceback.print_exc()
 
-    def _load_dimstyle_table(self, records: List[ODAObjectProxy]):
+    def _load_dimstyle_table(self, records: list[ODAObjectProxy]):
         for rec in records:
             try:
                 o = rec._obj
@@ -142,7 +143,7 @@ class CSDMLoader:
             except Exception:
                 traceback.print_exc()
 
-    def _load_ucs_table(self, records: List[ODAObjectProxy]):
+    def _load_ucs_table(self, records: list[ODAObjectProxy]):
         for rec in records:
             try:
                 o = rec._obj
@@ -155,7 +156,7 @@ class CSDMLoader:
             except Exception:
                 traceback.print_exc()
 
-    def _load_view_table(self, records: List[ODAObjectProxy]):
+    def _load_view_table(self, records: list[ODAObjectProxy]):
         for rec in records:
             try:
                 o = rec._obj
@@ -165,7 +166,7 @@ class CSDMLoader:
             except Exception:
                 traceback.print_exc()
 
-    def _load_vport_table(self, records: List[ODAObjectProxy]):
+    def _load_vport_table(self, records: list[ODAObjectProxy]):
         for rec in records:
             try:
                 o = rec._obj
@@ -180,7 +181,7 @@ class CSDMLoader:
             except Exception:
                 traceback.print_exc()
 
-    def _load_appid_table(self, records: List[ODAObjectProxy]):
+    def _load_appid_table(self, records: list[ODAObjectProxy]):
         for rec in records:
             try:
                 o = rec._obj
@@ -207,7 +208,7 @@ class CSDMLoader:
             except Exception:
                 traceback.print_exc()
 
-    def _load_entities(self, blk_handle: CSDMHandle, entities: List[ODAObjectProxy]):
+    def _load_entities(self, blk_handle: CSDMHandle, entities: list[ODAObjectProxy]):
         for ent in entities:
             try:
                 cs_ent = self._map_entity(ent)
@@ -218,7 +219,7 @@ class CSDMLoader:
             except Exception:
                 traceback.print_exc()
 
-    def _map_entity(self, ent: ODAObjectProxy) -> Optional[BaseEntity]:
+    def _map_entity(self, ent: ODAObjectProxy) -> BaseEntity | None:
         cls = ent.object_class.lower()
         if "line" in cls:
             return self._map_line(ent)

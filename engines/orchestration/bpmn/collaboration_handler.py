@@ -9,10 +9,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from ..._types import MessagePayload, RawData
 from ..core.event_bus import Event, EventType
 from ..core.engine import OrchestrationEngine
 
-from ...document.models.osdm_models import (
+from engines.orchestration.models.osdm_models import (
     Collaboration as OSDMCollaboration,
     ConversationLink as OSDMConversationLink,
     Lane as OSDMLane,
@@ -29,10 +30,10 @@ from ...document.models.osdm_models import (
 @dataclass
 class HandlerCollaborationContext:
     collaboration_id: str
-    pools: dict[str, dict[str, Any]] = field(default_factory=dict)
-    participants: dict[str, dict[str, Any]] = field(default_factory=dict)
-    message_flows: list[dict[str, Any]] = field(default_factory=list)
-    conversation_links: list[dict[str, Any]] = field(default_factory=list)
+    pools: dict[str, RawData] = field(default_factory=dict)
+    participants: dict[str, RawData] = field(default_factory=dict)
+    message_flows: list[RawData] = field(default_factory=list)
+    conversation_links: list[RawData] = field(default_factory=list)
 
 
 @dataclass
@@ -57,7 +58,7 @@ class CollaborationHandler:
     def __init__(self, orchestration_engine: OrchestrationEngine | None = None) -> None:
         self._engine = orchestration_engine
         self._contexts: dict[str, HandlerCollaborationContext] = {}
-        self._message_queue: list[dict[str, Any]] = []
+        self._message_queue: list[MessagePayload] = []
         self._osdm_participants: dict[str, OSDMParticipant] = {}
         self._osdm_message_flows: list[OSDMMessageFlow] = []
 
@@ -69,14 +70,14 @@ class CollaborationHandler:
     def get_context(self, collaboration_id: str) -> HandlerCollaborationContext | None:
         return self._contexts.get(collaboration_id)
 
-    def add_pool(self, collaboration_id: str, pool: dict[str, Any]) -> bool:
+    def add_pool(self, collaboration_id: str, pool: RawData) -> bool:
         ctx = self._contexts.get(collaboration_id)
         if ctx is None:
             return False
         ctx.pools[pool.get("id", "")] = pool
         return True
 
-    def add_participant(self, collaboration_id: str, participant: dict[str, Any]) -> bool:
+    def add_participant(self, collaboration_id: str, participant: RawData) -> bool:
         ctx = self._contexts.get(collaboration_id)
         if ctx is None:
             return False
@@ -92,7 +93,7 @@ class CollaborationHandler:
 
     def add_message_flow_osdm(self, message_flow: OSDMMessageFlow) -> None:
         self._osdm_message_flows.append(message_flow)
-        entry: dict[str, Any] = {
+        entry: RawData = {
             "id": message_flow.id,
             "name": message_flow.name,
             "source": _id_from_ref(message_flow.source_ref),
@@ -109,7 +110,7 @@ class CollaborationHandler:
             for c in self._contexts.values():
                 pool = c.pools.get(pool_id)
                 if pool is not None:
-                    lane_entry: dict[str, Any] = {
+                    lane_entry: RawData = {
                         "id": lane.id,
                         "name": lane.name,
                         "flow_node_refs": [
@@ -136,7 +137,7 @@ class CollaborationHandler:
         pool.setdefault("lane_sets", []).append({"lanes": [lane_entry]})
         return True
 
-    def add_lane(self, collaboration_id: str, pool_id: str, lane: dict[str, Any]) -> bool:
+    def add_lane(self, collaboration_id: str, pool_id: str, lane: RawData) -> bool:
         ctx = self._contexts.get(collaboration_id)
         if ctx is None:
             return False
@@ -146,7 +147,7 @@ class CollaborationHandler:
         pool.setdefault("lane_sets", []).append({"lanes": [lane]})
         return True
 
-    def route(self, message_flow: dict[str, Any] | OSDMMessageFlow) -> MessageRoutingResult:
+    def route(self, message_flow: RawData | OSDMMessageFlow) -> MessageRoutingResult:
         if isinstance(message_flow, OSDMMessageFlow):
             source = _id_from_ref(message_flow.source_ref)
             target = _id_from_ref(message_flow.target_ref)
@@ -168,7 +169,7 @@ class CollaborationHandler:
                 )
         return MessageRoutingResult(routed=False, errors=[f"No collaboration context for {source}->{target}"])
 
-    def validate(self, message_flow: dict[str, Any] | OSDMMessageFlow) -> bool:
+    def validate(self, message_flow: RawData | OSDMMessageFlow) -> bool:
         if isinstance(message_flow, OSDMMessageFlow):
             source = _id_from_ref(message_flow.source_ref)
             target = _id_from_ref(message_flow.target_ref)
@@ -187,7 +188,7 @@ class CollaborationHandler:
             errors.append(f"Collaboration {collaboration_id} has no pools")
         return errors
 
-    async def send_message(self, collaboration_id: str, message_flow: dict[str, Any] | OSDMMessageFlow) -> MessageRoutingResult:
+    async def send_message(self, collaboration_id: str, message_flow: RawData | OSDMMessageFlow) -> MessageRoutingResult:
         if not self.validate(message_flow):
             return MessageRoutingResult(routed=False, errors=["Invalid message flow"])
         ctx = self._contexts.get(collaboration_id)
@@ -199,7 +200,7 @@ class CollaborationHandler:
                 source_val = _id_from_ref(message_flow.source_ref)
                 target_val = _id_from_ref(message_flow.target_ref)
                 message_ref_val = _id_from_ref(message_flow.message_ref)
-                payload: dict[str, Any] = {}
+                payload: MessagePayload = {}
             else:
                 source_val = message_flow.get("source")
                 target_val = message_flow.get("target")

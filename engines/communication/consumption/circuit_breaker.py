@@ -6,7 +6,8 @@ import asyncio
 import time
 from dataclasses import dataclass
 from dataclasses import field
-from typing import Awaitable, Callable
+from collections.abc import Awaitable, Callable
+from typing import Any
 
 
 class CircuitState:
@@ -33,7 +34,7 @@ class CircuitBreaker:
         self._half_open_calls = 0
         self._lock = asyncio.Lock()
 
-    async def execute(self, func: Callable[[], Awaitable[object]]) -> object:
+    async def execute(self, func: Callable[[], Awaitable[object]]) -> Any:
         if not await self._allow_request():
             raise RuntimeError("Circuit breaker is open")
 

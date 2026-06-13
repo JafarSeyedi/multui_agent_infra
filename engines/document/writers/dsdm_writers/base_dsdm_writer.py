@@ -19,7 +19,7 @@ from ..base import BaseDocumentWriter, WriteOptions
 
 class DSDMWriteOptions(WriteOptions):
     """Extended write options for DSDM writers."""
-    msdm_schema: Optional[MSDMDocument] = None   # renamed
+    msdm_schema: MSDMDocument | None = None   # renamed
     strip_extra_fields: bool = False
     require_all_required: bool = True
     unsafe_operations_allowed: bool = False      # added
@@ -68,7 +68,7 @@ class BaseDSDMWriter(BaseDocumentWriter):
         ...
 
     def _writer_options(self, document: DataDocument) -> DSDMWriteOptions:
-        opts = DSDMWriteOptions(**(self.options.dict() if self.options else {}))
+        opts = DSDMWriteOptions(**(self.options.model_dump() if self.options else {}))
         if opts.msdm_schema is None and document.schema_ref and document.schema_ref.data_struct:
             opts.msdm_schema = document.schema_ref.data_struct
         return opts

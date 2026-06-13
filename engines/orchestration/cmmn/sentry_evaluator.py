@@ -9,9 +9,11 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
+from collections.abc import Sequence
 from typing import Any
 
-from ...document.models.osdm_models import (
+from ..._types import FeelContext, RawData
+from engines.orchestration.models.osdm_models import (
     Sentry,
     EntryCriterion,
     ExitCriterion,
@@ -37,7 +39,7 @@ CMMN_CASEFILE_EVENTS = {
 class SentryRule:
     sentry_id: str | None = None
     name: str | None = None
-    on_parts: list[dict[str, Any]] = field(default_factory=list)
+    on_parts: list[RawData] = field(default_factory=list)
     if_part: str | None = None
     references: list[str] = field(default_factory=list)
     is_entry_criterion: bool = True
@@ -67,11 +69,11 @@ class SentryEvaluator:
         # Track which events have fired: {source_ref: {event_name}}
         self._fired_events: dict[str, set[str]] = {}
 
-    def register(self, sentry: dict[str, Any] | Sentry) -> None:
+    def register(self, sentry: RawData | Sentry) -> None:
         if isinstance(sentry, dict):
             sentry_id = sentry.get("id", "")
             on_parts_raw = sentry.get("onParts", sentry.get("on", []))
-            on_parts: list[dict[str, Any]] = on_parts_raw if isinstance(on_parts_raw, list) else []
+            on_parts: list[RawData] = on_parts_raw if isinstance(on_parts_raw, list) else []
             references_raw = sentry.get("planItemRefs", sentry.get("sentryRefs", []))
             references: list[str] = references_raw if isinstance(references_raw, list) else []
             rule = SentryRule(
@@ -136,7 +138,7 @@ class SentryEvaluator:
                 newly_satisfied.append(sentry_id)
         return newly_satisfied
 
-    def evaluate_entry_criteria(self, criteria: list[dict[str, Any]] | list[Any], instance_or_context: Any) -> bool:
+    def evaluate_entry_criteria(self, criteria: Sequence[RawData | EntryCriterion | ExitCriterion], instance_or_context: Any) -> bool:
         if not criteria:
             return True
         context = self._extract_context(instance_or_context)
@@ -152,13 +154,13 @@ class SentryEvaluator:
             self._evaluate_single_criterion(c, context) for c in criteria
         )
 
-    def evaluate_exit_criteria(self, criteria: list[dict[str, Any]] | list[Any], instance_or_context: Any) -> bool:
+    def evaluate_exit_criteria(self, criteria: Sequence[RawData | EntryCriterion | ExitCriterion], instance_or_context: Any) -> bool:
         """Evaluate exit criteria — CMMN §5.4.4."""
         if not criteria:
             return False  # No exit criteria means manual completion required
         return self.evaluate_entry_criteria(criteria, instance_or_context)
 
-    def is_active(self, task: dict | Any, context: dict) -> bool:
+    def is_active(self, task: RawData, context: FeelContext) -> bool:
         if isinstance(task, dict):
             sentry_ref = task.get("sentry") or (task.get("entryCriterionRefs", [None])[0] if task.get("entryCriterionRefs") else None)
             if sentry_ref:
@@ -175,7 +177,7 @@ class SentryEvaluator:
             return True
         return True
 
-    def is_complete(self, task: dict | Any, context: dict) -> bool:
+    def is_complete(self, task: RawData, context: FeelContext) -> bool:
         if isinstance(task, dict):
             expression = task.get("completionCondition") or task.get("exitCriterion")
             if not expression:
@@ -183,7 +185,7 @@ class SentryEvaluator:
             return bool(self._evaluator.evaluate(expression, EvaluationContext(variables=context)))
         return False
 
-    def check_sentry_satisfied(self, sentry_id: str, context: dict[str, Any] | None = None) -> bool:
+    def check_sentry_satisfied(self, sentry_id: str, context: FeelContext | None = None) -> bool:
         """Check if a specific sentry is satisfied given current triggered events."""
         rule = self._rules.get(sentry_id)
         if rule is None:
@@ -191,12 +193,12 @@ class SentryEvaluator:
         ctx = context or {}
         return self._check_on_parts_and(rule) and self._evaluate_if_part(rule, ctx)
 
-    def get_unsatisfied_sentries(self, context: dict[str, Any] | None = None) -> list[str]:
+    def get_unsatisfied_sentries(self, context: FeelContext | None = None) -> list[str]:
         """Return sentry IDs that are not yet satisfied."""
         ctx = context or {}
         return [sid for sid, rule in self._rules.items() if not self._evaluate_rule(rule, ctx)]
 
-    def _evaluate_rule(self, rule: SentryRule, context: dict[str, Any]) -> bool:
+    def _evaluate_rule(self, rule: SentryRule, context: FeelContext) -> bool:
         # CMMN §5.4.4: ALL OnParts must be triggered AND IfPart must be true
         if not self._check_on_parts_and(rule):
             return False
@@ -218,19 +220,19 @@ class SentryEvaluator:
                         return False
         return True
 
-    def _evaluate_if_part(self, rule: SentryRule, context: dict[str, Any]) -> bool:
+    def _evaluate_if_part(self, rule: SentryRule, context: FeelContext) -> bool:
         """Evaluate IfPart condition. If absent, defaults to true (per CMMN §5.4.4)."""
         if not rule.if_part:
             return True
         return bool(self._evaluator.evaluate(rule.if_part, EvaluationContext(variables=context)))
 
-    def _evaluate_single_criterion(self, criterion: dict[str, Any], context: dict[str, Any]) -> bool:
-        expression = criterion.get("condition") or criterion.get("body")
+    def _evaluate_single_criterion(self, criterion: RawData | EntryCriterion | ExitCriterion, context: FeelContext) -> bool:
+        expression = criterion.get("condition") or criterion.get("body") if isinstance(criterion, dict) else getattr(criterion, "condition", None)
         if not expression:
             return True
-        return bool(self._evaluator.evaluate(expression, EvaluationContext(variables=context)))
+        return bool(self._evaluator.evaluate(str(expression), EvaluationContext(variables=context)))
 
-    def _evaluate_osdm_criterion(self, criterion: Any, context: dict[str, Any]) -> bool:
+    def _evaluate_osdm_criterion(self, criterion: Any, context: FeelContext) -> bool:
         """Evaluate an OSDM EntryCriterion or ExitCriterion."""
         condition = getattr(criterion, "condition", None) or getattr(criterion, "names", None)
         if condition:
@@ -238,7 +240,7 @@ class SentryEvaluator:
             return bool(self._evaluator.evaluate(expr, EvaluationContext(variables=context)))
         return True
 
-    def _extract_context(self, instance_or_context: Any) -> dict[str, Any]:
+    def _extract_context(self, instance_or_context: Any) -> FeelContext:
         if isinstance(instance_or_context, dict):
             return instance_or_context
         if hasattr(instance_or_context, "get_all_variables"):
@@ -247,7 +249,7 @@ class SentryEvaluator:
             return dict(instance_or_context.variables)
         return {}
 
-    def evaluate_all_sentries(self, context: dict[str, Any]) -> dict[str, bool]:
+    def evaluate_all_sentries(self, context: FeelContext) -> dict[str, bool]:
         results: dict[str, bool] = {}
         for sentry_id, rule in self._rules.items():
             results[sentry_id] = self._evaluate_rule(rule, context)

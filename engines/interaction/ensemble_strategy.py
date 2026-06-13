@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections import Counter
 from typing import Any
 
+from .._types import FeelContext, VariableValue
 from ..agent.models import AgentOutput
 from ..communication.buses.base_message_bus import MessageBus
 from .base_strategy import InteractionStrategy
@@ -33,8 +34,8 @@ class EnsembleStrategy(InteractionStrategy):
         self.aggregator_agent = aggregator_agent
 
     async def execute(self, request: InteractionRequest) -> InteractionResult:
-        shared_context: dict[str, Any] = dict(request.context or {})
-        votes: list[Any] = []
+        shared_context: FeelContext = dict(request.context or {})
+        votes: list[VariableValue] = []
         results: list[AgentOutput] = []
 
         for agent_meta in request.agents:
@@ -100,9 +101,9 @@ class EnsembleStrategy(InteractionStrategy):
 
     async def _aggregate_votes(
         self,
-        votes: list[Any],
-        shared_context: dict[str, Any],
-    ) -> Any:
+        votes: list[VariableValue],
+        shared_context: FeelContext,
+    ) -> VariableValue:
 
         if self.aggregator_agent:
             output = await self._run_agent(
@@ -136,7 +137,7 @@ class EnsembleStrategy(InteractionStrategy):
     # Event publishing
     # ---------------------------------------------------------
 
-    async def _publish_vote(self, agent_name: str, agent_id: str, vote: Any) -> None:
+    async def _publish_vote(self, agent_name: str, agent_id: str, vote: VariableValue) -> None:
         if self.message_bus is None:
             return
 
@@ -161,8 +162,6 @@ class EnsembleStrategy(InteractionStrategy):
     def _normalize_output(output: Any) -> Any:
         if hasattr(output, "model_dump"):
             return output.model_dump()
-        if hasattr(output, "dict"):
-            return output.dict()
         if isinstance(output, dict):
             return output
         return {"value": output}

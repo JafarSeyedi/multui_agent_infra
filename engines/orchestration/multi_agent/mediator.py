@@ -12,6 +12,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any
 
+from ..._types import MessagePayload, Metadata, RawData, VariableValue
+
 from ..core.engine import OrchestrationEngine, ProcessDefinition
 from ..core.event_bus import Event, EventType
 from ..core.instance import InstanceState, ProcessInstance
@@ -30,7 +32,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class MediationResult:
     success: bool
-    results: dict[str, Any] = field(default_factory=dict)
+    results: Metadata = field(default_factory=dict)
     errors: list[str] = field(default_factory=list)
 
 
@@ -38,7 +40,7 @@ class AgentMediator(ABC):
     """Mediator interface for agent communication and coordination."""
 
     @abstractmethod
-    async def notify(self, sender: str, event: str, data: dict[str, Any]) -> None:
+    async def notify(self, sender: str, event: str, data: MessagePayload) -> None:
         ...
 
     @abstractmethod
@@ -50,31 +52,31 @@ class AgentMediator(ABC):
         ...
 
     @abstractmethod
-    def register_agent(self, agent_id: str, agent_data: dict[str, Any]) -> None:
+    def register_agent(self, agent_id: str, agent_data: Metadata) -> None:
         ...
 
     @abstractmethod
-    def get_agent(self, agent_id: str) -> dict[str, Any] | None:
+    def get_agent(self, agent_id: str) -> Metadata | None:
         ...
 
     @abstractmethod
-    async def execute_agent(self, agent: dict[str, Any], instance: ProcessInstance) -> AgentExecutionResult:
+    async def execute_agent(self, agent: Metadata, instance: ProcessInstance) -> AgentExecutionResult:
         ...
 
     @abstractmethod
-    async def coordinate(self, instance_id: str, plan: Any, instance: ProcessInstance) -> dict[str, Any]:
+    async def coordinate(self, instance_id: str, plan: Any, instance: ProcessInstance) -> Metadata:
         ...
 
     @abstractmethod
-    async def handle_interaction(self, interaction: dict[str, Any], instance: ProcessInstance, agents: list[dict[str, Any]]) -> dict[str, Any]:
+    async def handle_interaction(self, interaction: Metadata, instance: ProcessInstance, agents: list[dict[str, Any]]) -> Metadata:
         ...
 
     @abstractmethod
-    async def execute_protocol(self, protocol: dict[str, Any], instance: ProcessInstance) -> dict[str, Any]:
+    async def execute_protocol(self, protocol: Metadata, instance: ProcessInstance) -> Metadata:
         ...
 
     @abstractmethod
-    async def negotiate(self, config: dict[str, Any], instance: ProcessInstance, agents: list[dict[str, Any]]) -> dict[str, Any] | None:
+    async def negotiate(self, config: Metadata, instance: ProcessInstance, agents: list[dict[str, Any]]) -> Metadata | None:
         ...
 
     @abstractmethod
@@ -108,10 +110,10 @@ class MultiAgentMediator(AgentMediator):
         self.agent_executor = AgentExecutor(orchestration_engine=orchestration_engine)
         self.message_router = MessageRouter(orchestration_engine=orchestration_engine)
 
-        self._agents: dict[str, dict[str, Any]] = {}
-        self._conversation_state: dict[str, dict[str, Any]] = {}
+        self._agents: dict[str, Metadata] = {}
+        self._conversation_state: dict[str, MessagePayload] = {}
 
-    async def notify(self, sender: str, event: str, data: dict[str, Any]) -> None:
+    async def notify(self, sender: str, event: str, data: MessagePayload) -> None:
         logger.debug("Mediator notify: %s sent %s", sender, event)
         await self._orchestration_engine.event_bus.publish(
             Event(
@@ -129,13 +131,13 @@ class MultiAgentMediator(AgentMediator):
     ) -> list[RoutingResult]:
         return self.message_router.broadcast(message, recipients, instance)
 
-    def register_agent(self, agent_id: str, agent_data: dict[str, Any]) -> None:
+    def register_agent(self, agent_id: str, agent_data: Metadata) -> None:
         self._agents[agent_id] = agent_data
 
-    def get_agent(self, agent_id: str) -> dict[str, Any] | None:
+    def get_agent(self, agent_id: str) -> Metadata | None:
         return self._agents.get(agent_id)
 
-    async def execute_agent(self, agent: dict[str, Any], instance: ProcessInstance) -> AgentExecutionResult:
+    async def execute_agent(self, agent: Metadata, instance: ProcessInstance) -> AgentExecutionResult:
         result = await self.agent_executor.execute(agent, instance)
         await self.notify("agent_executor", "agent_executed", {
             "instance_id": instance.id,
@@ -144,7 +146,7 @@ class MultiAgentMediator(AgentMediator):
         })
         return result
 
-    async def coordinate(self, instance_id: str, plan: Any, instance: ProcessInstance) -> dict[str, Any]:
+    async def coordinate(self, instance_id: str, plan: Any, instance: ProcessInstance) -> Metadata:
         result = await self.coordinator.coordinate(instance_id, plan, instance)
         await self.notify("coordinator", "coordination_completed", {
             "instance_id": instance_id,
@@ -153,9 +155,9 @@ class MultiAgentMediator(AgentMediator):
         return result
 
     async def handle_interaction(
-        self, interaction: dict[str, Any], instance: ProcessInstance,
+        self, interaction: Metadata, instance: ProcessInstance,
         agents: list[dict[str, Any]],
-    ) -> dict[str, Any]:
+    ) -> Metadata:
         result = await self.interaction_handler.handle(interaction, instance, agents)
         await self.notify("interaction_handler", "interaction_completed", {
             "instance_id": instance.id,
@@ -163,7 +165,7 @@ class MultiAgentMediator(AgentMediator):
         })
         return result
 
-    async def execute_protocol(self, protocol: dict[str, Any], instance: ProcessInstance) -> dict[str, Any]:
+    async def execute_protocol(self, protocol: Metadata, instance: ProcessInstance) -> Metadata:
         result = await self.protocol_handler.execute(protocol, instance)
         await self.notify("protocol_handler", "protocol_executed", {
             "instance_id": instance.id,
@@ -172,9 +174,9 @@ class MultiAgentMediator(AgentMediator):
         return result
 
     async def negotiate(
-        self, config: dict[str, Any], instance: ProcessInstance,
+        self, config: Metadata, instance: ProcessInstance,
         agents: list[dict[str, Any]],
-    ) -> dict[str, Any] | None:
+    ) -> Metadata | None:
         result = await self.negotiation_handler.negotiate(config, instance, agents)
         await self.notify("negotiation_handler", "negotiation_completed", {
             "instance_id": instance.id,
@@ -188,7 +190,7 @@ class MultiAgentMediator(AgentMediator):
         plan: Any,
     ) -> MediationResult:
         """Execute a complete multi-agent workflow through the mediator."""
-        results: dict[str, Any] = {}
+        results: Metadata = {}
         errors: list[str] = []
 
         try:

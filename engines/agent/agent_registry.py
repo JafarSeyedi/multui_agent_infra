@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from .._types import RawData
 from .base_agents.base_agent import BaseAgent
 from engines.storage.event_log.base import LogStorage
 from engines.storage.vector.base import VectorDBAdapter
@@ -31,7 +32,7 @@ class AgentRegistry:
     def get(self, agent_name: str) -> BaseAgent | None:
         return self.agents.get(agent_name)
 
-    async def run(self, agent_name: str, input_data: dict[str, Any]):
+    async def run(self, agent_name: str, input_data: RawData):
         agent = self.get(agent_name)
         if agent is None:
             raise KeyError(f"Agent '{agent_name}' is not registered.")

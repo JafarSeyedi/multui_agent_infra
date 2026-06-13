@@ -28,6 +28,9 @@ class EngineImplementor(ABC):
     cross-cutting concerns.
     """
 
+    def __init__(self, raw_engine: Any = None) -> None:
+        self._raw = raw_engine
+
     @abstractmethod
     async def execute_instance(self, instance: ProcessInstance, definition: ProcessDefinition) -> None:
         ...
@@ -313,7 +316,7 @@ def _implementor_for(raw_engine: Any) -> EngineImplementor:
     if impl_cls is None:
         logger.warning("Unknown engine class %s, using generic implementor", engine_cls_name)
         return _GenericImplementor(raw_engine)
-    return impl_cls(raw_engine)  # type: ignore[call-arg]
+    return impl_cls(raw_engine)
 
 
 class _GenericImplementor(EngineImplementor):

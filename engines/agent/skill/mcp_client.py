@@ -1,7 +1,7 @@
 """
 MCP client for connecting to MCP servers and calling tools.
 """
-from typing import Any, List, Dict, Optional
+from typing import Any
 import logging
 
 ClientSession: Any = None
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 class MCPClient:
-    def __init__(self, server_command: Optional[List[str]] = None, server_url: Optional[str] = None):
+    def __init__(self, server_command: list[str] | None = None, server_url: str | None = None):
         """
         Initialize the MCP client.
         Either server_command (for stdio connection) or server_url (for HTTP/WebSocket) must be provided.
@@ -31,7 +31,7 @@ class MCPClient:
 
         self.server_command = server_command
         self.server_url = server_url
-        self.session: Optional[ClientSession] = None
+        self.session: ClientSession | None = None
         self._stdio_context = None  # For stdio client context
 
     async def connect(self):
@@ -67,7 +67,7 @@ class MCPClient:
             await self._stdio_context.__aexit__(None, None, None)
             self._stdio_context = None
 
-    async def list_tools(self) -> List[Dict[str, Any]]:
+    async def list_tools(self) -> list[dict[str, Any]]:
         """
         List available tools from the MCP server.
         """
@@ -76,7 +76,7 @@ class MCPClient:
         result = await self.session.list_tools()
         return [tool.model_dump() for tool in result.tools]
 
-    async def call_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Any:
+    async def call_tool(self, tool_name: str, arguments: dict[str, Any]) -> Any:
         """
         Call a tool on the MCP server.
         """

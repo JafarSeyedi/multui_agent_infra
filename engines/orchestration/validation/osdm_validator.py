@@ -9,6 +9,7 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
+from ..._types import RawData
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +46,7 @@ class ValidationResult:
 class BpmnOsdmValidator:
     """Validates BPMN process definitions against OSDM schema."""
 
-    def validate(self, definition: dict[str, Any]) -> ValidationResult:
+    def validate(self, definition: RawData) -> ValidationResult:
         result = ValidationResult()
         self._validate_structure(definition, result)
         self._validate_start_events(definition, result)
@@ -57,13 +58,13 @@ class BpmnOsdmValidator:
         self._validate_sub_processes(definition, result)
         return result
 
-    def _validate_structure(self, definition: dict[str, Any], result: ValidationResult) -> None:
+    def _validate_structure(self, definition: RawData, result: ValidationResult) -> None:
         if not definition.get("id"):
             result.add_error("BPMN001", "Process definition must have an id", category="structure")
         if not definition.get("activities") and not definition.get("flow_elements"):
             result.add_warning("BPMN002", "Process definition has no activities", category="structure")
 
-    def _validate_start_events(self, definition: dict[str, Any], result: ValidationResult) -> None:
+    def _validate_start_events(self, definition: RawData, result: ValidationResult) -> None:
         activities = definition.get("activities", [])
         start_events = [a for a in activities if str(a.get("type", "")).lower() in ("startevent", "start")]
         if len(start_events) == 0:
@@ -71,13 +72,13 @@ class BpmnOsdmValidator:
         elif len(start_events) > 1:
             result.add_error("BPMN004", f"Process has {len(start_events)} start events; only one is allowed", category="events")
 
-    def _validate_end_events(self, definition: dict[str, Any], result: ValidationResult) -> None:
+    def _validate_end_events(self, definition: RawData, result: ValidationResult) -> None:
         activities = definition.get("activities", [])
         end_events = [a for a in activities if str(a.get("type", "")).lower() in ("endevent", "end")]
         if len(end_events) == 0:
             result.add_warning("BPMN005", "Process has no end events", category="events")
 
-    def _validate_activities(self, definition: dict[str, Any], result: ValidationResult) -> None:
+    def _validate_activities(self, definition: RawData, result: ValidationResult) -> None:
         activities = definition.get("activities", [])
         for activity in activities:
             aid = activity.get("id", "")
@@ -87,7 +88,7 @@ class BpmnOsdmValidator:
             if not atype:
                 result.add_error("BPMN007", f"Activity '{aid}' must have a type", element_id=aid, category="activities")
 
-    def _validate_sequence_flows(self, definition: dict[str, Any], result: ValidationResult) -> None:
+    def _validate_sequence_flows(self, definition: RawData, result: ValidationResult) -> None:
         flows = definition.get("flows", [])
         activities = definition.get("activities", [])
         activity_ids = {a.get("id") for a in activities if a.get("id")}
@@ -104,7 +105,7 @@ class BpmnOsdmValidator:
             if target and target not in activity_ids:
                 result.add_warning("BPMN011", f"Sequence flow '{fid}' target '{target}' not found in activities", element_id=fid, category="flows")
 
-    def _validate_gateways(self, definition: dict[str, Any], result: ValidationResult) -> None:
+    def _validate_gateways(self, definition: RawData, result: ValidationResult) -> None:
         activities = definition.get("activities", [])
         gateway_types = {"exclusivegateway", "inclusivegateway", "parallelgateway", "eventbasedgateway", "complexgateway"}
         for activity in activities:
@@ -116,7 +117,7 @@ class BpmnOsdmValidator:
                 if len(outgoing) < 2:
                     result.add_warning("BPMN012", f"Gateway '{aid}' has fewer than 2 outgoing flows", element_id=aid, category="gateways")
 
-    def _validate_events(self, definition: dict[str, Any], result: ValidationResult) -> None:
+    def _validate_events(self, definition: RawData, result: ValidationResult) -> None:
         activities = definition.get("activities", [])
         for activity in activities:
             atype = str(activity.get("type", "")).lower()
@@ -128,7 +129,7 @@ class BpmnOsdmValidator:
                 if not payload.get("eventDefinition"):
                     result.add_warning("BPMN014", f"Boundary event '{aid}' has no event definition", element_id=aid, category="events")
 
-    def _validate_sub_processes(self, definition: dict[str, Any], result: ValidationResult) -> None:
+    def _validate_sub_processes(self, definition: RawData, result: ValidationResult) -> None:
         activities = definition.get("activities", [])
         for activity in activities:
             atype = str(activity.get("type", "")).lower()
@@ -143,7 +144,7 @@ class BpmnOsdmValidator:
 class CmmnOsdmValidator:
     """Validates CMMN case definitions against OSDM schema."""
 
-    def validate(self, definition: dict[str, Any]) -> ValidationResult:
+    def validate(self, definition: RawData) -> ValidationResult:
         result = ValidationResult()
         if not definition.get("id"):
             result.add_error("CMMN001", "Case definition must have an id", category="structure")
@@ -160,7 +161,7 @@ class CmmnOsdmValidator:
 class DmnOsdmValidator:
     """Validates DMN decision definitions against OSDM schema."""
 
-    def validate(self, definition: dict[str, Any]) -> ValidationResult:
+    def validate(self, definition: RawData) -> ValidationResult:
         result = ValidationResult()
         if not definition.get("id"):
             result.add_error("DMN001", "Decision definition must have an id", category="structure")
@@ -188,7 +189,7 @@ class DmnOsdmValidator:
 class StateMachineOsdmValidator:
     """Validates state machine definitions against OSDM schema."""
 
-    def validate(self, definition: dict[str, Any]) -> ValidationResult:
+    def validate(self, definition: RawData) -> ValidationResult:
         result = ValidationResult()
         if not definition.get("id"):
             result.add_error("SM001", "State machine definition must have an id", category="structure")

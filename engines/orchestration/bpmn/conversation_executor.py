@@ -11,7 +11,7 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
-from ...document.models.osdm_models import (
+from engines.orchestration.models.osdm_models import (
     Conversation,
     SubConversation,
     CallConversation,

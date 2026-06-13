@@ -8,10 +8,8 @@ from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from .token import Token
+from ._context_protocols import IToken
 
 logger = logging.getLogger(__name__)
 
@@ -20,19 +18,19 @@ class TokenState(ABC):
     """Base class for token states."""
 
     @abstractmethod
-    def wait(self, token: Token, reason: str) -> None: ...
+    def wait(self, token: IToken, reason: str) -> None: ...
     @abstractmethod
-    def resume(self, token: Token) -> None: ...
+    def resume(self, token: IToken) -> None: ...
     @abstractmethod
-    def complete(self, token: Token) -> None: ...
+    def complete(self, token: IToken) -> None: ...
     @abstractmethod
-    def terminate(self, token: Token) -> None: ...
+    def terminate(self, token: IToken) -> None: ...
     @abstractmethod
-    def merge(self, token: Token) -> None: ...
+    def merge(self, token: IToken) -> None: ...
 
 
 class _ActiveTokenState(TokenState):
-    def wait(self, token: Token, reason: str) -> None:
+    def wait(self, token: IToken, reason: str) -> None:
         from .token import TokenStateEnum
         token.set_state(TokenStateEnum.WAITING, _WaitingTokenState())
         import datetime
@@ -41,10 +39,10 @@ class _ActiveTokenState(TokenState):
         token.updated_at = datetime.datetime.utcnow()
         logger.debug("Token %s waiting: %s", token.token_id, reason)
 
-    def resume(self, token: Token) -> None:
+    def resume(self, token: IToken) -> None:
         logger.warning("Token %s not in waiting state", token.token_id)
 
-    def complete(self, token: Token) -> None:
+    def complete(self, token: IToken) -> None:
         from .token import TokenStateEnum
         token.set_state(TokenStateEnum.COMPLETED, _CompletedTokenState())
         import datetime
@@ -52,7 +50,7 @@ class _ActiveTokenState(TokenState):
         token.updated_at = datetime.datetime.utcnow()
         logger.debug("Token %s completed", token.token_id)
 
-    def terminate(self, token: Token) -> None:
+    def terminate(self, token: IToken) -> None:
         from .token import TokenStateEnum
         token.set_state(TokenStateEnum.TERMINATED, _TerminatedTokenState())
         import datetime
@@ -60,7 +58,7 @@ class _ActiveTokenState(TokenState):
         token.updated_at = datetime.datetime.utcnow()
         logger.debug("Token %s terminated", token.token_id)
 
-    def merge(self, token: Token) -> None:
+    def merge(self, token: IToken) -> None:
         from .token import TokenStateEnum
         token.set_state(TokenStateEnum.MERGED, _MergedTokenState())
         import datetime
@@ -70,10 +68,10 @@ class _ActiveTokenState(TokenState):
 
 
 class _WaitingTokenState(TokenState):
-    def wait(self, token: Token, reason: str) -> None:
+    def wait(self, token: IToken, reason: str) -> None:
         logger.warning("Token %s already waiting", token.token_id)
 
-    def resume(self, token: Token) -> None:
+    def resume(self, token: IToken) -> None:
         from .token import TokenStateEnum
         token.set_state(TokenStateEnum.ACTIVE, _ActiveTokenState())
         token.waiting_for = None
@@ -82,7 +80,7 @@ class _WaitingTokenState(TokenState):
         token.updated_at = datetime.datetime.utcnow()
         logger.debug("Token %s resumed", token.token_id)
 
-    def complete(self, token: Token) -> None:
+    def complete(self, token: IToken) -> None:
         from .token import TokenStateEnum
         token.set_state(TokenStateEnum.COMPLETED, _CompletedTokenState())
         import datetime
@@ -90,7 +88,7 @@ class _WaitingTokenState(TokenState):
         token.updated_at = datetime.datetime.utcnow()
         logger.debug("Token %s completed (from waiting)", token.token_id)
 
-    def terminate(self, token: Token) -> None:
+    def terminate(self, token: IToken) -> None:
         from .token import TokenStateEnum
         token.set_state(TokenStateEnum.TERMINATED, _TerminatedTokenState())
         import datetime
@@ -98,7 +96,7 @@ class _WaitingTokenState(TokenState):
         token.updated_at = datetime.datetime.utcnow()
         logger.debug("Token %s terminated (from waiting)", token.token_id)
 
-    def merge(self, token: Token) -> None:
+    def merge(self, token: IToken) -> None:
         from .token import TokenStateEnum
         token.set_state(TokenStateEnum.MERGED, _MergedTokenState())
         import datetime
@@ -108,53 +106,53 @@ class _WaitingTokenState(TokenState):
 
 
 class _CompletedTokenState(TokenState):
-    def wait(self, token: Token, reason: str) -> None:
+    def wait(self, token: IToken, reason: str) -> None:
         raise RuntimeError(f"Cannot wait on completed token {token.token_id}")
 
-    def resume(self, token: Token) -> None:
+    def resume(self, token: IToken) -> None:
         raise RuntimeError(f"Cannot resume completed token {token.token_id}")
 
-    def complete(self, token: Token) -> None:
+    def complete(self, token: IToken) -> None:
         logger.warning("Token %s already completed", token.token_id)
 
-    def terminate(self, token: Token) -> None:
+    def terminate(self, token: IToken) -> None:
         raise RuntimeError(f"Cannot terminate completed token {token.token_id}")
 
-    def merge(self, token: Token) -> None:
+    def merge(self, token: IToken) -> None:
         raise RuntimeError(f"Cannot merge completed token {token.token_id}")
 
 
 class _TerminatedTokenState(TokenState):
-    def wait(self, token: Token, reason: str) -> None:
+    def wait(self, token: IToken, reason: str) -> None:
         raise RuntimeError(f"Cannot wait on terminated token {token.token_id}")
 
-    def resume(self, token: Token) -> None:
+    def resume(self, token: IToken) -> None:
         raise RuntimeError(f"Cannot resume terminated token {token.token_id}")
 
-    def complete(self, token: Token) -> None:
+    def complete(self, token: IToken) -> None:
         raise RuntimeError(f"Cannot complete terminated token {token.token_id}")
 
-    def terminate(self, token: Token) -> None:
+    def terminate(self, token: IToken) -> None:
         logger.warning("Token %s already terminated", token.token_id)
 
-    def merge(self, token: Token) -> None:
+    def merge(self, token: IToken) -> None:
         raise RuntimeError(f"Cannot merge terminated token {token.token_id}")
 
 
 class _MergedTokenState(TokenState):
-    def wait(self, token: Token, reason: str) -> None:
+    def wait(self, token: IToken, reason: str) -> None:
         raise RuntimeError(f"Cannot wait on merged token {token.token_id}")
 
-    def resume(self, token: Token) -> None:
+    def resume(self, token: IToken) -> None:
         raise RuntimeError(f"Cannot resume merged token {token.token_id}")
 
-    def complete(self, token: Token) -> None:
+    def complete(self, token: IToken) -> None:
         raise RuntimeError(f"Cannot complete merged token {token.token_id}")
 
-    def terminate(self, token: Token) -> None:
+    def terminate(self, token: IToken) -> None:
         raise RuntimeError(f"Cannot terminate merged token {token.token_id}")
 
-    def merge(self, token: Token) -> None:
+    def merge(self, token: IToken) -> None:
         logger.warning("Token %s already merged", token.token_id)
 
 

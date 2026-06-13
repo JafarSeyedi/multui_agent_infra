@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import json
 import xml.etree.ElementTree as ET
-from typing import Callable
+from collections.abc import Callable
 from xml.etree.ElementTree import Element
 from zipfile import ZipFile
 

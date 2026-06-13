@@ -6,13 +6,11 @@ Generates tableX.xml files for each table in a worksheet.
 from __future__ import annotations
 
 import xml.etree.ElementTree as ET
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from ....models.esdm_models import Table
-    from ..base import ESDMBaseWriter
 
 from .const import XML_NAMESPACES
+from ....models.esdm_models import Table
+from ..base import ESDMBaseWriter
 
 
 class TableWriter:
@@ -101,3 +99,4 @@ class TableWriter:
             col_num, remainder = divmod(col_num - 1, 26)
             result = chr(65 + remainder) + result
         return result
+

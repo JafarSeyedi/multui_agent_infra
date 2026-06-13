@@ -3,7 +3,8 @@ from __future__ import annotations
 import io
 import traceback
 from dataclasses import dataclass
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any
+from collections.abc import Iterable
 import odapython as oda  # type: ignore[import-not-found]
 
 @dataclass(frozen=True)
@@ -12,7 +13,7 @@ class ODAHandle:
     def __str__(self) -> str:
         return self.raw
     @staticmethod
-    def from_obj(obj: Any) -> "ODAHandle":
+    def from_obj(obj: Any) -> ODAHandle:
         try:
             h = obj.objectId().getHandle().ascii()
             return ODAHandle(h)
@@ -38,7 +39,7 @@ class ODAObjectProxy:
         except Exception:
             return "Unknown"
     @property
-    def owner_id(self) -> Optional[str]:
+    def owner_id(self) -> str | None:
         try:
             return self._obj.ownerId().getHandle().ascii()
         except Exception:
@@ -48,10 +49,10 @@ class ODAObjectProxy:
             return self._obj.hasXData()
         except Exception:
             return False
-    def read_xdata(self) -> Dict[str, Any]:
+    def read_xdata(self) -> dict[str, Any]:
         if not self.has_xdata():
             return {}
-        out: Dict[str, Any] = {}
+        out: dict[str, Any] = {}
         try:
             xdata_dict = self._obj.xDataDictionary()
             if xdata_dict is None:
@@ -74,7 +75,7 @@ class ODAObjectProxy:
 class ODADocumentHandle:
     def __init__(self, db: Any):
         self.db = db
-    def list_tables(self) -> Dict[str, List[ODAObjectProxy]]:
+    def list_tables(self) -> dict[str, list[ODAObjectProxy]]:
         return {
             "layers": self._extract_table(oda.OdDbLayerTable),
             "linetypes": self._extract_table(oda.OdDbLinetypeTable),
@@ -86,8 +87,8 @@ class ODADocumentHandle:
             "block_records": self._extract_table(oda.OdDbBlockTable),
             "appids": self._extract_table(oda.OdDbRegAppTable),
         }
-    def _extract_table(self, table_type: Any) -> List[ODAObjectProxy]:
-        out: List[ODAObjectProxy] = []
+    def _extract_table(self, table_type: Any) -> list[ODAObjectProxy]:
+        out: list[ODAObjectProxy] = []
         try:
             table_id = self.db.getSymbolTableId(table_type.desc())
             table = table_id.safeOpenObject()
@@ -99,13 +100,13 @@ class ODADocumentHandle:
         except Exception:
             pass
         return out
-    def list_block_records(self) -> List[ODAObjectProxy]:
+    def list_block_records(self) -> list[ODAObjectProxy]:
         try:
             blk_id = self.db.getSymbolTableId(oda.OdDbBlockTable.desc())
             blk = blk_id.safeOpenObject()
         except Exception:
             return []
-        results: List[ODAObjectProxy] = []
+        results: list[ODAObjectProxy] = []
         it = blk.newIterator()
         while not it.done():
             try:
@@ -115,8 +116,8 @@ class ODADocumentHandle:
                 pass
             it.step()
         return results
-    def list_entities_in_block(self, block_record: ODAObjectProxy) -> List[ODAObjectProxy]:
-        out: List[ODAObjectProxy] = []
+    def list_entities_in_block(self, block_record: ODAObjectProxy) -> list[ODAObjectProxy]:
+        out: list[ODAObjectProxy] = []
         try:
             blk = block_record._obj
             it = blk.newIterator()
@@ -130,8 +131,8 @@ class ODADocumentHandle:
         except Exception:
             pass
         return out
-    def list_root_dictionary(self) -> Dict[str, ODAObjectProxy]:
-        out: Dict[str, ODAObjectProxy] = {}
+    def list_root_dictionary(self) -> dict[str, ODAObjectProxy]:
+        out: dict[str, ODAObjectProxy] = {}
         try:
             dict_id = self.db.objectDictionary()
             root = dict_id.safeOpenObject()
@@ -144,8 +145,8 @@ class ODADocumentHandle:
         except Exception:
             pass
         return out
-    def list_xrefs(self) -> List[ODAObjectProxy]:
-        out: List[ODAObjectProxy] = []
+    def list_xrefs(self) -> list[ODAObjectProxy]:
+        out: list[ODAObjectProxy] = []
         try:
             xref_dict = self.db.getXRefGraph()
             for i in range(xref_dict.numNodes()):
@@ -158,7 +159,7 @@ class ODADocumentHandle:
         except Exception:
             pass
         return out
-    def extract_geometry(self, obj: ODAObjectProxy) -> Dict[str, Any]:
+    def extract_geometry(self, obj: ODAObjectProxy) -> dict[str, Any]:
         try:
             o = obj._obj
             if hasattr(o, "shells"):
@@ -170,8 +171,8 @@ class ODADocumentHandle:
         except Exception:
             pass
         return {}
-    def extract_reactors(self, obj: ODAObjectProxy) -> List[ODAHandle]:
-        out: List[ODAHandle] = []
+    def extract_reactors(self, obj: ODAObjectProxy) -> list[ODAHandle]:
+        out: list[ODAHandle] = []
         try:
             ids = obj._obj.getPersistentReactors()
             for rid in ids:

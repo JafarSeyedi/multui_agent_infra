@@ -4,12 +4,10 @@ VBA (Visual Basic for Applications) writer for XLSM files.
 Manages inclusion of vbaProject.bin and its relationships.
 """
 from __future__ import annotations
+from ....models.esdm_models import Workbook
+from ..base import ESDMBaseWriter
 
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from ....models.esdm_models import Workbook
-    from ..base import ESDMBaseWriter
 
 
 class VBAWriter:
@@ -37,3 +35,4 @@ class VBAWriter:
         rel_id = 'rId_vba_project'
         # The binary content is already stored in workbook.vba_project
         return target, workbook.vba_project, rel_id
+

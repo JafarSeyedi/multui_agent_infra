@@ -6,6 +6,7 @@ from abc import abstractmethod
 from datetime import datetime
 from typing import Any
 
+from .._types import FeelContext, MessagePayload
 from ..agent.models import AgentInput
 from ..agent.models import AgentOutput
 from ..communication.buses.base_message_bus import MessageBus
@@ -31,7 +32,7 @@ class InteractionStrategy(ABC):
     async def _emit(
         self,
         message_type: str,
-        payload: dict[str, Any],
+        payload: MessagePayload,
         sender: str,
         recipient: str,
         message_id: str,
@@ -59,8 +60,8 @@ class InteractionStrategy(ABC):
         self,
         agent_name: str,
         message: str | None = None,
-        payload: dict[str, Any] | None = None,
-        context: dict[str, Any] | None = None,
+        payload: MessagePayload | None = None,
+        context: FeelContext | None = None,
     ) -> AgentInput:
 
         return AgentInput(
@@ -78,8 +79,8 @@ class InteractionStrategy(ABC):
         self,
         agent_name: str,
         agent_id: str,
-        context: dict[str, Any],
-        payload: dict[str, Any] | None = None,
+        context: FeelContext,
+        payload: MessagePayload | None = None,
         message: str | None = None,
     ) -> AgentOutput:
 

@@ -1,4 +1,4 @@
-"""State pattern for ProcessInstance lifecycle.
+"""State pattern for IProcessInstance lifecycle.
 
 Each state encapsulates the valid transitions and behavior
 for that state, replacing enum + conditional guards.
@@ -8,10 +8,9 @@ from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-if TYPE_CHECKING:
-    from .instance import ProcessInstance, ActivityInstance
+from ._context_protocols import IProcessInstance
 
 logger = logging.getLogger(__name__)
 
@@ -20,27 +19,27 @@ class ProcessState(ABC):
     """Base class for process instance states."""
 
     @abstractmethod
-    def suspend(self, instance: ProcessInstance) -> None: ...
+    def suspend(self, instance: IProcessInstance) -> None: ...
     @abstractmethod
-    def resume(self, instance: ProcessInstance) -> None: ...
+    def resume(self, instance: IProcessInstance) -> None: ...
     @abstractmethod
-    def complete(self, instance: ProcessInstance) -> None: ...
+    def complete(self, instance: IProcessInstance) -> None: ...
     @abstractmethod
-    def terminate(self, instance: ProcessInstance, reason: str) -> None: ...
+    def terminate(self, instance: IProcessInstance, reason: str) -> None: ...
     @abstractmethod
-    def fail(self, instance: ProcessInstance, error_message: str) -> None: ...
+    def fail(self, instance: IProcessInstance, error_message: str) -> None: ...
 
 
 class _ActiveState(ProcessState):
-    def suspend(self, instance: ProcessInstance) -> None:
+    def suspend(self, instance: IProcessInstance) -> None:
         from .instance import InstanceState
         instance.set_state(InstanceState.SUSPENDED, _SuspendedState())
         logger.info("Suspended instance: %s", instance.id)
 
-    def resume(self, instance: ProcessInstance) -> None:
+    def resume(self, instance: IProcessInstance) -> None:
         raise RuntimeError(f"Cannot resume instance {instance.id}: already active")
 
-    def complete(self, instance: ProcessInstance) -> None:
+    def complete(self, instance: IProcessInstance) -> None:
         from .instance import InstanceState
         instance.set_state(InstanceState.COMPLETED, _CompletedState())
         import datetime
@@ -48,7 +47,7 @@ class _ActiveState(ProcessState):
         instance._calculate_duration()
         logger.info("Completed instance: %s", instance.id)
 
-    def terminate(self, instance: ProcessInstance, reason: str) -> None:
+    def terminate(self, instance: IProcessInstance, reason: str) -> None:
         from .instance import InstanceState
         instance.set_state(InstanceState.TERMINATED, _TerminatedState())
         import datetime
@@ -57,7 +56,7 @@ class _ActiveState(ProcessState):
         instance._calculate_duration()
         logger.info("Terminated instance: %s - %s", instance.id, reason)
 
-    def fail(self, instance: ProcessInstance, error_message: str) -> None:
+    def fail(self, instance: IProcessInstance, error_message: str) -> None:
         from .instance import InstanceState
         instance.set_state(InstanceState.FAILED, _FailedState())
         import datetime
@@ -68,18 +67,18 @@ class _ActiveState(ProcessState):
 
 
 class _SuspendedState(ProcessState):
-    def suspend(self, instance: ProcessInstance) -> None:
+    def suspend(self, instance: IProcessInstance) -> None:
         raise RuntimeError(f"Cannot suspend instance {instance.id}: already suspended")
 
-    def resume(self, instance: ProcessInstance) -> None:
+    def resume(self, instance: IProcessInstance) -> None:
         from .instance import InstanceState
         instance.set_state(InstanceState.ACTIVE, _ActiveState())
         logger.info("Resumed instance: %s", instance.id)
 
-    def complete(self, instance: ProcessInstance) -> None:
+    def complete(self, instance: IProcessInstance) -> None:
         raise RuntimeError(f"Cannot complete suspended instance {instance.id}: resume first")
 
-    def terminate(self, instance: ProcessInstance, reason: str) -> None:
+    def terminate(self, instance: IProcessInstance, reason: str) -> None:
         from .instance import InstanceState
         instance.set_state(InstanceState.TERMINATED, _TerminatedState())
         import datetime
@@ -88,7 +87,7 @@ class _SuspendedState(ProcessState):
         instance._calculate_duration()
         logger.info("Terminated (from suspended) instance: %s - %s", instance.id, reason)
 
-    def fail(self, instance: ProcessInstance, error_message: str) -> None:
+    def fail(self, instance: IProcessInstance, error_message: str) -> None:
         from .instance import InstanceState
         instance.set_state(InstanceState.FAILED, _FailedState())
         import datetime
@@ -99,69 +98,69 @@ class _SuspendedState(ProcessState):
 
 
 class _CompletedState(ProcessState):
-    def suspend(self, instance: ProcessInstance) -> None:
+    def suspend(self, instance: IProcessInstance) -> None:
         raise RuntimeError(f"Cannot suspend completed instance {instance.id}")
 
-    def resume(self, instance: ProcessInstance) -> None:
+    def resume(self, instance: IProcessInstance) -> None:
         raise RuntimeError(f"Cannot resume completed instance {instance.id}")
 
-    def complete(self, instance: ProcessInstance) -> None:
+    def complete(self, instance: IProcessInstance) -> None:
         raise RuntimeError(f"Instance {instance.id} is already completed")
 
-    def terminate(self, instance: ProcessInstance, reason: str) -> None:
+    def terminate(self, instance: IProcessInstance, reason: str) -> None:
         raise RuntimeError(f"Cannot terminate completed instance {instance.id}")
 
-    def fail(self, instance: ProcessInstance, error_message: str) -> None:
+    def fail(self, instance: IProcessInstance, error_message: str) -> None:
         raise RuntimeError(f"Cannot fail completed instance {instance.id}")
 
 
 class _FailedState(ProcessState):
-    def suspend(self, instance: ProcessInstance) -> None:
+    def suspend(self, instance: IProcessInstance) -> None:
         raise RuntimeError(f"Cannot suspend failed instance {instance.id}")
 
-    def resume(self, instance: ProcessInstance) -> None:
+    def resume(self, instance: IProcessInstance) -> None:
         raise RuntimeError(f"Cannot resume failed instance {instance.id}")
 
-    def complete(self, instance: ProcessInstance) -> None:
+    def complete(self, instance: IProcessInstance) -> None:
         raise RuntimeError(f"Cannot complete failed instance {instance.id}")
 
-    def terminate(self, instance: ProcessInstance, reason: str) -> None:
+    def terminate(self, instance: IProcessInstance, reason: str) -> None:
         from .instance import InstanceState
         instance.set_state(InstanceState.TERMINATED, _TerminatedState())
         logger.info("Terminated (from failed) instance: %s - %s", instance.id, reason)
 
-    def fail(self, instance: ProcessInstance, error_message: str) -> None:
+    def fail(self, instance: IProcessInstance, error_message: str) -> None:
         raise RuntimeError(f"Instance {instance.id} already failed: {error_message}")
 
 
 class _TerminatedState(ProcessState):
-    def suspend(self, instance: ProcessInstance) -> None:
+    def suspend(self, instance: IProcessInstance) -> None:
         raise RuntimeError(f"Cannot suspend terminated instance {instance.id}")
 
-    def resume(self, instance: ProcessInstance) -> None:
+    def resume(self, instance: IProcessInstance) -> None:
         raise RuntimeError(f"Cannot resume terminated instance {instance.id}")
 
-    def complete(self, instance: ProcessInstance) -> None:
+    def complete(self, instance: IProcessInstance) -> None:
         raise RuntimeError(f"Cannot complete terminated instance {instance.id}")
 
-    def terminate(self, instance: ProcessInstance, reason: str) -> None:
+    def terminate(self, instance: IProcessInstance, reason: str) -> None:
         raise RuntimeError(f"Instance {instance.id} is already terminated")
 
-    def fail(self, instance: ProcessInstance, error_message: str) -> None:
+    def fail(self, instance: IProcessInstance, error_message: str) -> None:
         raise RuntimeError(f"Cannot fail terminated instance {instance.id}")
 
 
 class _DraftState(ProcessState):
-    def suspend(self, instance: ProcessInstance) -> None:
+    def suspend(self, instance: IProcessInstance) -> None:
         raise RuntimeError(f"Cannot suspend draft instance {instance.id}: activate first")
 
-    def resume(self, instance: ProcessInstance) -> None:
+    def resume(self, instance: IProcessInstance) -> None:
         raise RuntimeError(f"Cannot resume draft instance {instance.id}: not suspended")
 
-    def complete(self, instance: ProcessInstance) -> None:
+    def complete(self, instance: IProcessInstance) -> None:
         raise RuntimeError(f"Cannot complete draft instance {instance.id}: activate first")
 
-    def terminate(self, instance: ProcessInstance, reason: str) -> None:
+    def terminate(self, instance: IProcessInstance, reason: str) -> None:
         from .instance import InstanceState
         instance.set_state(InstanceState.TERMINATED, _TerminatedState())
         import datetime
@@ -170,7 +169,7 @@ class _DraftState(ProcessState):
         instance._calculate_duration()
         logger.info("Terminated draft instance: %s - %s", instance.id, reason)
 
-    def fail(self, instance: ProcessInstance, error_message: str) -> None:
+    def fail(self, instance: IProcessInstance, error_message: str) -> None:
         from .instance import InstanceState
         instance.set_state(InstanceState.FAILED, _FailedState())
         import datetime
@@ -181,35 +180,35 @@ class _DraftState(ProcessState):
 
 
 class _ClosedState(ProcessState):
-    def suspend(self, instance: ProcessInstance) -> None:
+    def suspend(self, instance: IProcessInstance) -> None:
         raise RuntimeError(f"Cannot suspend closed instance {instance.id}")
 
-    def resume(self, instance: ProcessInstance) -> None:
+    def resume(self, instance: IProcessInstance) -> None:
         raise RuntimeError(f"Cannot resume closed instance {instance.id}")
 
-    def complete(self, instance: ProcessInstance) -> None:
+    def complete(self, instance: IProcessInstance) -> None:
         raise RuntimeError(f"Cannot complete closed instance {instance.id}")
 
-    def terminate(self, instance: ProcessInstance, reason: str) -> None:
+    def terminate(self, instance: IProcessInstance, reason: str) -> None:
         raise RuntimeError(f"Cannot terminate closed instance {instance.id}")
 
-    def fail(self, instance: ProcessInstance, error_message: str) -> None:
+    def fail(self, instance: IProcessInstance, error_message: str) -> None:
         raise RuntimeError(f"Cannot fail closed instance {instance.id}")
 
 
 class _CompensatingState(ProcessState):
-    def suspend(self, instance: ProcessInstance) -> None:
+    def suspend(self, instance: IProcessInstance) -> None:
         raise RuntimeError(f"Cannot suspend compensating instance {instance.id}")
 
-    def resume(self, instance: ProcessInstance) -> None:
+    def resume(self, instance: IProcessInstance) -> None:
         raise RuntimeError(f"Cannot resume compensating instance {instance.id}")
 
-    def complete(self, instance: ProcessInstance) -> None:
+    def complete(self, instance: IProcessInstance) -> None:
         from .instance import InstanceState
         instance.set_state(InstanceState.COMPLETED, _CompletedState())
         logger.info("Completed (from compensating) instance: %s", instance.id)
 
-    def terminate(self, instance: ProcessInstance, reason: str) -> None:
+    def terminate(self, instance: IProcessInstance, reason: str) -> None:
         from .instance import InstanceState
         instance.set_state(InstanceState.TERMINATED, _TerminatedState())
         import datetime
@@ -218,7 +217,7 @@ class _CompensatingState(ProcessState):
         instance._calculate_duration()
         logger.info("Terminated compensating instance: %s - %s", instance.id, reason)
 
-    def fail(self, instance: ProcessInstance, error_message: str) -> None:
+    def fail(self, instance: IProcessInstance, error_message: str) -> None:
         from .instance import InstanceState
         instance.set_state(InstanceState.FAILED, _FailedState())
         import datetime
@@ -229,18 +228,18 @@ class _CompensatingState(ProcessState):
 
 
 class _MigratingState(ProcessState):
-    def suspend(self, instance: ProcessInstance) -> None:
+    def suspend(self, instance: IProcessInstance) -> None:
         raise RuntimeError(f"Cannot suspend migrating instance {instance.id}")
 
-    def resume(self, instance: ProcessInstance) -> None:
+    def resume(self, instance: IProcessInstance) -> None:
         raise RuntimeError(f"Cannot resume migrating instance {instance.id}")
 
-    def complete(self, instance: ProcessInstance) -> None:
+    def complete(self, instance: IProcessInstance) -> None:
         from .instance import InstanceState
         instance.set_state(InstanceState.COMPLETED, _CompletedState())
         logger.info("Completed (from migrating) instance: %s", instance.id)
 
-    def terminate(self, instance: ProcessInstance, reason: str) -> None:
+    def terminate(self, instance: IProcessInstance, reason: str) -> None:
         from .instance import InstanceState
         instance.set_state(InstanceState.TERMINATED, _TerminatedState())
         import datetime
@@ -249,7 +248,7 @@ class _MigratingState(ProcessState):
         instance._calculate_duration()
         logger.info("Terminated migrating instance: %s - %s", instance.id, reason)
 
-    def fail(self, instance: ProcessInstance, error_message: str) -> None:
+    def fail(self, instance: IProcessInstance, error_message: str) -> None:
         from .instance import InstanceState
         instance.set_state(InstanceState.FAILED, _FailedState())
         import datetime

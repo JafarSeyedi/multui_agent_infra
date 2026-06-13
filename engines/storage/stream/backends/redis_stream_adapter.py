@@ -6,8 +6,6 @@ from collections.abc import Awaitable
 from collections.abc import Mapping
 from typing import Any
 from typing import cast
-from typing import Union
-
 from redis.asyncio import Redis
 from redis.asyncio import Sentinel
 from redis.asyncio.cluster import RedisCluster
@@ -17,9 +15,9 @@ from redis.backoff import ExponentialBackoff
 from ..base import StreamStorage
 
 
-RedisClient = Union[Redis, RedisCluster]
+RedisClient = Redis | RedisCluster
 
-RedisField = Union[bytes, bytearray, memoryview, str, int, float]
+RedisField = bytes | bytearray | memoryview | str | int | float
 RedisPayload = Mapping[RedisField, RedisField]
 
 

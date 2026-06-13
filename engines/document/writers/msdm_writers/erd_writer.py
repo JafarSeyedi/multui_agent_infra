@@ -7,7 +7,7 @@ Soft‑delete is ignored – the writer produces a clean schema snapshot.
 from __future__ import annotations
 
 import json
-from typing import Any, Dict, List, Union
+from typing import Any
 from xml.etree.ElementTree import Element, SubElement, tostring
 
 from ...models.msdm_models import Attribute

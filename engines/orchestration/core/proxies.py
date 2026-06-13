@@ -10,8 +10,10 @@ from __future__ import annotations
 
 import logging
 from collections import OrderedDict
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 
+from ..._types import RawData
 from .engine_bridge import ProcessEngine, ProcessInstance, ProcessDefinition
 
 logger = logging.getLogger(__name__)
@@ -28,21 +30,21 @@ class LazyInitProxy:
     that may not be available at construction time.
     """
 
-    def __init__(self, factory: Callable[[], Any]) -> None:
+    def __init__(self, factory: Callable[[], Any]) -> None:  # duck-typed
         self._factory = factory
-        self._backend: Any | None = None
+        self._backend: Any | None = None  # duck-typed
 
-    async def _get(self) -> Any:
+    async def _get(self) -> Any:  # duck-typed
         if self._backend is None:
             self._backend = self._factory()
             logger.debug("LazyInitProxy: initialized %s", type(self._backend).__name__)
         return self._backend
 
-    async def save(self, collection: str, key: str, value: dict[str, Any]) -> None:
+    async def save(self, collection: str, key: str, value: RawData) -> None:
         backend = await self._get()
         await backend.save(collection, key, value)
 
-    async def load(self, collection: str, key: str) -> dict[str, Any] | None:
+    async def load(self, collection: str, key: str) -> RawData | None:
         backend = await self._get()
         return await backend.load(collection, key)
 
@@ -50,7 +52,7 @@ class LazyInitProxy:
         backend = await self._get()
         await backend.delete(collection, key)
 
-    async def list(self, collection: str) -> list[dict[str, Any]]:
+    async def list(self, collection: str) -> list[RawData]:
         backend = await self._get()
         return await backend.list(collection)
 
@@ -75,21 +77,21 @@ class CachingProxy:
     Writes invalidate the cache for the affected key.
     """
 
-    def __init__(self, wrapped: Any, maxsize: int = 256) -> None:
-        self._wrapped = wrapped
-        self._cache: OrderedDict[str, dict[str, Any]] = OrderedDict()
+    def __init__(self, wrapped: Any, maxsize: int = 256) -> None:  # duck-typed
+        self._wrapped = wrapped  # duck-typed
+        self._cache: OrderedDict[str, RawData] = OrderedDict()
         self._maxsize = maxsize
 
     def _cache_key(self, collection: str, key: str) -> str:
         return f"{collection}:{key}"
 
-    def _cache_get(self, ck: str) -> dict[str, Any] | None:
+    def _cache_get(self, ck: str) -> RawData | None:
         if ck in self._cache:
             self._cache.move_to_end(ck)
             return self._cache[ck]
         return None
 
-    def _cache_set(self, ck: str, value: dict[str, Any]) -> None:
+    def _cache_set(self, ck: str, value: RawData) -> None:
         self._cache[ck] = value
         self._cache.move_to_end(ck)
         if len(self._cache) > self._maxsize:
@@ -104,12 +106,12 @@ class CachingProxy:
         for ck in stale:
             self._cache.pop(ck, None)
 
-    async def save(self, collection: str, key: str, value: dict[str, Any]) -> None:
+    async def save(self, collection: str, key: str, value: RawData) -> None:
         await self._wrapped.save(collection, key, value)
         ck = self._cache_key(collection, key)
         self._cache_set(ck, value)
 
-    async def load(self, collection: str, key: str) -> dict[str, Any] | None:
+    async def load(self, collection: str, key: str) -> RawData | None:
         ck = self._cache_key(collection, key)
         cached = self._cache_get(ck)
         if cached is not None:
@@ -124,7 +126,7 @@ class CachingProxy:
         ck = self._cache_key(collection, key)
         self._cache_invalidate(ck)
 
-    async def list(self, collection: str) -> list[dict[str, Any]]:
+    async def list(self, collection: str) -> list[RawData]:
         return await self._wrapped.list(collection)
 
     async def clear(self, collection: str) -> None:

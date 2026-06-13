@@ -3,29 +3,27 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from .engine import OrchestrationEngine
+from ._context_protocols import IEngine
 
 
 class EngineState(ABC):
     """Base state for engine lifecycle."""
 
     @abstractmethod
-    async def start(self, engine: OrchestrationEngine) -> None:
+    async def start(self, engine: IEngine) -> None:
         ...
 
     @abstractmethod
-    async def stop(self, engine: OrchestrationEngine) -> None:
+    async def stop(self, engine: IEngine) -> None:
         ...
 
     @abstractmethod
-    async def pause(self, engine: OrchestrationEngine) -> None:
+    async def pause(self, engine: IEngine) -> None:
         ...
 
     @abstractmethod
-    async def resume(self, engine: OrchestrationEngine) -> None:
+    async def resume(self, engine: IEngine) -> None:
         ...
 
     @property
@@ -35,16 +33,16 @@ class EngineState(ABC):
 
 
 class StoppedState(EngineState):
-    async def start(self, engine: OrchestrationEngine) -> None:
+    async def start(self, engine: IEngine) -> None:
         engine._lifecycle_state = StartingState()
 
-    async def stop(self, engine: OrchestrationEngine) -> None:
+    async def stop(self, engine: IEngine) -> None:
         pass
 
-    async def pause(self, engine: OrchestrationEngine) -> None:
+    async def pause(self, engine: IEngine) -> None:
         raise RuntimeError("Cannot pause a stopped engine")
 
-    async def resume(self, engine: OrchestrationEngine) -> None:
+    async def resume(self, engine: IEngine) -> None:
         raise RuntimeError("Cannot resume a stopped engine")
 
     @property
@@ -53,16 +51,16 @@ class StoppedState(EngineState):
 
 
 class StartingState(EngineState):
-    async def start(self, engine: OrchestrationEngine) -> None:
+    async def start(self, engine: IEngine) -> None:
         pass
 
-    async def stop(self, engine: OrchestrationEngine) -> None:
+    async def stop(self, engine: IEngine) -> None:
         engine._lifecycle_state = StoppedState()
 
-    async def pause(self, engine: OrchestrationEngine) -> None:
+    async def pause(self, engine: IEngine) -> None:
         raise RuntimeError("Cannot pause an engine that is starting")
 
-    async def resume(self, engine: OrchestrationEngine) -> None:
+    async def resume(self, engine: IEngine) -> None:
         raise RuntimeError("Cannot resume an engine that is starting")
 
     @property
@@ -71,16 +69,16 @@ class StartingState(EngineState):
 
 
 class RunningState(EngineState):
-    async def start(self, engine: OrchestrationEngine) -> None:
+    async def start(self, engine: IEngine) -> None:
         pass
 
-    async def stop(self, engine: OrchestrationEngine) -> None:
+    async def stop(self, engine: IEngine) -> None:
         engine._lifecycle_state = StoppingState()
 
-    async def pause(self, engine: OrchestrationEngine) -> None:
+    async def pause(self, engine: IEngine) -> None:
         engine._lifecycle_state = PausedState()
 
-    async def resume(self, engine: OrchestrationEngine) -> None:
+    async def resume(self, engine: IEngine) -> None:
         pass
 
     @property
@@ -89,16 +87,16 @@ class RunningState(EngineState):
 
 
 class PausedState(EngineState):
-    async def start(self, engine: OrchestrationEngine) -> None:
+    async def start(self, engine: IEngine) -> None:
         engine._lifecycle_state = RunningState()
 
-    async def stop(self, engine: OrchestrationEngine) -> None:
+    async def stop(self, engine: IEngine) -> None:
         engine._lifecycle_state = StoppingState()
 
-    async def pause(self, engine: OrchestrationEngine) -> None:
+    async def pause(self, engine: IEngine) -> None:
         pass
 
-    async def resume(self, engine: OrchestrationEngine) -> None:
+    async def resume(self, engine: IEngine) -> None:
         engine._lifecycle_state = RunningState()
 
     @property
@@ -107,16 +105,16 @@ class PausedState(EngineState):
 
 
 class StoppingState(EngineState):
-    async def start(self, engine: OrchestrationEngine) -> None:
+    async def start(self, engine: IEngine) -> None:
         pass
 
-    async def stop(self, engine: OrchestrationEngine) -> None:
+    async def stop(self, engine: IEngine) -> None:
         pass
 
-    async def pause(self, engine: OrchestrationEngine) -> None:
+    async def pause(self, engine: IEngine) -> None:
         raise RuntimeError("Cannot pause an engine that is stopping")
 
-    async def resume(self, engine: OrchestrationEngine) -> None:
+    async def resume(self, engine: IEngine) -> None:
         raise RuntimeError("Cannot resume an engine that is stopping")
 
     @property
@@ -125,16 +123,16 @@ class StoppingState(EngineState):
 
 
 class ErrorState(EngineState):
-    async def start(self, engine: OrchestrationEngine) -> None:
+    async def start(self, engine: IEngine) -> None:
         engine._lifecycle_state = StartingState()
 
-    async def stop(self, engine: OrchestrationEngine) -> None:
+    async def stop(self, engine: IEngine) -> None:
         engine._lifecycle_state = StoppingState()
 
-    async def pause(self, engine: OrchestrationEngine) -> None:
+    async def pause(self, engine: IEngine) -> None:
         pass
 
-    async def resume(self, engine: OrchestrationEngine) -> None:
+    async def resume(self, engine: IEngine) -> None:
         pass
 
     @property

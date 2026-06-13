@@ -7,12 +7,20 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-from ...document.models.osdm_models import (
+from engines.orchestration.models.osdm_models import (
     ExclusiveGateway, Gateway, InclusiveGateway, ParallelGateway,
     EventBasedGateway, ComplexGateway, SequenceFlow,
 )
 from .model_normalizer import _activity_id, _activity_type_str
 from .process_model import TypedProcessModel
+
+_GATEWAY_CLASSIFIER_MAP: dict[type, str] = {
+    ExclusiveGateway: "exclusive",
+    InclusiveGateway: "inclusive",
+    ParallelGateway: "parallel",
+    EventBasedGateway: "event",
+    ComplexGateway: "complex",
+}
 
 
 class BpmnGatewayClassifier:
@@ -28,17 +36,7 @@ class BpmnGatewayClassifier:
         node = typed_model.get_node(node_id)
         if node is None:
             return "none"
-        if isinstance(node, ExclusiveGateway):
-            return "exclusive"
-        if isinstance(node, InclusiveGateway):
-            return "inclusive"
-        if isinstance(node, ParallelGateway):
-            return "parallel"
-        if isinstance(node, EventBasedGateway):
-            return "event"
-        if isinstance(node, ComplexGateway):
-            return "complex"
-        return "none"
+        return _GATEWAY_CLASSIFIER_MAP.get(type(node), "none")
 
     @staticmethod
     def is_converging_gateway_typed(node_id: str, typed_model: TypedProcessModel) -> bool:

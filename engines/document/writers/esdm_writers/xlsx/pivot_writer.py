@@ -5,13 +5,11 @@ Generates pivotCacheDefinition.xml and pivotTable.xml parts.
 from __future__ import annotations
 
 import xml.etree.ElementTree as ET
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from ....models.esdm_models import Workbook, PivotCache, PivotTable, PivotField
-    from ..base import ESDMBaseWriter
 
 from .const import XML_NAMESPACES
+from ....models.esdm_models import Workbook, PivotCache, PivotTable, PivotField
+from ..base import ESDMBaseWriter
 
 
 class PivotWriter:
@@ -229,3 +227,4 @@ class PivotWriter:
         ET.SubElement(root, 'colGrandTotals', {'show': '1' if col_grand else '0'})
 
         return ET.tostring(root, encoding='unicode', xml_declaration=True)
+

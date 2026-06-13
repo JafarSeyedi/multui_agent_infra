@@ -18,10 +18,11 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
+from ..._types import Metadata, RawData
 from ..core.instance import ProcessInstance
 from ..core.event_bus import Event, EventType
 from ..core.engine import OrchestrationEngine
-from ...document.models.osdm_models import (
+from engines.orchestration.models.osdm_models import (
     CaseFileItem,
     CaseTask,
     CMMNDefinition,
@@ -100,16 +101,16 @@ class PlanningItemContext:
 
 @dataclass
 class CasePlanModel:
-    stages: list[dict[str, Any]] = field(default_factory=list)
-    tasks: list[dict[str, Any]] = field(default_factory=list)
-    milestones: list[dict[str, Any]] = field(default_factory=list)
-    case_file_items: list[dict[str, Any]] = field(default_factory=list)
-    sentries: list[dict[str, Any]] = field(default_factory=list)
-    discretionary_items: list[dict[str, Any]] = field(default_factory=list)
-    planning_tables: list[dict[str, Any]] = field(default_factory=list)
-    text_annotations: list[dict[str, Any]] = field(default_factory=list)
-    input: list[dict[str, Any]] = field(default_factory=list)
-    output: list[dict[str, Any]] = field(default_factory=list)
+    stages: list[RawData] = field(default_factory=list)
+    tasks: list[RawData] = field(default_factory=list)
+    milestones: list[RawData] = field(default_factory=list)
+    case_file_items: list[RawData] = field(default_factory=list)
+    sentries: list[RawData] = field(default_factory=list)
+    discretionary_items: list[RawData] = field(default_factory=list)
+    planning_tables: list[RawData] = field(default_factory=list)
+    text_annotations: list[RawData] = field(default_factory=list)
+    input: list[RawData] = field(default_factory=list)
+    output: list[RawData] = field(default_factory=list)
 
 
 class CaseExecutor:
@@ -122,7 +123,7 @@ class CaseExecutor:
         self._milestones: dict[str, MilestoneContext] = {}
         self._planning_items: dict[str, PlanningItemContext] = {}
 
-    async def execute(self, instance: ProcessInstance, definition: dict[str, Any]) -> None:
+    async def execute(self, instance: ProcessInstance, definition: RawData) -> None:
         plan_model = self._normalize_definition(definition)
 
         for item in plan_model.case_file_items:
@@ -317,11 +318,11 @@ class CaseExecutor:
         instance: ProcessInstance,
         plan_item: PlanItem,
         definition: Any,
-    ) -> dict[str, Any] | None:
+    ) -> Metadata | None:
         task_id = definition.id
         task_name = definition.name if definition.name else task_id
 
-        result: dict[str, Any] = {
+        result: Metadata = {
             "task_id": task_id,
             "task_name": task_name,
             "task_type": type(definition).__name__,
@@ -396,8 +397,8 @@ class CaseExecutor:
                 criteria.append(entry_criterion.sentry_ref)
         return criteria
 
-    def _sentry_to_dict(self, sentry: Sentry) -> dict[str, Any]:
-        sentry_dict: dict[str, Any] = {
+    def _sentry_to_dict(self, sentry: Sentry) -> RawData:
+        sentry_dict: RawData = {
             "id": sentry.id,
             "name": sentry.name,
         }
@@ -452,16 +453,16 @@ class CaseExecutor:
     async def _execute_task(
         self,
         instance: ProcessInstance,
-        task: dict[str, Any],
+        task: RawData,
         plan_model: CasePlanModel,
         required: str,
-    ) -> dict[str, Any] | None:
+    ) -> Metadata | None:
         task_id = task.get("id", "")
         task_type = task.get("type", "task")
         task_name = task.get("name", task_id)
-        payload = task.get("payload", task.get("inputParameters", {}))
+        payload: Any = task.get("payload", task.get("inputParameters", {}))
 
-        result: dict[str, Any] = {
+        result: Metadata = {
             "task_id": task_id,
             "task_name": task_name,
             "task_type": task_type,
@@ -516,8 +517,8 @@ class CaseExecutor:
 
         return result
 
-    def _get_available_tasks(self, plan_model: CasePlanModel) -> list[dict[str, Any]]:
-        available: list[dict[str, Any]] = []
+    def _get_available_tasks(self, plan_model: CasePlanModel) -> list[RawData]:
+        available: list[RawData] = []
         active_stage_ids: set[str] = set()
 
         for stage in plan_model.stages:
@@ -577,7 +578,7 @@ class CaseExecutor:
         if all_milestones_achieved and all_stages_done:
             instance.complete()
 
-    def _normalize_definition(self, definition: dict[str, Any]) -> CasePlanModel:
+    def _normalize_definition(self, definition: RawData) -> CasePlanModel:
         plan_model = CasePlanModel()
 
         stages = definition.get("stages", definition.get("fragments", []))
@@ -606,6 +607,6 @@ class CaseExecutor:
 
         return plan_model
 
-    def plan(self, definition: dict[str, Any]) -> list[str]:
+    def plan(self, definition: RawData) -> list[str]:
         plan_model = self._normalize_definition(definition)
         return [item.get("id", f"item_{i}") for i, item in enumerate(plan_model.tasks)]

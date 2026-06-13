@@ -6,7 +6,7 @@ from collections import deque
 from pathlib import Path
 from typing import Any, cast
 
-from engines.document.models.ksdm_models import (
+from engines.knowledge.models.ksdm_models import (
     GraphEdge,
     GraphNode,
     KnowledgeGraph,
@@ -23,10 +23,10 @@ from engines.document.writers.base import BaseDocumentWriter
 # ---------------------------------------------------------------------------
 
 def _import_parsers() -> dict[str, type[BaseDocumentParser]]:
-    from engines.document.parsers.ksdm_parsers.semantic_graph.rdf_parser import (
+    from engines.knowledge.models.parsers.semantic_graph.rdf_parser import (
         RdfParser,
     )
-    from engines.document.parsers.ksdm_parsers.semantic_graph.rml_parser import (
+    from engines.knowledge.models.parsers.semantic_graph.rml_parser import (
         RmlParser,
     )
     return {
@@ -36,10 +36,10 @@ def _import_parsers() -> dict[str, type[BaseDocumentParser]]:
 
 
 def _import_writers() -> dict[str, type[BaseDocumentWriter]]:
-    from engines.document.writers.ksdm_writers.semantic_graph.rdf_writer import (
+    from engines.knowledge.models.writers.semantic_graph.rdf_writer import (
         RdfWriter,
     )
-    from engines.document.writers.ksdm_writers.semantic_graph.rml_writer import (
+    from engines.knowledge.models.writers.semantic_graph.rml_writer import (
         RmlWriter,
     )
     return {

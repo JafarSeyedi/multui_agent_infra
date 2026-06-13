@@ -14,7 +14,7 @@ from .adhoc_handler import (
     HandlerAdHocOutcome,
     HandlerAdHocProcess,
 )
-from ...document.models.osdm_models import HandlerAdHocOrdering
+from engines.orchestration.models.osdm_models import HandlerAdHocOrdering
 from .choreography_handler import (
     ChoreographyHandler,
     HandlerChoreographyOutcome,

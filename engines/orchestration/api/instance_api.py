@@ -7,6 +7,7 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
+from ..._types import FeelContext, Metadata, RawData
 from ..core.engine import OrchestrationEngine
 
 
@@ -22,8 +23,8 @@ class InstanceInfo:
     business_key: str | None = None
     start_time: str | None = None
     end_time: str | None = None
-    variables: dict[str, Any] = field(default_factory=dict)
-    tokens: list[dict[str, Any]] = field(default_factory=list)
+    variables: FeelContext = field(default_factory=dict)
+    tokens: list[Metadata] = field(default_factory=list)
     current_activity_id: str | None = None
     is_suspended: bool = False
 
@@ -68,13 +69,13 @@ class InstanceAPI:
                 results.append(info)
         return results
 
-    def get_variables(self, instance_id: str) -> dict[str, Any]:
+    def get_variables(self, instance_id: str) -> FeelContext:
         instance = self.engine.instances.get(instance_id)
         if instance is None:
             return {}
         return instance.get_all_variables()
 
-    def get_tokens(self, instance_id: str) -> list[dict[str, Any]]:
+    def get_tokens(self, instance_id: str) -> list[Metadata]:
         try:
             tokens = self.engine.token_manager.get_instance_tokens(instance_id)
             return [
@@ -88,7 +89,7 @@ class InstanceAPI:
         except Exception:
             return []
 
-    def get_history(self, instance_id: str) -> list[dict[str, Any]]:
+    def get_history(self, instance_id: str) -> list[RawData]:
         try:
             rows = self.engine.history_repository.query(instance_id)
             return rows
@@ -100,9 +101,9 @@ class InstanceAPI:
         instance_id: str,
         activity_id: str | None = None,
         transition_id: str | None = None,
-        variables: dict[str, Any] | None = None,
+        variables: FeelContext | None = None,
         cancel_at_activity: str | None = None,
-    ) -> dict[str, Any]:
+    ) -> Metadata:
         return await self.engine.batch_manager.modify_instance(
             instance_id, activity_id=activity_id, transition_id=transition_id,
             variables=variables, cancel_at_activity=cancel_at_activity,
@@ -114,7 +115,7 @@ class InstanceAPI:
         state: str | None = None,
         incident_type: str | None = None,
         limit: int = 100,
-    ) -> list[dict[str, Any]]:
+    ) -> list[Metadata]:
         from engines.orchestration.runtime.incident_manager import IncidentQuery
         query = IncidentQuery(
             instance_id=instance_id, state=state, incident_type=incident_type, limit=limit,
@@ -130,7 +131,7 @@ class InstanceAPI:
             for inc in incidents
         ]
 
-    async def resolve_incident(self, incident_id: str, resolution: str = "manual") -> dict[str, Any]:
+    async def resolve_incident(self, incident_id: str, resolution: str = "manual") -> Metadata:
         incident = self.engine.incident_manager.resolve_incident(incident_id, resolution)
         if incident is None:
             return {"success": False, "error": f"Incident not found: {incident_id}"}
@@ -142,7 +143,7 @@ class InstanceAPI:
         topic_name: str | None = None,
         state: str | None = None,
         limit: int = 100,
-    ) -> list[dict[str, Any]]:
+    ) -> list[Metadata]:
         from engines.orchestration.runtime.external_task import ExternalTaskQuery
         query = ExternalTaskQuery(
             instance_id=instance_id, topic_name=topic_name, state=state, limit=limit,
@@ -157,13 +158,13 @@ class InstanceAPI:
             for t in tasks
         ]
 
-    def get_forms(self, form_key: str | None = None) -> list[dict[str, Any]]:
+    def get_forms(self, form_key: str | None = None) -> list[Metadata]:
         if form_key:
             form = self.engine.form_engine.get_form(form_key)
             return [form.to_dict()] if form else []
         return [f.to_dict() for f in self.engine.form_engine.list_forms()]
 
     async def submit_form(
-        self, form_key: str, data: dict[str, Any], instance_id: str | None = None,
-    ) -> dict[str, Any]:
+        self, form_key: str, data: Metadata, instance_id: str | None = None,
+    ) -> Metadata:
         return self.engine.form_engine.submit_form(form_key, data, instance_id)

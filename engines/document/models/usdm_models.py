@@ -10,7 +10,7 @@ from dataclasses import field
 from datetime import datetime
 from typing import Any
 from typing import Literal
-from typing import Union
+
 
 from .base import BaseDocument
 from .base import ElementType
@@ -25,7 +25,7 @@ class USDMDocument(BaseDocument):
 # pages: Physical/pagination layer → paginated output (PDF-like)
     elements: Sequence[DocumentElement | LogicalElement] = field(default_factory=list)
     logical_elements: list[LogicalElement] = field(default_factory=list)
-    stylesheet: "StyleSheet" = field(default_factory=lambda: StyleSheet())
+    stylesheet: StyleSheet = field(default_factory=lambda: StyleSheet())
 
 
 @dataclass
@@ -679,36 +679,36 @@ class SpreadsheetContent:
     columns: int = 0
 
 
-LogicalContent = Union[
-    ParagraphContent,
-    HeadingContent,
-    MathContent,
-    CodeContent,
-    ImageContent,
-    ListContent,
-    ListItemContent,
-    TableContent,
-    QuoteContent,
-    DrawingContent,
-    BinaryContent,
-    DataContent,
-    SpreadsheetContent,
-    FormulaContent,
-    LinkContent,
-    FootnoteContent,
-    EndnoteContent,
-    CommentContent,
-    BookmarkContent,
-    PageBreakContent,
-    LineBreakContent,
-    ColumnBreakContent,
-    EmbeddedObjectContent,
-    OLEObjectContent,
-    VideoContent,
-    AudioContent,
-    ShapeContent,
-    ChartContent,
-]
+LogicalContent = (
+    ParagraphContent
+    | HeadingContent
+    | MathContent
+    | CodeContent
+    | ImageContent
+    | ListContent
+    | ListItemContent
+    | TableContent
+    | QuoteContent
+    | DrawingContent
+    | BinaryContent
+    | DataContent
+    | SpreadsheetContent
+    | FormulaContent
+    | LinkContent
+    | FootnoteContent
+    | EndnoteContent
+    | CommentContent
+    | BookmarkContent
+    | PageBreakContent
+    | LineBreakContent
+    | ColumnBreakContent
+    | EmbeddedObjectContent
+    | OLEObjectContent
+    | VideoContent
+    | AudioContent
+    | ShapeContent
+    | ChartContent
+)
 
 
 @dataclass

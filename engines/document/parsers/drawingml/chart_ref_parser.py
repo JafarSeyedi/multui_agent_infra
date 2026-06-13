@@ -16,7 +16,7 @@ from ...models.usdm_models import ChartContent
 
 # We reuse the comprehensive chart XML parser from the XLSX module.
 # If the spreadsheet parser is not available, a fallback can be implemented.
-_parse_chart_xml: Optional[Callable[[Element], ChartContent]] = None
+_parse_chart_xml: Callable[[Element], ChartContent] | None = None
 try:
     from ..esdm_parsers.xlsx.charts_builder import (
         parse_chart as _parse_chart_xml_impl,

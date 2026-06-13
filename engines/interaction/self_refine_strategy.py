@@ -1,5 +1,6 @@
 from typing import Any
 
+from .._types import FeelContext
 from ..agent.models import AgentOutput
 from .base_strategy import InteractionStrategy
 from .interaction_models import InteractionRequest
@@ -17,7 +18,7 @@ class SelfRefineStrategy(InteractionStrategy):
 
     async def execute(self, request: InteractionRequest) -> InteractionResult:
 
-        context: dict[str, Any] = dict(request.context or {})
+        context: FeelContext = dict(request.context or {})
         metadata = request.metadata or {}
 
         generator_name = metadata.get("generator_agent")

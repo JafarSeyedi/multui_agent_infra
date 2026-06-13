@@ -6,7 +6,8 @@ from __future__ import annotations
 
 from abc import ABC
 from abc import abstractmethod
-from typing import Any
+
+from ..._types import Metadata, RawData
 
 class VectorDBAdapter(ABC):
     """Common async contract for vector database adapters."""
@@ -16,7 +17,7 @@ class VectorDBAdapter(ABC):
         self,
         name: str,
         dimension: int,
-        config: dict[str, Any] | None = None,
+        config: Metadata | None = None,
     ) -> None:
         """Create or initialize an index/collection."""
 
@@ -25,13 +26,13 @@ class VectorDBAdapter(ABC):
         self,
         ids: list[str],
         vectors: list[list[float]],
-        metadata: list[dict[str, Any]],
+        metadata: list[Metadata],
     ) -> None:
         """Insert or update vectors and associated metadata."""
         ...
 
     @abstractmethod
-    async def batch_upsert(self, items: list[dict[str, Any]]) -> None:
+    async def batch_upsert(self, items: list[RawData]) -> None:
         """Insert or update a batch of vector items."""
 
     @abstractmethod
@@ -39,8 +40,8 @@ class VectorDBAdapter(ABC):
         self,
         vector: list[float],
         top_k: int = 5,
-        filters: dict[str, Any] | None = None,
-    ) -> list[dict[str, Any]]:
+        filters: Metadata | None = None,
+    ) -> list[RawData]:
         """Search nearest neighbours and return normalized result dicts."""
 
     @abstractmethod
@@ -52,8 +53,8 @@ class VectorDBAdapter(ABC):
         self,
         embedding: list[float],
         top_k: int = 5,
-        filters: dict[str, Any] | None = None,
-    ) -> list[dict[str, Any]]:
+        filters: Metadata | None = None,
+    ) -> list[RawData]:
         """Compatibility wrapper for callers that use `search`."""
         return await self.query(vector=embedding, top_k=top_k, filters=filters)
 
@@ -61,7 +62,7 @@ class VectorDBAdapter(ABC):
         self,
         ids: list[str],
         embeddings: list[list[float]],
-        metadata: list[dict[str, Any]],
+        metadata: list[Metadata],
     ) -> None:
         """Compatibility wrapper for older indexing code."""
         await self.upsert(ids=ids, vectors=embeddings, metadata=metadata)
@@ -89,7 +90,7 @@ class VectorStorage(BaseStorage, ABC):
         self,
         id: str,
         vector: list[float],
-        metadata: dict[str, Any] | None = None,
+        metadata: Metadata | None = None,
     ) -> None:
         pass
 
@@ -102,6 +103,6 @@ class VectorStorage(BaseStorage, ABC):
         self,
         vector: list[float],
         top_k: int = 5,
-        filters: dict[str, Any] | None = None,
-    ) -> list[dict[str, Any]]:
+        filters: Metadata | None = None,
+    ) -> list[RawData]:
         pass

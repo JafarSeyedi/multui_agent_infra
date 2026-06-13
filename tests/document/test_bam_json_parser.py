@@ -1,9 +1,9 @@
 import json
 import pytest
-from engines.document.models.bam_models import (
+from engines.orchestration.models.bam_models import (
     MonitoringDashboardDocument, BusinessMetric, KPI,
 )
-from engines.document.parsers.bam_parsers.bam_json_parser import BamJsonParser
+from engines.orchestration.models.parsers.bam.bam_json_parser import BamJsonParser
 
 
 @pytest.fixture

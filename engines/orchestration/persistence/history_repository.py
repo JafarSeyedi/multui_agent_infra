@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
+from ..._types import RawData
 from .runtime_records import AUDIT_RECORD
 from .repository import PersistentRuntimeRepository
 
@@ -18,13 +19,13 @@ class HistoryRepository(PersistentRuntimeRepository):
             **kwargs,
         )
 
-    def append(self, instance_id: str, data: dict[str, Any]) -> None:
+    def append(self, instance_id: str, data: RawData) -> None:
         payload = dict(data)
         payload.setdefault("instance_id", instance_id)
         payload.setdefault("created_at", datetime.utcnow().isoformat())
         super().save(f"{instance_id}:{payload['created_at']}", payload)
 
-    async def append_persisted(self, instance_id: str, data: dict[str, Any]) -> dict[str, Any]:
+    async def append_persisted(self, instance_id: str, data: RawData) -> RawData:
         payload = dict(data)
         payload.setdefault("instance_id", instance_id)
         payload.setdefault("created_at", datetime.utcnow().isoformat())
@@ -32,7 +33,7 @@ class HistoryRepository(PersistentRuntimeRepository):
         key = f"{instance_id}:{payload['created_at']}"
         return await self.save_persisted(key, payload)
 
-    def query(self, instance_id: str) -> list[dict[str, Any]]:
+    def query(self, instance_id: str) -> list[RawData]:
         """Get history records for an instance, ordered by timestamp (oldest first)."""
         rows = self.list(predicate=lambda row: row.get("instance_id") == instance_id)
         return sorted(rows, key=lambda item: item.get("created_at", ""))
@@ -43,7 +44,7 @@ class HistoryRepository(PersistentRuntimeRepository):
         metric: str, 
         aggregation: str = "count",
         interval: str = "hour"
-    ) -> list[dict[str, Any]]:
+    ) -> list[RawData]:
         """
         Perform time-series aggregation on history records for metrics.
         
@@ -60,7 +61,7 @@ class HistoryRepository(PersistentRuntimeRepository):
         records = self.query(instance_id)
         
         # Group by time interval
-        grouped_records: Dict[str, List[Dict[str, Any]]] = {}
+        grouped_records: dict[str, list[RawData]] = {}
         
         for record in records:
             created_at_str = record.get("created_at", "")
@@ -136,7 +137,7 @@ class HistoryRepository(PersistentRuntimeRepository):
             
         return results
 
-    def reconstruct_audit_trail(self, instance_id: str) -> list[dict[str, Any]]:
+    def reconstruct_audit_trail(self, instance_id: str) -> list[RawData]:
         """
         Reconstruct the complete audit trail for an instance.
         
@@ -166,7 +167,7 @@ class HistoryRepository(PersistentRuntimeRepository):
             
         return audit_trail
 
-    def reconstruct_audit_trail_by_activity(self, instance_id: str) -> Dict[str, List[dict[str, Any]]]:
+    def reconstruct_audit_trail_by_activity(self, instance_id: str) -> dict[str, list[RawData]]:
         """
         Reconstruct the audit trail grouped by activity.
         
@@ -178,7 +179,7 @@ class HistoryRepository(PersistentRuntimeRepository):
         audit_trail = self.reconstruct_audit_trail(instance_id)
         
         # Group by activity ID
-        grouped_trail: Dict[str, List[dict[str, Any]]] = {}
+        grouped_trail: dict[str, list[RawData]] = {}
         for entry in audit_trail:
             activity_id = entry.get("activity_id", "unknown")
             if activity_id not in grouped_trail:
@@ -187,7 +188,7 @@ class HistoryRepository(PersistentRuntimeRepository):
             
         return grouped_trail
 
-    def get_instance_transitions(self, instance_id: str) -> list[dict[str, Any]]:
+    def get_instance_transitions(self, instance_id: str) -> list[RawData]:
         """
         Get state transitions for an instance from the audit trail.
         
@@ -209,7 +210,7 @@ class HistoryRepository(PersistentRuntimeRepository):
                 
         return transitions
 
-    def _generate_audit_description(self, record: dict[str, Any]) -> str:
+    def _generate_audit_description(self, record: RawData) -> str:
         """Generate a human-readable description of an audit record."""
         activity_id = record.get("activity_id", "Unknown Activity")
         action = record.get("action", "Unknown Action")

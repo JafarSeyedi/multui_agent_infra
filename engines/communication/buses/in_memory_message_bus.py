@@ -32,7 +32,7 @@ class InMemoryMessageBus(MessageBus):
             except (ValueError, KeyError):
                 pass
 
-    async def publish(self, message: "AgentMessage") -> None:
+    async def publish(self, message: AgentMessage) -> None:
         async with self._lock:
             handlers = list(self._subscribers.get(message.recipient, []))
             broadcast = list(self._subscribers.get(BROADCAST, []))

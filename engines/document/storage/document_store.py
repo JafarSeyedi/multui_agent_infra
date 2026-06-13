@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Union
+
 
 from ..ingestion.ingestion_models import DocumentRecord
 from engines.knowledge.rag.rag_models import Document
@@ -8,7 +8,7 @@ from engines.knowledge.rag.rag_models import DocumentChunk
 from engines.storage.key_value.base import KeyValueStorage
 
 
-StoredDocument = Union[DocumentRecord, Document]
+StoredDocument = DocumentRecord | Document
 
 
 class DocumentStore:

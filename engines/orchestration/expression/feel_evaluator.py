@@ -5,13 +5,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from .evaluator import EvaluationContext, EvaluationError
+from typing import Any
 
 
 @dataclass(frozen=True)
 class FEELExpressionEvaluator:
     """Minimal FEEL evaluator mapped to Python-compatible primitives."""
 
-    def evaluate(self, expression: str, context: EvaluationContext) -> object:
+    def evaluate(self, expression: str, context: EvaluationContext) -> Any:
         normalized = expression.strip()
         if normalized.startswith("if") and " then " in normalized and " else " in normalized:
             # naive ternary conversion: if A then B else C

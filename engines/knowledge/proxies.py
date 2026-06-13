@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -13,7 +14,7 @@ class LazyKnowledgeProxy:
     embedding index build, etc.).
     """
 
-    def __init__(self, factory: Any, **factory_kwargs: Any) -> None:
+    def __init__(self, factory: Callable[..., Any], **factory_kwargs: Any) -> None:
         self._factory = factory
         self._factory_kwargs = factory_kwargs
         self._engine: Any | None = None

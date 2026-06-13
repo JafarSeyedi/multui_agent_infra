@@ -6,7 +6,7 @@ CHECK, FOREIGN KEY), indexes, and CREATE VIEW statements.
 from __future__ import annotations
 
 import warnings
-from typing import Optional, List
+
 
 from sqlalchemy import inspect, text
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncConnection, AsyncEngine
@@ -176,7 +176,7 @@ class SqlDDLWriter(BaseMSDMWriter):
     # Database application (async)
     # ------------------------------------------------------------------
     async def apply_to_database(
-        self, document: MSDMDocument, connection: Optional[ConnectionConfig] = None
+        self, document: MSDMDocument, connection: ConnectionConfig | None = None
     ) -> None:
         if connection is None:
             raise ValueError("ConnectionConfig required for database target")

@@ -30,7 +30,7 @@ class TopicMessageBus(MessageBus):
         except ValueError:
             pass
 
-    async def publish(self, message: "AgentMessage") -> None:
+    async def publish(self, message: AgentMessage) -> None:
         handlers = list(self._topics.get(message.recipient, []))
         if not handlers:
             return

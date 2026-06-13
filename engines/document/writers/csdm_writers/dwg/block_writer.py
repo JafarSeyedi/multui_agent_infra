@@ -15,7 +15,8 @@ This module:
     ✓ Registers all BlockRecords in context.registry for dependency resolution
 """
 from __future__ import annotations
-from typing import Dict, Callable, List
+
+from collections.abc import Callable
 from .base_context import WriterContext
 from .entity_writer import EntityWriter
 from ....models import csdm_entities as E

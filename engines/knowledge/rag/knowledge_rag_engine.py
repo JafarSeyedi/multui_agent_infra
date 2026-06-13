@@ -66,7 +66,7 @@ class KnowledgeRagEngine:
     - Graph-enhanced retrieval (via knowledge graph)
     """
     
-    def __init__(self, document_store: DocumentStore, vector_db: VectorDBAdapter, config: Optional[dict] = None) -> None:
+    def __init__(self, document_store: DocumentStore, vector_db: VectorDBAdapter, config: dict | None = None) -> None:
         self.config = config or {}
         
         # Core services
@@ -86,34 +86,34 @@ class KnowledgeRagEngine:
         
         # Retrieval components
         self._retrievers: dict[str, BaseRetriever] = {}
-        self._default_retriever: Optional[BaseRetriever] = None
+        self._default_retriever: BaseRetriever | None = None
         
         # Reranking
-        self.reranker: Optional[Reranker] = None
+        self.reranker: Reranker | None = None
         
         # Planning
-        self.planner: Optional[AdaptiveRetrievalPlanner] = None
+        self.planner: AdaptiveRetrievalPlanner | None = None
         
         # Agentic reasoning
-        self.retrieval_agent: Optional[RetrievalAgent] = None
-        self.multihop_reasoner: Optional[MultiHopReasoner] = None
-        self.query_decomposer: Optional[QueryDecomposer] = None
-        self.evidence_tracker: Optional[EvidenceTracker] = None
-        self.uncertainty_estimator: Optional[UncertaintyEstimator] = None
+        self.retrieval_agent: RetrievalAgent | None = None
+        self.multihop_reasoner: MultiHopReasoner | None = None
+        self.query_decomposer: QueryDecomposer | None = None
+        self.evidence_tracker: EvidenceTracker | None = None
+        self.uncertainty_estimator: UncertaintyEstimator | None = None
         
         # Evidence processing
-        self.evidence_clusterer: Optional[EvidenceClusterer] = None
+        self.evidence_clusterer: EvidenceClusterer | None = None
         
         # Learning
-        self.retrieval_policy: Optional[RetrievalPolicy] = None
+        self.retrieval_policy: RetrievalPolicy | None = None
         
         # Training
-        self.reranker_trainer: Optional[RerankerTrainer] = None
-        self.fusion_trainer: Optional[FusionTrainer] = None
+        self.reranker_trainer: RerankerTrainer | None = None
+        self.fusion_trainer: FusionTrainer | None = None
         
         # Reflection
-        self.reflection_loop: Optional[ReflectionLoop] = None
-        self.reflection_critic: Optional[RetrievalCritic] = None
+        self.reflection_loop: ReflectionLoop | None = None
+        self.reflection_critic: RetrievalCritic | None = None
         
         # Parsers/Writers for model-driven architecture
         self._parsers: dict[str, BaseDocumentParser] = {}
@@ -182,14 +182,14 @@ class KnowledgeRagEngine:
         """Register a retriever."""
         self._retrievers[name] = retriever
     
-    def get_retriever(self, name: str) -> Optional[BaseRetriever]:
+    def get_retriever(self, name: str) -> BaseRetriever | None:
         """Get a registered retriever."""
         return self._retrievers.get(name)
     
     async def retrieve(
         self,
         query: str,
-        retriever_name: Optional[str] = None,
+        retriever_name: str | None = None,
         top_k: int = 10,
         **options: Any,
     ) -> list[RetrievalResult]:
@@ -207,7 +207,7 @@ class KnowledgeRagEngine:
     async def retrieve_with_rerank(
         self,
         query: str,
-        retriever_name: Optional[str] = None,
+        retriever_name: str | None = None,
         top_k: int = 10,
         rerank_top_k: int = 5,
         **options: Any,

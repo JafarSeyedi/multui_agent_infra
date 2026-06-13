@@ -9,7 +9,8 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 
 from enum import Enum
 
@@ -17,7 +18,7 @@ from ..runtime.compensation import CompensationManager, CompensationStep
 from ..core.event_bus import Event, EventType
 from ..core.engine import OrchestrationEngine
 
-from ...document.models.osdm_models import (
+from engines.orchestration.models.osdm_models import (
     Artifact,
     FlowElement,
     LaneSet,

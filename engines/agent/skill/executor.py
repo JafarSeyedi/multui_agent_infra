@@ -4,7 +4,7 @@ import json
 import logging
 from abc import ABC
 from abc import abstractmethod
-from typing import Any, Dict, List, Protocol
+from typing import Any, Protocol
 
 from .models import SkillOutput, SkillStep
 from .skill import SkillLoader
@@ -34,7 +34,7 @@ class LLMClient(ABC):
         ...
 
 
-def _build_output_schema_from_skill_outputs(outputs: List[SkillOutput]) -> Dict[str, Any]:
+def _build_output_schema_from_skill_outputs(outputs: list[SkillOutput]) -> dict[str, Any]:
     """
     Build a JSON schema from a list of SkillOutput objects.
     If an output has an output_schema, use it; otherwise, build a primitive schema.
@@ -68,7 +68,7 @@ def _build_output_schema_from_skill_outputs(outputs: List[SkillOutput]) -> Dict[
     }
 
 
-def _build_output_schema_from_step(step: SkillStep, skill_outputs: List[SkillOutput]) -> Dict[str, Any]:
+def _build_output_schema_from_step(step: SkillStep, skill_outputs: list[SkillOutput]) -> dict[str, Any]:
     """
     Build a JSON schema for a step.
     If the step has an output_schema, use it.
@@ -85,7 +85,7 @@ def _build_output_schema_from_step(step: SkillStep, skill_outputs: List[SkillOut
 
 
 class SkillExecutor(Protocol):
-    def execute(self, skill_identifier: str, inputs: Dict[str, Any], **kwargs) -> Any: ...
+    def execute(self, skill_identifier: str, inputs: dict[str, Any], **kwargs) -> Any: ...
 
 
 class BatchSkillExecutor:
@@ -97,7 +97,7 @@ class BatchSkillExecutor:
     def execute(
         self,
         skill_identifier: str,
-        inputs: Dict[str, Any],
+        inputs: dict[str, Any],
         **kwargs
     ) -> Any:
         """
@@ -184,9 +184,9 @@ class StepWiseSkillExecutor:
     def execute(
         self,
         skill_identifier: str,
-        inputs: Dict[str, Any],
+        inputs: dict[str, Any],
         **kwargs
-    ) -> List[Any]:
+    ) -> list[Any]:
         """
         Execute a skill in step-wise mode: break the skill into steps and call the LLM for each step.
         """

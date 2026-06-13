@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import ast
 import operator
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 
 _ALLOWED_OPS: dict[type, Callable[..., Any]] = {
     ast.Add: operator.add,

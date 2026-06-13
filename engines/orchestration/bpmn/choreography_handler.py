@@ -13,7 +13,7 @@ from typing import Any
 from ..core.event_bus import Event, EventType
 from ..core.engine import OrchestrationEngine
 
-from ...document.models.osdm_models import (
+from engines.orchestration.models.osdm_models import (
     ChoreographyLoopType,
     ChoreographyTask as OSDMChoreographyTask,
 )

@@ -4,9 +4,9 @@ import time
 from collections import defaultdict
 from collections import deque
 from collections.abc import Iterable
-from typing import Deque
 
-from engines.document.models.ksdm_models import GraphNode, GraphEdge
+
+from engines.knowledge.models.ksdm_models import GraphNode, GraphEdge
 
 
 class GraphIndex:
@@ -55,7 +55,7 @@ class GraphIndex:
             return []
 
         visited: set[str] = {start}
-        frontier: Deque[tuple[str, int]] = deque([(start, 0)])
+        frontier: deque[tuple[str, int]] = deque([(start, 0)])
         results: list[GraphEdge] = []
 
         while frontier:

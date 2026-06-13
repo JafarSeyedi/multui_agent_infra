@@ -6,12 +6,10 @@ Serialises the shared strings collection into sharedStrings.xml.
 from __future__ import annotations
 
 import xml.etree.ElementTree as ET
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from ..base import ESDMBaseWriter
 
 from .const import XML_NAMESPACES
+from ..base import ESDMBaseWriter
 
 
 class SharedStringsWriter:
@@ -46,3 +44,4 @@ class SharedStringsWriter:
                 t.set('{http://www.w3.org/XML/1998/namespace}space', 'preserve')
 
         return ET.tostring(root, encoding='unicode', xml_declaration=True)
+

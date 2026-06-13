@@ -1,13 +1,11 @@
 from __future__ import annotations
 
 import io
-from typing import TYPE_CHECKING
 from zipfile import ZipFile, ZIP_DEFLATED
+from ....models.esdm_models import Workbook
+from ..base import ESDMBaseWriter
+from .extra_writers import ContentTypesWriter, RelationshipsWriter
 
-if TYPE_CHECKING:
-    from ....models.esdm_models import Workbook
-    from ..base import ESDMBaseWriter
-    from .extra_writers import ContentTypesWriter, RelationshipsWriter
 
 
 class ZipPackager:
@@ -50,3 +48,4 @@ class ZipPackager:
             for path, binary in self._parent._image_binaries.items():
                 if binary:  # only write if binary data exists
                     zf.writestr(path, binary)
+

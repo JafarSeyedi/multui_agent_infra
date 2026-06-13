@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 from .validator import ValidationLevel, ValidationResult, Validator
+from typing import Any
 
 
 class BPMNValidator(Validator):
-    def validate(self, payload: object) -> list[ValidationResult]:
+    def validate(self, payload: Any) -> list[ValidationResult]:
         if not isinstance(payload, dict):
             return [self._result(ValidationLevel.ERROR, "bpmn.invalid_format", "BPMN definition must be a dict-like payload")]
         if "processes" not in payload:

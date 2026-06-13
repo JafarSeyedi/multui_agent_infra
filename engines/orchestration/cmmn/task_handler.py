@@ -7,8 +7,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
-
+from ..._types import Metadata, RawData
 from ..core.instance import ProcessInstance
 from ..core.engine import OrchestrationEngine
 
@@ -32,18 +31,18 @@ class CMMNTaskBlocking(str, Enum):
 class CMMNTask:
     task_id: str
     task_type: str = "task"
-    payload: dict[str, Any] = field(default_factory=dict)
+    payload: Metadata = field(default_factory=dict)
     name: str | None = None
     is_blocking: str = CMMNTaskBlocking.BLOCKING.value
     state: str = CMMNTaskState.AVAILABLE.value
     required_rule: str = "optional"
     repetition_rule: str = "none"
     activation_rule: str = "manual"
-    entry_criteria: list[dict[str, Any]] = field(default_factory=list)
-    exit_criteria: list[dict[str, Any]] = field(default_factory=list)
-    inputs: list[dict[str, Any]] = field(default_factory=list)
-    outputs: list[dict[str, Any]] = field(default_factory=list)
-    io_specification: dict[str, Any] = field(default_factory=dict)
+    entry_criteria: list[RawData] = field(default_factory=list)
+    exit_criteria: list[RawData] = field(default_factory=list)
+    inputs: list[Metadata] = field(default_factory=list)
+    outputs: list[Metadata] = field(default_factory=list)
+    io_specification: Metadata = field(default_factory=dict)
 
 
 @dataclass
@@ -60,20 +59,20 @@ class HumanTaskConfig:
 @dataclass
 class ProcessTaskConfig:
     called_element: str | None = None
-    io_mapping: list[dict[str, Any]] = field(default_factory=list)
+    io_mapping: list[Metadata] = field(default_factory=list)
 
 
 @dataclass
 class CaseTaskConfig:
     case_ref: str | None = None
-    io_mapping: list[dict[str, Any]] = field(default_factory=list)
+    io_mapping: list[Metadata] = field(default_factory=list)
 
 
 @dataclass
 class DecisionTaskConfig:
     called_decision: str | None = None
     result_variable: str | None = None
-    mapping: list[dict[str, Any]] = field(default_factory=list)
+    mapping: list[Metadata] = field(default_factory=list)
 
 
 class CMMNTaskHandler:
@@ -91,9 +90,9 @@ class CMMNTaskHandler:
     def get_task(self, task_id: str) -> CMMNTask | None:
         return self._tasks.get(task_id)
 
-    def execute(self, task: CMMNTask, instance: ProcessInstance | None = None) -> dict[str, Any]:
+    def execute(self, task: CMMNTask, instance: ProcessInstance | None = None) -> Metadata:
         task_type = task.task_type
-        result: dict[str, Any] = {"task_id": task.task_id, "type": task_type, "status": "done"}
+        result: Metadata = {"task_id": task.task_id, "type": task_type, "status": "done"}
 
         if instance:
             instance.set_variable(f"task.{task.task_id}.state", CMMNTaskState.COMPLETED.value)
@@ -116,7 +115,7 @@ class CMMNTaskHandler:
 
         return result
 
-    def _execute_human_task(self, task: CMMNTask) -> dict[str, Any]:
+    def _execute_human_task(self, task: CMMNTask) -> Metadata:
         config = self._human_tasks.get(task.task_id, HumanTaskConfig(
             assignee=task.payload.get("assignee"),
             candidate_users=task.payload.get("candidateUsers", []),
@@ -127,15 +126,15 @@ class CMMNTaskHandler:
         ))
         return {"type": "HumanTask", "assignee": config.assignee, "claimed": False}
 
-    def _execute_process_task(self, task: CMMNTask) -> dict[str, Any]:
+    def _execute_process_task(self, task: CMMNTask) -> Metadata:
         called_element = task.payload.get("calledElement", task.payload.get("called_element"))
         return {"type": "ProcessTask", "calledElement": called_element}
 
-    def _execute_case_task(self, task: CMMNTask) -> dict[str, Any]:
+    def _execute_case_task(self, task: CMMNTask) -> Metadata:
         case_ref = task.payload.get("caseRef")
         return {"type": "CaseTask", "caseRef": case_ref}
 
-    def _execute_decision_task(self, task: CMMNTask) -> dict[str, Any]:
+    def _execute_decision_task(self, task: CMMNTask) -> Metadata:
         called_decision = task.payload.get("calledDecision")
         result_variable = task.payload.get("resultVariable", f"task.{task.task_id}.result")
         return {"type": "DecisionTask", "calledDecision": called_decision, "resultVariable": result_variable}

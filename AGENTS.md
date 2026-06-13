@@ -4,10 +4,16 @@
 
 ```bash
 # run all knowledge tests
-python3 -m pytest tests/knowledge/ -v
+python3 -m pytest engines/knowledge/tests/ -v
 
 # run a single test file
-python3 -m pytest tests/knowledge/test_writers.py -v
+python3 -m pytest engines/knowledge/tests/test_writers.py -v
+
+# run all orchestration tests
+python3 -m pytest engines/orchestration/tests/ -v
+
+# run all tools tests
+python3 -m pytest engines/tools/tests/ -v
 
 # no Makefile, no pre-commit, no CI workflows in this repo
 ```
@@ -33,8 +39,8 @@ Monorepo under `engines/` with 10 engine packages:
 
 - **Agent flow**: Orchestrator → AgentInput → AgentAdapter → Agent → AgentOutput. Adapters convert between base and agent-specific models.
 - **Tools layer**: LLM, RAG, Search, MCP are all Tools, not Agents. Agents decide, Tools execute.
-- **Document models** (`engines/document/models/`) follow the *SDM pattern: USDM (text), PSDM (presentation), ESDM (spreadsheet), DSDM (data), CSDM (CAD), MSDM (schema), SSDM (service), ISDM (insights), KSDM (knowledge graph), OSDM (orchestration), TSDM (tools).
-- **Knowledge engines** (`engines/knowledge/apps/`) import from `engines.document.*` for models/parsers/writers. The `engines/knowledge/{parsers,writers,models}/` directories are thin re-export wrappers for backward compat.
+- **Engine-specific SDM models live in their owning engine** (not in `engines/document/`): KSDM → `engines/knowledge/models/`, OSDM + BAM → `engines/orchestration/models/`, TSDM → `engines/tools/models/`. Each model dir has `parsers/` and `writers/` subdirectories. The document engine keeps USDM, PSDM, ESDM, DSDM, CSDM, MSDM, SSDM, ISDM, LSDM.
+- **Knowledge engines** (`engines/knowledge/apps/`) import models/parsers/writers from `engines.knowledge.models`, not `engines.document.*`. Backward-compat wrappers have been removed.
 - **Knowledge `__init__.py`** only eagerly imports the 5 stable engines (bi_aggregation, ml_mining, process_mining, semantic_graph, graph). RAG and memory engines are excluded because they have missing transitive dependencies.
 - **`KnowledgeRagEngine`** cannot be imported directly — it depends on `engines.knowledge.rag.{services,llm,research}` modules that don't exist. If you need it, create stubs first.
 - **`UnifiedGraphEngine` ↔ `SemanticGraphEngine` circular dependency**: `UnifiedGraphEngine.__init__` must pass `unified_engine=self` to `SemanticGraphEngine()` to avoid infinite recursion. This is already fixed.
@@ -42,7 +48,7 @@ Monorepo under `engines/` with 10 engine packages:
 
 ## Test conventions
 
-- `tests/knowledge/` has conftest.py with custom `event_loop` fixture (creates new asyncio loop per test).
+- `engines/knowledge/tests/` has conftest.py with custom `event_loop` fixture (creates new asyncio loop per test).
 - `asyncio_mode = auto` in pyproject.toml — async tests are auto-detected.
 - No integration test prerequisites (no DB, no external services needed for knowledge tests).
 - 2 tests in `test_engines.py` are skipped (RAG/memory) due to missing dependencies.

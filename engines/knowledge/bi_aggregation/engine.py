@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from engines.document.models.ksdm_models import (
+from engines.knowledge.models.ksdm_models import (
     AggregationDefinition,
     AggregationRelationship,
     AggregationSource,
@@ -12,7 +12,7 @@ from engines.document.models.ksdm_models import (
 )
 from engines.document.model_tools.model_standard_converters.ksdm_bi_converter import BiAggregationConverter
 from engines.document.parsers.base import BaseDocumentParser
-from engines.document.parsers.ksdm_parsers.bi_aggregation import (
+from engines.knowledge.models.parsers.bi_aggregation import (
     AwxmlParser,
     CalciteParser,
     CdmParser,
@@ -24,7 +24,7 @@ from engines.document.parsers.ksdm_parsers.bi_aggregation import (
     TmslParser,
 )
 from engines.document.writers.base import BaseDocumentWriter
-from engines.document.writers.ksdm_writers.bi_aggregation import (
+from engines.knowledge.models.writers.bi_aggregation import (
     AwxmlWriter,
     CalciteWriter,
     CdmWriter,

@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Any
 
+from .._types import FeelContext, MessagePayload, VariableValue
 from ..agent.base_agents.base_agent import BaseAgent
 from ..agent.models import AgentOutput
 from .base_strategy import InteractionStrategy
@@ -29,7 +30,7 @@ class CoordinatorStrategy(InteractionStrategy):
 
     async def execute(self, request: InteractionRequest) -> InteractionResult:
 
-        shared_context: dict[str, Any] = dict(request.context)
+        shared_context: FeelContext = dict(request.context)
         results: list[AgentOutput] = []
 
         worker_agents: Sequence[BaseAgent] = request.agents
@@ -93,7 +94,7 @@ class CoordinatorStrategy(InteractionStrategy):
             },
         )
 
-    async def _run_validation(self, shared_context: dict[str, Any], results: list[AgentOutput]) -> None:
+    async def _run_validation(self, shared_context: FeelContext, results: list[AgentOutput]) -> None:
         if not self.validation_agent:
             return
         payload = {
@@ -113,7 +114,7 @@ class CoordinatorStrategy(InteractionStrategy):
         else:
             shared_context.setdefault("validation_errors", []).append(output.error)
 
-    async def _aggregate(self, shared_context: dict[str, Any], results: list[AgentOutput]) -> Any:
+    async def _aggregate(self, shared_context: FeelContext, results: list[AgentOutput]) -> VariableValue:
 
         if not self.aggregator_agent:
             return shared_context.get("worker_outputs", {})
@@ -143,8 +144,8 @@ class CoordinatorStrategy(InteractionStrategy):
         self,
         agent_name: str,
         agent_id: str,
-        input_payload: dict[str, Any],
-        output_payload: Any,
+        input_payload: MessagePayload,
+        output_payload: VariableValue,
     ) -> None:
 
         await self._emit(

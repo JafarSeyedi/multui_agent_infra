@@ -6,6 +6,7 @@ import uuid
 from typing import Any
 
 from pydantic import BaseModel
+from pydantic import ConfigDict
 from pydantic import Field
 
 from ..chunking.base import BaseChunker
@@ -89,8 +90,7 @@ class IngestionContext(BaseModel):
     chunker: BaseChunker | None = None
     embedding_service: DocumentEmbeddingService | None = None
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     # ------------------------------------------------------------------
     # Factory constructor

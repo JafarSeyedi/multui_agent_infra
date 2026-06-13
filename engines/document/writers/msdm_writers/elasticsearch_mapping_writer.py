@@ -85,7 +85,7 @@ class ElasticsearchMappingWriter(BaseMSDMWriter):
             index_def = self._build_index_definition(entity, document)
             results.append(index_def)
 
-        output: Union[dict, list] = results[0] if len(results) == 1 else results
+        output: dict | list = results[0] if len(results) == 1 else results
         json_bytes = json.dumps(output, indent=2, ensure_ascii=False).encode(
             getattr(self.options, "encoding", "utf-8") or "utf-8"
         )

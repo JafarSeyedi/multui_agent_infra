@@ -13,7 +13,7 @@ This module performs the following critical tasks:
 Runs LAST in writer pipeline.
 """
 from __future__ import annotations
-from typing import Optional, Dict, Any
+from typing import Any
 import hashlib
 from .base_context import WriterContext
 class Finalizer:

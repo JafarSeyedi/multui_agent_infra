@@ -13,7 +13,8 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
 import logging
-from typing import Any, Callable, Set
+from typing import Any
+from collections.abc import Callable
 from uuid import uuid4
 
 from ..persistence.history_repository import HistoryRepository
@@ -139,7 +140,7 @@ class Scheduler:
         self.task_heap: list[ScheduledTask] = []  # Min heap by next_execution
         
         # Execution tracking
-        self.running_tasks: Set[str] = set()
+        self.running_tasks: set[str] = set()
         
         # State
         self.is_running = False

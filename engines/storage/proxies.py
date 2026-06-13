@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from collections import OrderedDict
+from collections.abc import Callable
 from typing import Any
 
 from engines.storage.base_storage import BaseStorage
@@ -17,7 +18,7 @@ class LazyInitStorageProxy(BaseStorage):
     should not be eagerly initialized.
     """
 
-    def __init__(self, factory: Any, **factory_kwargs: Any) -> None:
+    def __init__(self, factory: Callable[..., BaseStorage], **factory_kwargs: Any) -> None:
         super().__init__()
         self._factory = factory
         self._factory_kwargs = factory_kwargs

@@ -14,7 +14,7 @@ Runs BEFORE:
     - Finalizer
 """
 from __future__ import annotations
-from typing import List, Any
+from typing import Any
 from .base_context import WriterContext
 from ....models import csdm_entities as E
 from ....models.csdm_core import CSDMObject
@@ -43,8 +43,8 @@ class ACISWriter:
     # =====================================================================
     # Detect ACIS-bearing objects
     # =====================================================================
-    def _collect_acis_objects(self) -> List[CSDMObject]:
-        out: List[CSDMObject] = []
+    def _collect_acis_objects(self) -> list[CSDMObject]:
+        out: list[CSDMObject] = []
         # geometry entities
         for e in self.ctx.csdm_doc.entities:
             if isinstance(e, (E.Solid3DEntity, E.SurfaceACISEntity, E.BodyEntity)) and \

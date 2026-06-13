@@ -4,7 +4,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
 
-from engines.document.models.ksdm_models import (
+from engines.knowledge.models.ksdm_models import (
     ClusteringConfig,
     MiningModelType,
     MiningProcessDefinition,
@@ -12,7 +12,7 @@ from engines.document.models.ksdm_models import (
 )
 from engines.document.models.lsdm_models import EventLogDocument, LogAttribute
 from engines.document.models.media_types import MEDIA_TYPES
-from engines.document.models.osdm_models import (
+from engines.orchestration.models.osdm_models import (
     DMNDefinition,
     DMNDocument,
     Decision,
@@ -25,8 +25,8 @@ from engines.document.models.osdm_models import (
     UnaryTests,
 )
 from engines.document.models.standard import DocumentStandard
-from engines.document.parsers.ksdm_parsers.process_mining.jprm_parser import JprmParser
-from engines.document.parsers.ksdm_parsers.process_mining.yprm_parser import YprmParser
+from engines.knowledge.models.parsers.process_mining.jprm_parser import JprmParser
+from engines.knowledge.models.parsers.process_mining.yprm_parser import YprmParser
 from engines.knowledge.ml_mining.engine import MlMiningEngine
 
 

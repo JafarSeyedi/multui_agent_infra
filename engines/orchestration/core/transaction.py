@@ -10,7 +10,8 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import datetime
-from typing import Any, Callable, Set
+from typing import Any
+from collections.abc import Callable
 from enum import Enum
 from dataclasses import dataclass, field
 from uuid import uuid4
@@ -111,7 +112,7 @@ class TransactionScope:
         self.metadata: dict[str, Any] = {}
 
         # Nested transactions (savepoints)
-        self.savepoints: dict[str, 'TransactionScope'] = {}
+        self.savepoints: dict[str, TransactionScope] = {}
 
     @property
     def state(self) -> TransactionState:
@@ -253,7 +254,7 @@ class TransactionScope:
             logger.error(f"Transaction {self.transaction_id} rollback failed: {e}")
             return False
     
-    def create_savepoint(self, name: str) -> 'TransactionScope':
+    def create_savepoint(self, name: str) -> TransactionScope:
         """Create a nested transaction (savepoint)"""
         savepoint_id = f"{self.transaction_id}:{name}"
         savepoint = TransactionScope(
@@ -324,7 +325,7 @@ class TransactionManager:
     
     def __init__(self) -> None:
         self.transactions: dict[str, TransactionScope] = {}
-        self.active_transactions: Set[str] = set()
+        self.active_transactions: set[str] = set()
         
         # Statistics
         self.total_committed = 0

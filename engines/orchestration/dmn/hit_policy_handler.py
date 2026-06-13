@@ -8,7 +8,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
+
+from ..._types import DmnValue, FeelContext, Metadata, RawData
 
 
 class HitPolicy(str, Enum):
@@ -26,23 +29,23 @@ class HitPolicy(str, Enum):
     C_COUNT = "CC" 
 
 
-def _handle_unique(matches: list[dict[str, Any]]) -> Any:
+def _handle_unique(matches: list[RawData]) -> DmnValue | None:
     if len(matches) > 1:
         return matches[0]["output_values"]
     return matches[0]["output_values"] if matches else None
 
 
-def _handle_first(matches: list[dict[str, Any]]) -> Any:
+def _handle_first(matches: list[RawData]) -> DmnValue | None:
     sorted_matches = sorted(matches, key=lambda m: m.get("priority", 0), reverse=True)
     return sorted_matches[0]["output_values"] if sorted_matches else None
 
 
-def _handle_priority(matches: list[dict[str, Any]]) -> Any:
+def _handle_priority(matches: list[RawData]) -> DmnValue | None:
     sorted_matches = sorted(matches, key=lambda m: m.get("priority", 0), reverse=True)
     return sorted_matches[0]["output_values"] if sorted_matches else None
 
 
-def _handle_any(matches: list[dict[str, Any]]) -> Any:
+def _handle_any(matches: list[RawData]) -> DmnValue | None:
     if not matches:
         return None
     first = matches[0]["output_values"]
@@ -52,41 +55,41 @@ def _handle_any(matches: list[dict[str, Any]]) -> Any:
     return first
 
 
-def _handle_collect(matches: list[dict[str, Any]]) -> Any:
+def _handle_collect(matches: list[RawData]) -> DmnValue | None:
     return [m["output_values"] for m in matches]
 
 
-def _handle_output_order(matches: list[dict[str, Any]]) -> Any:
+def _handle_output_order(matches: list[RawData]) -> DmnValue | None:
     sorted_matches = sorted(matches, key=lambda m: m.get("priority", 0))
     return [m["output_values"] for m in sorted_matches]
 
 
-def _handle_rule_order(matches: list[dict[str, Any]]) -> Any:
+def _handle_rule_order(matches: list[RawData]) -> DmnValue | None:
     return [m["output_values"] for m in matches]
 
 
-def _handle_c_sum(matches: list[dict[str, Any]]) -> Any:
+def _handle_c_sum(matches: list[RawData]) -> DmnValue | None:
     if not matches:
         return 0
     values = _extract_numeric_values(matches)
     return sum(values) if values else 0
 
 
-def _handle_c_min(matches: list[dict[str, Any]]) -> Any:
+def _handle_c_min(matches: list[RawData]) -> DmnValue | None:
     if not matches:
         return None
     values = _extract_numeric_values(matches)
     return min(values) if values else None
 
 
-def _handle_c_max(matches: list[dict[str, Any]]) -> Any:
+def _handle_c_max(matches: list[RawData]) -> DmnValue | None:
     if not matches:
         return None
     values = _extract_numeric_values(matches)
     return max(values) if values else None
 
 
-_HIT_POLICY_HANDLERS: dict[HitPolicy, Callable[[list[dict[str, Any]]], Any]] = {
+_HIT_POLICY_HANDLERS: dict[HitPolicy, Callable[[list[RawData]], DmnValue | None]] = {
     HitPolicy.UNIQUE: _handle_unique,
     HitPolicy.FIRST: _handle_first,
     HitPolicy.PRIORITY: _handle_priority,
@@ -104,9 +107,9 @@ _HIT_POLICY_HANDLERS: dict[HitPolicy, Callable[[list[dict[str, Any]]], Any]] = {
 
 def apply_hit_policy(
     policy: HitPolicy,
-    matches: list[dict[str, Any]],
-    context: dict[str, Any] | None = None,
-) -> Any:
+    matches: list[RawData],
+    context: FeelContext | None = None,
+) -> DmnValue | None:
     if not matches:
         return None
     handler = _HIT_POLICY_HANDLERS.get(policy)
@@ -115,7 +118,7 @@ def apply_hit_policy(
     return matches[0]["output_values"] if matches else None
 
 
-def _extract_numeric_values(matches: list[dict[str, Any]]) -> list[float]:
+def _extract_numeric_values(matches: list[RawData]) -> list[float]:
     values: list[float] = []
     for m in matches:
         out = m.get("output_values", {})
@@ -151,7 +154,7 @@ class HitPolicyHandler:
     def apply(
         self,
         policy: HitPolicy,
-        matches: list[dict[str, Any]],
-        context: dict[str, Any] | None = None,
-    ) -> Any:
+        matches: list[RawData],
+        context: FeelContext | None = None,
+    ) -> DmnValue | None:
         return apply_hit_policy(policy, matches, context)

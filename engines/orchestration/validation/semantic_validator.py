@@ -8,7 +8,7 @@ from .validator import ValidationLevel, ValidationResult, Validator
 
 
 class SemanticValidator(Validator):
-    def validate(self, payload: object) -> list[ValidationResult]:
+    def validate(self, payload: Any) -> list[ValidationResult]:
         if not isinstance(payload, dict):
             return [self._result(ValidationLevel.ERROR, "semantic.invalid_format", "Payload must be dictionary")]
         issues = []

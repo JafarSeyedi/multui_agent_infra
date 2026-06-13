@@ -10,13 +10,11 @@ Writers for:
 from __future__ import annotations
 
 import xml.etree.ElementTree as ET
-from typing import TYPE_CHECKING
 
 from .const import XML_NAMESPACES
+from ....models.esdm_models import Workbook, Hyperlink, Comment, ThreadedComment
+from ..base import ESDMBaseWriter
 
-if TYPE_CHECKING:
-    from ....models.esdm_models import Workbook, Hyperlink, Comment, ThreadedComment
-    from ..base import ESDMBaseWriter
 
 
 class ContentTypesWriter:
@@ -185,3 +183,4 @@ class HyperlinkWriter:
             rels.append((rel_id, hl.target,
                          'http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink'))
         return hyperlink_elems, rels
+

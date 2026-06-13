@@ -56,7 +56,7 @@ class PriorityMessageBus(MessageBus):
             except (ValueError, KeyError):
                 pass
 
-    async def publish(self, message: "AgentMessage", priority: int = 5) -> None:
+    async def publish(self, message: AgentMessage, priority: int = 5) -> None:
         async with self._lock:
             heapq.heappush(self._queue, PrioritizedMessage(priority, message))
 

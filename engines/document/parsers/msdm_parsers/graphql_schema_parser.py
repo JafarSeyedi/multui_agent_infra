@@ -21,7 +21,7 @@ import re
 import json
 from enum import Enum
 from pathlib import Path
-from typing import Optional, Any, Dict, List, Tuple
+from typing import Any
 
 from ...models.media_types import MEDIA_TYPES
 from ...models.msdm_models import (
@@ -182,8 +182,8 @@ class GraphQLSchemaParser(BaseMSDMParser):
         )
         doc.namespace = Namespace(uri=Path(source_name).stem)
 
-        self._root_operations: Dict[str, str] = {}
-        self._directive_defs: List[Dict[str, Any]] = []
+        self._root_operations: dict[str, str] = {}
+        self._directive_defs: list[dict[str, Any]] = []
 
         tokens = _tokenize(text)
         self._tokens = tokens
@@ -278,7 +278,7 @@ class GraphQLSchemaParser(BaseMSDMParser):
     # ------------------------------------------------------------------
     # Helpers with safe None checks
     # ------------------------------------------------------------------
-    def _peek(self, offset: int = 0) -> Optional[tuple[TokenType, str, int]]:
+    def _peek(self, offset: int = 0) -> tuple[TokenType, str, int] | None:
         idx = self._pos + offset
         if idx < len(self._tokens):
             return self._tokens[idx]
@@ -308,7 +308,7 @@ class GraphQLSchemaParser(BaseMSDMParser):
             raise SyntaxError(f"Expected name for {context}, got {tok}")
         return tok[1]
 
-    def _expect_keyword(self, expected: Optional[str] = None) -> str:
+    def _expect_keyword(self, expected: str | None = None) -> str:
         tok = self._advance()
         if tok[0] != TokenType.KEYWORD:
             raise SyntaxError(f"Expected keyword, got {tok}")
@@ -610,7 +610,7 @@ class GraphQLSchemaParser(BaseMSDMParser):
         }
         self._directive_defs.append(directive_def)
 
-    def _parse_directives(self, target: Optional[Any]) -> None:
+    def _parse_directives(self, target: Any | None) -> None:
         while True:
             tok = self._peek()
             if tok is None or tok[0] != TokenType.DIRECTIVE:

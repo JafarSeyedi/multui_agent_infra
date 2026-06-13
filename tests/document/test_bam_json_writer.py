@@ -1,9 +1,9 @@
 import json
 import pytest
-from engines.document.models.bam_models import (
+from engines.orchestration.models.bam_models import (
     BusinessMetric, KPI, MonitoringDashboardDocument,
 )
-from engines.document.writers.bam_writers.bam_json_writer import BamJsonWriter
+from engines.orchestration.models.writers.bam.bam_json_writer import BamJsonWriter
 
 
 @pytest.mark.asyncio
@@ -33,7 +33,7 @@ async def test_write_bam_json_empty():
 
 @pytest.mark.asyncio
 async def test_json_writer_roundtrip():
-    from engines.document.parsers.bam_parsers.bam_json_parser import BamJsonParser
+    from engines.orchestration.models.parsers.bam.bam_json_parser import BamJsonParser
 
     doc = MonitoringDashboardDocument(title="RT", document_id="rt-1")
     doc.metrics["m1"] = BusinessMetric(metric_id="m1", name="Test", unit="ms")

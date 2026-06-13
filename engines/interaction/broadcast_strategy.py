@@ -3,6 +3,7 @@ import asyncio
 from collections.abc import Iterable
 from typing import Any
 
+from .._types import FeelContext, VariableValue
 from ..agent.base_agents.base_agent import BaseAgent
 from ..agent.models import AgentInput
 from ..agent.models import AgentOutput
@@ -15,7 +16,7 @@ class BroadcastStrategy(InteractionStrategy):
     scenario_name = "broadcast"
 
     async def execute(self, request: InteractionRequest) -> InteractionResult:
-        context: dict[str, Any] = dict(request.context or {})
+        context: FeelContext = dict(request.context or {})
         agents: list[BaseAgent] = request.agents or []
 
         if not agents:
@@ -42,7 +43,7 @@ class BroadcastStrategy(InteractionStrategy):
             },
         )
 
-    async def _execute_agent(self, agent: BaseAgent, context_snapshot: dict[str, Any]) -> AgentOutput:
+    async def _execute_agent(self, agent: BaseAgent, context_snapshot: FeelContext) -> AgentOutput:
 
         await self._emit(
             message_type="broadcast_agent_started",
@@ -105,7 +106,7 @@ class BroadcastStrategy(InteractionStrategy):
                 )
         return normalized
 
-    def _aggregate_outputs(self, results: list[AgentOutput], mode: str) -> Any:
+    def _aggregate_outputs(self, results: list[AgentOutput], mode: str) -> VariableValue:
 
         successful = [r for r in results if r.error is None]
 

@@ -73,7 +73,7 @@ class MongoDBSchemaWriter(BaseMSDMWriter):
             schema = self._build_validator_schema(entity)
             results.append(schema)
 
-        output: Union[dict, list] = results[0] if len(results) == 1 else results
+        output: dict | list = results[0] if len(results) == 1 else results
         json_str = json.dumps(output, indent=2, ensure_ascii=False)
         return json_str.encode(getattr(self.options, "encoding", "utf-8") or "utf-8")
 

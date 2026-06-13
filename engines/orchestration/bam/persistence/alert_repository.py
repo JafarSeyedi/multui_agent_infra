@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from engines.document.models.bam_models import AlertNotification, AlertState
+from engines.orchestration.models.bam_models import AlertNotification, AlertState
 
 
 class AlertRepository:

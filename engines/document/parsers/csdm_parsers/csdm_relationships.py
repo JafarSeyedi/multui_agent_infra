@@ -1,7 +1,8 @@
 # engines/document/parsers/csdm_parsers/csdm_relationships.py
 from __future__ import annotations
 import traceback
-from typing import Dict, List, Optional
+from typing import Any
+
 from ...models.csdm_core import (
     CSDMDocument,
     CSDMHandle,
@@ -26,7 +27,7 @@ from ...models.csdm_tables import (
 class CSDMRelationshipResolver:
     def __init__(self, doc: CSDMDocument):
         self.doc = doc
-        self.all_objects: Dict[str, object] = {}
+        self.all_objects: dict[str, Any] = {}
 
     def resolve_all(self):
         self._build_lookup()

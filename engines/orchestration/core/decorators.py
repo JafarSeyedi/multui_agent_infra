@@ -11,7 +11,10 @@ import functools
 import logging
 import time
 from abc import ABC, abstractmethod
-from typing import Any, Awaitable, Callable, TypeVar, cast
+from typing import Any, TypeVar, cast
+from collections.abc import Awaitable, Callable
+
+from ..._types import Metadata
 
 logger = logging.getLogger(__name__)
 
@@ -25,21 +28,21 @@ class ExecutionDecorator(ABC):
         self._inner = inner
 
     @abstractmethod
-    async def execute(self, context: dict[str, Any]) -> Any:
+    async def execute(self, context: Metadata) -> Any:
         ...
 
     def decorate(self, fn: F) -> F:
         @functools.wraps(fn)
-        async def wrapper(*args: Any, **kwargs: Any) -> Any:
+        async def wrapper(*args: Any, **kwargs: Any) -> Any:  # duck-typed
             context = {"fn": fn, "args": args, "kwargs": kwargs}
             return await self.execute(context)
-        return wrapper  # type: ignore[return-value]
+        return cast(F, wrapper)
 
 
 class LoggingDecorator(ExecutionDecorator):
     """Logs entry/exit and duration of execution."""
 
-    async def execute(self, context: dict[str, Any]) -> Any:
+    async def execute(self, context: Metadata) -> Any:
         fn = context["fn"]
         fn_name = getattr(fn, "__qualname__", str(fn))
         logger.info("Entering %s", fn_name)
@@ -71,7 +74,7 @@ class TimingDecorator(ExecutionDecorator):
         super().__init__(inner)
         self._metrics: dict[str, list[float]] = {} if metrics is None else metrics
 
-    async def execute(self, context: dict[str, Any]) -> Any:
+    async def execute(self, context: Metadata) -> Any:
         fn = context["fn"]
         fn_name = getattr(fn, "__qualname__", str(fn))
         start = time.monotonic()
@@ -109,7 +112,7 @@ class RetryDecorator(ExecutionDecorator):
         self._max_delay = max_delay
         self._retryable_exceptions = retryable_exceptions
 
-    async def execute(self, context: dict[str, Any]) -> Any:
+    async def execute(self, context: Metadata) -> Any:
         fn = context["fn"]
         fn_name = getattr(fn, "__qualname__", str(fn))
         last_exc: Exception | None = None
@@ -125,7 +128,8 @@ class RetryDecorator(ExecutionDecorator):
                     delay = min(self._base_delay * (2 ** (attempt - 1)), self._max_delay)
                     logger.warning("Retry %d/%d for %s after %.3fs: %s", attempt, self._max_retries, fn_name, delay, exc)
                     await asyncio.sleep(delay)
-        raise last_exc  # type: ignore[misc]
+        if last_exc is not None:
+            raise last_exc
 
 
 class CircuitBreakerDecorator(ExecutionDecorator):
@@ -149,7 +153,7 @@ class CircuitBreakerDecorator(ExecutionDecorator):
         self._failure_count = 0
         self._last_failure_time: float | None = None
 
-    async def execute(self, context: dict[str, Any]) -> Any:
+    async def execute(self, context: Metadata) -> Any:
         fn_name = getattr(context["fn"], "__qualname__", str(context["fn"]))
         if self._state == self.OPEN:
             if self._last_failure_time and (time.monotonic() - self._last_failure_time) >= self._recovery_timeout:
@@ -198,9 +202,13 @@ class CompositeDecorator(ExecutionDecorator):
             current = decorator
         return current
 
-    async def execute(self, context: dict[str, Any]) -> Any:
-        return await self._inner.execute(context)  # type: ignore[union-attr]
+    async def execute(self, context: Metadata) -> Any:
+        inner = self._inner
+        if isinstance(inner, ExecutionDecorator):
+            return await inner.execute(context)
+        assert inner is not None
+        return await inner(context)
 
 
-async def _noop_executor(context: dict[str, Any]) -> Any:
+async def _noop_executor(context: Metadata) -> Any:
     return None

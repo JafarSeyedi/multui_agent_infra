@@ -8,12 +8,13 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 
 from ..core.engine import OrchestrationEngine
 from ..core.event_bus import Event, EventType
 
-from ...document.models.osdm_models import (
+from engines.orchestration.models.osdm_models import (
     GlobalTask as OSDMGlobalTask,
     GlobalUserTask,
     GlobalScriptTask,
@@ -38,6 +39,14 @@ class GlobalTaskExecutionResult:
     status: str = "executed"
     output: dict[str, Any] = field(default_factory=dict)
     error: str | None = None
+
+
+_GLOBAL_TASK_TYPE_MAP: dict[type, str] = {
+    GlobalBusinessRuleTask: "businessRuleTask",
+    GlobalScriptTask: "scriptTask",
+    GlobalManualTask: "manualTask",
+    GlobalUserTask: "userTask",
+}
 
 
 class GlobalTaskHandler:
@@ -123,14 +132,9 @@ class GlobalTaskHandler:
 
     def _resolve_global_task_type(self, task: OSDMGlobalTask) -> str:
         """Resolve specific global task subtype from OSDM class hierarchy."""
-        if isinstance(task, GlobalBusinessRuleTask):
-            return "businessRuleTask"
-        if isinstance(task, GlobalScriptTask):
-            return "scriptTask"
-        if isinstance(task, GlobalManualTask):
-            return "manualTask"
-        if isinstance(task, GlobalUserTask):
-            return "userTask"
+        result = _GLOBAL_TASK_TYPE_MAP.get(type(task))
+        if result:
+            return result
         return task.task_type.value if hasattr(task.task_type, "value") else str(task.task_type)
 
     def execute_osdm(self, task: OSDMGlobalTask, context: dict[str, Any] | None = None) -> GlobalTaskExecutionResult:

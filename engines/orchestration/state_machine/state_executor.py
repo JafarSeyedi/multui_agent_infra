@@ -14,11 +14,12 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
+from ..._types import FeelContext, Metadata, RawData
 from ..core.event_bus import Event as BusEvent
 from ..core.event_bus import EventType as BusEventType
 from ..core.instance import ProcessInstance
 from ..core.engine import OrchestrationEngine
-from ...document.models.osdm_models import (
+from engines.orchestration.models.osdm_models import (
     PseudoState,
     PseudoStateKind,
     State,
@@ -79,12 +80,12 @@ class RegionContext:
 
 @dataclass
 class StateMachineModel_Legacy:
-    states: list[dict[str, Any]] = field(default_factory=list)
-    transitions: list[dict[str, Any]] = field(default_factory=list)
+    states: list[RawData] = field(default_factory=list)
+    transitions: list[RawData] = field(default_factory=list)
     initial_state: str | None = None
-    regions: list[dict[str, Any]] = field(default_factory=list)
-    pseudostates: list[dict[str, Any]] = field(default_factory=list)
-    events: list[dict[str, Any]] = field(default_factory=list)
+    regions: list[RawData] = field(default_factory=list)
+    pseudostates: list[RawData] = field(default_factory=list)
+    events: list[RawData] = field(default_factory=list)
     context: dict[str, StateContext] = field(default_factory=dict)
     region_context: dict[str, RegionContext] = field(default_factory=dict)
 
@@ -105,7 +106,7 @@ class StateMachineExecutor:
 
     # ── Public API ────────────────────────────────────────────────
 
-    async def execute(self, instance: ProcessInstance, definition: dict[str, Any]) -> None:
+    async def execute(self, instance: ProcessInstance, definition: RawData) -> None:
         model = self._normalize_model(definition)
         self._models[instance.id] = model
         await self._execute_legacy(instance, model, definition.get("_max_steps", 200))
@@ -337,9 +338,9 @@ class StateMachineExecutor:
 
         instance.complete()
 
-    def _normalize_model(self, definition: dict[str, Any]) -> StateMachineModel_Legacy:
+    def _normalize_model(self, definition: RawData) -> StateMachineModel_Legacy:
         model = StateMachineModel_Legacy()
-        model.states = definition.get("states", definition.get("elements", []))
+        model.states = definition.get("states") or definition.get("elements") or []
         model.transitions = definition.get("transitions", [])
         model.regions = definition.get("regions", [])
         model.pseudostates = definition.get("pseudostates", [])
@@ -353,9 +354,9 @@ class StateMachineExecutor:
                 state_id=state_id,
                 name=state_def.get("name"),
                 kind=state_def.get("kind", StateKind.SIMPLE.value),
-                entry_actions=state_def.get("entry", state_def.get("entryActions", [])),
-                exit_actions=state_def.get("exit", state_def.get("exitActions", [])),
-                do_actions=state_def.get("doActivity", state_def.get("do", [])),
+                entry_actions=state_def.get("entry") or state_def.get("entryActions") or [],
+                exit_actions=state_def.get("exit") or state_def.get("exitActions") or [],
+                do_actions=state_def.get("doActivity") or state_def.get("do") or [],
             )
             model.context[state_id] = ctx
 
@@ -437,11 +438,11 @@ class StateMachineExecutor:
     def _get_effect(self, transition: Any) -> Any | None:
         return getattr(transition, "effect", None)
 
-    def _eval_guard(self, guard: Any, context: dict[str, Any]) -> bool:
+    def _eval_guard(self, guard: Any, context: FeelContext) -> bool:
         body = guard.body if hasattr(guard, "body") and guard.body is not None else str(guard)
         return self._evaluate_guard(body, context)
 
-    def _eval_trigger(self, trigger: Any, context: dict[str, Any]) -> bool:
+    def _eval_trigger(self, trigger: Any, context: FeelContext) -> bool:
         body = trigger.body if hasattr(trigger, "body") and trigger.body is not None else str(trigger)
         return self._evaluate_trigger(body, context)
 
@@ -497,7 +498,7 @@ class StateMachineExecutor:
                 action_name = action.get("name", action.get("id", "unknown"))
                 instance.set_variable(f"state.{state_id}.{action_type}.{action_name}", action)
 
-    def _evaluate_guard(self, guard: str, context: dict[str, Any]) -> bool:
+    def _evaluate_guard(self, guard: str, context: FeelContext) -> bool:
         if guard in {"true", "True", "1"}:
             return True
         if guard in {"false", "False", "0"}:
@@ -511,7 +512,7 @@ class StateMachineExecutor:
             logger.warning("Guard evaluation failed for %r: %s", guard, e)
             return False
 
-    def _matches_trigger(self, trigger: str, context: dict[str, Any]) -> bool:
+    def _matches_trigger(self, trigger: str, context: FeelContext) -> bool:
         trigger_value = context.get(f"trigger.{trigger}")
         if trigger_value is not None:
             return bool(trigger_value)
@@ -520,7 +521,7 @@ class StateMachineExecutor:
             return bool(event_value)
         return False
 
-    def _evaluate_trigger(self, trigger: str, context: dict[str, Any]) -> bool:
+    def _evaluate_trigger(self, trigger: str, context: FeelContext) -> bool:
         trigger_value = context.get(f"trigger.{trigger}")
         if trigger_value is not None:
             return bool(trigger_value)
@@ -531,7 +532,7 @@ class StateMachineExecutor:
 
     # ── Query API (backward compatible) ──────────────────────────
 
-    def get_history(self, instance_id: str) -> list[dict[str, Any]]:
+    def get_history(self, instance_id: str) -> list[Metadata]:
         return self.history_manager.get_history(instance_id)
 
     def get_current_state(self, instance_id: str) -> str | None:

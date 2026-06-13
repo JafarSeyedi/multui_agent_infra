@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from .._types import Metadata
 from engines.agent.agent_registry import AgentRegistry
 from engines.agent.base_agents.base_agent import BaseAgent
 
@@ -14,8 +15,8 @@ class AgentBuilder:
         self._agent_name = agent_name
         self._vector_db: Any = None
         self._storage: Any = None
-        self._metadata: dict[str, Any] | None = None
-        self._extra: dict[str, Any] = {}
+        self._metadata: Metadata | None = None
+        self._extra: Metadata = {}
 
     def with_vector_db(self, vector_db: Any) -> AgentBuilder:
         self._vector_db = vector_db
@@ -25,7 +26,7 @@ class AgentBuilder:
         self._storage = storage
         return self
 
-    def with_metadata(self, metadata: dict[str, Any]) -> AgentBuilder:
+    def with_metadata(self, metadata: Metadata) -> AgentBuilder:
         self._metadata = metadata
         return self
 

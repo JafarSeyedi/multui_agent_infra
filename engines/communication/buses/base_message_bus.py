@@ -7,9 +7,7 @@ from collections.abc import Awaitable
 from collections.abc import Callable
 from typing import Optional
 
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from engines.communication.buses.message_models import AgentMessage
+from engines.communication.buses.message_models import AgentMessage
 
 HandlerType = Callable[["AgentMessage"], Awaitable[Optional["AgentMessage"]]]
 
@@ -18,7 +16,7 @@ class MessageBus(ABC):
     """Abstract base for all message bus implementations."""
 
     @abstractmethod
-    async def publish(self, message: "AgentMessage") -> None:
+    async def publish(self, message: AgentMessage) -> None:
         """Send a message to the bus."""
         ...
 

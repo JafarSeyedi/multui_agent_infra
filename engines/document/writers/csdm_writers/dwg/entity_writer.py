@@ -21,7 +21,8 @@ This writer assumes:
     - BlockRecords exist and are mapped in context registry
 """
 from __future__ import annotations
-from typing import Any, Dict, Callable, Optional
+from typing import Any
+from collections.abc import Callable
 from .base_context import WriterContext
 from ....models.csdm_entities import (
     BaseEntity,
@@ -51,7 +52,7 @@ class EntityWriter:
         self.ctx = ctx
         self.oda = ctx.oda
         self.dwg = ctx.dwg
-        self._handlers: Dict[str, Callable[[Any], Optional[Any]]] = {
+        self._handlers: dict[str, Callable[[Any], Any | None]] = {
             "LINE": self._write_line,
             "CIRCLE": self._write_circle,
             "ARC": self._write_arc,
@@ -105,21 +106,21 @@ class EntityWriter:
                 oda_obj.addXData(xd.appid, xd.data)
         for r in e.reactors:
             oda_obj.addReactor(r.value if hasattr(r, 'value') else r)
-    def _write_line(self, e: LineEntity) -> Optional[Any]:
+    def _write_line(self, e: LineEntity) -> Any | None:
         if self.dwg is None:
             return None
         ent = self.dwg.newEntity("LINE")
         ent.setStartPoint(e.start)
         ent.setEndPoint(e.end)
         return ent
-    def _write_circle(self, e: CircleEntity) -> Optional[Any]:
+    def _write_circle(self, e: CircleEntity) -> Any | None:
         if self.dwg is None:
             return None
         ent = self.dwg.newEntity("CIRCLE")
         ent.setCenter(e.center)
         ent.setRadius(e.radius)
         return ent
-    def _write_arc(self, e: ArcEntity) -> Optional[Any]:
+    def _write_arc(self, e: ArcEntity) -> Any | None:
         if self.dwg is None:
             return None
         ent = self.dwg.newEntity("ARC")
@@ -127,7 +128,7 @@ class EntityWriter:
         ent.setRadius(e.radius)
         ent.setAngles(e.start_angle, e.end_angle)
         return ent
-    def _write_lwpolyline(self, e: LWPolylineEntity) -> Optional[Any]:
+    def _write_lwpolyline(self, e: LWPolylineEntity) -> Any | None:
         if self.dwg is None:
             return None
         ent = self.dwg.newEntity("LWPOLYLINE")
@@ -135,7 +136,7 @@ class EntityWriter:
         for v in e.vertices:
             ent.addVertex(v.x, v.y, v.bulge)
         return ent
-    def _write_polyline(self, e: PolylineEntity) -> Optional[Any]:
+    def _write_polyline(self, e: PolylineEntity) -> Any | None:
         if self.dwg is None:
             return None
         ent = self.dwg.newEntity("POLYLINE")
@@ -146,7 +147,7 @@ class EntityWriter:
             if v.bulge:
                 p.setBulge(v.bulge)
         return ent
-    def _write_spline(self, e: SplineEntity) -> Optional[Any]:
+    def _write_spline(self, e: SplineEntity) -> Any | None:
         if self.dwg is None:
             return None
         ent = self.dwg.newEntity("SPLINE")
@@ -156,7 +157,7 @@ class EntityWriter:
         ent.setKnots(e.knots)
         ent.setClosed(e.is_closed)
         return ent
-    def _write_text(self, e: TextEntity) -> Optional[Any]:
+    def _write_text(self, e: TextEntity) -> Any | None:
         if self.dwg is None:
             return None
         ent = self.dwg.newEntity("TEXT")
@@ -165,7 +166,7 @@ class EntityWriter:
         ent.setHeight(e.text_height)
         ent.setRotation(e.rotation)
         return ent
-    def _write_mtext(self, e: MTextEntity) -> Optional[Any]:
+    def _write_mtext(self, e: MTextEntity) -> Any | None:
         if self.dwg is None:
             return None
         ent = self.dwg.newEntity("MTEXT")
@@ -174,7 +175,7 @@ class EntityWriter:
         ent.setRotation(e.rotation)
         ent.setWidth(e.width)
         return ent
-    def _write_hatch(self, e: HatchEntity) -> Optional[Any]:
+    def _write_hatch(self, e: HatchEntity) -> Any | None:
         if self.dwg is None:
             return None
         ent = self.dwg.newEntity("HATCH")
@@ -184,7 +185,7 @@ class EntityWriter:
             for edge in loop.edges:
                 loop_obj.addEdge(edge)
         return ent
-    def _write_insert(self, e: BlockReference) -> Optional[Any]:
+    def _write_insert(self, e: BlockReference) -> Any | None:
         if self.dwg is None:
             return None
         ent = self.dwg.newEntity("INSERT")
@@ -195,7 +196,7 @@ class EntityWriter:
         ent.setScale(e.scale)
         ent.setRotation(e.rotation)
         return ent
-    def _write_dimension(self, e: DimensionEntity) -> Optional[Any]:
+    def _write_dimension(self, e: DimensionEntity) -> Any | None:
         if self.dwg is None:
             return None
         ent = self.dwg.newEntity("DIMENSION")
@@ -203,36 +204,36 @@ class EntityWriter:
         ent.setDimStyle(e.dimstyle)
         ent.setMeasurement(e.measurement)
         return ent
-    def _write_leader(self, e: LeaderEntity) -> Optional[Any]:
+    def _write_leader(self, e: LeaderEntity) -> Any | None:
         if self.dwg is None:
             return None
         ent = self.dwg.newEntity("LEADER")
         ent.setPoints(e.vertices)
         return ent
-    def _write_mleader(self, e: MLeaderEntity) -> Optional[Any]:
+    def _write_mleader(self, e: MLeaderEntity) -> Any | None:
         if self.dwg is None:
             return None
         ent = self.dwg.newEntity("MLEADER")
         return ent
-    def _write_3dsolid(self, e: Solid3DEntity) -> Optional[Any]:
+    def _write_3dsolid(self, e: Solid3DEntity) -> Any | None:
         if self.dwg is None:
             return None
         ent = self.dwg.newEntity("3DSOLID")
         if e.acis_data:
             ent.loadAcis(e.acis_data)
         return ent
-    def _write_surface(self, e: Solid3DEntity) -> Optional[Any]:
+    def _write_surface(self, e: Solid3DEntity) -> Any | None:
         return None
-    def _write_mesh(self, e: Solid3DEntity) -> Optional[Any]:
+    def _write_mesh(self, e: Solid3DEntity) -> Any | None:
         return None
-    def _write_underlay(self, e: UnderlayEntity) -> Optional[Any]:
+    def _write_underlay(self, e: UnderlayEntity) -> Any | None:
         if self.dwg is None:
             return None
         ent = self.dwg.newEntity("UNDERLAY")
         return ent
-    def _write_raster(self, e: ImageEntity) -> Optional[Any]:
+    def _write_raster(self, e: ImageEntity) -> Any | None:
         return None
-    def _write_table_entity(self, e: TableEntity) -> Optional[Any]:
+    def _write_table_entity(self, e: TableEntity) -> Any | None:
         if self.dwg is None:
             return None
         ent = self.dwg.newEntity("ACAD_TABLE")
@@ -243,12 +244,12 @@ class EntityWriter:
             for c, cell in enumerate(row.cells):
                 ent.setCellText(r, c, str(cell.value))
         return ent
-    def _write_viewport(self, e: BaseEntity) -> Optional[Any]:
+    def _write_viewport(self, e: BaseEntity) -> Any | None:
         if self.dwg is None:
             return None
         ent = self.dwg.newEntity("VIEWPORT")
         return ent
-    def _write_ole2frame(self, e: BaseEntity) -> Optional[Any]:
+    def _write_ole2frame(self, e: BaseEntity) -> Any | None:
         if self.dwg is None:
             return None
         ent = self.dwg.newEntity("OLE2FRAME")

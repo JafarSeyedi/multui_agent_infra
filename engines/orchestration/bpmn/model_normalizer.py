@@ -4,24 +4,24 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from ...document.models.osdm_models import (
+if TYPE_CHECKING:
+    from .process_executor import ProcessModel
+from ..._types import RawData, VariableValue
+
+from engines.orchestration.models.osdm_models import (
     ActivityType, FlowNode, SequenceFlow, StartEvent,
 )
 from .process_model import TypedProcessModel
-
-if TYPE_CHECKING:
-    from .sequence_flow import HandlerSequenceFlow
-    from .process_executor import ProcessModel
+from .sequence_flow import HandlerSequenceFlow
 
 
-def _dict_to_handler_flow(d: dict[str, Any]) -> "HandlerSequenceFlow":
-    from .sequence_flow import HandlerSequenceFlow
+def _dict_to_handler_flow(d: RawData) -> HandlerSequenceFlow:
     return HandlerSequenceFlow(
         flow_id=str(d.get("id", "")),
         source_ref=str(d.get("source") or d.get("sourceRef") or d.get("source_id") or ""),
         target_ref=str(d.get("target") or d.get("targetRef") or d.get("target_id") or ""),
         condition_expression=str(d.get("condition") or d.get("conditionExpression") or "") or None,
-        is_default=d.get("isDefault", d.get("is_default", False)),
+        is_default=bool(d.get("isDefault", d.get("is_default", False))),
     )
 
 
@@ -52,11 +52,11 @@ class BpmnModelNormalizer:
     """Normalizes definition payloads into ProcessModel and TypedProcessModel."""
 
     @staticmethod
-    def normalize(payload: dict[str, Any]) -> ProcessModel:
+    def normalize(payload: RawData) -> ProcessModel:
         from .process_executor import ProcessModel
         activities = list(payload.get("activities", []))
         raw_flows = list(payload.get("flows", []))
-        typed_flows: list[Any] = []
+        typed_flows: list[HandlerSequenceFlow] = []
         for f in raw_flows:
             if hasattr(f, "flow_id"):
                 typed_flows.append(f)
@@ -85,7 +85,7 @@ class BpmnModelNormalizer:
         )
 
     @staticmethod
-    def normalize_osdm(definition_xml: dict[str, Any], definition_id: str) -> TypedProcessModel:
+    def normalize_osdm(definition_xml: RawData, definition_id: str) -> TypedProcessModel:
         typed_model = TypedProcessModel(definition_id=definition_id)
         flow_elements = definition_xml.get("flow_elements", definition_xml.get("elements", {}))
         if isinstance(flow_elements, dict):
@@ -105,7 +105,7 @@ class BpmnModelNormalizer:
 
     @staticmethod
     def find_activity(model: Any, activity_id: str) -> Any | None:
-        for item in model.activities:
+        for item in getattr(model, "activities", []):
             if _activity_id(item) == activity_id:
                 return item
         return None

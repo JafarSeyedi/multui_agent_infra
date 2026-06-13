@@ -31,7 +31,7 @@ from .dsdm_utils import scalar_value
 
 
 class DSDMParseOptions(ParseOptions):
-    msdm_schema: Optional[MSDMDocument] = None
+    msdm_schema: MSDMDocument | None = None
     inject_defaults: bool = True
     validate_against_schema: bool = True
 
@@ -47,7 +47,7 @@ class BaseDSDMParser(BaseDocumentParser):
         metadata: dict[str, Any] | None = None,
         options: ParseOptions | None = None,
     ) -> DataDocument:
-        opts = DSDMParseOptions(**(options.dict() if options else {}))
+        opts = DSDMParseOptions(**(options.model_dump() if options else {}))
         root_node = await self._parse_to_datanode(data, opts)
 
         media_str = self._detect_media_type(source_name)

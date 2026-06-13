@@ -10,8 +10,9 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
+from ..._types import RawData
 from ...document.models.media_types import MEDIA_TYPES
-from ...document.models.osdm_models import (
+from engines.orchestration.models.osdm_models import (
     BPMNDocument,
     CMMNDocument,
     StateMachineDocument,
@@ -207,7 +208,7 @@ class OsdmSerializer:
 
     def serialize_bpmn_process(
         self,
-        process_data: dict[str, Any],
+        process_data: RawData,
         context: SerializationContext | None = None,
     ) -> SerializationResult:
         ctx = context or SerializationContext()
@@ -230,7 +231,7 @@ class OsdmSerializer:
 
     def serialize_cmmn_case(
         self,
-        case_data: dict[str, Any],
+        case_data: RawData,
         context: SerializationContext | None = None,
     ) -> SerializationResult:
         ctx = context or SerializationContext()
@@ -247,7 +248,7 @@ class OsdmSerializer:
 
     def serialize_state_machine(
         self,
-        sm_data: dict[str, Any],
+        sm_data: RawData,
         context: SerializationContext | None = None,
     ) -> SerializationResult:
         ctx = context or SerializationContext()
@@ -264,7 +265,7 @@ class OsdmSerializer:
 
     def serialize_dmn_decision(
         self,
-        dmn_data: dict[str, Any],
+        dmn_data: RawData,
         context: SerializationContext | None = None,
     ) -> SerializationResult:
         ctx = context or SerializationContext()
@@ -279,7 +280,7 @@ class OsdmSerializer:
             logger.error("DMN serialization failed: %s", e)
             return SerializationResult(errors=[str(e)])
 
-    def _dict_to_process(self, data: dict[str, Any]) -> Process:
+    def _dict_to_process(self, data: RawData) -> Process:
         process = Process(
             id=data.get("id", ""),
             name=data.get("name", ""),
@@ -336,7 +337,7 @@ class OsdmSerializer:
         ("sequenceflow", "_handle_sequence_flow"),
     ]
 
-    def _dict_to_flow_element(self, data: dict[str, Any]) -> FlowElement | None:
+    def _dict_to_flow_element(self, data: RawData) -> FlowElement | None:
         etype = str(data.get("type", "")).lower()
         eid = data.get("id", "")
         name = data.get("name", "")
@@ -345,65 +346,65 @@ class OsdmSerializer:
                 return getattr(self, handler_name)(data, eid, name, etype)
         return FlowElement(id=eid, name=name)
 
-    def _handle_start_event(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+    def _handle_start_event(self, data: RawData, eid: str, name: str, etype: str) -> FlowElement:
         return StartEvent(id=eid, name=name)
 
-    def _handle_end_event(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+    def _handle_end_event(self, data: RawData, eid: str, name: str, etype: str) -> FlowElement:
         return EndEvent(id=eid, name=name)
 
-    def _handle_intermediate_catch(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+    def _handle_intermediate_catch(self, data: RawData, eid: str, name: str, etype: str) -> FlowElement:
         return IntermediateCatchEvent(id=eid, name=name)
 
-    def _handle_intermediate_throw(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+    def _handle_intermediate_throw(self, data: RawData, eid: str, name: str, etype: str) -> FlowElement:
         return IntermediateThrowEvent(id=eid, name=name)
 
-    def _handle_boundary_event(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+    def _handle_boundary_event(self, data: RawData, eid: str, name: str, etype: str) -> FlowElement:
         return BoundaryEvent(
             id=eid, name=name,
             attached_to_ref=data.get("payload", {}).get("attachedToRef"),
             cancel_activity=data.get("payload", {}).get("cancelActivity", True),
         )
 
-    def _handle_exclusive_gateway(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+    def _handle_exclusive_gateway(self, data: RawData, eid: str, name: str, etype: str) -> FlowElement:
         return ExclusiveGateway(id=eid, name=name)
 
-    def _handle_inclusive_gateway(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+    def _handle_inclusive_gateway(self, data: RawData, eid: str, name: str, etype: str) -> FlowElement:
         return InclusiveGateway(id=eid, name=name)
 
-    def _handle_parallel_gateway(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+    def _handle_parallel_gateway(self, data: RawData, eid: str, name: str, etype: str) -> FlowElement:
         return ParallelGateway(id=eid, name=name)
 
-    def _handle_event_based_gateway(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+    def _handle_event_based_gateway(self, data: RawData, eid: str, name: str, etype: str) -> FlowElement:
         return EventBasedGateway(id=eid, name=name)
 
-    def _handle_complex_gateway(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+    def _handle_complex_gateway(self, data: RawData, eid: str, name: str, etype: str) -> FlowElement:
         return ComplexGateway(id=eid, name=name)
 
-    def _handle_service_task(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+    def _handle_service_task(self, data: RawData, eid: str, name: str, etype: str) -> FlowElement:
         return ServiceTask(id=eid, name=name)
 
-    def _handle_user_task(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+    def _handle_user_task(self, data: RawData, eid: str, name: str, etype: str) -> FlowElement:
         return UserTask(id=eid, name=name)
 
-    def _handle_manual_task(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+    def _handle_manual_task(self, data: RawData, eid: str, name: str, etype: str) -> FlowElement:
         return ManualTask(id=eid, name=name)
 
-    def _handle_script_task(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+    def _handle_script_task(self, data: RawData, eid: str, name: str, etype: str) -> FlowElement:
         return ScriptTask(id=eid, name=name)
 
-    def _handle_business_rule_task(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+    def _handle_business_rule_task(self, data: RawData, eid: str, name: str, etype: str) -> FlowElement:
         return BusinessRuleTask(id=eid, name=name)
 
-    def _handle_send_task(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+    def _handle_send_task(self, data: RawData, eid: str, name: str, etype: str) -> FlowElement:
         return SendTask(id=eid, name=name)
 
-    def _handle_receive_task(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+    def _handle_receive_task(self, data: RawData, eid: str, name: str, etype: str) -> FlowElement:
         return ReceiveTask(id=eid, name=name)
 
-    def _handle_call_activity(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+    def _handle_call_activity(self, data: RawData, eid: str, name: str, etype: str) -> FlowElement:
         return CallActivity(id=eid, name=name)
 
-    def _handle_sub_process(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+    def _handle_sub_process(self, data: RawData, eid: str, name: str, etype: str) -> FlowElement:
         sp_type = SubProcessType.EMBEDDED
         payload = data.get("payload", {})
         sp_type_str = payload.get("subProcessType", "embedded").lower()
@@ -417,10 +418,10 @@ class OsdmSerializer:
             return AdHocSubProcess(id=eid, name=name)
         return SubProcess(id=eid, name=name, sub_process_type=sp_type)
 
-    def _handle_task(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+    def _handle_task(self, data: RawData, eid: str, name: str, etype: str) -> FlowElement:
         return Task(id=eid, name=name)
 
-    def _handle_sequence_flow(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+    def _handle_sequence_flow(self, data: RawData, eid: str, name: str, etype: str) -> FlowElement:
         return SequenceFlow(
             id=eid,
             source_ref=data.get("source", data.get("sourceRef", "")),
@@ -432,7 +433,7 @@ class OsdmSerializer:
 class OsdmDeserializer:
     """Deserializes OSDM documents to runtime state."""
 
-    def deserialize_bpmn_document(self, document: BPMNDocument) -> dict[str, Any]:
+    def deserialize_bpmn_document(self, document: BPMNDocument) -> RawData:
         result: dict[str, Any] = {
             "id": document.document_id,
             "type": "bpmn",
@@ -443,7 +444,7 @@ class OsdmDeserializer:
             result["processes"].append(proc_data)
         return result
 
-    def _process_to_dict(self, process: Process) -> dict[str, Any]:
+    def _process_to_dict(self, process: Process) -> RawData:
         data: dict[str, Any] = {
             "id": process.id,
             "name": process.name or "",
@@ -457,7 +458,7 @@ class OsdmDeserializer:
                 data["flow_elements"][eid] = self._flow_element_to_dict(element)
         return data
 
-    def _flow_element_to_dict(self, element: FlowElement) -> dict[str, Any]:
+    def _flow_element_to_dict(self, element: FlowElement) -> RawData:
         data: dict[str, Any] = {
             "id": element.id,
             "name": getattr(element, "name", "") or "",

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any
+from ..._types import FeelContext, RawData
 
 logger = logging.getLogger(__name__)
 
@@ -42,9 +42,9 @@ class TransitionHandler:
     def resolve(
         self,
         current_state: str,
-        transitions: list[dict[str, Any]],
-        context: dict[str, Any],
-    ) -> dict[str, Any] | None:
+        transitions: list[RawData],
+        context: FeelContext,
+    ) -> RawData | None:
         outgoing = self._get_outgoing_transitions(current_state, transitions)
 
         if not outgoing:
@@ -84,7 +84,7 @@ class TransitionHandler:
                 t for t in outgoing if not t.get("guard") and not t.get("trigger")
             ]
             if unconditional:
-                best_unconditional: dict[str, Any] = max(unconditional, key=lambda t: t.get("priority", 0))
+                best_unconditional: RawData = max(unconditional, key=lambda t: t.get("priority", 0))
                 return best_unconditional
             return None
 
@@ -101,16 +101,16 @@ class TransitionHandler:
     def _get_outgoing_transitions(
         self,
         current_state: str,
-        transitions: list[dict[str, Any]],
-    ) -> list[dict[str, Any]]:
-        outgoing: list[dict[str, Any]] = []
+        transitions: list[RawData],
+    ) -> list[RawData]:
+        outgoing: list[RawData] = []
         for t in transitions:
             source = t.get("source", t.get("sourceRef", ""))
             if source == current_state:
                 outgoing.append(t)
         return outgoing
 
-    def _matches_trigger(self, trigger: str, context: dict[str, Any]) -> bool:
+    def _matches_trigger(self, trigger: str, context: FeelContext) -> bool:
         trigger_value = context.get(f"trigger.{trigger}")
         if trigger_value is not None:
             return bool(trigger_value)
@@ -119,7 +119,7 @@ class TransitionHandler:
             return bool(event_value)
         return False
 
-    def _evaluate_guard(self, guard: str, context: dict[str, Any]) -> bool:
+    def _evaluate_guard(self, guard: str, context: FeelContext) -> bool:
         if guard in {"true", "True", "1"}:
             return True
         if guard in {"false", "False", "0"}:
@@ -136,10 +136,10 @@ class TransitionHandler:
     def get_available_transitions(
         self,
         current_state: str,
-        transitions: list[dict[str, Any]],
-        context: dict[str, Any],
-    ) -> list[dict[str, Any]]:
-        result: list[dict[str, Any]] = []
+        transitions: list[RawData],
+        context: FeelContext,
+    ) -> list[RawData]:
+        result: list[RawData] = []
         outgoing = self._get_outgoing_transitions(current_state, transitions)
         for t in outgoing:
             guard = t.get("guard")

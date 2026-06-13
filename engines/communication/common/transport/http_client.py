@@ -5,7 +5,8 @@ from __future__ import annotations
 import asyncio
 import ssl
 from time import perf_counter
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 
 from .base import AbstractTransport, TransportRequest, TransportResponse
 

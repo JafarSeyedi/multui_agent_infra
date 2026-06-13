@@ -1,8 +1,8 @@
 import pytest
-from engines.document.models.bam_models import (
+from engines.orchestration.models.bam_models import (
     BusinessMetric, KPI, MonitoringDashboardDocument,
 )
-from engines.document.writers.bam_writers.bam_yaml_writer import BamYamlWriter
+from engines.orchestration.models.writers.bam.bam_yaml_writer import BamYamlWriter
 
 
 @pytest.mark.asyncio
@@ -22,7 +22,7 @@ async def test_write_bam_yaml():
 
 @pytest.mark.asyncio
 async def test_yaml_writer_roundtrip():
-    from engines.document.parsers.bam_parsers.bam_yaml_parser import BamYamlParser
+    from engines.orchestration.models.parsers.bam.bam_yaml_parser import BamYamlParser
 
     doc = MonitoringDashboardDocument(title="RT", document_id="rt-1")
     doc.metrics["m1"] = BusinessMetric(metric_id="m1", name="Test")

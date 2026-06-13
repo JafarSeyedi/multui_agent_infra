@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 from typing import Any
 
-from engines.document.models.ksdm_models import ModelGraph, ModelNode, OpType
+from engines.knowledge.models.ksdm_models import ModelGraph, ModelNode, OpType
 from engines.knowledge.ml_mining.converters import ConverterRegistry, ModelGraphConverter
 
 

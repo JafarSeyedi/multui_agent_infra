@@ -4,10 +4,8 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from .circuit_breaker import CircuitBreaker
+from ..core._context_protocols import ICircuitBreaker
 
 logger = logging.getLogger(__name__)
 
@@ -15,13 +13,13 @@ logger = logging.getLogger(__name__)
 class CBState:
     """Base circuit breaker state."""
 
-    def can_execute(self, cb: CircuitBreaker) -> bool:
+    def can_execute(self, cb: ICircuitBreaker) -> bool:
         return False
 
-    def record_success(self, cb: CircuitBreaker) -> None:
+    def record_success(self, cb: ICircuitBreaker) -> None:
         cb.failure_count = max(0, cb.failure_count - 1)
 
-    def record_failure(self, cb: CircuitBreaker) -> None:
+    def record_failure(self, cb: ICircuitBreaker) -> None:
         cb.failure_count += 1
         cb.last_failure_time = time.time()
 
@@ -31,13 +29,13 @@ class CBState:
 
 
 class ClosedState(CBState):
-    def can_execute(self, cb: CircuitBreaker) -> bool:
+    def can_execute(self, cb: ICircuitBreaker) -> bool:
         return True
 
-    def record_success(self, cb: CircuitBreaker) -> None:
+    def record_success(self, cb: ICircuitBreaker) -> None:
         super().record_success(cb)
 
-    def record_failure(self, cb: CircuitBreaker) -> None:
+    def record_failure(self, cb: ICircuitBreaker) -> None:
         super().record_failure(cb)
         if cb.failure_count >= cb.config.failure_threshold:
             cb._state_obj = OpenState()
@@ -50,7 +48,7 @@ class ClosedState(CBState):
 
 
 class OpenState(CBState):
-    def can_execute(self, cb: CircuitBreaker) -> bool:
+    def can_execute(self, cb: ICircuitBreaker) -> bool:
         if time.time() - cb.last_failure_time >= cb.config.open_duration_seconds:
             cb._state_obj = HalfOpenState()
             cb.state = "half_open"
@@ -65,10 +63,10 @@ class OpenState(CBState):
 
 
 class HalfOpenState(CBState):
-    def can_execute(self, cb: CircuitBreaker) -> bool:
+    def can_execute(self, cb: ICircuitBreaker) -> bool:
         return cb.half_open_calls < cb.config.half_open_max_calls
 
-    def record_success(self, cb: CircuitBreaker) -> None:
+    def record_success(self, cb: ICircuitBreaker) -> None:
         cb.success_count += 1
         cb.half_open_calls += 1
         if cb.success_count >= cb.config.success_threshold:
@@ -78,7 +76,7 @@ class HalfOpenState(CBState):
             cb.success_count = 0
             logger.info("Circuit breaker '%s' CLOSED", cb.name)
 
-    def record_failure(self, cb: CircuitBreaker) -> None:
+    def record_failure(self, cb: ICircuitBreaker) -> None:
         super().record_failure(cb)
         cb._state_obj = OpenState()
         cb.state = "open"

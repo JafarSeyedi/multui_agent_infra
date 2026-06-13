@@ -6,7 +6,7 @@ triggering deep dependency chains on package import.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from .bindings.binding_parser import BindingParser, parse_bindings
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from .messaging.channel_manager import MessageChannelManager
 
 
-def __getattr__(name: str) -> object:
+def __getattr__(name: str) -> Any:
     import importlib
 
     _LAZY: dict[str, str] = {

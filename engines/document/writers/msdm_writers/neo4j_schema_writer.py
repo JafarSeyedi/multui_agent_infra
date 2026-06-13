@@ -151,7 +151,7 @@ class Neo4jSchemaWriter(BaseMSDMWriter):
             raise ValueError("ConnectionConfig required")
 
         uri = connection.url or f"bolt://{connection.host or 'localhost'}:{connection.port or 7687}"
-        auth: Optional[tuple[str, str]] = None
+        auth: tuple[str, str] | None = None
         if connection.username and connection.password:
             auth = (connection.username, connection.password)
         driver = AsyncGraphDatabase.driver(uri, auth=auth)

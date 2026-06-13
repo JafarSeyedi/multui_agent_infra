@@ -13,9 +13,10 @@ from engines.storage.event_log.base import LogStorage
 from engines.storage.key_value.base import KeyValueStorage
 from engines.storage.timeseries.base import TimeSeriesStorage
 
+from ..._types import RawData
 from .runtime_records import deserialize_runtime_record, normalize_runtime_payload, serialize_runtime_record
 
-PredicateFn = Callable[[dict[str, Any]], bool]
+PredicateFn = Callable[[RawData], bool]
 FilterFn = PredicateFn
 
 
@@ -28,11 +29,11 @@ class RepositoryProtocol(ABC):
     """Small, explicit interface for document/instance stores."""
 
     @abstractmethod
-    def save(self, key: str, payload: dict[str, Any]) -> dict[str, Any]:
+    def save(self, key: str, payload: RawData) -> RawData:
         ...
 
     @abstractmethod
-    def get(self, key: str) -> dict[str, Any] | None:
+    def get(self, key: str) -> RawData | None:
         ...
 
     @abstractmethod
@@ -40,7 +41,7 @@ class RepositoryProtocol(ABC):
         ...
 
     @abstractmethod
-    def list(self, *, predicate: FilterFn | None = None) -> list[dict[str, Any]]:
+    def list(self, *, predicate: FilterFn | None = None) -> list[RawData]:
         ...
 
 
@@ -48,15 +49,15 @@ class InMemoryRepository(RepositoryProtocol):
     """Thread-safe dictionary-backed repository useful for tests and single-process deploys."""
 
     def __init__(self) -> None:
-        self._data: dict[str, dict[str, Any]] = {}
+        self._data: dict[str, RawData] = {}
         self._lock = Lock()
 
-    def save(self, key: str, payload: dict[str, Any]) -> dict[str, Any]:
+    def save(self, key: str, payload: RawData) -> RawData:
         with self._lock:
             self._data[key] = dict(payload)
             return dict(payload)
 
-    def get(self, key: str) -> dict[str, Any] | None:
+    def get(self, key: str) -> RawData | None:
         with self._lock:
             value = self._data.get(key)
             return dict(value) if value is not None else None
@@ -65,7 +66,7 @@ class InMemoryRepository(RepositoryProtocol):
         with self._lock:
             return self._data.pop(key, None) is not None
 
-    def list(self, *, predicate: FilterFn | None = None) -> list[dict[str, Any]]:
+    def list(self, *, predicate: FilterFn | None = None) -> list[RawData]:
         with self._lock:
             items = [dict(v) for v in self._data.values()]
         if predicate is None:
@@ -98,14 +99,14 @@ class PersistentRuntimeRepository(InMemoryRepository):
         self.key_prefix = key_prefix
         self.measurement = measurement
 
-    async def save_persisted(self, key: str, payload: dict[str, Any]) -> dict[str, Any]:
+    async def save_persisted(self, key: str, payload: RawData) -> RawData:
         normalized = normalize_runtime_payload(self.record_type, payload)
         saved = self.save(key, normalized)
         serialized = await serialize_runtime_record(self.record_type, normalized)
         await self._write_storage(key, saved, serialized)
         return saved
 
-    async def get_persisted(self, key: str) -> dict[str, Any] | None:
+    async def get_persisted(self, key: str) -> RawData | None:
         cached = self.get(key)
         if cached is not None:
             return cached
@@ -126,7 +127,7 @@ class PersistentRuntimeRepository(InMemoryRepository):
             await self.key_value_storage.delete(self._storage_key(key))
         return deleted
 
-    async def _write_storage(self, key: str, payload: dict[str, Any], serialized: str) -> None:
+    async def _write_storage(self, key: str, payload: RawData, serialized: str) -> None:
         if self.key_value_storage is not None:
             await self.key_value_storage.ensure_connected()
             await self.key_value_storage.set(self._storage_key(key), serialized)
@@ -157,7 +158,7 @@ class PersistentRuntimeRepository(InMemoryRepository):
         return f"{self.key_prefix}{key}"
 
 
-def _parse_timestamp(payload: dict[str, Any]) -> datetime:
+def _parse_timestamp(payload: RawData) -> datetime:
     for candidate in ("updated_at", "created_at", "recorded_at"):
         value = payload.get(candidate)
         if isinstance(value, datetime):

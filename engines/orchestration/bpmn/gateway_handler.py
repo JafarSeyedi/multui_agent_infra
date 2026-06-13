@@ -16,13 +16,14 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, cast
+from ..._types import FeelContext, Metadata, RawData
 
 logger = logging.getLogger(__name__)
 
 from ..expression.evaluator import EvaluationContext
 from ..expression.python_evaluator import PythonEvaluator
 
-from ...document.models.osdm_models import (
+from engines.orchestration.models.osdm_models import (
     FlowNode,
     GatewayType,
     GatewayDirection,
@@ -35,6 +36,15 @@ from ...document.models.osdm_models import (
     ComplexGateway,
     SequenceFlow,
 )
+
+
+_GATEWAY_TYPE_MAP: dict[type, GatewayType] = {
+    ExclusiveGateway: GatewayType.EXCLUSIVE,
+    InclusiveGateway: GatewayType.INCLUSIVE,
+    ParallelGateway: GatewayType.PARALLEL,
+    EventBasedGateway: GatewayType.EVENT_BASED,
+    ComplexGateway: GatewayType.COMPLEX,
+}
 
 
 @dataclass(frozen=True)
@@ -75,8 +85,8 @@ class GatewayStrategy(ABC):
         gateway_id: str,
         branches: list[GatewayBranch],
         default: str | None,
-        gateway: dict[str, Any] | None,
-        context: dict[str, Any],
+        gateway: RawData | None,
+        context: FeelContext,
     ) -> GatewayDecision: ...
 
     def choose_osdm(
@@ -86,7 +96,7 @@ class GatewayStrategy(ABC):
         default: str | None,
         gateway: Gateway,
         outgoing_flows: list[SequenceFlow],
-        context: dict[str, Any],
+        context: FeelContext,
     ) -> GatewayDecision:
         return self.choose(gateway_id, branches, default, None, context)
 
@@ -102,8 +112,8 @@ class ExclusiveGatewayStrategy(GatewayStrategy):
         gateway_id: str,
         branches: list[GatewayBranch],
         default: str | None,
-        gateway: dict[str, Any] | None,
-        context: dict[str, Any],
+        gateway: RawData | None,
+        context: FeelContext,
     ) -> GatewayDecision:
         for branch in sorted(branches, key=lambda b: b.priority):
             if branch.condition and not branch.is_default:
@@ -120,7 +130,7 @@ class ExclusiveGatewayStrategy(GatewayStrategy):
             return GatewayDecision(gateway_id=gateway_id, next_targets=[branches[0].target], gateway_type=GatewayType.EXCLUSIVE, default_used=True)
         return GatewayDecision(gateway_id=gateway_id, next_targets=[], gateway_type=GatewayType.EXCLUSIVE)
 
-    def _evaluate_condition(self, condition: str, context: dict[str, Any]) -> bool:
+    def _evaluate_condition(self, condition: str, context: FeelContext) -> bool:
         if condition in {"true", "True", "1"}:
             return True
         if condition in {"false", "False", "0"}:
@@ -143,8 +153,8 @@ class InclusiveGatewayStrategy(GatewayStrategy):
         gateway_id: str,
         branches: list[GatewayBranch],
         default: str | None,
-        gateway: dict[str, Any] | None,
-        context: dict[str, Any],
+        gateway: RawData | None,
+        context: FeelContext,
     ) -> GatewayDecision:
         selected: list[str] = []
         for branch in sorted(branches, key=lambda b: b.priority):
@@ -163,7 +173,7 @@ class InclusiveGatewayStrategy(GatewayStrategy):
                 return GatewayDecision(gateway_id=gateway_id, next_targets=selected, gateway_type=GatewayType.INCLUSIVE, default_used=True)
         return GatewayDecision(gateway_id=gateway_id, next_targets=selected, gateway_type=GatewayType.INCLUSIVE)
 
-    def _evaluate_condition(self, condition: str, context: dict[str, Any]) -> bool:
+    def _evaluate_condition(self, condition: str, context: FeelContext) -> bool:
         if condition in {"true", "True", "1"}:
             return True
         if condition in {"false", "False", "0"}:
@@ -183,8 +193,8 @@ class ParallelGatewayStrategy(GatewayStrategy):
         gateway_id: str,
         branches: list[GatewayBranch],
         default: str | None,
-        gateway: dict[str, Any] | None,
-        context: dict[str, Any],
+        gateway: RawData | None,
+        context: FeelContext,
     ) -> GatewayDecision:
         all_targets = [branch.target for branch in branches]
         return GatewayDecision(gateway_id=gateway_id, next_targets=all_targets, gateway_type=GatewayType.PARALLEL)
@@ -198,12 +208,12 @@ class EventBasedGatewayStrategy(GatewayStrategy):
         gateway_id: str,
         branches: list[GatewayBranch],
         default: str | None,
-        gateway: dict[str, Any] | None,
-        context: dict[str, Any],
+        gateway: RawData | None,
+        context: FeelContext,
     ) -> GatewayDecision:
         if gateway is None:
             return GatewayDecision(gateway_id=gateway_id, next_targets=[], gateway_type=GatewayType.EVENT_BASED)
-        outgoing = gateway.get("branches", gateway.get("outgoing", gateway.get("flows", [])))
+        outgoing = gateway.get("branches", gateway.get("outgoing", gateway.get("flows", []))) or []
         is_parallel = gateway.get("parallelMultiple", False) or gateway.get("isParallelMultiple", False)
         triggered_event = gateway.get("triggered_event") or context.get(f"{gateway_id}.triggered_event")
         if triggered_event:
@@ -220,7 +230,7 @@ class EventBasedGatewayStrategy(GatewayStrategy):
             triggered_events_raw = gateway.get("triggered_events") or context.get(f"{gateway_id}.triggered_events") or []
             selected_targets: list[str] = []
             all_events_present = True
-            for flow in outgoing:
+            for flow in (outgoing or []):
                 target = str(flow.get("target") or flow.get("targetRef") or flow.get("target_id", ""))
                 flow_event = flow.get("event_type") or flow.get("eventType") or ""
                 if flow_event:
@@ -241,7 +251,7 @@ class EventBasedGatewayStrategy(GatewayStrategy):
         default: str | None,
         gateway: Gateway,
         outgoing_flows: list[SequenceFlow],
-        context: dict[str, Any],
+        context: FeelContext,
     ) -> GatewayDecision:
         event_gateway = cast(EventBasedGateway, gateway)
         is_parallel = getattr(event_gateway, "parallel_multiple", False)
@@ -286,7 +296,7 @@ class ComplexGatewayStrategy(GatewayStrategy):
     def __init__(self) -> None:
         self._evaluator = PythonEvaluator()
 
-    def _evaluate_condition(self, condition: str, context: dict[str, Any]) -> bool:
+    def _evaluate_condition(self, condition: str, context: FeelContext) -> bool:
         if condition in {"true", "True", "1"}:
             return True
         if condition in {"false", "False", "0"}:
@@ -302,8 +312,8 @@ class ComplexGatewayStrategy(GatewayStrategy):
         gateway_id: str,
         branches: list[GatewayBranch],
         default: str | None,
-        gateway: dict[str, Any] | None,
-        context: dict[str, Any],
+        gateway: RawData | None,
+        context: FeelContext,
     ) -> GatewayDecision:
         if gateway is None:
             return GatewayDecision(gateway_id=gateway_id, next_targets=[b.target for b in branches], gateway_type=GatewayType.COMPLEX)
@@ -335,7 +345,7 @@ class ComplexGatewayStrategy(GatewayStrategy):
         default: str | None,
         gateway: Gateway,
         outgoing_flows: list[SequenceFlow],
-        context: dict[str, Any],
+        context: FeelContext,
     ) -> GatewayDecision:
         activation_cond = getattr(gateway, "activation_condition", None)
         if activation_cond and not self._evaluate_condition(str(activation_cond), context):
@@ -364,7 +374,7 @@ class GatewayHandler:
             GatewayType.COMPLEX: ComplexGatewayStrategy(),
         }
 
-    def choose(self, *, gateway: dict[str, Any], context: dict[str, Any]) -> GatewayDecision:
+    def choose(self, *, gateway: RawData, context: FeelContext) -> GatewayDecision:
         gateway_id = str(gateway.get("id", ""))
         gateway_type_str = gateway.get("gateway_type") or gateway.get("type", "Exclusive")
         gateway_type = self._to_gateway_type(gateway_type_str)
@@ -372,7 +382,7 @@ class GatewayHandler:
         strategy = self._strategies.get(gateway_type, self._strategies[GatewayType.EXCLUSIVE])
         return strategy.choose(gateway_id, branches, gateway.get("default"), gateway, context)
 
-    def choose_osdm(self, *, gateway: Gateway, outgoing_flows: list[SequenceFlow], context: dict[str, Any]) -> GatewayDecision:
+    def choose_osdm(self, *, gateway: Gateway, outgoing_flows: list[SequenceFlow], context: FeelContext) -> GatewayDecision:
         gateway_id = gateway.id
         gateway_type = self._resolve_osdm_gateway_type(gateway)
         default_flow = getattr(gateway, "default_sequence_flow", None)
@@ -382,17 +392,7 @@ class GatewayHandler:
         return strategy.choose_osdm(gateway_id, branches, default_id, gateway, outgoing_flows, context)
 
     def _resolve_osdm_gateway_type(self, gateway: Gateway) -> GatewayType:
-        if isinstance(gateway, ExclusiveGateway):
-            return GatewayType.EXCLUSIVE
-        if isinstance(gateway, InclusiveGateway):
-            return GatewayType.INCLUSIVE
-        if isinstance(gateway, ParallelGateway):
-            return GatewayType.PARALLEL
-        if isinstance(gateway, EventBasedGateway):
-            return GatewayType.EVENT_BASED
-        if isinstance(gateway, ComplexGateway):
-            return GatewayType.COMPLEX
-        return GatewayType.EXCLUSIVE
+        return _GATEWAY_TYPE_MAP.get(type(gateway), GatewayType.EXCLUSIVE)
 
     def register_strategy(self, gateway_type: GatewayType, strategy: GatewayStrategy) -> None:
         """Register a custom strategy for a gateway type (extensibility point)."""
@@ -431,9 +431,9 @@ class GatewayHandler:
             }
             return mapping.get(clean, GatewayType.EXCLUSIVE)
 
-    def _parse_branches(self, gateway: dict[str, Any], context: dict[str, Any]) -> list[GatewayBranch]:
+    def _parse_branches(self, gateway: RawData, context: FeelContext) -> list[GatewayBranch]:
         branches = []
-        flow_list = gateway.get("branches", gateway.get("flows", gateway.get("outgoing", [])))
+        flow_list = gateway.get("branches", gateway.get("flows", gateway.get("outgoing", []))) or []
         for i, flow in enumerate(flow_list):
             target = flow.get("target") or flow.get("targetRef") or flow.get("target_id")
             if target is None:

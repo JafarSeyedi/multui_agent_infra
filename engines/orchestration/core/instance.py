@@ -13,15 +13,15 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any, TYPE_CHECKING, Set, cast
+from typing import Any, Protocol, cast
 from uuid import uuid4
 
+from ..._types import Metadata, RawData, VariableValue
+from ...document.models.dsdm_models import DataDocument
 from ...document.models.media_types import MEDIA_TYPES
+from engines.orchestration.models.osdm_models import Process, Stage, Decision, StateMachineModel
 
-if TYPE_CHECKING:
-    from ...document.models.osdm_models import Process, Stage, Decision, StateMachineModel
-    from engines.document.models.dsdm_models import DataDocument
-    from .instance_states import ProcessState
+from .instance_states import ProcessState
 
 
 logger = logging.getLogger(__name__)
@@ -63,7 +63,7 @@ class IncidentInfo:
     resolved: bool = False
     resolved_at: datetime | None = None
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> RawData:
         return {
             "id": self.id,
             "type": self.type,
@@ -78,7 +78,7 @@ class IncidentInfo:
         }
 
     @classmethod
-    def from_dict(cls, payload: dict[str, Any]) -> IncidentInfo:
+    def from_dict(cls, payload: RawData) -> IncidentInfo:
         return cls(
             id=str(payload["id"]),
             type=str(payload["type"]),
@@ -105,7 +105,7 @@ class ActivityInstance:
     state: str = "active"
     incident_count: int = 0
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> RawData:
         return {
             "id": self.id,
             "activity_id": self.activity_id,
@@ -118,7 +118,7 @@ class ActivityInstance:
         }
 
     @classmethod
-    def from_dict(cls, payload: dict[str, Any]) -> ActivityInstance:
+    def from_dict(cls, payload: RawData) -> ActivityInstance:
         return cls(
             id=str(payload["id"]),
             activity_id=str(payload["activity_id"]),
@@ -154,7 +154,7 @@ class ProcessInstance:
         root_instance_id: str | None = None,
         super_instance_id: str | None = None,
         start_time: datetime | None = None,
-        variables: dict[str, Any] | None = None
+        variables: dict[str, VariableValue] | None = None
     ) -> None:
         self.id = id
         self.definition_id = definition_id
@@ -167,10 +167,10 @@ class ProcessInstance:
         self._state: ProcessState | None = None
 
         # OSDM model references (lazy-loaded)
-        self._osdm_process_ref: "Process | None" = None
-        self._osdm_stage_ref: "Stage | None" = None
-        self._osdm_decision_ref: "Decision | None" = None
-        self._osdm_state_machine_ref: "StateMachineModel | None" = None
+        self._osdm_process_ref: Process | None = None
+        self._osdm_stage_ref: Stage | None = None
+        self._osdm_decision_ref: Decision | None = None
+        self._osdm_state_machine_ref: StateMachineModel | None = None
 
         # Hierarchy
         self.parent_id = parent_id
@@ -184,7 +184,7 @@ class ProcessInstance:
         self.duration_ms: int | None = None
 
         # Variables
-        self.variables: dict[str, Any] = variables or {}
+        self.variables: dict[str, VariableValue] = variables or {}
         
         # Activity tracking
         self.active_activities: dict[str, ActivityInstance] = {}
@@ -195,7 +195,7 @@ class ProcessInstance:
         self.incident_count = 0
         
         # Metadata
-        self.metadata: dict[str, Any] = {}
+        self.metadata: Metadata = {}
         self.delete_reason: str | None = None
         
         # Execution tracking
@@ -204,12 +204,12 @@ class ProcessInstance:
         
         logger.debug(f"Created process instance: {id}")
     
-    def set_variable(self, name: str, value: Any) -> None:
+    def set_variable(self, name: str, value: VariableValue) -> None:
         """Set a process variable"""
         self.variables[name] = value
         logger.debug(f"Set variable '{name}' in instance {self.id}")
     
-    def get_variable(self, name: str, default: Any = None) -> Any:
+    def get_variable(self, name: str, default: VariableValue | None = None) -> VariableValue | None:
         """Get a process variable"""
         return self.variables.get(name, default)
     
@@ -225,11 +225,11 @@ class ProcessInstance:
             return True
         return False
     
-    def set_variables(self, variables: dict[str, Any]) -> None:
+    def set_variables(self, variables: dict[str, VariableValue]) -> None:
         """Set multiple variables"""
         self.variables.update(variables)
     
-    def get_all_variables(self) -> dict[str, Any]:
+    def get_all_variables(self) -> dict[str, VariableValue]:
         """Get all variables"""
         return self.variables.copy()
     
@@ -383,7 +383,7 @@ class ProcessInstance:
         """Set metadata value"""
         self.metadata[key] = value
     
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> RawData:
         """Convert instance to dictionary representation"""
         return {
             "id": self.id,
@@ -416,7 +416,7 @@ class ProcessInstance:
             "metadata": self.metadata
         }
 
-    def to_record_payload(self) -> dict[str, Any]:
+    def to_record_payload(self) -> RawData:
         payload = self.to_dict()
         payload["instance_id"] = self.id
         payload["payload"] = {
@@ -433,7 +433,7 @@ class ProcessInstance:
         return payload
 
     @classmethod
-    def from_record_payload(cls, payload: dict[str, Any]) -> ProcessInstance:
+    def from_record_payload(cls, payload: RawData) -> ProcessInstance:
         nested_payload = cast(dict[str, Any], payload.get("payload")) if isinstance(payload.get("payload"), dict) else {}
         instance = cls(
             id=str(payload.get("instance_id") or payload.get("id")),
@@ -481,7 +481,7 @@ class ProcessInstance:
     # OSDM/DSDM serialization support
     # ---------------------------------------------------------------------------
 
-    async def serialize_to_dsdm(self, *, variable_data: dict[str, Any] | None = None) -> "DataDocument":
+    async def serialize_to_dsdm(self, *, variable_data: dict[str, VariableValue] | None = None) -> DataDocument:
         """Serialize this instance to a DSDM DataDocument with MSDM schema binding."""
         from ...document.models.dsdm_models import DataDocument
         from ...document.parsers.dsdm_parsers.dsdm_utils import build_node_from_python
@@ -515,6 +515,14 @@ class ProcessInstance:
         )
 
 
+class _InstanceRepository(Protocol):
+    async def save_persisted(self, instance_id: str, payload: RawData) -> RawData: ...
+    def save(self, instance_id: str, payload: RawData) -> RawData: ...
+    async def get_persisted(self, instance_id: str) -> RawData | None: ...
+    def get(self, instance_id: str) -> RawData | None: ...
+    def list(self) -> list[RawData]: ...
+
+
 class InstanceManager:
     """
     Manages process instances across the engine.
@@ -522,10 +530,10 @@ class InstanceManager:
     Provides instance lifecycle management, queries, and statistics.
     """
     
-    def __init__(self, repository: Any | None = None) -> None:
+    def __init__(self, repository: _InstanceRepository | None = None) -> None:
         self.instances: dict[str, ProcessInstance] = {}
-        self.business_key_index: dict[str, Set[str]] = {}  # business_key -> instance_ids
-        self.definition_index: dict[str, Set[str]] = {}  # definition_key -> instance_ids
+        self.business_key_index: dict[str, set[str]] = {}  # business_key -> instance_ids
+        self.definition_index: dict[str, set[str]] = {}  # definition_key -> instance_ids
         self.repository = repository
     
     def add_instance(self, instance: ProcessInstance) -> None:
@@ -576,7 +584,7 @@ class InstanceManager:
         """Find instances by state"""
         return [inst for inst in self.instances.values() if inst.state == state]
     
-    def get_statistics(self) -> dict[str, Any]:
+    def get_statistics(self) -> RawData:
         """Get instance statistics"""
         state_counts: dict[str, int] = {}
         for instance in self.instances.values():
@@ -590,7 +598,7 @@ class InstanceManager:
             "business_keys": len(self.business_key_index)
         }
 
-    async def persist_instance(self, instance_id: str) -> dict[str, Any] | None:
+    async def persist_instance(self, instance_id: str) -> RawData | None:
         if self.repository is None:
             return None
         instance = self.get_instance(instance_id)

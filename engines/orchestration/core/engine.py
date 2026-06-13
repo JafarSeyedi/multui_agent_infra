@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 import logging
-from typing import Any, Dict, List, Optional, Set
+from typing import Any
 from uuid import uuid4
 
 from .correlation import CorrelationEngine
@@ -51,6 +51,7 @@ from ..validation.osdm_validator import (
     StateMachineOsdmValidator,
 )
 from ..runtime.osdm_serializer import OsdmSerializer, OsdmDeserializer, SerializationContext
+from ._definition_models import Deployment, ProcessDefinition
 from .engine_services import (
     EngineLifecycleService,
     InstanceService,
@@ -112,38 +113,6 @@ class EngineConfig:
     bam_enable_predictive: bool = True
 
 
-@dataclass
-class ProcessDefinition:
-    id: str
-    key: str
-    name: str
-    version: int
-    deployment_id: str
-    resource_name: str
-    diagram_resource_name: Optional[str]
-    has_start_form_key: bool
-    has_graphical_notation: bool
-    is_suspended: bool
-    tenant_id: Optional[str]
-    version_tag: Optional[str]
-    history_time_to_live: Optional[int]
-    is_startable_in_tasklist: bool
-    definition_type: str
-    definition_xml: str
-    deployed_at: datetime
-    metadata: Dict[str, Any] = field(default_factory=dict)
-
-
-@dataclass
-class Deployment:
-    id: str
-    name: str
-    deployment_time: datetime
-    source: str
-    tenant_id: Optional[str]
-    definitions: List[ProcessDefinition] = field(default_factory=list)
-
-
 class OrchestrationEngine:
     """Orchestration engine that delegates to focused services.
 
@@ -154,7 +123,7 @@ class OrchestrationEngine:
 
     def __init__(
         self,
-        config: Optional[EngineConfig] = None,
+        config: EngineConfig | None = None,
         *,
         event_repository: EventRepository | None = None,
         instance_repository: InstanceRepository | None = None,
@@ -216,7 +185,7 @@ class OrchestrationEngine:
         self.migrator = ProcessInstanceMigrator(self)
         self.batch_manager = BatchOperationManager(self)
 
-        self.engine_handlers: Dict[str, Any] = {}
+        self.engine_handlers: dict[str, Any] = {}
 
         self._bam_engine: Any | None = None
         if self.config.enable_bam:
@@ -224,13 +193,13 @@ class OrchestrationEngine:
             self._bam_engine = BamEngine(engine=self)
             self.register_engine_handler("bam", self._bam_engine)
 
-        self.deployments: Dict[str, Deployment] = {}
-        self.definitions: Dict[str, ProcessDefinition] = {}
-        self.definition_versions: Dict[str, List[ProcessDefinition]] = {}
-        self.instances: Dict[str, ProcessInstance] = {}
-        self.active_instances: Set[str] = set()
-        self.suspended_instances: Set[str] = set()
-        self._executor_tasks: List[asyncio.Task] = []
+        self.deployments: dict[str, Deployment] = {}
+        self.definitions: dict[str, ProcessDefinition] = {}
+        self.definition_versions: dict[str, list[ProcessDefinition]] = {}
+        self.instances: dict[str, ProcessInstance] = {}
+        self.active_instances: set[str] = set()
+        self.suspended_instances: set[str] = set()
+        self._executor_tasks: list[asyncio.Task] = []
         self._shutdown_event = asyncio.Event()
 
         # Focused services
@@ -334,9 +303,9 @@ class OrchestrationEngine:
     async def deploy(
         self,
         name: str,
-        resources: Dict[str, str],
+        resources: dict[str, str],
         source: str = "api",
-        tenant_id: Optional[str] = None,
+        tenant_id: str | None = None,
     ) -> Deployment:
         deployment_id = str(uuid4())
         deployment = Deployment(
@@ -378,9 +347,9 @@ class OrchestrationEngine:
     async def start_process_instance(
         self,
         process_definition_key: str,
-        business_key: Optional[str] = None,
-        variables: Optional[Dict[str, Any]] = None,
-        tenant_id: Optional[str] = None,
+        business_key: str | None = None,
+        variables: dict[str, Any] | None = None,
+        tenant_id: str | None = None,
     ) -> ProcessInstance:
         definition = self.definitions.get(process_definition_key)
         if not definition:
@@ -434,12 +403,12 @@ class OrchestrationEngine:
             self.suspended_instances.discard(instance_id)
         return result
 
-    def get_instance(self, instance_id: str) -> Optional[ProcessInstance]:
+    def get_instance(self, instance_id: str) -> ProcessInstance | None:
         return self.instances.get(instance_id)
 
     # ── Definition lookup ──────────────────────────────────────────
 
-    def get_definition(self, key: str, version: Optional[int] = None) -> Optional[ProcessDefinition]:
+    def get_definition(self, key: str, version: int | None = None) -> ProcessDefinition | None:
         if version is None:
             return self.definitions.get(key)
         for definition in self.definition_versions.get(key, []):
@@ -484,7 +453,7 @@ class OrchestrationEngine:
         resource_name: str,
         content: str,
         deployment_id: str,
-        tenant_id: Optional[str],
+        tenant_id: str | None,
     ) -> ProcessDefinition:
         return await self._definition_service.parse(resource_name, content, deployment_id, tenant_id)
 

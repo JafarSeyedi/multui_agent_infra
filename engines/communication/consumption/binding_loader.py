@@ -43,19 +43,19 @@ class BindingCatalog:
             self.add(binding)
 
     @classmethod
-    def from_bindings(cls, bindings: list[ServiceBinding]) -> "BindingCatalog":
+    def from_bindings(cls, bindings: list[ServiceBinding]) -> BindingCatalog:
         catalog = cls({})
         catalog.add_many(bindings)
         return catalog
 
     @classmethod
-    def from_file(cls, path: str | Path) -> "BindingCatalog":
+    def from_file(cls, path: str | Path) -> BindingCatalog:
         path_obj = Path(path)
         bindings = BindingParser.parse_service_bindings_file(path_obj)
         return cls.from_bindings(bindings)
 
     @classmethod
-    def from_dict(cls, raw: dict[str, Any]) -> "BindingCatalog":
+    def from_dict(cls, raw: dict[str, Any]) -> BindingCatalog:
         return cls.from_bindings(BindingParser.parse_raw(raw))
 
     @classmethod
@@ -65,7 +65,7 @@ class BindingCatalog:
         *,
         default_transport: Transport = Transport.HTTP,
         endpoint_override: str | None = None,
-    ) -> "BindingCatalog":
+    ) -> BindingCatalog:
         catalog = cls({})
         for operation in document.operations:
             catalog.add(
@@ -85,7 +85,7 @@ class BindingCatalog:
         *,
         default_transport: Transport = Transport.HTTP,
         endpoint_override: str | None = None,
-    ) -> "BindingCatalog":
+    ) -> BindingCatalog:
         catalog = cls({})
         for doc in documents:
             if doc is None:
@@ -94,7 +94,7 @@ class BindingCatalog:
                 catalog.add(binding)
         return catalog
 
-    def merge(self, other: "BindingCatalog") -> None:
+    def merge(self, other: BindingCatalog) -> None:
         for op_id, bindings in other.by_operation.items():
             self.by_operation.setdefault(op_id, []).extend(bindings)
 

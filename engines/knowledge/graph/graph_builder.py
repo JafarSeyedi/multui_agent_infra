@@ -1,4 +1,4 @@
-from engines.document.models.ksdm_models import GraphEdge, GraphNode
+from engines.knowledge.models.ksdm_models import GraphEdge, GraphNode
 
 
 class GraphBuilder:

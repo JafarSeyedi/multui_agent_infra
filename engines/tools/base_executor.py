@@ -4,9 +4,11 @@ from abc import ABC
 from abc import abstractmethod
 from typing import Any
 
+from .._types import VariableValue
+
 
 class ToolResult:
-    def __init__(self, success: bool, data: Any = None, error: str | None = None) -> None:
+    def __init__(self, success: bool, data: VariableValue = None, error: str | None = None) -> None:
         self.success = success
         self.data = data
         self.error = error

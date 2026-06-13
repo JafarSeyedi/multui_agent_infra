@@ -2,12 +2,14 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any, Optional
+from typing import Optional
+
+from .._types import Metadata, RawData, VariableValue
 from datetime import datetime
 from pydantic import BaseModel, Field
 
 # Avoid circular import by using string annotation for StateMachineDocument
-# from engines.document.models.osdm_models import StateMachineDocument
+# from engines.orchestration.models.osdm_models import StateMachineDocument
 
 
 class AgentType(str, Enum):
@@ -22,17 +24,17 @@ class AgentDefinition(BaseModel):
     description: str = Field(..., description="Human-readable description of the agent")
     type: AgentType = Field(..., description="Type of agent")
     # For SKILL type: the skill identifier (relative path to SKILL.md)
-    skill_id: Optional[str] = Field(
+    skill_id: str | None = Field(
         None,
         description="For skill_call_agent: the skill identifier (relative path to SKILL.md)"
     )
     # For STATE_MACHINE type: the state machine definition
-    state_machine: Optional[Any] = Field(  # We'll use Any to avoid importing StateMachineDocument
+    state_machine: VariableValue | None = Field(  # We'll use Any to avoid importing StateMachineDocument
         None,
         description="For state_machine_agent: the state machine definition that orchestrates skills"
     )
     # Optional configuration
-    config: dict[str, Any] = Field(default_factory=dict, description="Additional agent-specific configuration")
+    config: Metadata = Field(default_factory=dict, description="Additional agent-specific configuration")
 
 
 # Existing models for runtime messaging (kept for compatibility)
@@ -43,13 +45,13 @@ class AgentInput(BaseModel):
     message: str | None = None
 
     # Structured inputs
-    payload: dict[str, Any] = Field(default_factory=dict)
+    payload: RawData = Field(default_factory=dict)
 
     # Shared context
-    context: dict[str, Any] = Field(default_factory=dict)
+    context: Metadata = Field(default_factory=dict)
 
     # Additional information → tracing, routing, strategy, priority
-    metadata: dict[str, Any] = Field(default_factory=dict)
+    metadata: Metadata = Field(default_factory=dict)
 
 
 class AgentOutput(BaseModel):
@@ -60,21 +62,21 @@ class AgentOutput(BaseModel):
     message: str | None = None
 
     # Structured output
-    payload: dict[str, Any] = Field(default_factory=dict)
+    payload: RawData = Field(default_factory=dict)
 
     # Error (if any)
     error: str | None = None
 
     # For orchestration and tracing
-    metadata: dict[str, Any] = Field(default_factory=dict)
+    metadata: Metadata = Field(default_factory=dict)
 
 
 class AgentExecutionRecord(BaseModel):
     execution_id: str
     agent_name: str
     agent_version: str
-    input_payload: dict[str, Any]
-    output_payload: dict[str, Any] | None = None
+    input_payload: RawData
+    output_payload: RawData | None = None
     status: str
     execution_time_ms: int
     error_message: str | None = None

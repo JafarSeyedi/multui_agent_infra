@@ -9,9 +9,10 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 
-from ...document.models.osdm_models import (
+from engines.orchestration.models.osdm_models import (
     ErrorEventDefinition,
     Error,
     EscalationEventDefinition,

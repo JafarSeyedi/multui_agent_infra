@@ -13,6 +13,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
+from ..._types import Metadata, RawData
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +73,7 @@ class FormField:
     hidden: bool = False
     options: list[FormFieldOption] = field(default_factory=list)
     validations: list[FormFieldValidationRule] = field(default_factory=list)
-    properties: dict[str, Any] = field(default_factory=dict)
+    properties: Metadata = field(default_factory=dict)
     value_expression: str | None = None
     condition: str | None = None
 
@@ -119,7 +120,7 @@ class FormDefinition:
     version: int = 1
     fields: list[FormField] = field(default_factory=list)
     key: str | None = None
-    properties: dict[str, Any] = field(default_factory=dict)
+    properties: Metadata = field(default_factory=dict)
 
     def get_field(self, field_id: str) -> FormField | None:
         for f in self.fields:
@@ -127,7 +128,7 @@ class FormDefinition:
                 return f
         return None
 
-    def validate(self, data: dict[str, Any]) -> dict[str, list[str]]:
+    def validate(self, data: Metadata) -> dict[str, list[str]]:
         errors: dict[str, list[str]] = {}
         for field_def in self.fields:
             if field_def.hidden:
@@ -141,7 +142,7 @@ class FormDefinition:
                 errors[field_def.id] = field_errors
         return errors
 
-    def _evaluate_condition(self, condition: str, data: dict[str, Any]) -> bool:
+    def _evaluate_condition(self, condition: str, data: Metadata) -> bool:
         if not condition:
             return True
         try:
@@ -151,14 +152,14 @@ class FormDefinition:
         except Exception:
             return True
 
-    def apply_defaults(self) -> dict[str, Any]:
+    def apply_defaults(self) -> Metadata:
         result = {}
         for field_def in self.fields:
             if field_def.default_value is not None:
                 result[field_def.id] = field_def.default_value
         return result
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> Metadata:
         return {
             "id": self.id,
             "key": self.key or self.id,
@@ -183,7 +184,7 @@ class FormDefinition:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> FormDefinition:
+    def from_dict(cls, data: RawData) -> FormDefinition:
         fields = []
         for f_data in data.get("fields", []):
             options = [FormFieldOption(id=o["id"], name=o["name"]) for o in f_data.get("options", [])]
@@ -227,9 +228,9 @@ class FormEngine:
     def submit_form(
         self,
         form_key: str,
-        data: dict[str, Any],
+        data: Metadata,
         instance_id: str | None = None,
-    ) -> dict[str, Any]:
+    ) -> Metadata:
         form = self._forms.get(form_key)
         if form is None:
             return {"success": False, "errors": {"_form": [f"Form not found: {form_key}"]}}
@@ -243,7 +244,7 @@ class FormEngine:
             result["instance_id"] = instance_id
         return result
 
-    def render_form(self, form_key: str, default_data: dict[str, Any] | None = None) -> dict[str, Any]:
+    def render_form(self, form_key: str, default_data: Metadata | None = None) -> Metadata:
         form = self._forms.get(form_key)
         if form is None:
             return {"error": f"Form not found: {form_key}"}

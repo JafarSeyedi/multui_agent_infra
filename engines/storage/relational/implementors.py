@@ -5,6 +5,7 @@ from abc import abstractmethod
 from typing import Any
 
 from engines.storage.relational.base import RelationalStorage
+from ..._types import RawData
 
 
 class RelationalImplementor(ABC):
@@ -23,15 +24,15 @@ class RelationalImplementor(ABC):
         ...
 
     @abstractmethod
-    async def execute(self, query: str, params: dict[str, Any] | None = None) -> None:
+    async def execute(self, query: str, params: RawData | None = None) -> None:
         ...
 
     @abstractmethod
-    async def fetch_one(self, query: str, params: dict[str, Any] | None = None) -> dict[str, Any] | None:
+    async def fetch_one(self, query: str, params: RawData | None = None) -> RawData | None:
         ...
 
     @abstractmethod
-    async def fetch_all(self, query: str, params: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+    async def fetch_all(self, query: str, params: RawData | None = None) -> list[RawData]:
         ...
 
 
@@ -62,14 +63,14 @@ class SQLAlchemyImplementor(RelationalImplementor):
         except Exception:
             return False
 
-    async def execute(self, query: str, params: dict[str, Any] | None = None) -> None:
+    async def execute(self, query: str, params: RawData | None = None) -> None:
         if self._engine is None:
             await self.connect()
         from sqlalchemy import text
         async with self._engine.begin() as conn:
             await conn.execute(text(query), params or {})
 
-    async def fetch_one(self, query: str, params: dict[str, Any] | None = None) -> dict[str, Any] | None:
+    async def fetch_one(self, query: str, params: RawData | None = None) -> RawData | None:
         if self._engine is None:
             await self.connect()
         from sqlalchemy import text
@@ -78,7 +79,7 @@ class SQLAlchemyImplementor(RelationalImplementor):
             row = result.mappings().first()
             return dict(row) if row is not None else None
 
-    async def fetch_all(self, query: str, params: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+    async def fetch_all(self, query: str, params: RawData | None = None) -> list[RawData]:
         if self._engine is None:
             await self.connect()
         from sqlalchemy import text
@@ -113,13 +114,13 @@ class SQLiteImplementor(RelationalImplementor):
         except Exception:
             return False
 
-    async def execute(self, query: str, params: dict[str, Any] | None = None) -> None:
+    async def execute(self, query: str, params: RawData | None = None) -> None:
         if self._connection is None:
             await self.connect()
         await self._connection.execute(query, params or {})
         await self._connection.commit()
 
-    async def fetch_one(self, query: str, params: dict[str, Any] | None = None) -> dict[str, Any] | None:
+    async def fetch_one(self, query: str, params: RawData | None = None) -> RawData | None:
         if self._connection is None:
             await self.connect()
         cursor = await self._connection.execute(query, params or {})
@@ -128,7 +129,7 @@ class SQLiteImplementor(RelationalImplementor):
             return None
         return dict(row) if hasattr(row, "keys") else {str(i): v for i, v in enumerate(row)}
 
-    async def fetch_all(self, query: str, params: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+    async def fetch_all(self, query: str, params: RawData | None = None) -> list[RawData]:
         if self._connection is None:
             await self.connect()
         cursor = await self._connection.execute(query, params or {})
@@ -159,11 +160,11 @@ class BridgeRelationalStorage(RelationalStorage):
     async def health(self) -> bool:
         return await self._impl.health()
 
-    async def execute(self, query: str, params: dict[str, Any] | None = None) -> None:
+    async def execute(self, query: str, params: RawData | None = None) -> None:
         await self._impl.execute(query, params)
 
-    async def fetch_one(self, query: str, params: dict[str, Any] | None = None) -> dict[str, Any] | None:
+    async def fetch_one(self, query: str, params: RawData | None = None) -> RawData | None:
         return await self._impl.fetch_one(query, params)
 
-    async def fetch_all(self, query: str, params: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+    async def fetch_all(self, query: str, params: RawData | None = None) -> list[RawData]:
         return await self._impl.fetch_all(query, params)

@@ -13,7 +13,7 @@ from typing import Any, cast, overload
 from ..expression.evaluator import EvaluationContext
 from ..expression.python_evaluator import PythonEvaluator
 
-from ...document.models.osdm_models import SequenceFlow
+from engines.orchestration.models.osdm_models import SequenceFlow
 
 logger = logging.getLogger(__name__)
 

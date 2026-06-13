@@ -5,6 +5,8 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from .._types import Metadata, RawData
+
 from .command import Command
 from .core.event_bus import Event, EventType
 from .core.instance import InstanceState
@@ -94,10 +96,10 @@ class TerminateInstanceCommand(Command[Any]):
         )
 
 
-class ThrowSignalCommand(Command[Any]):
+class ThrowSignalCommand(Command[str]):
     """Throw a BPMN signal event."""
 
-    def __init__(self, event_bus: Any, signal_name: str, data: dict[str, Any] | None = None) -> None:
+    def __init__(self, event_bus: Any, signal_name: str, data: Metadata | None = None) -> None:
         super().__init__()
         self._event_bus = event_bus
         self._signal_name = signal_name
@@ -107,7 +109,7 @@ class ThrowSignalCommand(Command[Any]):
     def description(self) -> str:
         return f"Throw signal: {self._signal_name}"
 
-    async def execute(self) -> Any:
+    async def execute(self) -> str:
         await self._event_bus.publish(
             Event(
                 type=EventType.SIGNAL_THROWN,
@@ -120,7 +122,7 @@ class ThrowSignalCommand(Command[Any]):
 class PublishMessageCommand(Command[Any]):
     """Correlate and deliver a BPMN message."""
 
-    def __init__(self, event_bus: Any, correlation_engine: Any, message_name: str, payload: dict[str, Any]) -> None:
+    def __init__(self, event_bus: Any, correlation_engine: Any, message_name: str, payload: RawData) -> None:
         super().__init__()
         self._event_bus = event_bus
         self._correlation_engine = correlation_engine

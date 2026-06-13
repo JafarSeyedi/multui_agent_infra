@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from engines.orchestration.document.models.osdm_models import (
+from engines.orchestration.models.osdm_models import (
     ActivityType,
     AdHocOrdering,
     ChoreographyLoopType,
@@ -182,7 +182,7 @@ class TestOsdmClassTypeHierarchy:
     """Verify OSDM class hierarchy is preserved when imported."""
 
     def test_event_hierarchy(self):
-        from engines.orchestration.document.models.osdm_models import (
+        from engines.orchestration.models.osdm_models import (
             StartEvent, EndEvent, IntermediateCatchEvent, IntermediateThrowEvent,
             BoundaryEvent, CatchEvent, ThrowEvent,
         )
@@ -193,7 +193,7 @@ class TestOsdmClassTypeHierarchy:
         assert issubclass(BoundaryEvent, CatchEvent)
 
     def test_gateway_hierarchy(self):
-        from engines.orchestration.document.models.osdm_models import (
+        from engines.orchestration.models.osdm_models import (
             Gateway, ExclusiveGateway, InclusiveGateway, ParallelGateway,
             EventBasedGateway, ComplexGateway,
         )
@@ -204,7 +204,7 @@ class TestOsdmClassTypeHierarchy:
         assert issubclass(ComplexGateway, Gateway)
 
     def test_task_hierarchy(self):
-        from engines.orchestration.document.models.osdm_models import (
+        from engines.orchestration.models.osdm_models import (
             Activity, Task, ServiceTask, UserTask, ManualTask, ScriptTask,
             BusinessRuleTask, SendTask, ReceiveTask, CallActivity,
         )

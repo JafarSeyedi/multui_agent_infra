@@ -17,7 +17,7 @@ class TestStateMachineEngine:
 
 class TestPseudoStateKind:
     def test_all_pseudo_state_kinds(self):
-        from engines.orchestration.document.models.osdm_models import PseudoStateKind
+        from engines.orchestration.models.osdm_models import PseudoStateKind
         expected = {"initial", "choice", "junction", "fork", "join",
                     "shallowHistory", "deepHistory", "terminate",
                     "entryPoint", "exitPoint"}
@@ -27,5 +27,5 @@ class TestPseudoStateKind:
 
 class TestStateTransition:
     def test_transition_hierarchy(self):
-        from engines.orchestration.document.models.osdm_models import Transition, StateTransition
+        from engines.orchestration.models.osdm_models import Transition, StateTransition
         assert issubclass(StateTransition, Transition)

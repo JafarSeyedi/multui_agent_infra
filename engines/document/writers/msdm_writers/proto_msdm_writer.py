@@ -6,7 +6,7 @@ round‑trip fidelity using annotations captured by the parser.
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from ...models.msdm_models import Annotation
 from ...models.msdm_models import Attribute
@@ -50,7 +50,7 @@ class ProtoWriter(BaseMSDMWriter):
         soft_delete_strategy: SoftDeleteStrategy = SoftDeleteStrategy.NONE,
     ):
         super().__init__(options, target_mode, soft_delete_strategy)
-        self._entity_field_counters: Dict[str, int] = {}
+        self._entity_field_counters: dict[str, int] = {}
         self._written_entities: set[str] = set()
 
     # ── Public API ─────────────────────────────────────────────────
@@ -69,7 +69,7 @@ class ProtoWriter(BaseMSDMWriter):
         # Collect top‑level messages/enums and nested ones
         self._written_entities.clear()
         # Identify which entities are nested inside others
-        parent_map: Dict[str, str] = {}
+        parent_map: dict[str, str] = {}
         for entity in document.entities:
             for ann in entity.annotations:
                 if ann.key in ("nested_message", "nested_enum"):

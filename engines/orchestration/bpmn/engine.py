@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ..core.context import ContextManager, ContextScope
 from ..core.engine import OrchestrationEngine, ProcessDefinition
@@ -17,8 +17,8 @@ from .conversation_executor import ConversationExecutor
 from .pool_lane_executor import PoolLaneExecutor
 
 # OSDM BPMN model imports
-from ...document.parsers.osdm_parsers.bpmn_xml_parser import BPMNXMLParser
-from ...document.models.osdm_models import (
+from engines.orchestration.models.parsers.bpmn_xml_parser import BPMNXMLParser
+from engines.orchestration.models.osdm_models import (
     BPMNDocument, Process, FlowElement, FlowNode, Activity, SequenceFlow,
     Event, Gateway, EventType, Choreography, Collaboration,
 )
@@ -56,9 +56,9 @@ class BPMNEngine:
         # Parser for converting BPMN XML to OSDM model objects
         self._bpmn_parser = BPMNXMLParser()
         # Cache for parsed BPMN documents to avoid reparsing
-        self._parsed_documents: Dict[str, BPMNDocument] = {}
+        self._parsed_documents: dict[str, BPMNDocument] = {}
 
-    def _convert_flow_elements_to_activities_and_flows(self, flow_elements: Dict[str, FlowElement]) -> tuple[list[Any], list[Dict[str, Any]]]:
+    def _convert_flow_elements_to_activities_and_flows(self, flow_elements: dict[str, FlowElement]) -> tuple[list[Any], list[dict[str, Any]]]:
         """
         Convert OSDM flow elements to activities and flows lists for the process executor.
         

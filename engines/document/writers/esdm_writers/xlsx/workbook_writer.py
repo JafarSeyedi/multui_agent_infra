@@ -5,13 +5,11 @@ Writes workbook.xml and defined names.
 from __future__ import annotations
 
 import xml.etree.ElementTree as ET
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from ..base import ESDMBaseWriter
-    from ....models.esdm_models import Workbook
 
 from .const import XML_NAMESPACES  # shared constant (we'll define in a common place)
+from ..base import ESDMBaseWriter
+from ....models.esdm_models import Workbook
 
 
 class WorkbookWriter:
@@ -59,3 +57,4 @@ class WorkbookWriter:
         calc_pr.set('fullCalcOnLoad', '1' if workbook.full_calculation_on_load else '0')
 
         return ET.tostring(root, encoding='unicode', xml_declaration=True)
+

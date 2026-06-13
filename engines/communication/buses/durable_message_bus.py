@@ -14,7 +14,7 @@ class DurableMessageBus(MessageBus):
     """Queue-based durable bus."""
 
     def __init__(self, maxsize: int = 0) -> None:
-        self._queues: dict[str, asyncio.Queue["AgentMessage"]] = {}
+        self._queues: dict[str, asyncio.Queue[AgentMessage]] = {}
         self._maxsize = maxsize
         self._consumer_tasks: dict[str, asyncio.Task] = {}
 
@@ -33,7 +33,7 @@ class DurableMessageBus(MessageBus):
             except asyncio.CancelledError:
                 pass
 
-    async def publish(self, message: "AgentMessage") -> None:
+    async def publish(self, message: AgentMessage) -> None:
         q = self._queues.get(message.recipient)
         if q is None:
             logger.warning("No queue for recipient %r", message.recipient)

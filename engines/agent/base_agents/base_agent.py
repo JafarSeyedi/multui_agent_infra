@@ -118,6 +118,4 @@ class BaseAgent(ABC, Generic[TInput, TOutput]):
             await self.storage.log_agent_execution(self.agent_name, self._model_dump(record))
 
     def _model_dump(self, model: BaseModel) -> dict[str, Any]:
-        if hasattr(model, "model_dump"):
-            return model.model_dump()
-        return model.dict()
+        return model.model_dump()

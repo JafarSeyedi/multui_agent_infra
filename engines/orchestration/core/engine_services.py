@@ -10,7 +10,66 @@ import asyncio
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Protocol
+from collections.abc import Callable
+
+from ._definition_models import Deployment, ProcessDefinition
+
+from ..._types import Metadata, RawData, VariableValue
+
+
+# ── Duck-typed service protocols ────────────────────────────────
+
+
+class _BamEngine(Protocol):
+    async def start(self) -> None: ...
+    async def stop(self) -> None: ...
+
+
+class _RecoveryService(Protocol):
+    async def recover(self) -> RawData: ...
+
+
+class _StateManager(Protocol):
+    async def set_persisted(self, instance_id: str, state: str, *, data: dict[str, Any] | None = None) -> Any: ...
+
+
+class _VariableManager(Protocol):
+    async def set_persisted(self, instance_id: str, scope_id: str, name: str, value: Any, *, value_type: str | None = None, overwrite: bool = True, metadata: dict[str, Any] | None = None) -> Any: ...
+    async def restore_persisted(self, instance_id: str, scope_id: str | None = None) -> Any: ...
+
+
+class _EngineHandler(Protocol):
+    async def execute_instance(self, instance: ProcessInstance, definition: Any) -> None: ...
+
+
+class _CorrelationEngine(Protocol):
+    async def cleanup_instance_subscriptions_persisted(self, instance_id: str) -> Any: ...
+    async def reload_from_history(self) -> None: ...
+
+
+class _DefinitionRepository(Protocol):
+    def list(self) -> list[RawData]: ...
+
+
+class _DefinitionLike(Protocol):
+    id: str
+    key: str
+    version: int
+    name: str
+    deployment_id: str
+    resource_name: str
+    definition_type: str
+    definition_xml: str
+    deployed_at: datetime
+
+
+class _DeploymentLike(Protocol):
+    definitions: list[_DefinitionLike]
+
+
+class _InstanceLike(Protocol):
+    definition_id: str
 from uuid import uuid4
 
 from .event_bus import Event, EventBus, EventType
@@ -32,8 +91,8 @@ class EngineLifecycleService:
         event_bus: EventBus,
         scheduler: Scheduler,
         event_type: type,
-        recovery_service: Any = None,
-        bam_engine: Any = None,
+        recovery_service: _RecoveryService | None = None,
+        bam_engine: _BamEngine | None = None,
         config: Any = None,
     ) -> None:
         self._event_bus = event_bus
@@ -68,11 +127,11 @@ class InstanceService:
         self,
         instance_manager: InstanceManager,
         token_manager: TokenManager,
-        variable_manager: Any,
-        state_manager: Any,
+        variable_manager: _VariableManager,
+        state_manager: _StateManager,
         event_bus: EventBus,
-        correlation_engine: Any,
-        engine_handlers: dict[str, Any],
+        correlation_engine: _CorrelationEngine,
+        engine_handlers: dict[str, _EngineHandler],
         scheduler: Scheduler,
     ) -> None:
         self._instance_manager = instance_manager
@@ -86,13 +145,13 @@ class InstanceService:
 
     async def start_instance(
         self,
-        definition: Any,
+        definition: _DefinitionLike,
         business_key: str | None = None,
-        variables: dict[str, Any] | None = None,
+        variables: dict[str, VariableValue] | None = None,
         tenant_id: str | None = None,
         *,
-        instance: Any = None,
-        persist_fn: Any = None,
+        instance: ProcessInstance | None = None,
+        persist_fn: Callable[..., Any] | None = None,
     ) -> ProcessInstance:
         if instance is None:
             instance = ProcessInstance(
@@ -149,11 +208,11 @@ class InstanceService:
 
     async def update_instance_state(
         self,
-        instance: Any,
+        instance: ProcessInstance,
         new_state: InstanceState,
         *,
         reason: str | None = None,
-    ) -> Any:
+    ) -> ProcessInstance:
         _TRANSITIONS: dict[InstanceState, tuple[str, EventType]] = {
             InstanceState.SUSPENDED: ("suspend", EventType.PROCESS_INSTANCE_SUSPENDED),
             InstanceState.ACTIVE: ("resume", EventType.PROCESS_INSTANCE_RESUMED),
@@ -205,14 +264,14 @@ class RecoveryService:
         self,
         instance_manager: InstanceManager,
         token_manager: TokenManager,
-        variable_manager: Any,
-        state_manager: Any,
+        variable_manager: _VariableManager,
+        state_manager: _StateManager,
         event_bus: EventBus,
-        correlation_engine: Any,
+        correlation_engine: _CorrelationEngine,
         scheduler: Scheduler,
-        definitions: dict[str, Any],
-        definition_versions: dict[str, list[Any]],
-        deployments: dict[str, Any],
+        definitions: dict[str, ProcessDefinition],
+        definition_versions: dict[str, list[ProcessDefinition]],
+        deployments: dict[str, Deployment],
     ) -> None:
         self._instance_manager = instance_manager
         self._token_manager = token_manager
@@ -225,7 +284,7 @@ class RecoveryService:
         self._definition_versions = definition_versions
         self._deployments = deployments
 
-    async def recover(self) -> dict[str, Any]:
+    async def recover(self) -> RawData:
         instances = await self._instance_manager.load_all_instances()
         active = set()
         suspended = set()
@@ -251,9 +310,9 @@ class DefinitionService:
 
     def __init__(
         self,
-        definition_repository: Any,
-        definitions: dict[str, Any],
-        definition_versions: dict[str, list[Any]],
+        definition_repository: _DefinitionRepository,
+        definitions: dict[str, ProcessDefinition],
+        definition_versions: dict[str, list[ProcessDefinition]],
     ) -> None:
         self._definition_repository = definition_repository
         self._definitions = definitions
@@ -265,11 +324,10 @@ class DefinitionService:
         content: str,
         deployment_id: str,
         tenant_id: str | None,
-    ) -> Any:
+    ) -> ProcessDefinition:
         definition_type = self._detect_type(resource_name, content)
         key = self._extract_key(content, definition_type)
         version = self._calculate_next_version(key)
-        from .engine import ProcessDefinition
         return ProcessDefinition(
             id=str(uuid4()),
             key=key,
@@ -336,7 +394,7 @@ class DefinitionService:
             self._definitions[definition.key] = definition
             self._definition_versions.setdefault(definition.key, []).append(definition)
 
-    def to_dict(self, definition: Any) -> dict[str, Any]:
+    def to_dict(self, definition: _DefinitionLike) -> RawData:
         return {
             "id": definition.id,
             "key": definition.key,
@@ -358,8 +416,7 @@ class DefinitionService:
             "metadata": dict(getattr(definition, "metadata", {})),
         }
 
-    def _from_dict(self, payload: dict[str, Any]) -> Any:
-        from .engine import ProcessDefinition
+    def _from_dict(self, payload: RawData) -> ProcessDefinition:
         return ProcessDefinition(
             id=str(payload["id"]),
             key=str(payload["key"]),
@@ -388,11 +445,11 @@ class DefinitionService:
 async def _delete_deployment_state(
     deployment_id: str,
     cascade: bool,
-    deployments: dict[str, Any],
-    definitions: dict[str, Any],
-    definition_versions: dict[str, list[Any]],
-    instances: dict[str, Any],
-    delete_instance_fn: Any = None,
+    deployments: dict[str, Deployment],
+    definitions: dict[str, ProcessDefinition],
+    definition_versions: dict[str, list[ProcessDefinition]],
+    instances: dict[str, ProcessInstance],
+    delete_instance_fn: Callable[[str, str], Any] | None = None,
 ) -> None:
     deployment = deployments.get(deployment_id)
     if not deployment:

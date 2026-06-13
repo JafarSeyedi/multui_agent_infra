@@ -1,27 +1,25 @@
-"""State pattern — transaction state transitions for TransactionScope."""
+"""State pattern — transaction state transitions for ITransactionScope."""
 
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from .transaction import TransactionScope
+from ._context_protocols import ITransactionScope
 
 
 class TransactionState(ABC):
     """Base transaction state."""
 
     @abstractmethod
-    async def prepare(self, tx: TransactionScope) -> bool:
+    async def prepare(self, tx: ITransactionScope) -> bool:
         ...
 
     @abstractmethod
-    async def commit(self, tx: TransactionScope) -> bool:
+    async def commit(self, tx: ITransactionScope) -> bool:
         ...
 
     @abstractmethod
-    async def rollback(self, tx: TransactionScope) -> bool:
+    async def rollback(self, tx: ITransactionScope) -> bool:
         ...
 
     @property
@@ -31,16 +29,16 @@ class TransactionState(ABC):
 
 
 class ActiveState(TransactionState):
-    async def prepare(self, tx: TransactionScope) -> bool:
+    async def prepare(self, tx: ITransactionScope) -> bool:
         tx._lifecycle_state = PreparingState()
         result = await tx._do_prepare()
         tx._lifecycle_state = PreparedState() if result else FailedState()
         return result
 
-    async def commit(self, tx: TransactionScope) -> bool:
+    async def commit(self, tx: ITransactionScope) -> bool:
         return await self.prepare(tx) and await tx._lifecycle_state.commit(tx)
 
-    async def rollback(self, tx: TransactionScope) -> bool:
+    async def rollback(self, tx: ITransactionScope) -> bool:
         tx._lifecycle_state = RollingBackState()
         result = await tx._do_rollback()
         tx._lifecycle_state = RolledBackState() if result else FailedState()
@@ -52,16 +50,16 @@ class ActiveState(TransactionState):
 
 
 class PreparingState(TransactionState):
-    async def prepare(self, tx: TransactionScope) -> bool:
+    async def prepare(self, tx: ITransactionScope) -> bool:
         return await self._transition_from_preparing(tx)
 
-    async def commit(self, tx: TransactionScope) -> bool:
+    async def commit(self, tx: ITransactionScope) -> bool:
         raise RuntimeError("Cannot commit while preparing")
 
-    async def rollback(self, tx: TransactionScope) -> bool:
+    async def rollback(self, tx: ITransactionScope) -> bool:
         return await ActiveState().rollback(tx)
 
-    async def _transition_from_preparing(self, tx: TransactionScope) -> bool:
+    async def _transition_from_preparing(self, tx: ITransactionScope) -> bool:
         result = await tx._do_prepare()
         tx._lifecycle_state = PreparedState() if result else FailedState()
         return result
@@ -72,10 +70,10 @@ class PreparingState(TransactionState):
 
 
 class PreparedState(TransactionState):
-    async def prepare(self, tx: TransactionScope) -> bool:
+    async def prepare(self, tx: ITransactionScope) -> bool:
         return True
 
-    async def commit(self, tx: TransactionScope) -> bool:
+    async def commit(self, tx: ITransactionScope) -> bool:
         tx._lifecycle_state = CommittingState()
         result = await tx._do_commit()
         tx._lifecycle_state = CommittedState() if result else FailedState()
@@ -83,7 +81,7 @@ class PreparedState(TransactionState):
             await ActiveState().rollback(tx)
         return result
 
-    async def rollback(self, tx: TransactionScope) -> bool:
+    async def rollback(self, tx: ITransactionScope) -> bool:
         return await ActiveState().rollback(tx)
 
     @property
@@ -92,13 +90,13 @@ class PreparedState(TransactionState):
 
 
 class CommittingState(TransactionState):
-    async def prepare(self, tx: TransactionScope) -> bool:
+    async def prepare(self, tx: ITransactionScope) -> bool:
         raise RuntimeError("Cannot prepare while committing")
 
-    async def commit(self, tx: TransactionScope) -> bool:
+    async def commit(self, tx: ITransactionScope) -> bool:
         return True
 
-    async def rollback(self, tx: TransactionScope) -> bool:
+    async def rollback(self, tx: ITransactionScope) -> bool:
         return await ActiveState().rollback(tx)
 
     @property
@@ -107,13 +105,13 @@ class CommittingState(TransactionState):
 
 
 class CommittedState(TransactionState):
-    async def prepare(self, tx: TransactionScope) -> bool:
+    async def prepare(self, tx: ITransactionScope) -> bool:
         raise RuntimeError("Cannot prepare a committed transaction")
 
-    async def commit(self, tx: TransactionScope) -> bool:
+    async def commit(self, tx: ITransactionScope) -> bool:
         return True
 
-    async def rollback(self, tx: TransactionScope) -> bool:
+    async def rollback(self, tx: ITransactionScope) -> bool:
         return False
 
     @property
@@ -122,13 +120,13 @@ class CommittedState(TransactionState):
 
 
 class RollingBackState(TransactionState):
-    async def prepare(self, tx: TransactionScope) -> bool:
+    async def prepare(self, tx: ITransactionScope) -> bool:
         raise RuntimeError("Cannot prepare while rolling back")
 
-    async def commit(self, tx: TransactionScope) -> bool:
+    async def commit(self, tx: ITransactionScope) -> bool:
         raise RuntimeError("Cannot commit while rolling back")
 
-    async def rollback(self, tx: TransactionScope) -> bool:
+    async def rollback(self, tx: ITransactionScope) -> bool:
         return True
 
     @property
@@ -137,13 +135,13 @@ class RollingBackState(TransactionState):
 
 
 class RolledBackState(TransactionState):
-    async def prepare(self, tx: TransactionScope) -> bool:
+    async def prepare(self, tx: ITransactionScope) -> bool:
         raise RuntimeError("Cannot prepare a rolled-back transaction")
 
-    async def commit(self, tx: TransactionScope) -> bool:
+    async def commit(self, tx: ITransactionScope) -> bool:
         raise RuntimeError("Cannot commit a rolled-back transaction")
 
-    async def rollback(self, tx: TransactionScope) -> bool:
+    async def rollback(self, tx: ITransactionScope) -> bool:
         return False
 
     @property
@@ -152,16 +150,16 @@ class RolledBackState(TransactionState):
 
 
 class FailedState(TransactionState):
-    async def prepare(self, tx: TransactionScope) -> bool:
+    async def prepare(self, tx: ITransactionScope) -> bool:
         tx._lifecycle_state = PreparingState()
         result = await tx._do_prepare()
         tx._lifecycle_state = PreparedState() if result else self
         return result
 
-    async def commit(self, tx: TransactionScope) -> bool:
+    async def commit(self, tx: ITransactionScope) -> bool:
         return await ActiveState().rollback(tx)
 
-    async def rollback(self, tx: TransactionScope) -> bool:
+    async def rollback(self, tx: ITransactionScope) -> bool:
         return await ActiveState().rollback(tx)
 
     @property

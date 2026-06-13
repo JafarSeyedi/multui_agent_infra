@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from .._types import RawData
+
 
 class ParameterMapper:
     """Maps generic parameter dicts to tool-specific signatures."""
@@ -9,13 +11,13 @@ class ParameterMapper:
     def __init__(self, mapping: dict[str, str] | None = None) -> None:
         self._mapping = mapping or {}
 
-    def map(self, params: dict[str, Any]) -> dict[str, Any]:
-        mapped: dict[str, Any] = {}
+    def map(self, params: RawData) -> RawData:
+        mapped: RawData = {}
         for key, value in params.items():
             target_key = self._mapping.get(key, key)
             mapped[target_key] = value
         return mapped
 
-    def validate(self, params: dict[str, Any], required: list[str]) -> list[str]:
+    def validate(self, params: RawData, required: list[str]) -> list[str]:
         missing = [r for r in required if r not in params]
         return missing

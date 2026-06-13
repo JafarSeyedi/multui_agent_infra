@@ -7,7 +7,8 @@ statically generated service classes and keeps integration generic across servic
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 from urllib.parse import urlsplit
 
 from .base import AbstractTransport, TransportRequest, TransportResponse

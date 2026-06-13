@@ -9,6 +9,20 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any, Protocol
 
+from engines.orchestration.models.osdm_models import (
+    Activity, Event, Gateway, Process, SequenceFlow, SubProcess,
+)
+
+
+_VISIT_DISPATCH: dict[type, str] = {
+    Process: "visit_process",
+    SubProcess: "visit_subprocess",
+    Activity: "visit_activity",
+    Gateway: "visit_gateway",
+    Event: "visit_event",
+    SequenceFlow: "visit_sequence_flow",
+}
+
 
 class Visitable(Protocol):
     """Protocol for visitable model objects."""
@@ -37,19 +51,7 @@ class ModelVisitor(ABC):
 
     def visit(self, node: Any) -> Any:
         """Dispatch to the appropriate visit_* method based on node type."""
-        from ...document.models.osdm_models import (
-            Process, SubProcess, Activity, Gateway, Event, SequenceFlow,
-        )
-        if isinstance(node, Process):
-            return self.visit_process(node)
-        if isinstance(node, SubProcess):
-            return self.visit_subprocess(node)
-        if isinstance(node, Activity):
-            return self.visit_activity(node)
-        if isinstance(node, Gateway):
-            return self.visit_gateway(node)
-        if isinstance(node, Event):
-            return self.visit_event(node)
-        if isinstance(node, SequenceFlow):
-            return self.visit_sequence_flow(node)
+        handler = _VISIT_DISPATCH.get(type(node))
+        if handler:
+            return getattr(self, handler)(node)
         return None

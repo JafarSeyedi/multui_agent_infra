@@ -1,4 +1,6 @@
-from typing import Any, Dict, Optional
+from typing import Any, Optional
+
+from ..._types import MessagePayload, Metadata
 import json
 from pydantic import Field
 from .base_agent import BaseAgent
@@ -10,15 +12,15 @@ from engines.agent.skill.executor import BatchSkillExecutor, StepWiseSkillExecut
 class StateMachineAgentInput(AgentInput):
     """Input for a state machine agent."""
     # Initial context to start the state machine with
-    initial_context: dict[str, Any] = Field(default_factory=dict)
+    initial_context: Metadata = Field(default_factory=dict)
 
 
 class StateMachineAgentOutput(AgentOutput):
     """Output from a state machine agent."""
     # Final context after state machine execution
-    final_context: dict[str, Any] = Field(default_factory=dict)
+    final_context: Metadata = Field(default_factory=dict)
     # The ID of the final state reached
-    final_state_id: Optional[str] = None
+    final_state_id: str | None = None
 
 
 class StateMachineAgent(BaseAgent[StateMachineAgentInput, StateMachineAgentOutput]):
@@ -36,15 +38,15 @@ class StateMachineAgent(BaseAgent[StateMachineAgentInput, StateMachineAgentOutpu
         llm_client: LLMClient,
         vector_db: Any = None,
         storage: Any = None,
-        metadata: dict[str, Any] | None = None,
+        metadata: Metadata | None = None,
     ) -> None:
         # Import StateMachineDocument here to avoid circular import issues
         try:
-            from engines.document.models.osdm_models import StateMachineDocument
+            from engines.orchestration.models.osdm_models import StateMachineDocument
             if not isinstance(state_machine_doc, StateMachineDocument):
                 raise ValueError("state_machine_doc must be an instance of StateMachineDocument")
         except ImportError as e:
-            raise ImportError("Could not import StateMachineDocument from engines.document.models.osdm_models") from e
+            raise ImportError("Could not import StateMachineDocument from engines.orchestration.models.osdm_models") from e
 
         super().__init__(
             agent_id=agent_id,
@@ -69,7 +71,7 @@ class StateMachineAgent(BaseAgent[StateMachineAgentInput, StateMachineAgentOutpu
 
     async def execute(self, input_model: StateMachineAgentInput) -> StateMachineAgentOutput:
         # Initialize context with the initial context from input
-        context: Dict[str, Any] = dict(input_model.initial_context)
+        context: Metadata = dict(input_model.initial_context)
         
         # Find the initial state
         initial_state = self._find_initial_state()
@@ -86,13 +88,13 @@ class StateMachineAgent(BaseAgent[StateMachineAgentInput, StateMachineAgentOutpu
             final_state_id=final_state_id
         )
 
-    def _find_initial_state(self) -> Optional[Any]:
+    def _find_initial_state(self) -> Any | None:
         """
         Find the initial state of the state machine.
         Looks for a pseudo_state of kind INITIAL, or uses the region's initial_state if set.
         """
         # Import PseudoStateKind here to avoid circular import issues
-        from engines.document.models.osdm_models import PseudoStateKind
+        from engines.orchestration.models.osdm_models import PseudoStateKind
         # We'll use Any for state and region types to avoid importing
         region = self.state_machine.top_region
         # First, look for an initial pseudo state
@@ -122,7 +124,7 @@ class StateMachineAgent(BaseAgent[StateMachineAgentInput, StateMachineAgentOutpu
             return region.states[0]
         return None
 
-    async def _execute_state_machine(self, initial_state: Any, initial_context: Dict[str, Any]) -> tuple[Optional[str], Dict[str, Any]]:
+    async def _execute_state_machine(self, initial_state: Any, initial_context: Metadata) -> tuple[str | None, Metadata]:
         """
         Execute the state machine starting from the given state.
         Returns (final_state_id, final_context).
@@ -169,7 +171,7 @@ class StateMachineAgent(BaseAgent[StateMachineAgentInput, StateMachineAgentOutpu
         final_state_id = getattr(current_state, 'id', None) if current_state else None
         return final_state_id, context
 
-    async def _execute_entry_actions(self, state: Any, context: Dict[str, Any]) -> None:
+    async def _execute_entry_actions(self, state: Any, context: Metadata) -> None:
         """
         Execute entry actions of the state. We assume entry actions are scripts that may invoke skills.
         For simplicity, we'll only handle if the entry action is a skill call.
@@ -178,7 +180,7 @@ class StateMachineAgent(BaseAgent[StateMachineAgentInput, StateMachineAgentOutpu
         # We'll skip complex entry actions for now and focus on the state's main skill.
         pass
 
-    async def _execute_state_skill(self, state: Any, context: Dict[str, Any]) -> Optional[Any]:
+    async def _execute_state_skill(self, state: Any, context: Metadata) -> Any | None:
         """
         Execute the skill associated with this state, if any.
         Returns the skill result.
@@ -225,7 +227,7 @@ class StateMachineAgent(BaseAgent[StateMachineAgentInput, StateMachineAgentOutpu
         # No skill to execute in this state
         return None
 
-    def _evaluate_transitions(self, state: Any, context: Dict[str, Any]) -> Optional[Any]:
+    def _evaluate_transitions(self, state: Any, context: Metadata) -> Any | None:
         """
         Evaluate the outgoing transitions of the state to determine the next state.
         Returns the next state if a transition is taken, otherwise None.
@@ -237,7 +239,7 @@ class StateMachineAgent(BaseAgent[StateMachineAgentInput, StateMachineAgentOutpu
                 return getattr(transition, 'target', None)
         return None
 
-    def _evaluate_transition_condition(self, transition: Any, context: Dict[str, Any]) -> bool:
+    def _evaluate_transition_condition(self, transition: Any, context: Metadata) -> bool:
         """
         Evaluate the condition (guard) of a transition.
         Returns True if the transition should be taken.

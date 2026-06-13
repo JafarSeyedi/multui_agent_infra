@@ -20,7 +20,7 @@ from ..core.context import ExecutionContext
 from ..core.engine import OrchestrationEngine
 from ..core.instance import ProcessInstance
 
-from ...document.models.osdm_models import (
+from engines.orchestration.models.osdm_models import (
     Activity,
     Task,
     ServiceTask,

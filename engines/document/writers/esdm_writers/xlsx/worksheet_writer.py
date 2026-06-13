@@ -7,17 +7,15 @@ from __future__ import annotations
 
 import xml.etree.ElementTree as ET
 from datetime import datetime
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from ....models.esdm_models import Worksheet, Workbook
-    from ..base import ESDMBaseWriter
 
 from .const import XML_NAMESPACES
 from .data_validation_writer import DataValidationWriter
 from .conditional_formatting_writer import ConditionalFormattingWriter
 from .extra_writers import HyperlinkWriter, CommentWriter
 from .drawing_writer import DrawingsWriter
+from ....models.esdm_models import Worksheet, Workbook
+from ..base import ESDMBaseWriter
 
 
 class WorksheetWriter:
@@ -308,3 +306,4 @@ class WorksheetWriter:
         if len(color) == 3:
             color = ''.join([c*2 for c in color])
         return color if len(color) == 6 else None
+

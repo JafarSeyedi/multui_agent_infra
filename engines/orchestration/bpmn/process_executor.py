@@ -20,6 +20,7 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any, cast
 
+from ..._types import FeelContext, RawData
 from ..core.correlation import CorrelationKeySet
 from ..core.event_bus import Event as BusEvent, EventType
 from ..core.context import ContextManager, ContextScope, ExecutionContext
@@ -33,7 +34,7 @@ from .process_model import TypedProcessModel, classify_node
 from .model_normalizer import BpmnModelNormalizer, _activity_get, _activity_type_str, _activity_id
 from .gateway_classifier import BpmnGatewayClassifier
 from .sub_process_manager import BpmnSubProcessManager, _SubProcessContext
-from ...document.models.osdm_models import (
+from engines.orchestration.models.osdm_models import (
     Activity,
     Task,
     Event as OsdmEvent,
@@ -72,7 +73,7 @@ class BPMNProcessExecutor:
     def __init__(
         self,
         *,
-        engine: object,
+        engine: Any,
         orchestration_engine: OrchestrationEngine,
         state_manager: StateManager,
         context_manager: ContextManager,
@@ -89,7 +90,7 @@ class BPMNProcessExecutor:
         self.gateway_classifier = gateway_classifier or BpmnGatewayClassifier()
         self.sub_process_manager = sub_process_manager or BpmnSubProcessManager()
 
-    async def execute(self, instance: ProcessInstance, definition_payload: dict[str, Any]) -> ProcessExecutionOutcome:
+    async def execute(self, instance: ProcessInstance, definition_payload: RawData) -> ProcessExecutionOutcome:
         model = self.model_normalizer.normalize(definition_payload)
         typed_model = self.model_normalizer.normalize_osdm(definition_payload, model.definition_id)
 
@@ -122,7 +123,10 @@ class BPMNProcessExecutor:
 
             activity = typed_model.get_node(current)
             if activity is None:
-                activity = self.model_normalizer.find_activity(model, current)
+                from typing import cast
+                found = self.model_normalizer.find_activity(model, current)
+                if found is not None:
+                    activity = cast("FlowNode | RawData", found)
             if activity is None:
                 break
 
@@ -284,7 +288,7 @@ class BPMNProcessExecutor:
         return ProcessExecutionOutcome(completed=False, current_node=current)
 
     async def _execute_activity(
-        self, instance: ProcessInstance, activity: FlowNode | dict[str, Any], context: ExecutionContext,
+        self, instance: ProcessInstance, activity: FlowNode | RawData, context: ExecutionContext,
     ) -> ActivityExecutionResult:
         if isinstance(activity, Activity):
             return self._activity_handler.execute_osdm(instance, activity, context=context)
@@ -365,15 +369,15 @@ class BPMNProcessExecutor:
             return "gateway"
         return "task"
 
-    def _normalize_model(self, payload: dict[str, Any]) -> ProcessModel:
+    def _normalize_model(self, payload: RawData) -> ProcessModel:
         return self.model_normalizer.normalize(payload)
 
     @staticmethod
-    def _dict_to_handler_flow(d: dict[str, Any]) -> HandlerSequenceFlow:
+    def _dict_to_handler_flow(d: RawData) -> HandlerSequenceFlow:
         from .model_normalizer import _dict_to_handler_flow as _norm_flow
         return _norm_flow(d)
 
-    def _normalize_model_osdm(self, definition_xml: dict[str, Any], definition_id: str) -> TypedProcessModel:
+    def _normalize_model_osdm(self, definition_xml: RawData, definition_id: str) -> TypedProcessModel:
         return self.model_normalizer.normalize_osdm(definition_xml, definition_id)
 
     def _find_activity(self, model: ProcessModel, activity_id: str) -> Any | None:
@@ -397,7 +401,7 @@ class BPMNProcessExecutor:
         return self.gateway_classifier.get_flow_source(flow_id, model, typed_model)
 
     def _evaluate_gateway_split_typed(
-        self, gateway_id: str, targets: list[str], context: dict[str, Any], gateway_type: str,
+        self, gateway_id: str, targets: list[str], context: FeelContext, gateway_type: str,
         typed_model: TypedProcessModel,
     ) -> list[str]:
         # Build a minimal object with get_all_variables for classifier compatibility
@@ -447,7 +451,7 @@ class BPMNProcessExecutor:
         return "parallel" in t or "inclusive" in t
 
     def _evaluate_gateway_split(
-        self, gateway_id: str, targets: list[str], context: dict[str, Any], gateway_type: str, model: ProcessModel | None = None,
+        self, gateway_id: str, targets: list[str], context: FeelContext, gateway_type: str, model: ProcessModel | None = None,
     ) -> list[str]:
         from ..expression.evaluator import EvaluationContext
         from ..expression.python_evaluator import PythonEvaluator
@@ -508,7 +512,7 @@ class BPMNProcessExecutor:
         for token in tokens.values():
             await self._orchestration_engine.token_manager.persist_token(token.token_id)
 
-    async def _persist_new_variables(self, instance: ProcessInstance, before_variables: dict[str, Any]) -> None:
+    async def _persist_new_variables(self, instance: ProcessInstance, before_variables: FeelContext) -> None:
         after_variables = instance.get_all_variables()
         for name, value in after_variables.items():
             if name in before_variables and before_variables[name] == value:

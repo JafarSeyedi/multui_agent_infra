@@ -10,10 +10,11 @@ import asyncio
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 from uuid import uuid4
 
-from ...document.models.osdm_models import TimerEventDefinition, DueTimeDuration
+from engines.orchestration.models.osdm_models import TimerEventDefinition, DueTimeDuration
 from ..utils.time_utils import parse_duration, utc_now
 
 

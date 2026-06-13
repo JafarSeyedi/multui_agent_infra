@@ -14,13 +14,12 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 import logging
-from typing import Any, Callable, Set, cast, TYPE_CHECKING
+from typing import Any, cast
+from collections.abc import Callable
 from uuid import uuid4
 
 from ..persistence.event_repository import EventRepository
-
-if TYPE_CHECKING:
-    from engines.document.models.osdm_models import EventListenerType, EventDefinitionType, CEPOperator
+from engines.orchestration.models.osdm_models import EventListenerType, EventDefinitionType, CEPOperator
 
 
 logger = logging.getLogger(__name__)
@@ -186,7 +185,7 @@ class Event:
 class Subscription:
     """Event subscription"""
     subscription_id: str
-    event_types: Set[EventType]
+    event_types: set[EventType]
     handler: Callable
     filter_func: Callable[[Event], bool] | None = None
     is_async: bool = True
@@ -217,7 +216,7 @@ class EventBus:
         
         # Subscriptions
         self.subscriptions: dict[str, Subscription] = {}
-        self.type_subscriptions: dict[EventType, Set[str]] = defaultdict(set)
+        self.type_subscriptions: dict[EventType, set[str]] = defaultdict(set)
         
         # Event queue
         self.event_queue: asyncio.Queue = asyncio.Queue()

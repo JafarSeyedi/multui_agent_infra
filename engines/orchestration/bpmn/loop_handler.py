@@ -15,11 +15,12 @@ Backward-compatible dict-based construction is preserved.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any
+from collections.abc import Callable
 
 from ..core.engine import OrchestrationEngine
 
-from ...document.models.osdm_models import (
+from engines.orchestration.models.osdm_models import (
     Activity,
     LoopCharacteristics,
     StandardLoopCharacteristics,

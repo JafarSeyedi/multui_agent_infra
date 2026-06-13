@@ -17,7 +17,7 @@ import re
 import ast
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ...models.media_types import MEDIA_TYPES
 from ...models.msdm_models import (
@@ -116,7 +116,7 @@ class TypeScriptInterfaceParser(BaseMSDMParser):
         self._tokens = _tokenize(text)
         self._pos = 0
         self._entity_names: set[str] = set()
-        self._methods: Dict[str, List[Dict[str, Any]]] = {}
+        self._methods: dict[str, list[dict[str, Any]]] = {}
 
         while self._pos < len(self._tokens):
             self._parse_declaration(doc)
@@ -135,7 +135,7 @@ class TypeScriptInterfaceParser(BaseMSDMParser):
     # ------------------------------------------------------------------
     # Helpers with safe peek
     # ------------------------------------------------------------------
-    def _peek(self) -> Optional[_Token]:
+    def _peek(self) -> _Token | None:
         if self._pos < len(self._tokens):
             return self._tokens[self._pos]
         return None
@@ -624,8 +624,8 @@ class TypeScriptInterfaceParser(BaseMSDMParser):
             parts.append(self._advance().value)
         return " ".join(parts).strip()
 
-    def _type_to_dict(self, dt: DataType) -> Dict[str, Any]:
-        result: Dict[str, Any] = {"base": dt.base.value}
+    def _type_to_dict(self, dt: DataType) -> dict[str, Any]:
+        result: dict[str, Any] = {"base": dt.base.value}
         if dt.element_type:
             result["element_type"] = self._type_to_dict(dt.element_type)
         if dt.key_type:

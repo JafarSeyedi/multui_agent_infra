@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from .evaluator import EvaluationContext, EvaluationError
+from typing import Any
 
 
 _SAFE_GLOBALS = {
@@ -29,7 +30,7 @@ _SAFE_GLOBALS = {
 class PythonEvaluator:
     """Evaluate Python expressions in a constrained namespace."""
 
-    def evaluate(self, expression: str, context: EvaluationContext) -> object:
+    def evaluate(self, expression: str, context: EvaluationContext) -> Any:
         try:
             return eval(expression, _SAFE_GLOBALS, dict(context.variables))
         except Exception as exc:  # pragma: no cover - boundary condition

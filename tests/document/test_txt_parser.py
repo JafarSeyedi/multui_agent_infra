@@ -26,7 +26,7 @@ async def test_txt_parse_paragraphs(txt_parser, sample_txt):
 
 
 async def test_txt_parse_encoding_utf8(txt_parser):
-    text = "Hello UTF-8: \xc3\xa9\xc3\xa8\xc3\xa0".encode("utf-8")
+    text = "Hello UTF-8: \xc3\xa9\xc3\xa8\xc3\xa0".encode()
     doc = await txt_parser.parse_bytes(text, document_id="test", source_name="test")
     assert doc is not None
 

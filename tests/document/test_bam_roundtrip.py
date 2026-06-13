@@ -1,13 +1,13 @@
 import pytest
-from engines.document.models.bam_models import (
+from engines.orchestration.models.bam_models import (
     BusinessMetric, KPI, AlertRule, AlertSeverity, MetricCategory,
     SlaDefinition, Dashboard, DashboardWidget,
     MonitoringAgentDefinition, MonitoringDashboardDocument,
 )
-from engines.document.parsers.bam_parsers.bam_json_parser import BamJsonParser
-from engines.document.writers.bam_writers.bam_json_writer import BamJsonWriter
-from engines.document.parsers.bam_parsers.bam_yaml_parser import BamYamlParser
-from engines.document.writers.bam_writers.bam_yaml_writer import BamYamlWriter
+from engines.orchestration.models.parsers.bam.bam_json_parser import BamJsonParser
+from engines.orchestration.models.writers.bam.bam_json_writer import BamJsonWriter
+from engines.orchestration.models.parsers.bam.bam_yaml_parser import BamYamlParser
+from engines.orchestration.models.writers.bam.bam_yaml_writer import BamYamlWriter
 
 
 def _make_full_doc() -> MonitoringDashboardDocument:

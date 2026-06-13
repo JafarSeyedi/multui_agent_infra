@@ -6,11 +6,9 @@ Generates the <dataValidations> element for a worksheet.
 from __future__ import annotations
 
 import xml.etree.ElementTree as ET
-from typing import TYPE_CHECKING
+from ....models.esdm_models import Worksheet, DataValidation
+from ..base import ESDMBaseWriter
 
-if TYPE_CHECKING:
-    from ....models.esdm_models import Worksheet, DataValidation
-    from ..base import ESDMBaseWriter
 
 
 
@@ -114,3 +112,4 @@ class DataValidationWriter:
             'greaterThanOrEqual': 'greaterThanOrEqual',
         }
         return mapping.get(op.value, 'between')
+

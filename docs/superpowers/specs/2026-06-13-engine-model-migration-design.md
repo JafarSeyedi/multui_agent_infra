@@ -131,7 +131,7 @@ engines/tools/models/
 ## Import Rule
 
 All models/parsers/writers are imported from their owning engine. No
-distinction between "internal" and "cross-engine" consumers.
+distinction between "internal" and "cross-engine" consumers. (using relative folder addressing for imports)
 
 ```python
 # KSDM — always from knowledge engine
@@ -215,3 +215,4 @@ cleaner long-term state, no wrapper cleanup debt.
 - `python3 -m pytest engines/tools/tests/ -v`
 - `python3 -m pytest tests/ --collect-only` — no import failures
 - `mypy engines/ --ignore-missing-imports`
+- `ruff check --select=UP --fix .`

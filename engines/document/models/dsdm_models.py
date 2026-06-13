@@ -53,7 +53,7 @@ class DataValue(BaseModel):
 class DataSchemaReference(BaseModel):
     name: str | None = None
     uri: str | None = None
-    data_struct: Optional[MSDMDocument] = None
+    data_struct: MSDMDocument | None = None
     version: str | None = None
 
 
@@ -72,9 +72,9 @@ class DataDocumentCapabilities(BaseModel):
 
 class SchemaBinding(BaseModel):
     """Links a DataNode to exactly one schema element."""
-    entity: Optional[Entity] = None
-    attribute: Optional[Attribute] = None
-    source_schema: Optional[MSDMDocument] = None
+    entity: Entity | None = None
+    attribute: Attribute | None = None
+    source_schema: MSDMDocument | None = None
 
     @model_validator(mode='after')
     def check_one_binding(self):
@@ -103,7 +103,7 @@ class DataNode(BaseModel):
     is_required: bool = Field(default=False)
     validation_rules: list[str] = Field(default_factory=list)  # deprecated in favour of schema_binding
 
-    schema_binding: Optional[SchemaBinding] = None
+    schema_binding: SchemaBinding | None = None
 
     model_config = ConfigDict(arbitrary_types_allowed=True, validate_assignment=True)
 
@@ -118,7 +118,7 @@ class DataNode(BaseModel):
 
 class DataDocument(BaseDocument):
     root: DataNode
-    schema_ref: Optional[DataSchemaReference] = None
+    schema_ref: DataSchemaReference | None = None
     capabilities: DataDocumentCapabilities = Field(default_factory=DataDocumentCapabilities)
 
     model_config = ConfigDict(arbitrary_types_allowed=True, validate_assignment=True)
@@ -186,7 +186,7 @@ class DataDocument(BaseDocument):
         return Entity(name=entity_name, kind=kind, attributes=attributes)
 
     @classmethod
-    def _attribute_from_child(cls, child: DataNode, entities: list[Entity]) -> Optional[Attribute]:
+    def _attribute_from_child(cls, child: DataNode, entities: list[Entity]) -> Attribute | None:
         name = child.name or "unknown"
         data_type = cls._infer_data_type(child, entities)
         return Attribute(name=name, data_type=data_type, required=True)

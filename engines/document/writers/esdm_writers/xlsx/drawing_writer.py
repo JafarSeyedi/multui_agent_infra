@@ -7,15 +7,12 @@ from __future__ import annotations
 
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from typing import TYPE_CHECKING
 
-
-if TYPE_CHECKING:
-    from ....models.esdm_models import (
-        Workbook, Worksheet, ImageContent, ChartContent, ShapeContent,
-        CharacterStyle
-    )
-    from ..base import ESDMBaseWriter
+from ....models.esdm_models import (
+    Workbook, Worksheet, ImageContent, ChartContent, ShapeContent,
+    CharacterStyle,
+)
+from ..base import ESDMBaseWriter
 
 
 class DrawingsWriter:
@@ -421,3 +418,4 @@ class DrawingsWriter:
             'r:id': rel_id
         })
         return graphic_frame
+

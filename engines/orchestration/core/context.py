@@ -17,8 +17,11 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Set, cast
+from typing import Any, Protocol, cast
+from collections.abc import Callable
 from uuid import uuid4
+
+from ..._types import Metadata, RawData, VariableValue
 
 from ...document.models.dsdm_models import DataDocument, DataSchemaReference, SchemaBinding
 from ...document.models.media_types import MEDIA_TYPES
@@ -50,13 +53,13 @@ class VariableScope(Enum):
 class Variable:
     """Process variable with metadata and MSDM schema binding"""
     name: str
-    value: Any
+    value: VariableValue
     type: str = "object"
     scope: VariableScope = VariableScope.PUBLIC
     created_at: datetime = field(default_factory=datetime.utcnow)
     updated_at: datetime = field(default_factory=datetime.utcnow)
     is_transient: bool = False
-    metadata: dict[str, Any] = field(default_factory=dict)
+    metadata: Metadata = field(default_factory=dict)
     schema_binding: SchemaBinding | None = None
     _schema_entity_cache: Entity | None = field(default=None, repr=False)
 
@@ -81,7 +84,7 @@ class Variable:
         }
         return DataType(base=type_map.get(self.type, ScalarType.ANY))
 
-    def to_record_payload(self, *, instance_id: str, scope_id: str) -> dict[str, Any]:
+    def to_record_payload(self, *, instance_id: str, scope_id: str) -> RawData:
         return {
             "instance_id": instance_id,
             "scope_id": scope_id,
@@ -98,7 +101,7 @@ class Variable:
         }
 
     @classmethod
-    def from_record_payload(cls, payload: dict[str, Any]) -> Variable:
+    def from_record_payload(cls, payload: RawData) -> Variable:
         nested_payload = cast(dict[str, Any], payload.get("payload")) if isinstance(payload.get("payload"), dict) else {}
         schema_binding_data = nested_payload.get("schema_binding") if isinstance(nested_payload.get("schema_binding"), dict) else None
         schema_binding: SchemaBinding | None = None
@@ -182,7 +185,7 @@ class ExecutionContext:
         self.context_id = context_id
         self.scope = scope
         self.parent = parent
-        self.children: list['ExecutionContext'] = []
+        self.children: list[ExecutionContext] = []
 
         # MSDM schema binding for context-level typing
         self.schema_entity: Entity | None = None
@@ -192,7 +195,7 @@ class ExecutionContext:
         self.variables: dict[str, Variable] = {}
 
         # Execution metadata
-        self.metadata: dict[str, Any] = {}
+        self.metadata: Metadata = {}
         self.created_at = datetime.utcnow()
         self.updated_at = datetime.utcnow()
 
@@ -207,7 +210,7 @@ class ExecutionContext:
     def set_variable(
         self,
         name: str,
-        value: Any,
+        value: VariableValue,
         variable_type: str | None = None,
         scope: VariableScope = VariableScope.PUBLIC,
         is_transient: bool = False
@@ -236,7 +239,7 @@ class ExecutionContext:
         self.updated_at = datetime.utcnow()
         logger.debug(f"Set variable '{name}' in context {self.context_id}")
     
-    def get_variable(self, name: str, search_parent: bool = True) -> Any | None:
+    def get_variable(self, name: str, search_parent: bool = True) -> VariableValue | None:
         """Get a variable value from this context or parent contexts"""
         # Check local variables
         if name in self.variables:
@@ -282,7 +285,7 @@ class ExecutionContext:
             return True
         return False
     
-    def get_all_variables(self, include_parent: bool = True) -> dict[str, Any]:
+    def get_all_variables(self, include_parent: bool = True) -> dict[str, VariableValue]:
         """Get all variables as a flat dictionary"""
         result = {}
         
@@ -297,7 +300,7 @@ class ExecutionContext:
         
         return result
     
-    def set_variables(self, variables: dict[str, Any]) -> None:
+    def set_variables(self, variables: dict[str, VariableValue]) -> None:
         """Set multiple variables at once"""
         for name, value in variables.items():
             self.set_variable(name, value)
@@ -306,7 +309,7 @@ class ExecutionContext:
         self,
         scope: ContextScope,
         context_id: str | None = None
-    ) -> 'ExecutionContext':
+    ) -> ExecutionContext:
         """Create a child execution context"""
         if context_id is None:
             context_id = f"{self.context_id}:{str(uuid4())[:8]}"
@@ -334,7 +337,7 @@ class ExecutionContext:
         
         logger.debug(f"Destroyed context {self.context_id}")
     
-    def copy_variables_to(self, target: 'ExecutionContext', names: list[str] | None = None) -> None:
+    def copy_variables_to(self, target: ExecutionContext, names: list[str] | None = None) -> None:
         """Copy variables to another context"""
         if names is None:
             # Copy all non-private variables
@@ -410,7 +413,7 @@ scope=var.scope,
     def _infer_type(self, value: Any) -> str:
         return _INFER_TYPE(value)
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> RawData:
         """Convert context to dictionary representation"""
         return {
             "context_id": self.context_id,
@@ -431,13 +434,13 @@ scope=var.scope,
             "children_count": len(self.children)
         }
 
-    def to_variable_record_payloads(self, *, instance_id: str) -> list[dict[str, Any]]:
+    def to_variable_record_payloads(self, *, instance_id: str) -> list[RawData]:
         return [
             variable.to_record_payload(instance_id=instance_id, scope_id=self.context_id)
             for variable in self.variables.values()
         ]
 
-    def restore_variable_records(self, payloads: list[dict[str, Any]]) -> None:
+    def restore_variable_records(self, payloads: list[RawData]) -> None:
         self.variables = {}
         for payload in payloads:
             variable = Variable.from_record_payload(payload)
@@ -451,6 +454,13 @@ scope=var.scope,
         )
 
 
+class _VariableRepository(Protocol):
+    async def save_persisted(self, key: str, record: RawData) -> None: ...
+    def save(self, key: str, record: RawData) -> None: ...
+    def get_by_scope(self, instance_id: str, context_id: str) -> list[RawData]: ...
+    def list(self, predicate: Callable[[RawData], bool] | None = None) -> list[RawData]: ...
+
+
 class ContextManager:
     """
     Manages execution contexts across the engine.
@@ -458,9 +468,9 @@ class ContextManager:
     Provides context lifecycle management, lookup, and cleanup.
     """
     
-    def __init__(self, variable_repository: Any | None = None) -> None:
+    def __init__(self, variable_repository: _VariableRepository | None = None) -> None:
         self.contexts: dict[str, ExecutionContext] = {}
-        self.root_contexts: Set[str] = set()
+        self.root_contexts: set[str] = set()
         self.variable_repository = variable_repository
     
     def create_context(
@@ -534,7 +544,7 @@ class ContextManager:
         
         return len(inactive)
     
-    def get_statistics(self) -> dict[str, Any]:
+    def get_statistics(self) -> RawData:
         """Get context manager statistics"""
         return {
             "total_contexts": len(self.contexts),
@@ -551,7 +561,7 @@ class ContextManager:
             distribution[scope] = distribution.get(scope, 0) + 1
         return distribution
 
-    async def persist_context_variables(self, instance_id: str, context_id: str) -> list[dict[str, Any]]:
+    async def persist_context_variables(self, instance_id: str, context_id: str) -> list[RawData]:
         context = self.get_context(context_id)
         if context is None:
             return []
@@ -566,7 +576,7 @@ class ContextManager:
                 self.variable_repository.save(key, record)
         return records
 
-    async def load_context_variables(self, instance_id: str, context_id: str) -> list[dict[str, Any]]:
+    async def load_context_variables(self, instance_id: str, context_id: str) -> list[RawData]:
         context = self.get_context(context_id)
         if context is None:
             return []

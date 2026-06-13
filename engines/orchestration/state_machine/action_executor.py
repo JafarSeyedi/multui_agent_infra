@@ -6,8 +6,7 @@ Executes entry, exit, and transition actions with integration/runtime hooks.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
-
+from ..._types import Metadata, VariableValue
 from ..core.instance import ProcessInstance
 from ..core.engine import OrchestrationEngine
 
@@ -19,7 +18,7 @@ class StateAction:
     action_type: str = "entry"
     expression: str | None = None
     target_variable: str | None = None
-    payload: dict[str, Any] = field(default_factory=dict)
+    payload: Metadata = field(default_factory=dict)
 
 
 class ActionExecutionError(RuntimeError):
@@ -34,24 +33,24 @@ class ActionExecutor:
     def register(self, action: StateAction) -> None:
         self._actions[action.action_id] = action
 
-    def execute_entry(self, state_id: str, instance: ProcessInstance) -> dict[str, Any]:
-        results: dict[str, Any] = {}
+    def execute_entry(self, state_id: str, instance: ProcessInstance) -> Metadata:
+        results: Metadata = {}
         for action in self._actions.values():
             if action.action_type == "entry":
                 result = self._execute_action(action, instance, state_id)
                 results[action.action_id] = result
         return results
 
-    def execute_exit(self, state_id: str, instance: ProcessInstance) -> dict[str, Any]:
-        results: dict[str, Any] = {}
+    def execute_exit(self, state_id: str, instance: ProcessInstance) -> Metadata:
+        results: Metadata = {}
         for action in self._actions.values():
             if action.action_type == "exit":
                 result = self._execute_action(action, instance, state_id)
                 results[action.action_id] = result
         return results
 
-    def execute_do(self, state_id: str, instance: ProcessInstance) -> dict[str, Any]:
-        results: dict[str, Any] = {}
+    def execute_do(self, state_id: str, instance: ProcessInstance) -> Metadata:
+        results: Metadata = {}
         for action in self._actions.values():
             if action.action_type == "do":
                 result = self._execute_action(action, instance, state_id)
@@ -63,8 +62,8 @@ class ActionExecutor:
         transition_id: str,
         instance: ProcessInstance,
         actions: list[str],
-    ) -> dict[str, Any]:
-        results: dict[str, Any] = {}
+    ) -> Metadata:
+        results: Metadata = {}
         for action_id in actions:
             if action_id in self._actions:
                 result = self._execute_action(self._actions[action_id], instance, transition_id)
@@ -79,14 +78,14 @@ class ActionExecutor:
         action: StateAction,
         instance: ProcessInstance,
         state_id: str,
-    ) -> dict[str, Any]:
-        result: dict[str, Any] = {"action_id": action.action_id, "type": action.action_type}
+    ) -> Metadata:
+        result: Metadata = {"action_id": action.action_id, "type": action.action_type}
 
         if action.expression:
             from ..expression.evaluator import EvaluationContext
             from ..expression.python_evaluator import PythonEvaluator
             try:
-                value = PythonEvaluator().evaluate(action.expression, EvaluationContext(variables=instance.get_all_variables()))
+                value: VariableValue = PythonEvaluator().evaluate(action.expression, EvaluationContext(variables=instance.get_all_variables()))
                 result["result"] = value
                 if action.target_variable:
                     instance.set_variable(action.target_variable, value)

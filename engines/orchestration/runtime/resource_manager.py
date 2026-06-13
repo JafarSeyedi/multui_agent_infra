@@ -5,7 +5,8 @@ from __future__ import annotations
 import asyncio
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
-from typing import AsyncIterator, Dict
+
+from collections.abc import AsyncIterator
 
 
 @dataclass(frozen=True)

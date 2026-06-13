@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from .._types import RawData
 from engines.agent.base_agents.base_agent import BaseAgent
 from engines.agent.models import AgentInput
 from engines.agent.models import AgentOutput
@@ -33,7 +34,7 @@ class AgentMediator:
         self,
         sender: str,
         recipient: str,
-        input_data: AgentInput | dict[str, Any],
+        input_data: AgentInput | RawData,
     ) -> AgentOutput | None:
         agent = self._agents.get(recipient)
         if agent is None:
@@ -49,7 +50,7 @@ class AgentMediator:
     async def broadcast(
         self,
         sender: str,
-        input_data: AgentInput | dict[str, Any],
+        input_data: AgentInput | RawData,
     ) -> dict[str, AgentOutput]:
         results: dict[str, AgentOutput] = {}
         for name, agent in self._agents.items():

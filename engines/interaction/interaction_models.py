@@ -9,6 +9,7 @@ from typing import Literal
 from pydantic import BaseModel
 from pydantic import Field
 
+from .._types import FeelContext, Metadata
 from engines.communication.buses.message_models import AgentMessage
 from ..agent.base_agents.base_agent import BaseAgent
 
@@ -22,10 +23,10 @@ class InteractionRequest(BaseModel):
     agents: list[BaseAgent]
 
     # Common context for all strategies
-    context: dict[str, Any] = Field(default_factory=dict)
+    context: FeelContext = Field(default_factory=dict)
 
     # Supplementary metadata
-    metadata: dict[str, Any] = Field(default_factory=dict)
+    metadata: Metadata = Field(default_factory=dict)
 
 class InteractionResult(BaseModel):
     """Complete orchestration output"""
@@ -36,7 +37,7 @@ class InteractionResult(BaseModel):
     success: bool = True
 
     # Final context updated by strategies
-    final_context: dict[str, Any] = Field(default_factory=dict)
+    final_context: FeelContext = Field(default_factory=dict)
 
     # Execution tracking
     backend_used: str = "native"
@@ -47,4 +48,4 @@ class InteractionResult(BaseModel):
     # Notes and logs
     notes: list[str] = Field(default_factory=list)
 
-    metadata: dict[str, Any] = Field(default_factory=dict)
+    metadata: Metadata = Field(default_factory=dict)
