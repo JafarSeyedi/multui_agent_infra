@@ -5,6 +5,7 @@ import asyncio
 import inspect
 import time
 import uuid
+from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Any
 from typing import Generic
@@ -22,7 +23,7 @@ TInput = TypeVar("TInput", bound=AgentInput)
 TOutput = TypeVar("TOutput", bound=AgentOutput)
 
 
-class BaseAgent(Generic[TInput, TOutput]):
+class BaseAgent(ABC, Generic[TInput, TOutput]):
     """Production-ready base class for typed educational agents."""
 
     # agent_id: str = ""
@@ -70,8 +71,9 @@ class BaseAgent(Generic[TInput, TOutput]):
             "synchronous context (e.g., a separate thread or process)."
         )
 
+    @abstractmethod
     async def execute(self, input_model: TInput) -> TOutput:
-        raise NotImplementedError(f"{self.agent_name} must implement execute().")
+        ...
 
     def _validate_input(self, input_data: Any) -> TInput:
         if isinstance(input_data, self.input_model_class):

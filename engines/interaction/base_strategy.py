@@ -1,6 +1,8 @@
 # agents/interaction/base_strategy.py
 from __future__ import annotations
 
+from abc import ABC
+from abc import abstractmethod
 from datetime import datetime
 from typing import Any
 
@@ -9,7 +11,8 @@ from ..agent.models import AgentOutput
 from ..communication.buses.base_message_bus import MessageBus
 from .interaction_models import AgentMessage
 
-class InteractionStrategy:
+
+class InteractionStrategy(ABC):
     scenario_name: str = "base"
 
     def __init__(self, agent_registry, message_bus: MessageBus | None = None, storage=None):
@@ -17,6 +20,7 @@ class InteractionStrategy:
         self.message_bus = message_bus
         self.storage = storage
 
+    @abstractmethod
     async def execute(self, request):
         raise NotImplementedError
 

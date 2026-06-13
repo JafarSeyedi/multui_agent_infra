@@ -130,7 +130,7 @@ class BaseMSDMWriter(BaseDocumentWriter):
 
         The default implementation raises NotImplementedError.
         """
-        raise NotImplementedError(
+        raise RuntimeError(
             f"{self.__class__.__name__} does not support database application"
         )
 

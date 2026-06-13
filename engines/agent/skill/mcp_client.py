@@ -52,7 +52,7 @@ class MCPClient:
         elif self.server_url:
             # TODO: Implement HTTP/WebSocket connection
             # For now, we'll raise an error as we are focusing on stdio for simplicity.
-            raise NotImplementedError("HTTP/WebSocket MCP connections are not yet implemented.")
+            raise RuntimeError("HTTP/WebSocket MCP connections are not yet implemented.")
         else:
             raise ValueError("Either server_command or server_url must be provided.")
 

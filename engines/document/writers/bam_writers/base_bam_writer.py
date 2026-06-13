@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from abc import abstractmethod
 from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Any
@@ -36,8 +37,9 @@ class BaseBAMWriter(BaseDocumentWriter):
     def get_supported_extensions(self) -> list[str]:
         return list(self.supported_extensions)
 
+    @abstractmethod
     def _serialize(self, raw: dict[str, Any]) -> bytes:
-        raise NotImplementedError
+        ...
 
     def _to_dict(self, doc: MonitoringDashboardDocument) -> dict[str, Any]:
         result: dict[str, Any] = {

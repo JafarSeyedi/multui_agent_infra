@@ -45,10 +45,10 @@ class EngineAPI:
         await self.engine.resume()
 
     def is_running(self) -> bool:
-        return self.engine.state.name == "RUNNING"
+        return self.engine.state == "running"
 
     def get_state(self) -> str:
-        return self.engine.state.value
+        return self.engine.state
 
     def get_health(self) -> HealthStatus:
         active = len(self.engine.active_instances) if hasattr(self.engine, "active_instances") else 0
@@ -68,7 +68,7 @@ class EngineAPI:
 
         return HealthStatus(
             status=status,
-            engine_state=self.engine.state.value,
+            engine_state=self.engine.state,
             active_instances=active,
             suspended_instances=suspended,
             deployments=deployments,
@@ -77,7 +77,7 @@ class EngineAPI:
 
     def get_statistics(self) -> dict[str, Any]:
         return {
-            "engine_state": self.engine.state.value,
+            "engine_state": self.engine.state,
             "active_instances": len(self.engine.active_instances) if hasattr(self.engine, "active_instances") else 0,
             "suspended_instances": len(self.engine.suspended_instances) if hasattr(self.engine, "suspended_instances") else 0,
             "deployments": len(self.engine.deployments) if hasattr(self.engine, "deployments") else 0,

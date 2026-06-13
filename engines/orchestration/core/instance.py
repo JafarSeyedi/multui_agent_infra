@@ -4,6 +4,7 @@ Process Instance Management
 Manages process instance lifecycle, state transitions, and metadata.
 Supports BPMN, CMMN, State Machine, and other orchestration standards.
 Aligned with OSDM instance semantics.
+Uses State pattern for lifecycle transitions.
 """
 
 from __future__ import annotations
@@ -20,6 +21,7 @@ from ...document.models.media_types import MEDIA_TYPES
 if TYPE_CHECKING:
     from ...document.models.osdm_models import Process, Stage, Decision, StateMachineModel
     from engines.document.models.dsdm_models import DataDocument
+    from .instance_states import ProcessState
 
 
 logger = logging.getLogger(__name__)
@@ -162,6 +164,7 @@ class ProcessInstance:
         self.tenant_id = tenant_id
         self.state = state
         self.instance_type = instance_type
+        self._state: ProcessState | None = None
 
         # OSDM model references (lazy-loaded)
         self._osdm_process_ref: "Process | None" = None
@@ -230,44 +233,40 @@ class ProcessInstance:
         """Get all variables"""
         return self.variables.copy()
     
+    def _get_state(self) -> ProcessState:
+        from .instance_states import state_for
+        if self._state is None:
+            self._state = state_for(self.state.value)
+        return self._state
+
+    def set_state(self, enum_state: InstanceState, state_obj: ProcessState | None = None) -> None:
+        """Set the state enum and optional state object."""
+        self.state = enum_state
+        if state_obj is not None:
+            self._state = state_obj
+        else:
+            from .instance_states import state_for
+            self._state = state_for(enum_state.value)
+
     def suspend(self) -> None:
-        """Suspend the process instance"""
-        if self.state != InstanceState.ACTIVE:
-            raise RuntimeError(f"Cannot suspend instance in state: {self.state}")
-        
-        self.state = InstanceState.SUSPENDED
-        logger.info(f"Suspended instance: {self.id}")
+        """Suspend the process instance (delegates to state object)."""
+        self._get_state().suspend(self)
     
     def resume(self) -> None:
-        """Resume the process instance"""
-        if self.state != InstanceState.SUSPENDED:
-            raise RuntimeError(f"Cannot resume instance in state: {self.state}")
-        
-        self.state = InstanceState.ACTIVE
-        logger.info(f"Resumed instance: {self.id}")
+        """Resume the process instance (delegates to state object)."""
+        self._get_state().resume(self)
     
     def complete(self) -> None:
-        """Mark the instance as completed"""
-        self.state = InstanceState.COMPLETED
-        self.end_time = datetime.utcnow()
-        self._calculate_duration()
-        logger.info(f"Completed instance: {self.id}")
+        """Mark the instance as completed (delegates to state object)."""
+        self._get_state().complete(self)
     
     def terminate(self, reason: str = "Terminated") -> None:
-        """Terminate the process instance"""
-        self.state = InstanceState.TERMINATED
-        self.end_time = datetime.utcnow()
-        self.delete_reason = reason
-        self._calculate_duration()
-        logger.info(f"Terminated instance: {self.id} - {reason}")
+        """Terminate the process instance (delegates to state object)."""
+        self._get_state().terminate(self, reason)
     
     def fail(self, error_message: str) -> None:
-        """Mark the instance as failed"""
-        self.state = InstanceState.FAILED
-        self.end_time = datetime.utcnow()
-        self.delete_reason = error_message
-        self._calculate_duration()
-        logger.error(f"Failed instance: {self.id} - {error_message}")
+        """Mark the instance as failed (delegates to state object)."""
+        self._get_state().fail(self, error_message)
     
     def _calculate_duration(self) -> None:
         """Calculate instance duration"""

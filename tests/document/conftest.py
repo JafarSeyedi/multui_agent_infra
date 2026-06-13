@@ -15,6 +15,7 @@ from engines.document.writers.base import WriteOptions
 
 
 pytestmark = pytest.mark.asyncio
+@pytest.fixture
 def parse_options():
     return ParseOptions()
 

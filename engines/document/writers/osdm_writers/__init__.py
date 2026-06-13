@@ -1,4 +1,5 @@
-from .base_osdm_writer import BaseOSDMWriter, OSDMWriteOptions, VersionIncrement, VersionStrategy
+from .base_osdm_writer import BaseOSDMWriter, OSDMWriteOptions, VersionIncrement
+from ..versioning import VersionWriteStrategy as VersionStrategy
 
 from .bpmn_xml_writer import BPMNXMLWriter, BPMN_DI_NS, BPMN_NS, DC_NS, DI_NS, XSI_NS
 

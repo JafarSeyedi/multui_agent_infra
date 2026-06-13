@@ -58,7 +58,7 @@ class BPMNEngine:
         # Cache for parsed BPMN documents to avoid reparsing
         self._parsed_documents: Dict[str, BPMNDocument] = {}
 
-    def _convert_flow_elements_to_activities_and_flows(self, flow_elements: Dict[str, FlowElement]) -> tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    def _convert_flow_elements_to_activities_and_flows(self, flow_elements: Dict[str, FlowElement]) -> tuple[list[Any], list[Dict[str, Any]]]:
         """
         Convert OSDM flow elements to activities and flows lists for the process executor.
         
@@ -73,40 +73,8 @@ class BPMNEngine:
         
         for element_id, element in flow_elements.items():
             # Handle different types of flow elements
-            if isinstance(element, Activity):
-                # Convert Activity to dict format expected by executor
-                activity_dict = {
-                    "id": element.id,
-                    "name": getattr(element, 'name', None) or element.id,
-                    "type": getattr(element.activity_type, 'value', str(element.activity_type)) if hasattr(element, 'activity_type') else "task",
-                    # Add other relevant activity properties
-                }
-                
-                # Add loop characteristics if present
-                if hasattr(element, 'loop_characteristics') and element.loop_characteristics:
-                    loop_char = element.loop_characteristics
-                    activity_dict["loop_characteristics"] = {
-                        "type": getattr(loop_char, '__class__.__name__', str(type(loop_char))),
-                        # Add specific loop characteristic properties as needed
-                    }
-                
-                # Add IO specification if present
-                if hasattr(element, 'io_specification') and element.io_specification:
-                    io_spec = element.io_specification
-                    activity_dict["io_specification"] = {
-                        "data_inputs": [{"id": di.id, "name": getattr(di, 'name', None)} for di in getattr(io_spec, 'data_inputs', [])],
-                        "data_outputs": [{"id": do.id, "name": getattr(do, 'name', None)} for do in getattr(io_spec, 'data_outputs', [])],
-                        "data_associations": [
-                            {
-                                "id": da.id,
-                                "source_ref": getattr(da, 'source_ref', None),
-                                "target_ref": getattr(da, 'target_ref', None),
-                                "transformation": getattr(da, 'transformation', None)
-                            } for da in getattr(io_spec, 'data_associations', [])
-                        ]
-                    }
-                
-                activities.append(activity_dict)
+            if isinstance(element, (Activity, Event, Gateway)):
+                activities.append(element)
                 
             elif isinstance(element, SequenceFlow):
                 flow_dict = {
@@ -124,16 +92,7 @@ class BPMNEngine:
                 
                 flows.append(flow_dict)
                 
-            # Handle other flow element types as needed (events, gateways, etc.)
-            elif isinstance(element, (Event, Gateway)):
-                # For now, treat events and gateways as activities for simplicity
-                # In a more sophisticated implementation, they would be handled differently
-                activity_dict = {
-                    "id": element.id,
-                    "name": getattr(element, 'name', None) or element.id,
-                    "type": getattr(element, '__class__.__name__', 'unknown').replace('Event', '').replace('Gateway', '').lower() or "task",
-                }
-                activities.append(activity_dict)
+
 
         return activities, flows
 

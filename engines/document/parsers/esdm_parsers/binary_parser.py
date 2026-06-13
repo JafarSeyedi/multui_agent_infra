@@ -6,6 +6,7 @@ Produces an ESDM Workbook with a single Worksheet (or one per sheet if partition
 from __future__ import annotations
 
 import io
+from abc import abstractmethod
 from pathlib import Path
 from typing import Any
 
@@ -85,8 +86,9 @@ class ColumnarBinaryParser(BaseSpreadsheetParser):
         # Numeric, boolean, string – keep as is
         return val
 
+    @abstractmethod
     def _read_table(self, data: bytes, options: ParseOptions) -> pa.Table:
-        raise NotImplementedError  # subclass responsibility
+        ...
 
     def _get_sheet_name(self, source_name: str, options: ParseOptions) -> str:
         if options.sheet_names and options.sheet_names:

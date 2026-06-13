@@ -113,7 +113,7 @@ class AdminAPI:
 
     def get_engine_health(self) -> dict[str, Any]:
         return {
-            "engine_state": self.engine.state.value,
+            "engine_state": self.engine.state,
             "active_instances": len(self.engine.active_instances),
             "suspended_instances": len(self.engine.suspended_instances),
             "total_definitions": len(self.engine.definitions),

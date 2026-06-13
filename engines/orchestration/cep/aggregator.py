@@ -8,7 +8,7 @@ from __future__ import annotations
 import statistics
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
+from typing import Any, Callable
 
 
 class AggregationFunction(str, Enum):
@@ -32,6 +32,68 @@ class AggregationDefinition:
     group_by: str | None = None
     output_variable: str = ""
     filter: str | None = None
+
+
+def _agg_count(data: list[Any]) -> Any:
+    return len(data)
+
+
+def _agg_sum(data: list[Any]) -> Any:
+    numeric = [float(v) for v in data if isinstance(v, (int, float))]
+    return sum(numeric) if numeric else 0
+
+
+def _agg_avg(data: list[Any]) -> Any:
+    numeric = [float(v) for v in data if isinstance(v, (int, float))]
+    return statistics.mean(numeric) if numeric else None
+
+
+def _agg_min(data: list[Any]) -> Any:
+    numeric = [float(v) for v in data if isinstance(v, (int, float))]
+    candidates = numeric if numeric else data
+    return min(candidates) if candidates else None
+
+
+def _agg_max(data: list[Any]) -> Any:
+    numeric = [float(v) for v in data if isinstance(v, (int, float))]
+    candidates = numeric if numeric else data
+    return max(candidates) if candidates else None
+
+
+def _agg_median(data: list[Any]) -> Any:
+    numeric = [float(v) for v in data if isinstance(v, (int, float))]
+    return statistics.median(numeric) if numeric else None
+
+
+def _agg_stddev(data: list[Any]) -> Any:
+    numeric = [float(v) for v in data if isinstance(v, (int, float))]
+    return statistics.stdev(numeric) if len(numeric) >= 2 else None
+
+
+def _agg_first(data: list[Any]) -> Any:
+    return data[0] if data else None
+
+
+def _agg_last(data: list[Any]) -> Any:
+    return data[-1] if data else None
+
+
+def _agg_distinct_count(data: list[Any]) -> Any:
+    return len(set(data))
+
+
+_AGGREGATION_HANDLERS: dict[str, Callable[[list[Any]], Any]] = {
+    "count": _agg_count,
+    "sum": _agg_sum,
+    "avg": _agg_avg,
+    "min": _agg_min,
+    "max": _agg_max,
+    "median": _agg_median,
+    "stddev": _agg_stddev,
+    "first": _agg_first,
+    "last": _agg_last,
+    "distinctcount": _agg_distinct_count,
+}
 
 
 class Aggregator:
@@ -79,38 +141,10 @@ class Aggregator:
         return data
 
     def _compute(self, data: list[Any], func: str) -> Any:
-        if not data:
-            if func == "count":
-                return 0
-            return None
-
-        numeric = [float(v) for v in data if isinstance(v, (int, float))]
-        _non_numeric = [v for v in data if not isinstance(v, (int, float))]
-
-        if func == "count":
-            return len(data)
-        elif func == "sum":
-            return sum(numeric) if numeric else 0
-        elif func == "avg":
-            return statistics.mean(numeric) if numeric else None
-        elif func == "min":
-            candidates = numeric if numeric else data
-            return min(candidates) if candidates else None
-        elif func == "max":
-            candidates = numeric if numeric else data
-            return max(candidates) if candidates else None
-        elif func == "median":
-            return statistics.median(numeric) if numeric else None
-        elif func == "stddev":
-            return statistics.stdev(numeric) if len(numeric) >= 2 else None
-        elif func == "first":
-            return data[0] if data else None
-        elif func == "last":
-            return data[-1] if data else None
-        elif func == "distinctCount":
-            return len(set(data))
-        else:
-            return len(data)
+        handler = _AGGREGATION_HANDLERS.get(func)
+        if handler is not None:
+            return handler(data)
+        return len(data)
 
     def register(self, name: str, definition: AggregationDefinition) -> None:
         self._definitions[name] = definition

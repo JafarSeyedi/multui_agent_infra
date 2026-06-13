@@ -1,6 +1,6 @@
 import pytest
 from engines.document.models.bam_models import (
-    BusinessMetric, KPI, AlertRule, AlertSeverity,
+    BusinessMetric, KPI, AlertRule, AlertSeverity, MetricCategory,
     SlaDefinition, Dashboard, DashboardWidget,
     MonitoringAgentDefinition, MonitoringDashboardDocument,
 )
@@ -17,11 +17,11 @@ def _make_full_doc() -> MonitoringDashboardDocument:
     )
     doc.metrics["cpu"] = BusinessMetric(
         metric_id="cpu", name="CPU Usage", unit="%",
-        category="operational",
+        category=MetricCategory.OPERATIONAL,
     )
     doc.metrics["cycle"] = BusinessMetric(
         metric_id="cycle", name="Cycle Time", unit="ms",
-        category="process",
+        category=MetricCategory.PROCESS,
     )
     doc.kpis["sla"] = KPI(
         kpi_id="sla", name="SLA Compliance", metric_ref="cycle",

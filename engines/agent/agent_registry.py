@@ -18,8 +18,12 @@ class AgentRegistry:
 
     def register(self, agent_instance: BaseAgent) -> BaseAgent:
         if agent_instance.vector_db is None:
+            if self.vector_db is None:
+                raise ValueError(f"Cannot register agent '{agent_instance.agent_name}': vector_db is required")
             agent_instance.vector_db = self.vector_db
         if agent_instance.storage is None:
+            if self.storage is None:
+                raise ValueError(f"Cannot register agent '{agent_instance.agent_name}': storage is required")
             agent_instance.storage = self.storage
         self.agents[agent_instance.agent_name] = agent_instance
         return agent_instance

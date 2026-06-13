@@ -6,8 +6,11 @@ and target resolution.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -126,7 +129,8 @@ class TransitionHandler:
             from ..expression.python_evaluator import PythonEvaluator
             result = PythonEvaluator().evaluate(guard, EvaluationContext(variables=context))
             return bool(result)
-        except Exception:
+        except Exception as e:
+            logger.warning("Guard evaluation failed for %r: %s", guard, e)
             return False
 
     def get_available_transitions(

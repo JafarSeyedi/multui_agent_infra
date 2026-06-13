@@ -1,23 +1,12 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from engines.communication.buses.message_models import AgentMessage
-
 import asyncio
 import logging
 from collections import defaultdict
 
 from .base_message_bus import HandlerType
 from .base_message_bus import MessageBus
-
-_agent_message_cls = None
-def _get_agent_message():
-    global _agent_message_cls
-    if _agent_message_cls is None:
-        from engines.communication.buses.message_models import AgentMessage as _agent_message_cls
-    return _agent_message_cls
+from .message_models import AgentMessage
 
 logger = logging.getLogger(__name__)
 BROADCAST = "*"

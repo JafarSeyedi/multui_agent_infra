@@ -157,13 +157,13 @@ class XLSXWriter(ESDMBaseWriter):
     # Abstract methods from ESDMBaseWriter (unused in modular writer)
     # --------------------------------------------------------------
     def _write_workbook_xml(self, workbook: Workbook) -> str:
-        raise NotImplementedError("Use modular writer instead")
+        raise RuntimeError("Use modular writer instead")
 
     def _write_worksheet_xml(self, worksheet, sheet_id: int) -> str:
-        raise NotImplementedError("Use modular writer instead")
+        raise RuntimeError("Use modular writer instead")
 
     def _write_styles_xml(self) -> str:
-        raise NotImplementedError("Use modular writer instead")
+        raise RuntimeError("Use modular writer instead")
 
     # --------------------------------------------------------------
     # Core properties helper

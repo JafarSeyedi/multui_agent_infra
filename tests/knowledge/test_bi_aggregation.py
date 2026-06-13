@@ -260,7 +260,7 @@ async def test_tableau_hyper_stub_raises():
     from engines.document.parsers.ksdm_parsers.bi_aggregation import TableauHyperParser
 
     parser = TableauHyperParser()
-    with pytest.raises(NotImplementedError, match="tableauhyperapi"):
+    with pytest.raises(RuntimeError, match="tableauhyperapi"):
         await parser.parse_bytes(b"dummy", "hyper_test", "hyper_test")
 
 

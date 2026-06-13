@@ -5,11 +5,14 @@ Supports expression languages and contextual data access.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import Any
 
 from ..expression.evaluator import EvaluationContext
 from ..expression.python_evaluator import PythonEvaluator
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -37,12 +40,14 @@ class GuardEvaluator:
         try:
             result = self._evaluator.evaluate(expression, EvaluationContext(variables=context))
             return bool(result)
-        except Exception:
+        except Exception as e:
+            logger.warning("Guard evaluation failed for expression %r: %s", expression, e)
             return False
 
     def evaluate_guard(self, guard_id: str, context: dict[str, Any]) -> bool:
         condition = self._conditions.get(guard_id)
         if condition is None:
+            logger.warning("Guard condition not found: %s", guard_id)
             return False
         return self.evaluate(condition.expression, context)
 

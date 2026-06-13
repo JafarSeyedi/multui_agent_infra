@@ -1,6 +1,7 @@
 from .asyncapi_writer import AsyncAPIWriter
 
-from .base_ssdm_writer import BaseSSDMWriter, SSDMWriteOptions, VersionIncrement, VersionStrategy
+from .base_ssdm_writer import BaseSSDMWriter, SSDMWriteOptions, VersionIncrement
+from ..versioning import VersionWriteStrategy as VersionStrategy
 
 from .graphql_service_writer import GraphQLServiceWriter
 

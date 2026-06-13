@@ -1,5 +1,9 @@
+from __future__ import annotations
+
 import json
 import logging
+from abc import ABC
+from abc import abstractmethod
 from typing import Any, Dict, List, Protocol
 
 from .models import SkillOutput, SkillStep
@@ -8,32 +12,26 @@ from .skill import SkillLoader
 logger = logging.getLogger(__name__)
 
 
-class LLMClient:
-    def __init__(self):
+class LLMClient(ABC):
+    def __init__(self) -> None:
         pass
 
+    @abstractmethod
     def generate_structured_output(
         self,
         prompt: str,
-        output_schema: Dict[str, Any],
-        **kwargs
+        output_schema: dict[str, Any],
+        **kwargs: Any
     ) -> Any:
-        """
-        Generate a structured output from the LLM given a prompt and an output schema.
-        This method should be implemented by the user to use their preferred LLM.
-        """
-        raise NotImplementedError("LLMClient.generate_structured_output must be implemented")
+        ...
 
+    @abstractmethod
     def generate_text(
         self,
         prompt: str,
-        **kwargs
+        **kwargs: Any
     ) -> str:
-        """
-        Generate a text output from the LLM given a prompt.
-        This method should be implemented by the user.
-        """
-        raise NotImplementedError("LLMClient.generate_text must be implemented")
+        ...
 
 
 def _build_output_schema_from_skill_outputs(outputs: List[SkillOutput]) -> Dict[str, Any]:

@@ -1,7 +1,7 @@
 """Multi-agent orchestration engine used by top-level coordinator.
 
 Coordinates agent interaction lifecycle and durable conversation state
-at production level.
+at production level. Delegates handler communication to MultiAgentMediator.
 """
 
 from __future__ import annotations
@@ -13,14 +13,8 @@ from typing import Any
 from ..core.context import ContextManager, ContextScope
 from ..core.engine import OrchestrationEngine, ProcessDefinition
 from ..core.instance import InstanceState, ProcessInstance
-from ..core.event_bus import Event, EventType
 from ..runtime.state_manager import StateManager
-from .coordination_handler import CoordinationHandler
-from .agent_executor import AgentExecutor
-from .message_router import MessageRouter
-from .interaction_handler import InteractionHandler
-from .protocol_handler import ProtocolHandler
-from .negotiation_handler import NegotiationHandler
+from .mediator import AgentMediator, MultiAgentMediator
 
 
 logger = logging.getLogger(__name__)
@@ -44,18 +38,16 @@ class MultiAgentEngine:
     def __init__(
         self,
         orchestration_engine: OrchestrationEngine,
+        mediator: AgentMediator | None = None,
         *,
         state_manager: StateManager | None = None,
     ) -> None:
         self.orchestration_engine = orchestration_engine
         self.context_manager = ContextManager()
         self.state_manager = state_manager or orchestration_engine.state_manager
-        self.coordinator = CoordinationHandler()
-        self.agent_executor = AgentExecutor(orchestration_engine=orchestration_engine)
-        self.message_router = MessageRouter()
-        self.interaction_handler = InteractionHandler()
-        self.protocol_handler = ProtocolHandler()
-        self.negotiation_handler = NegotiationHandler()
+        self.mediator = mediator or MultiAgentMediator(
+            orchestration_engine, state_manager=self.state_manager,
+        )
         self._conversation_state: dict[str, dict[str, Any]] = {}
 
     async def execute_instance(self, instance: ProcessInstance, definition: ProcessDefinition) -> None:
@@ -85,28 +77,21 @@ class MultiAgentEngine:
                 "pattern": plan.coordination_pattern,
             }
 
-            await self.coordinator.coordinate(instance.id, plan, instance)
+            for agent_entry in plan.agents:
+                agent_id = agent_entry.get("id", "")
+                if agent_id:
+                    self.mediator.register_agent(agent_id, agent_entry)
 
-            for interaction in plan.interactions:
-                result = await self.interaction_handler.handle(interaction, instance, plan.agents)
-                instance.set_variable(
-                    f"interaction.{interaction.get('id', 'unknown')}", result
-                )
+            result = await self.mediator.execute_workflow(instance, definition, plan)
 
-            for protocol in plan.protocols:
-                await self.protocol_handler.execute(protocol, instance)
+            if not result.success:
+                raise MultiAgentExecutionError("; ".join(result.errors))
 
-            if plan.negotiation_config:
-                negotiation_result = await self.negotiation_handler.negotiate(
-                    plan.negotiation_config, instance, plan.agents
-                )
-                if negotiation_result:
-                    instance.set_variable("negotiation.result", negotiation_result)
-
-            for agent in plan.agents:
-                agent_id = agent.get("id", "")
-                agent_result = await self.agent_executor.execute(agent, instance)
-                instance.set_variable(f"agent.{agent_id}.result", agent_result)
+            await self.state_manager.set_persisted(
+                context_id,
+                "completed",
+                data={"definition_key": definition.key, "definition_id": definition.id},
+            )
 
         except Exception as exc:
             await self.orchestration_engine.update_instance_state(
@@ -120,11 +105,6 @@ class MultiAgentEngine:
             raise
 
         await self.orchestration_engine.update_instance_state(instance.id, InstanceState.COMPLETED)
-        await self.state_manager.set_persisted(
-            context_id,
-            "completed",
-            data={"definition_key": definition.key, "definition_id": definition.id},
-        )
         logger.info("Multi-agent instance completed: %s", instance.id)
 
     def _normalize_plan(self, definition_payload: dict[str, Any]) -> MultiAgentPlan:
@@ -138,3 +118,11 @@ class MultiAgentEngine:
 
     def get_conversation_state(self, instance_id: str) -> dict[str, Any] | None:
         return self._conversation_state.get(instance_id)
+
+    @property
+    def coordinator(self):
+        return self.mediator.coordinator
+
+    @property
+    def message_router(self):
+        return self.mediator.message_router

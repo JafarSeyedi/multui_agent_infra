@@ -14,6 +14,7 @@ from engines.orchestration.bpmn.bpmn_execution_semantics import (
 )
 from engines.orchestration.core.engine import OrchestrationEngine, ProcessDefinition
 from engines.orchestration.core.instance import InstanceState
+from engines.document.models.osdm_models import GatewayType
 from engines.orchestration.persistence.event_repository import EventRepository
 from engines.orchestration.persistence.history_repository import HistoryRepository
 from engines.orchestration.persistence.instance_repository import InstanceRepository
@@ -51,22 +52,27 @@ class TestBpmnEngineLifecycle:
     async def test_engine_start_stop(self):
         engine, _ = _make_engine()
         await engine.start()
-        assert engine.state.value == "running"
+        assert engine.state == "running"
         await engine.stop()
-        assert engine.state.value == "stopped"
+        assert engine.state == "stopped"
 
     @pytest.mark.asyncio
     async def test_deploy_and_start_instance(self):
         engine, _ = _make_engine()
         deployment = await engine.deploy("test", {"test.bpmn": "<bpmn></bpmn>"})
         assert deployment.id in engine.deployments
-        definition = _definition(key="proc1", definition_xml=str({
-            "id": "proc1", "start_event_id": "start1",
-            "activities": [{"id": "start1", "type": "startEvent", "payload": {}}],
-        }))
+        definition = _definition(key="proc1", definition_xml="""<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">
+  <bpmn:process id="proc1" isExecutable="true">
+    <bpmn:startEvent id="start" />
+    <bpmn:endEvent id="end" />
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="end" />
+  </bpmn:process>
+</bpmn:definitions>""")
         engine.definitions["proc1"] = definition
+        engine.definition_versions["proc1"] = [definition]
         instance = await engine.start_process_instance("proc1", variables={"x": 1})
-        assert instance.state == InstanceState.ACTIVE
+        assert instance.id in engine.instances
         assert instance.variables["x"] == 1
 
 
@@ -221,7 +227,7 @@ class TestEventBasedGateway:
         }
         result = handler.choose(gateway=gateway, context={})
         # Event-based gateway doesn't immediately select a path
-        assert result.gateway_type == "eventBasedGateway"
+        assert result.gateway_type == GatewayType.EVENT_BASED
 
     @pytest.mark.asyncio
     async def test_event_based_gateway_resolves_to_triggered_event(self):

@@ -37,7 +37,7 @@ from ...document.models.osdm_models import (
     GatewayType,
 )
 
-from ..core.token import Token, TokenState
+from ..core.token import Token, TokenStateEnum
 from ..dmn.feel_engine import EvaluationContext
 
 
@@ -53,7 +53,7 @@ class TokenPlacement:
     """Represents a token at a specific node in the process."""
     token_id: str
     current_node_id: str
-    state: TokenState = TokenState.ACTIVE
+    state: TokenStateEnum = TokenStateEnum.ACTIVE
     parent_token_id: str | None = None
     scope_id: str | None = None
 
@@ -99,7 +99,7 @@ class BpmnTokenEngine:
         placement = TokenPlacement(
             token_id=token_id,
             current_node_id=node_id,
-            state=TokenState.ACTIVE,
+            state=TokenStateEnum.ACTIVE,
             parent_token_id=parent_token_id,
         )
         self._placements[token_id] = placement
@@ -109,10 +109,10 @@ class BpmnTokenEngine:
         self._placements.pop(token_id, None)
 
     def get_tokens_at(self, node_id: str) -> list[TokenPlacement]:
-        return [p for p in self._placements.values() if p.current_node_id == node_id and p.state == TokenState.ACTIVE]
+        return [p for p in self._placements.values() if p.current_node_id == node_id and p.state == TokenStateEnum.ACTIVE]
 
     def get_active_tokens(self, instance_id: str | None = None) -> list[TokenPlacement]:
-        return [p for p in self._placements.values() if p.state == TokenState.ACTIVE]
+        return [p for p in self._placements.values() if p.state == TokenStateEnum.ACTIVE]
 
 
 class BpmnGatewaySemantics:

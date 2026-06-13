@@ -4,6 +4,7 @@ Token-based Execution Tracking
 Implements token-based execution semantics for BPMN and other flow-based
 orchestration standards. Tokens represent execution flow through the process.
 OSDM-aligned with BPMN flow element types.
+Uses State pattern for token lifecycle transitions.
 """
 
 from __future__ import annotations
@@ -25,12 +26,13 @@ if TYPE_CHECKING:
         Gateway as OsDmGateway,
         Event as OsDmEvent,
     )
+    from .token_states import TokenState as TokenStateObj
 
 
 logger = logging.getLogger(__name__)
 
 
-class TokenState(Enum):
+class TokenStateEnum(Enum):
     """Token states"""
     ACTIVE = "active"  # Token is active and can move
     WAITING = "waiting"  # Token is waiting (e.g., at gateway)
@@ -54,7 +56,7 @@ class TokenSnapshot:
     timestamp: datetime
     element_id: str
     element_type: str
-    state: TokenState
+    state: "TokenStateEnum"
     variables: dict[str, Any]
 
     def to_dict(self) -> dict[str, Any]:
@@ -72,7 +74,7 @@ class TokenSnapshot:
             timestamp=_parse_datetime(payload.get("timestamp")),
             element_id=str(payload.get("element_id", "")),
             element_type=str(payload.get("element_type", "")),
-            state=TokenState(str(payload.get("state", TokenState.ACTIVE.value))),
+            state=TokenStateEnum(str(payload.get("state", TokenStateEnum.ACTIVE.value))),
             variables=dict(payload.get("variables") or {}),
         )
 
@@ -98,7 +100,8 @@ class Token:
         self.instance_id = instance_id
         self.parent_token_id = parent_token_id
         self.token_type = token_type
-        self.state = TokenState.ACTIVE
+        self.state = TokenStateEnum.ACTIVE
+        self._state: TokenStateObj | None = None
         
         # OSDM flow element references (runtime-only, not serialized)
         self._osdm_flow_node: OsDmFlowNode | None = None
@@ -158,51 +161,39 @@ class Token:
         self._osdm_activity = activity
         self.set_osdm_flow_node(activity)
     
+    def _get_state(self) -> TokenStateObj:
+        from .token_states import token_state_for
+        if self._state is None:
+            self._state = token_state_for(self.state.value)
+        return self._state
+
+    def set_state(self, enum_state: TokenStateEnum, state_obj: TokenStateObj | None = None) -> None:
+        self.state = enum_state
+        if state_obj is not None:
+            self._state = state_obj
+        else:
+            from .token_states import token_state_for
+            self._state = token_state_for(enum_state.value)
+
     def wait(self, reason: str) -> None:
-        """Put token in waiting state"""
-        self.state = TokenState.WAITING
-        self.waiting_for = reason
-        self.wait_start_time = datetime.utcnow()
-        self.updated_at = datetime.utcnow()
-        
-        logger.debug(f"Token {self.token_id} waiting: {reason}")
+        """Put token in waiting state (delegates to state object)."""
+        self._get_state().wait(self, reason)
     
     def resume(self) -> None:
-        """Resume token from waiting state"""
-        if self.state != TokenState.WAITING:
-            logger.warning(f"Token {self.token_id} not in waiting state")
-            return
-        
-        self.state = TokenState.ACTIVE
-        self.waiting_for = None
-        self.wait_start_time = None
-        self.updated_at = datetime.utcnow()
-        
-        logger.debug(f"Token {self.token_id} resumed")
+        """Resume token from waiting state (delegates to state object)."""
+        self._get_state().resume(self)
     
     def complete(self) -> None:
-        """Mark token as completed"""
-        self.state = TokenState.COMPLETED
-        self.completed_at = datetime.utcnow()
-        self.updated_at = datetime.utcnow()
-        
-        logger.debug(f"Token {self.token_id} completed")
+        """Mark token as completed (delegates to state object)."""
+        self._get_state().complete(self)
     
     def terminate(self) -> None:
-        """Terminate the token"""
-        self.state = TokenState.TERMINATED
-        self.completed_at = datetime.utcnow()
-        self.updated_at = datetime.utcnow()
-        
-        logger.debug(f"Token {self.token_id} terminated")
+        """Terminate the token (delegates to state object)."""
+        self._get_state().terminate(self)
     
     def merge(self) -> None:
-        """Mark token as merged"""
-        self.state = TokenState.MERGED
-        self.completed_at = datetime.utcnow()
-        self.updated_at = datetime.utcnow()
-        
-        logger.debug(f"Token {self.token_id} merged")
+        """Mark token as merged (delegates to state object)."""
+        self._get_state().merge(self)
     
     def add_child_token(self, child_token_id: str) -> None:
         """Add a child token (for parallel execution)"""
@@ -237,15 +228,15 @@ class Token:
     
     def is_active(self) -> bool:
         """Check if token is active"""
-        return self.state == TokenState.ACTIVE
+        return self.state == TokenStateEnum.ACTIVE
     
     def is_waiting(self) -> bool:
         """Check if token is waiting"""
-        return self.state == TokenState.WAITING
+        return self.state == TokenStateEnum.WAITING
     
     def is_completed(self) -> bool:
         """Check if token is completed"""
-        return self.state in (TokenState.COMPLETED, TokenState.TERMINATED, TokenState.MERGED)
+        return self.state in (TokenStateEnum.COMPLETED, TokenStateEnum.TERMINATED, TokenStateEnum.MERGED)
     
     def get_metadata(self, key: str, default: Any = None) -> Any:
         """Get metadata value"""
@@ -311,7 +302,7 @@ class Token:
             token_type=TokenType(str(payload.get("token_type", TokenType.PROCESS.value))),
             current_element_id=_optional_str(payload.get("current_element_id")),
         )
-        token.state = TokenState(str(payload.get("state", TokenState.ACTIVE.value)))
+        token.state = TokenStateEnum(str(payload.get("state", TokenStateEnum.ACTIVE.value)))
         token.current_element_type = _optional_str(nested_payload.get("current_element_type"))
         token.previous_element_id = _optional_str(nested_payload.get("previous_element_id"))
         token.created_at = _parse_datetime(payload.get("created_at"))
@@ -510,7 +501,7 @@ class TokenManager:
             )
         elif tokens[0] is not None:
             merged_token = tokens[0]
-            merged_token.state = TokenState.ACTIVE
+            merged_token.state = TokenStateEnum.ACTIVE
             merged_token.move_to(target_element_id, "merged")
         
         logger.info(f"Merged {len(tokens)} tokens into {merged_token.token_id}")

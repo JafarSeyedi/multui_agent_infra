@@ -16,65 +16,29 @@ from typing import Any
 from ....models.base import ElementType
 from ....models.exceptions import DocumentParseError
 from ....models.media_types import MEDIA_TYPES
-from ....models.usdm_models import CaptionContent
-from ....models.usdm_models import CharacterStyle
-from ....models.usdm_models import CodeContent
-from ....models.usdm_models import ColumnBreakContent
-from ....models.usdm_models import CommentContent
-from ....models.usdm_models import CrossReference
-from ....models.usdm_models import DocumentElement
-from ....models.usdm_models import EndnoteContent
-from ....models.usdm_models import FooterContent
-from ....models.usdm_models import FootnoteContent
-from ....models.usdm_models import HeaderContent
-from ....models.usdm_models import HeadingContent
-from ....models.usdm_models import ImageContent
-from ....models.usdm_models import IndexContent
-from ....models.usdm_models import LineBreakContent
-from ....models.usdm_models import LinkContent
-from ....models.usdm_models import ListContent
-from ....models.usdm_models import ListItemContent
-from ....models.usdm_models import ListStyle
-from ....models.usdm_models import LogicalElement
-from ....models.usdm_models import MathContent
-from ....models.usdm_models import PageBreakContent
-from ....models.usdm_models import ParagraphContent
-from ....models.usdm_models import ParagraphStyle
-from ....models.usdm_models import QuoteContent
-from ....models.usdm_models import RichTextContent
-from ....models.usdm_models import RichTextSpan
-from ....models.usdm_models import Section
-from ....models.usdm_models import StyleSheet
-from ....models.usdm_models import TableCell
-from ....models.usdm_models import TableContent
-from ....models.usdm_models import TableRow
-from ....models.usdm_models import TableStyle
-from ....models.usdm_models import TOCContent
-from ....models.usdm_models import USDMDocument
+from ....models.usdm_models import (
+    CaptionContent, CodeContent, ColumnBreakContent, CommentContent,
+    CrossReference, DocumentElement, EndnoteContent, FooterContent,
+    FootnoteContent, HeaderContent, ImageContent, IndexContent,
+    LineBreakContent, LinkContent, LogicalElement, PageBreakContent,
+    ParagraphContent, RichTextContent, RichTextSpan, Section,
+    TableCell, TableContent, TOCContent, USDMDocument,
+)
 from ...base import BaseDocumentParser
 from ...base import ParseOptions
+from .latex_elements import LatexElements
+from .latex_preamble import LatexPreamble
+from .latex_section import LatexSection
+from .latex_styles import LatexStyles
+from .latex_tables import LatexTables
+from .latex_text import LatexText, _parse_keyval
 
 logger = logging.getLogger(__name__)
 
 
-def _parse_keyval(s: str) -> dict[str, str]:
-    result: dict[str, str] = {}
-    for part in s.split(","):
-        part = part.strip()
-        if "=" in part:
-            k, v = part.split("=", 1)
-            result[k.strip()] = v.strip()
-    return result
-
-
-def _parse_length(s: str) -> float | str:
-    try:
-        return float(s)
-    except ValueError:
-        return s
-
-
-class LatexParser(BaseDocumentParser):
+class LatexParser(BaseDocumentParser, LatexText, LatexPreamble,
+                  LatexSection, LatexElements, LatexTables,
+                  LatexStyles):
     """Comprehensive LaTeX2e parser with full standard package support."""
 
     name: str = "latex"
@@ -85,8 +49,8 @@ class LatexParser(BaseDocumentParser):
         self._reset_parser_state()
 
     async def parse_bytes(self, data: bytes, document_id: str, source_name: str,
-                         metadata: dict[str, Any] | None = None,
-                         options: ParseOptions | None = None) -> USDMDocument:
+                          metadata: dict[str, Any] | None = None,
+                          options: ParseOptions | None = None) -> USDMDocument:
         """Parse LaTeX byte data into USDMDocument."""
         opts = options or ParseOptions()
         try:
@@ -114,8 +78,8 @@ class LatexParser(BaseDocumentParser):
             raise DocumentParseError(f"Error parsing LaTeX: {e}")
 
     async def parse_stream(self, stream: AsyncIterator[bytes], document_id: str,
-                          source_name: str, metadata: dict[str, Any] | None = None,
-                          options: ParseOptions | None = None) -> USDMDocument:
+                           source_name: str, metadata: dict[str, Any] | None = None,
+                           options: ParseOptions | None = None) -> USDMDocument:
         """Parse LaTeX from a byte stream."""
         try:
             chunks: list[bytes] = []
@@ -228,88 +192,6 @@ class LatexParser(BaseDocumentParser):
             body_end = len(text)
         body = text[body_start:body_end] if body_start >= 0 and body_start < body_end else text
         self._parse_body(body)
-
-    def _parse_preamble(self, text: str) -> None:
-        """Extract documentclass, usepackage, font, layout, colors from preamble."""
-        doc_start = text.find(r"\begin{document}")
-        preamble = text[:doc_start] if doc_start >= 0 else text
-
-        dc_m = re.search(r"\documentclass\s*(?:\[([^\]]*)\])?\s*\{([^}]*)\}", preamble)
-        if dc_m:
-            self._document_class = dc_m.group(2).strip()
-            if dc_m.group(1):
-                self._document_options = _parse_keyval(dc_m.group(1))
-
-        for pkg_m in re.finditer(r"\usepackage\s*(?:\[([^\]]*)\])?\s*\{([^}]*)\}", preamble):
-            opts = _parse_keyval(pkg_m.group(1)) if pkg_m.group(1) else {}
-            for p in pkg_m.group(2).strip().split(","):
-                p = p.strip()
-                if p:
-                    self._loaded_packages.append(p)
-                    if opts.get("main"):
-                        self._current_language = opts["main"]
-
-        fe_m = re.search(r"\usepackage\s*\[([^\]]*)\]\s*\{fontenc\}", preamble)
-        if fe_m:
-            self._font_encoding = fe_m.group(1).strip()
-
-        ie_m = re.search(r"\usepackage\s*\[([^\]]*)\]\s*\{inputenc\}", preamble)
-        if ie_m:
-            self._input_encoding = ie_m.group(1).strip()
-
-        main_m = re.search(r"\setmainfont\s*(?:\[[^\]]*\]\s*)?\{([^}]*)\}", preamble)
-        if main_m:
-            self._base_font = main_m.group(1)
-        sans_m = re.search(r"\setsansfont\s*(?:\[[^\]]*\]\s*)?\{([^}]*)\}", preamble)
-        if sans_m:
-            self._sans_font = sans_m.group(1)
-        mono_m = re.search(r"\setmonofont\s*(?:\[[^\]]*\]\s*)?\{([^}]*)\}", preamble)
-        if mono_m:
-            self._mono_font = mono_m.group(1)
-
-        layout_keys = [
-            "textwidth", "textheight", "topmargin", "headheight", "headsep",
-            "footskip", "oddsidemargin", "evensidemargin", "marginparwidth",
-            "marginparsep", "paperwidth", "paperheight", "hoffset", "voffset",
-            "columnsep", "columnseprule", "linewidth", "parindent", "parskip",
-        ]
-        for key in layout_keys:
-            m = re.search(r"\\setlength\s*\{\\" + key + r"\}\s*\{([^}]*)\}", preamble)
-            if m:
-                setattr(self, "_" + key, _parse_length(m.group(1)))
-
-        geo_m = re.search(r"\geometry\s*\{([^}]*)\}", preamble)
-        if geo_m:
-            self._document_options.update(_parse_keyval(geo_m.group(1)))
-
-        for m in re.finditer(r"\definecolor\s*\{([^}]*)\}\s*\{([^}]*)\}\s*\{([^}]*)\}", preamble):
-            self._color_definitions[m.group(1)] = {
-                "model": m.group(2).strip(), "spec": m.group(3).strip(),
-            }
-
-        gp_m = re.search(r"\graphicspath\s*\{(?:\s*\{[^}]*\}\s*)+\}", preamble)
-        if gp_m:
-            self._graphicspath = re.findall(r"\{([^}]*)\}", gp_m.group(0))
-
-        ge_m = re.search(r"\DeclareGraphicsExtensions\s*\{([^}]*)\}", preamble)
-        if ge_m:
-            self._graphics_extensions = [e.strip() for e in ge_m.group(1).split(",")]
-
-        title_m = re.search(r"\title\s*(?:\[[^\]]*\]\s*)?\{([^}]*)\}", preamble)
-        if title_m:
-            self._title = title_m.group(1)
-        author_m = re.search(r"\author\s*\{([^}]*)\}", preamble)
-        if author_m:
-            self._author = author_m.group(1)
-        date_m = re.search(r"\date\s*\{([^}]*)\}", preamble)
-        if date_m:
-            self._date = date_m.group(1)
-        thanks_m = re.search(r"\thanks\s*\{([^}]*)\}", preamble)
-        if thanks_m:
-            self._thanks_notes.append(thanks_m.group(1))
-
-    def _extract_title_from_preamble(self, text: str) -> str | None:
-        return self._title
 
     def _parse_body(self, text: str) -> None:
         r"""Parse the body content between \begin{document} and \end{document}."""
@@ -428,9 +310,7 @@ class LatexParser(BaseDocumentParser):
                             self._create_paragraph(para_text)
                         current_paragraph_text = []
                     self._create_paragraph("", alignment="right")
-                elif env_name == "titlepage":
-                    pass
-                elif env_name == "thebibliography":
+                elif env_name in ("titlepage", "thebibliography"):
                     pass
                 elif env_name in ("equation", "equation*", "align", "align*", "gather", "gather*",
                                   "multline", "multline*", "displaymath", "math"):
@@ -716,8 +596,6 @@ class LatexParser(BaseDocumentParser):
             i += 1
             continue
 
-
-            # Check if we already handled margin notes above
             if re.search(r"\(marginnote|sidenote|pagenote)\b", stripped_clean):
                 i += 1
                 continue
@@ -772,7 +650,6 @@ class LatexParser(BaseDocumentParser):
             else:
                 cap_text = None
                 unnumbered = False
-                # captionof
                 capof_m = re.search(r"\captionof\s*\{([^}]*)\}\s*\{([^}]*)\}", stripped_clean)
                 if capof_m:
                     cap_type = capof_m.group(1)
@@ -853,7 +730,7 @@ class LatexParser(BaseDocumentParser):
                 opts_str = img_m.group(1) or ""
                 img_path = img_m.group(2)
                 opts = _parse_keyval(opts_str)
-                resolved_path = self._resolve_display_path(img_path)
+                resolved_path = self._resolve_image_path(img_path)
                 img_meta: dict[str, Any] = dict(opts)
                 img_meta["raw_path"] = img_path
                 img_meta["resolved_path"] = resolved_path
@@ -899,12 +776,10 @@ class LatexParser(BaseDocumentParser):
                     current_paragraph_text.append(rb_m.group(rb_m.lastindex))
                     break
             else:
-                # adjustbox
                 adj_m = re.search(r"\adjustbox\s*\{([^}]*)\}\s*\{([^}]*)\}", stripped_clean)
                 if adj_m:
                     current_paragraph_text.append(adj_m.group(2))
                 else:
-                    # epsfig/psfig/epsfbox
                     old_img_handled = False
                     for old_cmd in ["psfig", "epsfig"]:
                         old_m = re.search(r"\\" + old_cmd + r"\s*(?:\{([^}]*)\}|file\s*=\s*([^,]+))", stripped_clean)
@@ -928,7 +803,6 @@ class LatexParser(BaseDocumentParser):
                                 content=ImageContent(src=img_path, alt=img_path.split("/")[-1]),
                             ))
                         else:
-                            # Math environments
                             math_env_m = re.search(
                                 r"\begin\{(equation|equation\*|align|align\*|gather|gather\*|multline|multline\*|displaymath|math)\}",
                                 stripped_clean
@@ -947,7 +821,6 @@ class LatexParser(BaseDocumentParser):
                                 self._create_math_element("\n".join(math_lines), display=True, env_name=math_env_name)
                                 continue
 
-                            # \[ ... \]
                             if stripped_clean == "\\[":
                                 math_lines = []
                                 i += 1
@@ -960,14 +833,12 @@ class LatexParser(BaseDocumentParser):
                                 self._create_math_element("\n".join(math_lines), display=True, env_name="displaymath")
                                 continue
 
-                            # $$ ... $$
                             dd_m = re.search(r"\$\$(.*?)\$\$", stripped_clean)
                             if dd_m:
                                 self._create_math_element(dd_m.group(1), display=True, env_name="displaymath")
                                 i += 1
                                 continue
 
-                            # Line break
                             if re.search(r"\\\\", stripped_clean):
                                 self._add_logical(LogicalElement(
                                     element_id=self._generate_id("lb"),
@@ -977,7 +848,6 @@ class LatexParser(BaseDocumentParser):
                                 i += 1
                                 continue
 
-                            # hspace/vspace
                             hs_matched = False
                             for space_cmd in ["hspace", "vspace"]:
                                 hs_m = re.search(r"\\" + space_cmd + r"\s*\*?\s*\{([^}]*)\}", stripped_clean)
@@ -988,7 +858,6 @@ class LatexParser(BaseDocumentParser):
                                 i += 1
                                 continue
 
-                            # linespread/setstretch/singlespacing/etc.
                             ls_m = re.search(r"\linespread\s*\{([^}]*)\}", stripped_clean)
                             if ls_m:
                                 try:
@@ -1021,7 +890,6 @@ class LatexParser(BaseDocumentParser):
                                 i += 1
                                 continue
 
-                            # Tabular rows
                             if self._current_environment in (
                                 "tabular", "tabular*", "longtable", "array", "tabularx", "tabulary"
                             ):
@@ -1030,17 +898,14 @@ class LatexParser(BaseDocumentParser):
                                     i += 1
                                     continue
 
-                            # multicolumn/multiclip/booktabs
                             if re.search(r"\(multicolumn|multirow|cline|hhline|toprule|midrule|bottomrule|cmidrule|addlinespace)\b", stripped_clean):
                                 i += 1
                                 continue
 
-                            # tabular* with width arg
                             if re.search(r"\begin\{tabular\*\}\s*\{[^}]*\}\s*\{[^}]*\}", stripped_clean):
                                 i += 1
                                 continue
 
-                            # List items
                             item_m = re.match(r"\item\s*(?:\[([^\]]*)\])?\s*(.*)", stripped_clean)
                             if item_m and self._list_stack:
                                 label = item_m.group(1)
@@ -1050,7 +915,6 @@ class LatexParser(BaseDocumentParser):
                                 i += 1
                                 continue
 
-                            # inline verbs
                             verb_m = re.match(r"\verb\*?([^a-zA-Z])\1(.*?)\1", stripped_clean)
                             if verb_m:
                                 self._add_logical(LogicalElement(
@@ -1062,7 +926,6 @@ class LatexParser(BaseDocumentParser):
                                 i += 1
                                 continue
 
-                            # lstinline
                             lstinline_m = re.search(r"\lstinline\s*(?:\[.*?\])?[!](.+?)[!]", stripped_clean)
                             if lstinline_m:
                                 self._add_logical(LogicalElement(
@@ -1074,7 +937,6 @@ class LatexParser(BaseDocumentParser):
                                 i += 1
                                 continue
 
-                            # mint/mintinline
                             mint_m = re.search(r"\mint(?:inline)?\s*(?:\[[^\]]*\])?\{([^}]*)\}\s*\{([^}]*)\}", stripped_clean)
                             if mint_m:
                                 self._add_logical(LogicalElement(
@@ -1086,19 +948,16 @@ class LatexParser(BaseDocumentParser):
                                 i += 1
                                 continue
 
-                            # Skip bare braces
                             if re.match(r"\{[^}]*\}$", stripped_clean):
                                 i += 1
                                 continue
 
-                            # Internal spacing
                             if re.search(r"\(vfill|hfill|dotfill|hrulefill|indent|noindent|lefthyphenmin|righthyphenmin)\b", stripped_clean):
                                 if "noindent" in stripped_clean:
                                     self._indentation = 0
                                 i += 1
                                 continue
 
-                            # Header/footer patterns
                             hf_patterns = [
                                 r"\fancyhead", r"\fancyfoot", r"\fancyhf",
                                 r"\ihead", r"\chead", r"\ohead",
@@ -1126,7 +985,6 @@ class LatexParser(BaseDocumentParser):
                                 i += 1
                                 continue
 
-                            # Process escape sequences and add to paragraph
                             cleaned_text = self._process_escape_sequences(cleaned)
                             if cleaned_text.strip():
                                 current_paragraph_text.append(cleaned_text.strip())
@@ -1137,648 +995,3 @@ class LatexParser(BaseDocumentParser):
             para_text = " ".join(current_paragraph_text)
             if para_text.strip():
                 self._create_paragraph(para_text)
-
-
-    def _strip_comments(self, line: str) -> str:
-        """Remove LaTeX comments from a line, respecting escapes."""
-        result: list[str] = []
-        i = 0
-        while i < len(line):
-            if line[i] == '\\' and i + 1 < len(line):
-                result.append(line[i:i+2])
-                i += 2
-                continue
-            if line[i] == '%':
-                break
-            result.append(line[i])
-            i += 1
-        return ''.join(result)
-
-    def _process_escape_sequences(self, text: str) -> str:
-        """Process LaTeX escape sequences in text."""
-        # Order matters: longer sequences first
-        replacements = [
-            (r'\textbackslash', '\\'),
-            (r'\textasciitilde', '~'),
-            (r'\textasciicircum', '^'),
-            (r'\textbullet', '\u2022'),
-            (r'\textendash', '\u2013'),
-            (r'\textemdash', '\u2014'),
-            (r'\textexclamdown', '\u00a1'),
-            (r'\textquestiondown', '\u00bf'),
-            (r'\textquotedblleft', '"'),
-            (r'\textquotedblright', '"'),
-            (r'\textquoteleft', '\u2018'),
-            (r'\textquoteright', '\u2019'),
-            (r'\textregistered', '\u00ae'),
-            (r'\texttrademark', '\u2122'),
-            (r'\textcopyright', '\u00a9'),
-            (r'\texteuro', '\u20ac'),
-            (r'\textsterling', '\u00a3'),
-            (r'\textyen', '\u00a5'),
-            (r'\textcent', '\u00a2'),
-            (r'\textellipsis', '\u2026'),
-            (r'\textperiodcentered', '\u00b7'),
-            (r'\textcompwordmark', ''),
-            (r'\%', '%'),
-            (r'\&', '&'),
-            (r'\_', '_'),
-            (r'\#', '#'),
-            (r'\$', '$'),
-            (r'\{', '{'),
-            (r'\}', '}'),
-            (r'\char"', ''),  # \char"HEX - strip
-            (r'\symbol{', ''),  # \symbol{num} - strip
-        ]
-        result = text
-        for seq, repl in replacements:
-            result = result.replace(seq, repl)
-        # Handle remaining simple escapes like \~ \' \` \" \^ \= \. \| etc.
-        for simple in ['~', "'", '"', '`', '^', '=', '.', '|', '<', '>']:
-            result = result.replace('\\' + simple, simple)
-        # Spacing commands
-        result = result.replace('\\,', '')
-        result = result.replace('\\;', '')
-        result = result.replace('\\:', '')
-        result = result.replace('\\!', '')
-        result = result.replace('\\ ', ' ')
-        result = result.replace('~', ' ')
-        result = result.replace('---', '\u2014')
-        result = result.replace('--', '\u2013')
-        result = result.replace('``', '\u201c')
-        result = result.replace("''", '\u201d')
-        return result
-
-    def _match_section_command(self, line: str) -> tuple[str, str | None, bool] | None:
-        """Match sectioning commands. Returns (title, short_title, starred) or None."""
-        section_patterns = [
-            (r'\\part\s*\*?\s*(?:\[[^\]]*\])?\s*\{([^}]*)\}', 0),
-            (r'\\chapter\s*\*?\s*(?:\[[^\]]*\])?\s*\{([^}]*)\}', 1),
-            (r'\\section\s*\*?\s*(?:\[([^\]]*)\])?\s*\{([^}]*)\}', 2),
-            (r'\\subsection\s*\*?\s*(?:\[([^\]]*)\])?\s*\{([^}]*)\}', 3),
-            (r'\\subsubsection\s*\*?\s*(?:\[([^\]]*)\])?\s*\{([^}]*)\}', 4),
-            (r'\\paragraph\s*\*?\s*(?:\[([^\]]*)\])?\s*\{([^}]*)\}', 5),
-            (r'\\subparagraph\s*\*?\s*(?:\[([^\]]*)\])?\s*\{([^}]*)\}', 6),
-        ]
-        for pattern, _ in section_patterns:
-            m = re.search(pattern, line)
-            if m:
-                groups = m.groups()
-                open_brace = line.index('{')
-                starred = '*' in line[:open_brace]
-                if len(groups) == 1:
-                    return groups[0], None, starred
-                else:
-                    short = groups[0] if groups[0] else None
-                    title = groups[1] if len(groups) > 1 else groups[0]
-                    return title, short, starred
-
-        minisec_m = re.search(r'\\minisec\s*\{([^}]*)\}', line)
-        if minisec_m:
-            return minisec_m.group(1), None, True
-
-        add_m = re.search(r'\\addcontentsline\s*\{[^}]*\}\s*\{([^}]*)\}\s*\{([^}]*)\}', line)
-        if add_m:
-            return add_m.group(2), None, True
-
-        return None
-
-    def _get_section_cmd_index(self, line: str) -> int:
-        cmds = ['part', 'chapter', 'section', 'subsection', 'subsubsection', 'paragraph', 'subparagraph']
-        for idx, cmd in enumerate(cmds):
-            if re.search(r'\\' + cmd + r'\s*[\*\[{]', line):
-                return idx
-        return 2
-
-    def _get_section_raw_cmd(self, line: str) -> str:
-        m = re.search(r'\\([a-zA-Z]+)', line)
-        return '\\' + m.group(1) if m else '\\section'
-
-    def _create_section(self, title: str, level: int, raw_cmd: str = '\\section',
-                        section_type: str = 'section') -> None:
-        elem_id = self._generate_id(f'section_{level}')
-        section = Section(
-            title=HeadingContent(
-                level=level,
-                text=RichTextContent(spans=[RichTextSpan(text=title)])
-            ),
-            section_type=section_type,
-            metadata={'raw_latex': raw_cmd, 'append': self._is_appendix},
-        )
-        self._push_section(section)
-
-        logical_elem = LogicalElement(
-            element_id=elem_id,
-            element_type=ElementType.HEADING,
-            content=HeadingContent(
-                level=level,
-                text=RichTextContent(spans=[RichTextSpan(text=title)])
-            ),
-            metadata={'level': level, 'raw_latex': raw_cmd, 'section_type': section_type},
-        )
-        self._add_logical(logical_elem)
-
-        doc_elem = DocumentElement(
-            element_id=elem_id,
-            element_type=ElementType.HEADING,
-            metadata={'level': level, 'section_type': section_type},
-        )
-        self._add_element(doc_elem)
-
-    def _create_paragraph(self, text: str, alignment: str | None = None) -> None:
-        if not text.strip():
-            return
-        elem_id = self._generate_id('paragraph')
-        span = RichTextSpan(text=text)
-        para_content = ParagraphContent(
-            text=RichTextContent(spans=[span]),
-            style=None,
-        )
-        meta: dict[str, Any] = {}
-        if alignment:
-            meta['alignment'] = alignment
-        if self._line_spacing is not None:
-            meta['line_spacing'] = self._line_spacing
-        if self._line_spacing_rule:
-            meta['line_spacing_rule'] = self._line_spacing_rule
-        if self._font_size is not None:
-            meta['font_size'] = self._font_size
-        if self._current_language:
-            meta['language'] = self._current_language
-        if self._indentation is not None:
-            meta['indentation'] = self._indentation
-
-        self._add_logical(LogicalElement(
-            element_id=elem_id,
-            element_type=ElementType.PARAGRAPH,
-            content=para_content,
-            metadata=meta,
-        ))
-        doc_elem = DocumentElement(
-            element_id=elem_id,
-            element_type=ElementType.PARAGRAPH,
-            metadata=meta,
-        )
-        self._add_element(doc_elem)
-
-    def _create_math_element(self, math_str: str, display: bool = False, env_name: str = '') -> None:
-        elem_id = self._generate_id('math')
-        self._add_logical(LogicalElement(
-            element_id=elem_id,
-            element_type=ElementType.MATH,
-            content=MathContent(latex=math_str, display=display),
-            metadata={'display': display, 'env': env_name},
-        ))
-        doc_elem = DocumentElement(
-            element_id=elem_id,
-            element_type=ElementType.MATH,
-            metadata={'display': display, 'env': env_name},
-        )
-        self._add_element(doc_elem)
-
-    def _create_list_item(self, content: str, label: str | None = None) -> None:
-        elem_id = self._generate_id('list_item')
-        meta: dict[str, Any] = {}
-        if label:
-            meta['label'] = label
-        logical_elem = LogicalElement(
-            element_id=elem_id,
-            element_type=ElementType.LIST_ITEM,
-            content=ListItemContent(elements=[
-                LogicalElement(
-                    element_id=self._generate_id('para'),
-                    element_type=ElementType.PARAGRAPH,
-                    content=ParagraphContent(
-                        text=RichTextContent(spans=[RichTextSpan(text=content)])
-                    ),
-                )
-            ]),
-            metadata=meta,
-        )
-        self._add_logical(logical_elem)
-        doc_elem = DocumentElement(
-            element_id=elem_id,
-            element_type=ElementType.LIST_ITEM,
-            metadata=meta,
-        )
-        self._add_element(doc_elem)
-
-    def _finalize_list(self, list_info: dict[str, Any]) -> None:
-        elem_id = self._generate_id('list')
-        items: list[ListItemContent] = []
-        for item_data in list_info.get('items', []):
-            items.append(ListItemContent(elements=[
-                LogicalElement(
-                    element_id=self._generate_id('para'),
-                    element_type=ElementType.PARAGRAPH,
-                    content=ParagraphContent(
-                        text=RichTextContent(spans=[RichTextSpan(text=item_data['content'])])
-                    ),
-                )
-            ]))
-        self._add_logical(LogicalElement(
-            element_id=elem_id,
-            element_type=ElementType.LIST,
-            content=ListContent(
-                ordered=list_info.get('ordered', False),
-                items=items,
-            ),
-            metadata={
-                'latex_environment': list_info.get('type', ''),
-                'depth': list_info.get('depth', 1),
-            },
-        ))
-        doc_elem = DocumentElement(
-            element_id=elem_id,
-            element_type=ElementType.LIST,
-        )
-        self._add_element(doc_elem)
-
-    def _start_quote_env(self, env_name: str) -> None:
-        self._quote_lines: list[str] = []
-
-    def _finalize_quote_env(self, env_name: str) -> None:
-        elem_id = self._generate_id('quote')
-        quote_texts: list[str] = []
-        # Collect any accumulated paragraph text
-        self._add_logical(LogicalElement(
-            element_id=elem_id,
-            element_type=ElementType.QUOTE,
-            content=QuoteContent(elements=[
-                LogicalElement(
-                    element_id=self._generate_id('q_para'),
-                    element_type=ElementType.PARAGRAPH,
-                    content=ParagraphContent(
-                        text=RichTextContent(spans=[RichTextSpan(text=' '.join(quote_texts))])
-                    ),
-                )
-            ]),
-            metadata={'latex_environment': env_name},
-        ))
-        doc_elem = DocumentElement(element_id=elem_id, element_type=ElementType.QUOTE)
-        self._add_element(doc_elem)
-
-    def _finalize_verbatim(self, lines: list[str]) -> None:
-        if not lines:
-            return
-        code_content = '\n'.join(lines)
-        elem_id = self._generate_id('code')
-        language = None
-        if self._verbatim_env in ('lstlisting', 'minted'):
-            language = self._verbatim_env
-        self._add_logical(LogicalElement(
-            element_id=elem_id,
-            element_type=ElementType.CODE,
-            content=CodeContent(code=code_content, language=language),
-            metadata={'latex_environment': self._verbatim_env or 'verbatim'},
-        ))
-        doc_elem = DocumentElement(
-            element_id=elem_id,
-            element_type=ElementType.CODE,
-        )
-        self._add_element(doc_elem)
-
-    def _create_float_section(self, env_name: str, placement: str, float_type: str) -> None:
-        elem_id = self._generate_id('float')
-        section = Section(
-            section_id=elem_id,
-            section_type=float_type,
-            metadata={
-                'float_type': float_type,
-                'placement': placement,
-                'env_name': env_name,
-            },
-        )
-        self._push_section(section)
-
-    def _process_tabular_row(self, line: str) -> None:
-        """Process a single tabular row line."""
-        # Remove \\ at end
-        raw = line.rstrip()
-        while raw.endswith('\\\\'):
-            raw = raw[:-2].rstrip()
-        cells = raw.split('&')
-        row_cells: list[TableCell] = []
-        for cell_content in cells:
-            cell_content = cell_content.strip()
-            # Check for multicolumn
-            mc_m = re.match(r'\\multicolumn\{(\d+)\}\{([^}]*)\}\{(.*)', cell_content, re.DOTALL)
-            if mc_m:
-                ncols = int(mc_m.group(1))
-                cell_text = mc_m.group(3).strip()
-                row_cells.append(TableCell(
-                    content=[LogicalElement(
-                        element_id=self._generate_id('tc'),
-                        element_type=ElementType.PARAGRAPH,
-                        content=ParagraphContent(
-                            text=RichTextContent(spans=[RichTextSpan(text=cell_text)])
-                        ),
-                    )],
-                    col_span=ncols,
-                ))
-                continue
-            # Check for multirow
-            mr_m = re.match(r'\\multirow\{(\d+)\}\{(.*?)\}\{(.*)', cell_content, re.DOTALL)
-            if mr_m:
-                nrows = int(mr_m.group(1))
-                cell_text = mr_m.group(3).strip()
-                row_cells.append(TableCell(
-                    content=[LogicalElement(
-                        element_id=self._generate_id('tc'),
-                        element_type=ElementType.PARAGRAPH,
-                        content=ParagraphContent(
-                            text=RichTextContent(spans=[RichTextSpan(text=cell_text)])
-                        ),
-                    )],
-                    row_span=nrows,
-                ))
-                continue
-            row_cells.append(TableCell(
-                content=[LogicalElement(
-                    element_id=self._generate_id('tc'),
-                    element_type=ElementType.PARAGRAPH,
-                    content=ParagraphContent(
-                        text=RichTextContent(spans=[RichTextSpan(text=cell_content)])
-                    ),
-                )],
-            ))
-
-        self._tabular_rows.append(row_cells)
-
-    def _finalize_tabular(self) -> None:
-        elem_id = self._generate_id('table')
-        max_cols = 0
-        for row in self._tabular_rows:
-            n = sum(c.col_span for c in row)
-            if n > max_cols:
-                max_cols = n
-
-        rows: list[TableRow] = []
-        for row_cells in self._tabular_rows:
-            rows.append(TableRow(cells=row_cells))
-
-        table_content = TableContent(
-            rows=rows,
-            grid=list(range(max_cols)) if max_cols > 0 else None,
-            metadata={
-                'column_specification': self._tabular_columns,
-                'env': self._current_environment or 'tabular',
-            },
-        )
-        self._current_table_content = table_content
-        self._add_logical(LogicalElement(
-            element_id=elem_id,
-            element_type=ElementType.TABLE,
-            content=table_content,
-            metadata={'column_specification': self._tabular_columns},
-        ))
-        doc_elem = DocumentElement(
-            element_id=elem_id,
-            element_type=ElementType.TABLE,
-        )
-        self._add_element(doc_elem)
-        self._tabular_rows = []
-        self._tabular_columns = ''
-
-    def _resolve_image_path(self, img_path: str) -> str:
-        """Resolve image path using graphicspath."""
-        if not self._graphicspath:
-            return img_path
-        return img_path  # In real implementation, search graphicspath
-
-    def _finalize_titlepage(self) -> None:
-        """Create title page section."""
-        elem_id = self._generate_id('titlepage')
-        elements: list[LogicalElement] = []
-        if self._title:
-            elements.append(LogicalElement(
-                element_id=self._generate_id('tp_title'),
-                element_type=ElementType.HEADING,
-                content=HeadingContent(
-                    level=0,
-                    text=RichTextContent(spans=[RichTextSpan(text=self._title)]),
-                ),
-                metadata={'titlepage_element': 'title'},
-            ))
-        if self._author:
-            elements.append(LogicalElement(
-                element_id=self._generate_id('tp_author'),
-                element_type=ElementType.PARAGRAPH,
-                content=ParagraphContent(
-                    text=RichTextContent(spans=[RichTextSpan(text=self._author)])
-                ),
-                metadata={'titlepage_element': 'author'},
-            ))
-        if self._date:
-            elements.append(LogicalElement(
-                element_id=self._generate_id('tp_date'),
-                element_type=ElementType.PARAGRAPH,
-                content=ParagraphContent(
-                    text=RichTextContent(spans=[RichTextSpan(text=self._date)])
-                ),
-                metadata={'titlepage_element': 'date'},
-            ))
-        for thanks_text in self._thanks_notes:
-            fn_id = self._generate_id('thanks')
-            fn = FootnoteContent(note_id=fn_id, elements=[
-                LogicalElement(
-                    element_id=self._generate_id('fn_para'),
-                    element_type=ElementType.PARAGRAPH,
-                    content=ParagraphContent(
-                        text=RichTextContent(spans=[RichTextSpan(text=thanks_text)])
-                    ),
-                )
-            ], reference_text=thanks_text)
-            elements.append(LogicalElement(
-                element_id=fn_id,
-                element_type=ElementType.FOOTNOTE,
-                content=fn,
-                metadata={'titlepage_element': 'thanks'},
-            ))
-            self._footnotes.append(fn)
-
-        section = Section(
-            section_id=elem_id,
-            section_type='titlepage',
-            metadata={'raw_latex': '\\maketitle'},
-        )
-        self._push_section(section)
-
-        for elem in elements:
-            self._add_logical(elem)
-
-    def _build_stylesheet(self) -> StyleSheet:
-        """Build comprehensive stylesheet from parsed style info."""
-        char_styles: dict[str, CharacterStyle] = {}
-        para_styles: dict[str, ParagraphStyle] = {}
-
-        # Basic character styles
-        char_styles['textbf'] = CharacterStyle(name='textbf', bold=True)
-        char_styles['textit'] = CharacterStyle(name='textit', italic=True)
-        char_styles['texttt'] = CharacterStyle(name='texttt', font='monospace')
-        char_styles['underline'] = CharacterStyle(name='underline', underline=True)
-        char_styles['emph'] = CharacterStyle(name='emph', italic=True)
-        char_styles['textsl'] = CharacterStyle(name='textsl', italic=True)
-        char_styles['textsc'] = CharacterStyle(name='textsc', small_caps=True)
-        char_styles['textsuperscript'] = CharacterStyle(name='textsuperscript', superscript=True)
-        char_styles['textsubscript'] = CharacterStyle(name='textsubscript', subscript=True)
-
-        # Font encoding styles
-        if self._font_encoding:
-            char_styles[f'fontenc_{self._font_encoding}'] = CharacterStyle(
-                name=f'fontenc_{self._font_encoding}',
-                font_charset=self._font_encoding,
-            )
-
-        # Color styles
-        for color_name, color_def in self._color_definitions.items():
-            char_styles[f'color_{color_name}'] = CharacterStyle(
-                name=f'color_{color_name}',
-                color=color_def.get('spec'),
-                _meta={'model': color_def.get('model'), 'spec': color_def.get('spec')},
-            )
-        char_styles['textcolor_default'] = CharacterStyle(name='textcolor')
-
-        # Font size styles
-        size_map = {
-            'tiny': 5.0, 'scriptsize': 7.0, 'footnotesize': 8.0,
-            'small': 9.0, 'normalsize': 10.0, 'large': 12.0,
-            'Large': 14.4, 'LARGE': 17.28, 'huge': 20.74, 'Huge': 24.88,
-        }
-        for sz_name, sz_val in size_map.items():
-            char_styles[f'size_{sz_name}'] = CharacterStyle(name=f'size_{sz_name}', size=sz_val)
-
-        # Font family styles
-        char_styles['rmfamily'] = CharacterStyle(name='rmfamily', font_family='roman')
-        char_styles['sffamily'] = CharacterStyle(name='sffamily', font_family='sans')
-        char_styles['ttfamily'] = CharacterStyle(name='ttfamily', font_family='mono')
-
-        if self._base_font:
-            char_styles['setmainfont'] = CharacterStyle(
-                name='setmainfont', font=self._base_font,
-            )
-        if self._sans_font:
-            char_styles['setsansfont'] = CharacterStyle(
-                name='setsansfont', font=self._sans_font,
-            )
-        if self._mono_font:
-            char_styles['setmonofont'] = CharacterStyle(
-                name='setmonofont', font=self._mono_font,
-            )
-
-        # Paragraph styles
-        para_styles['normal'] = ParagraphStyle(name='normal')
-        para_styles['chapter'] = ParagraphStyle(name='chapter', spacing_after=24.0)
-        para_styles['section'] = ParagraphStyle(name='section', spacing_after=18.0)
-        para_styles['subsection'] = ParagraphStyle(name='subsection', spacing_after=14.0)
-        para_styles['subsubsection'] = ParagraphStyle(name='subsubsection', spacing_after=12.0)
-        para_styles['paragraph'] = ParagraphStyle(name='paragraph', spacing_after=10.0)
-        para_styles['subparagraph'] = ParagraphStyle(name='subparagraph', spacing_after=8.0)
-        para_styles['center'] = ParagraphStyle(name='center', alignment='center')
-        para_styles['flushleft'] = ParagraphStyle(name='flushleft', alignment='left')
-        para_styles['flushright'] = ParagraphStyle(name='flushright', alignment='right')
-
-        if self._indentation is not None:
-            para_styles['indented'] = ParagraphStyle(name='indented', indent_left=self._indentation)
-        if self._parskip is not None:
-            para_styles['parskip'] = ParagraphStyle(name='parskip', spacing_after=self._parskip)
-        if self._line_spacing is not None:
-            para_styles['line_spacing'] = ParagraphStyle(
-                name='line_spacing',
-                line_spacing=self._line_spacing,
-                line_spacing_rule=self._line_spacing_rule,
-            )
-
-        list_styles: dict[str, ListStyle] = {}
-        list_styles['enumerate'] = ListStyle(name='enumerate', level_styles={
-            i: {'format': 'decimal'} for i in range(1, 7)
-        })
-        list_styles['itemize'] = ListStyle(name='itemize', level_styles={
-            i: {'symbol': chr(8226 if i == 1 else 9702 if i == 2 else 9642 if i == 3 else 8226)}
-            for i in range(1, 7)
-        })
-        list_styles['description'] = ListStyle(name='description')
-
-        table_styles: dict[str, Any] = {
-            'tabular': TableStyle(name='tabular'),
-            'longtable': TableStyle(name='longtable'),
-        }
-
-        return StyleSheet(
-            character_styles=char_styles,
-            paragraph_styles=para_styles,
-            list_styles=list_styles,
-            table_styles=table_styles,
-        )
-
-    def _build_pages(self) -> list:
-        """Build page layout info from collected metadata."""
-        return []
-
-    def _build_doc_metadata(self) -> dict[str, Any]:
-        """Build document metadata from all parsed preamble and body info."""
-        fs: dict[str, Any] = {}
-
-        # Document class info
-        fs['document_class'] = self._document_class
-        fs['document_options'] = self._document_options.copy()
-
-        # Packages
-        fs['loaded_packages'] = list(self._loaded_packages)
-
-        # Font info
-        if self._font_encoding:
-            fs['font_encoding'] = self._font_encoding
-        if self._input_encoding:
-            fs['input_encoding'] = self._input_encoding
-        if self._base_font:
-            fs['base_font'] = self._base_font
-        if self._sans_font:
-            fs['sans_font'] = self._sans_font
-        if self._mono_font:
-            fs['mono_font'] = self._mono_font
-
-        # Page layout
-        for key in ['textwidth', 'textheight', 'topmargin', 'headheight', 'headsep',
-                     'footskip', 'oddsidemargin', 'evensidemargin', 'marginparwidth',
-                     'marginparsep', 'paperwidth', 'paperheight', 'hoffset', 'voffset',
-                     'columnsep', 'columnseprule', 'linewidth', 'parindent', 'parskip']:
-            val = getattr(self, '_' + key, None)
-            if val is not None:
-                fs[key] = val
-
-        # Colors
-        fs['color_definitions'] = dict(self._color_definitions)
-
-        # Language
-        if self._current_language:
-            fs['language'] = self._current_language
-        if self._languages:
-            fs['languages'] = list(self._languages)
-
-        # Graphic paths
-        if self._graphicspath:
-            fs['graphicspath'] = list(self._graphicspath)
-        if self._graphics_extensions:
-            fs['graphics_extensions'] = list(self._graphics_extensions)
-
-        # Counts
-        fs['footnote_count'] = len(self._footnotes)
-        fs['endnote_count'] = len(self._endnotes)
-        fs['cross_reference_count'] = len(self._cross_references)
-        fs['index_entry_count'] = len(self._index_entries)
-        fs['toc_entry_count'] = len(self._toc_entries)
-        fs['caption_count'] = len(self._captions)
-        fs['label_count'] = len(self._labels)
-        fs['is_appendix'] = self._is_appendix
-
-        # Title page
-        if self._title:
-            fs['title'] = self._title
-        if self._author:
-            fs['author'] = self._author
-        if self._date:
-            fs['date'] = self._date
-
-        return fs
-

@@ -3,6 +3,8 @@ Core Orchestration Engine
 
 Main coordinator for orchestration lifecycle, deployment, recovery,
 instance execution, and shared runtime persistence.
+
+Refactored to delegate to focused services for separation of concerns.
 """
 
 from __future__ import annotations
@@ -49,7 +51,18 @@ from ..validation.osdm_validator import (
     StateMachineOsdmValidator,
 )
 from ..runtime.osdm_serializer import OsdmSerializer, OsdmDeserializer, SerializationContext
-
+from .engine_services import (
+    EngineLifecycleService,
+    InstanceService,
+    RecoveryService,
+    DefinitionService,
+)
+from .engine_states import (
+    EngineState as EngineStateABC,
+    ErrorState,
+    RunningState,
+    StoppedState,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -132,6 +145,13 @@ class Deployment:
 
 
 class OrchestrationEngine:
+    """Orchestration engine that delegates to focused services.
+
+    This class acts as a facade — it composes specialized services
+    for lifecycle, deployment, instance, recovery, and definition
+    management while exposing the same public API.
+    """
+
     def __init__(
         self,
         config: Optional[EngineConfig] = None,
@@ -144,8 +164,8 @@ class OrchestrationEngine:
         definition_repository: DefinitionRepository | None = None,
     ) -> None:
         self.config = config or EngineConfig()
-        self.state = EngineState.STOPPED
         self.engine_id = str(uuid4())
+        self._lifecycle_state: EngineStateABC = StoppedState()
 
         self.event_repository = event_repository or EventRepository()
         self.instance_repository = instance_repository or InstanceRepository()
@@ -213,59 +233,103 @@ class OrchestrationEngine:
         self._executor_tasks: List[asyncio.Task] = []
         self._shutdown_event = asyncio.Event()
 
+        # Focused services
+        self._definition_service = DefinitionService(
+            definition_repository=self.definition_repository,
+            definitions=self.definitions,
+            definition_versions=self.definition_versions,
+        )
+        self._instance_service = InstanceService(
+            instance_manager=self.instance_manager,
+            token_manager=self.token_manager,
+            variable_manager=self.variable_manager,
+            state_manager=self.state_manager,
+            event_bus=self.event_bus,
+            correlation_engine=self.correlation_engine,
+            engine_handlers=self.engine_handlers,
+            scheduler=self.scheduler,
+        )
+        self._recovery_service = RecoveryService(
+            instance_manager=self.instance_manager,
+            token_manager=self.token_manager,
+            variable_manager=self.variable_manager,
+            state_manager=self.state_manager,
+            event_bus=self.event_bus,
+            correlation_engine=self.correlation_engine,
+            scheduler=self.scheduler,
+            definitions=self.definitions,
+            definition_versions=self.definition_versions,
+            deployments=self.deployments,
+        )
+        self._lifecycle_service = EngineLifecycleService(
+            event_bus=self.event_bus,
+            scheduler=self.scheduler,
+            event_type=EventType,
+            recovery_service=self._recovery_service,
+            bam_engine=self._bam_engine,
+            config=self.config,
+        )
+
+    # ── Lifecycle ──────────────────────────────────────────────────
+
+    @property
+    def state(self) -> str:
+        return self._lifecycle_state.name
+
     async def start(self) -> None:
-        if self.state == EngineState.RUNNING:
-            return
-        self.state = EngineState.STARTING
-        try:
-            await self._recover_runtime_state()
-            await self.event_bus.start()
-            await self.scheduler.start()
-            for i in range(self.config.job_executor_threads):
-                self._executor_tasks.append(asyncio.create_task(self._job_executor_loop(i)))
-            for i in range(self.config.async_executor_threads):
-                self._executor_tasks.append(asyncio.create_task(self._async_executor_loop(i)))
-            if self.config.enable_monitoring:
-                self._executor_tasks.append(asyncio.create_task(self._monitoring_loop()))
-            if self._bam_engine:
-                await self._bam_engine.start()
-            self.state = EngineState.RUNNING
-            await self.event_bus.publish(
-                Event(type=EventType.ENGINE_STARTED, data={"engine_id": self.engine_id, "timestamp": datetime.utcnow()})
-            )
-        except Exception:
-            self.state = EngineState.ERROR
-            logger.exception("Failed to start engine")
-            raise
+        await self._lifecycle_state.start(self)
+        if self._lifecycle_state.name == "starting":
+            try:
+                await self._lifecycle_service.start()
+                self._lifecycle_state = RunningState()
+                await self.event_bus.publish(
+                    Event(type=EventType.ENGINE_STARTED, data={})
+                )
+            except Exception:
+                self._lifecycle_state = ErrorState()
+                logger.exception("Failed to start engine")
+                raise
 
     async def stop(self) -> None:
-        if self.state == EngineState.STOPPED:
-            return
-        self.state = EngineState.STOPPING
-        self._shutdown_event.set()
-        if self._executor_tasks:
-            await asyncio.gather(*self._executor_tasks, return_exceptions=True)
-            self._executor_tasks.clear()
-        await self.scheduler.stop()
-        await self.event_bus.stop()
-        if self._bam_engine:
-            await self._bam_engine.stop()
-        self.state = EngineState.STOPPED
+        await self._lifecycle_state.stop(self)
+        if self._lifecycle_state.name == "stopping":
+            self._shutdown_event.set()
+            if self._executor_tasks:
+                await asyncio.gather(*self._executor_tasks, return_exceptions=True)
+                self._executor_tasks.clear()
+            await self.scheduler.stop()
+            if self._bam_engine:
+                await self._bam_engine.stop()
+            await self.event_bus.publish(
+                Event(type=EventType.ENGINE_STOPPED, data={})
+            )
+            await self.event_bus.stop()
+            self._lifecycle_state = StoppedState()
 
     async def pause(self) -> None:
-        if self.state != EngineState.RUNNING:
-            raise RuntimeError(f"Cannot pause engine in state: {self.state}")
-        self.state = EngineState.PAUSED
-        await self.scheduler.pause()
+        current = self._lifecycle_state.name
+        await self._lifecycle_state.pause(self)
+        if self._lifecycle_state.name == "paused":
+            await self.scheduler.pause()
+            await self.event_bus.publish(
+                Event(type=EventType.ENGINE_PAUSED, data={})
+            )
+        elif self._lifecycle_state.name != current:
+            pass
 
     async def resume(self) -> None:
-        if self.state != EngineState.PAUSED:
-            raise RuntimeError(f"Cannot resume engine in state: {self.state}")
-        self.state = EngineState.RUNNING
-        await self.scheduler.resume()
+        current = self._lifecycle_state.name
+        await self._lifecycle_state.resume(self)
+        if self._lifecycle_state.name == "running" and current == "paused":
+            await self.scheduler.resume()
+            await self.event_bus.publish(
+                Event(type=EventType.ENGINE_RESUMED, data={})
+            )
 
     def register_engine_handler(self, definition_type: str, handler: Any) -> None:
         self.engine_handlers[definition_type] = handler
+
+    # ── Deployment ─────────────────────────────────────────────────
 
     async def deploy(
         self,
@@ -294,6 +358,23 @@ class OrchestrationEngine:
         )
         return deployment
 
+    async def delete_deployment(self, deployment_id: str, cascade: bool = False) -> None:
+        from .engine_services import _delete_deployment_state
+        await _delete_deployment_state(
+            deployment_id=deployment_id,
+            cascade=cascade,
+            deployments=self.deployments,
+            definitions=self.definitions,
+            definition_versions=self.definition_versions,
+            instances=self.instances,
+            delete_instance_fn=self._delete_instance_internal,
+        )
+
+    async def _delete_instance_internal(self, instance_id: str, reason: str) -> None:
+        await self._instance_service.delete_instance(instance_id, reason)
+
+    # ── Instance management ────────────────────────────────────────
+
     async def start_process_instance(
         self,
         process_definition_key: str,
@@ -319,45 +400,17 @@ class OrchestrationEngine:
             variables=variables or {},
         )
         self.instances[instance.id] = instance
-        self.instance_manager.add_instance(instance)
         self.active_instances.add(instance.id)
-        await self.instance_manager.persist_instance(instance.id)
-        await self.state_manager.set_persisted(
-            instance.id,
-            instance.state.value,
-            data={
-                "definition_id": instance.definition_id,
-                "definition_key": instance.definition_key,
-                "business_key": instance.business_key,
-                "variables": dict(instance.variables),
-            },
+
+        await self._instance_service.start_instance(
+            definition, business_key, variables, tenant_id,
+            instance=instance,
+            persist_fn=self._persist_instance_state,
         )
-        if variables:
-            for name, value in variables.items():
-                await self.variable_manager.set_persisted(instance.id, instance.id, name, value)
-        await self.event_bus.publish(
-            Event(
-                type=EventType.PROCESS_INSTANCE_STARTED,
-                data={"instance_id": instance.id, "definition_key": definition.key, "business_key": business_key},
-            )
-        )
-        handler = self.engine_handlers.get(definition.definition_type)
-        if handler:
-            await handler.execute_instance(instance, definition)
         return instance
 
     async def delete_instance(self, instance_id: str, reason: str = "Deleted") -> None:
-        instance = self.instances.get(instance_id)
-        if not instance:
-            raise ValueError(f"Instance not found: {instance_id}")
-        instance.terminate(reason)
-        self.active_instances.discard(instance_id)
-        self.suspended_instances.discard(instance_id)
-        await self.correlation_engine.cleanup_instance_subscriptions_persisted(instance_id)
-        await self._persist_instance_state(instance)
-        await self.event_bus.publish(
-            Event(type=EventType.PROCESS_INSTANCE_TERMINATED, data={"instance_id": instance_id, "reason": reason})
-        )
+        await self._instance_service.delete_instance(instance_id, reason)
 
     async def update_instance_state(
         self,
@@ -369,40 +422,32 @@ class OrchestrationEngine:
         instance = self.instances.get(instance_id)
         if instance is None:
             raise ValueError(f"Instance not found: {instance_id}")
+        result = await self._instance_service.update_instance_state(instance, new_state, reason=reason)
         if new_state == InstanceState.SUSPENDED:
-            instance.suspend()
             self.active_instances.discard(instance_id)
             self.suspended_instances.add(instance_id)
-            event_type = EventType.PROCESS_INSTANCE_SUSPENDED
         elif new_state == InstanceState.ACTIVE:
-            if instance.state == InstanceState.SUSPENDED:
-                instance.resume()
             self.suspended_instances.discard(instance_id)
             self.active_instances.add(instance_id)
-            event_type = EventType.PROCESS_INSTANCE_RESUMED
-        elif new_state == InstanceState.COMPLETED:
-            instance.complete()
-            self.active_instances.discard(instance_id)
-            self.suspended_instances.discard(instance_id)
-            event_type = EventType.PROCESS_INSTANCE_COMPLETED
-        elif new_state == InstanceState.TERMINATED:
-            instance.terminate(reason or "Terminated")
-            self.active_instances.discard(instance_id)
-            self.suspended_instances.discard(instance_id)
-            event_type = EventType.PROCESS_INSTANCE_TERMINATED
-        elif new_state == InstanceState.FAILED:
-            instance.fail(reason or "Failed")
-            self.active_instances.discard(instance_id)
-            self.suspended_instances.discard(instance_id)
-            event_type = EventType.ERROR_THROWN
         else:
-            instance.state = new_state
-            event_type = EventType.CUSTOM
-        await self._persist_instance_state(instance)
-        await self.event_bus.publish(
-            Event(type=event_type, data={"instance_id": instance.id, "state": instance.state.value, "reason": reason})
-        )
-        return instance
+            self.active_instances.discard(instance_id)
+            self.suspended_instances.discard(instance_id)
+        return result
+
+    def get_instance(self, instance_id: str) -> Optional[ProcessInstance]:
+        return self.instances.get(instance_id)
+
+    # ── Definition lookup ──────────────────────────────────────────
+
+    def get_definition(self, key: str, version: Optional[int] = None) -> Optional[ProcessDefinition]:
+        if version is None:
+            return self.definitions.get(key)
+        for definition in self.definition_versions.get(key, []):
+            if definition.version == version:
+                return definition
+        return None
+
+    # ── Recovery ───────────────────────────────────────────────────
 
     async def _recover_runtime_state(self) -> None:
         self._load_persisted_definitions()
@@ -432,26 +477,7 @@ class OrchestrationEngine:
         )
 
     def _load_persisted_definitions(self) -> None:
-        rows = self.definition_repository.list()
-        self.definitions.clear()
-        self.definition_versions.clear()
-        self.deployments.clear()
-        for row in rows:
-            definition = self._definition_from_dict(row)
-            self.definitions[definition.key] = definition
-            self.definition_versions.setdefault(definition.key, []).append(definition)
-            deployment = self.deployments.setdefault(
-                definition.deployment_id,
-                Deployment(
-                    id=definition.deployment_id,
-                    name=str(row.get("deployment_name") or definition.deployment_id),
-                    deployment_time=_parse_datetime(row.get("deployed_at")),
-                    source=str(row.get("deployment_source") or "recovered"),
-                    tenant_id=definition.tenant_id,
-                    definitions=[],
-                ),
-            )
-            deployment.definitions.append(definition)
+        self._definition_service.load_persisted()
 
     async def _parse_definition(
         self,
@@ -460,73 +486,27 @@ class OrchestrationEngine:
         deployment_id: str,
         tenant_id: Optional[str],
     ) -> ProcessDefinition:
-        definition_type = self._detect_definition_type(resource_name, content)
-        key = self._extract_definition_key(content, definition_type)
-        version = self._calculate_next_version(key)
-        return ProcessDefinition(
-            id=str(uuid4()),
-            key=key,
-            name=self._extract_definition_name(content, definition_type),
-            version=version,
-            deployment_id=deployment_id,
-            resource_name=resource_name,
-            diagram_resource_name=None,
-            has_start_form_key=False,
-            has_graphical_notation=True,
-            is_suspended=False,
-            tenant_id=tenant_id,
-            version_tag=None,
-            history_time_to_live=None,
-            is_startable_in_tasklist=True,
-            definition_type=definition_type,
-            definition_xml=content,
-            deployed_at=datetime.utcnow(),
-        )
+        return await self._definition_service.parse(resource_name, content, deployment_id, tenant_id)
 
     def _detect_definition_type(self, resource_name: str, content: str) -> str:
-        lower_name = resource_name.lower()
-        preview = content[:200].lower()
-        if ".bam.json" in lower_name or ".bam.yaml" in lower_name or ".bam.yml" in lower_name:
-            return "bam"
-        if ".bpmn" in lower_name or "bpmn" in preview:
-            return "bpmn"
-        if ".cmmn" in lower_name or "cmmn" in preview:
-            return "cmmn"
-        if ".dmn" in lower_name or "dmn" in preview:
-            return "dmn"
-        if "statemachine" in lower_name:
-            return "state_machine"
-        if "cep" in lower_name:
-            return "cep"
-        if "agent" in lower_name:
-            return "multi_agent"
-        return "bpmn"
+        return self._definition_service._detect_type(resource_name, content)
 
     def _extract_definition_key(self, content: str, definition_type: str) -> str:
-        import re
-
-        if definition_type == "bpmn":
-            match = re.search(r'id="([^"]+)"', content)
-            if match:
-                return match.group(1)
-        return f"process_{uuid4().hex[:8]}"
+        return self._definition_service._extract_key(content, definition_type)
 
     def _extract_definition_name(self, content: str, definition_type: str) -> str:
-        import re
-
-        match = re.search(r'name="([^"]+)"', content)
-        if match:
-            return match.group(1)
-        return "Unnamed Process"
+        return self._definition_service._extract_name(content, definition_type)
 
     def _calculate_next_version(self, key: str) -> int:
-        return len(self.definition_versions.get(key, [])) + 1
+        return self._definition_service._calculate_next_version(key)
+
+    # ── Executor loops ─────────────────────────────────────────────
 
     async def _job_executor_loop(self, executor_id: int) -> None:
         logger.info("Job executor %s started", executor_id)
         while not self._shutdown_event.is_set():
             try:
-                if self.state == EngineState.RUNNING:
+                if self.state == "running":
                     await self.scheduler.process_due_jobs()
                 await asyncio.sleep(1)
             except Exception:
@@ -546,7 +526,7 @@ class OrchestrationEngine:
         logger.info("Monitoring loop started")
         while not self._shutdown_event.is_set():
             try:
-                if self.state == EngineState.RUNNING and self.config.enable_metrics:
+                if self.state == "running" and self.config.enable_metrics:
                     await self.event_bus.publish(
                         Event(
                             type=EventType.METRICS_COLLECTED,
@@ -563,33 +543,7 @@ class OrchestrationEngine:
                 logger.exception("Error in monitoring loop")
         logger.info("Monitoring loop stopped")
 
-    def get_instance(self, instance_id: str) -> Optional[ProcessInstance]:
-        return self.instances.get(instance_id)
-
-    def get_definition(self, key: str, version: Optional[int] = None) -> Optional[ProcessDefinition]:
-        if version is None:
-            return self.definitions.get(key)
-        for definition in self.definition_versions.get(key, []):
-            if definition.version == version:
-                return definition
-        return None
-
-    async def delete_deployment(self, deployment_id: str, cascade: bool = False) -> None:
-        deployment = self.deployments.get(deployment_id)
-        if not deployment:
-            raise ValueError(f"Deployment not found: {deployment_id}")
-        if cascade:
-            for definition in deployment.definitions:
-                for inst_id, inst in list(self.instances.items()):
-                    if inst.definition_id == definition.id:
-                        await self.delete_instance(inst_id, "Deployment deleted")
-        for definition in deployment.definitions:
-            self.definitions.pop(definition.key, None)
-            if definition.key in self.definition_versions:
-                self.definition_versions[definition.key] = [
-                    item for item in self.definition_versions[definition.key] if item.id != definition.id
-                ]
-        del self.deployments[deployment_id]
+    # ── Serialization ──────────────────────────────────────────────
 
     def _definition_to_dict(self, definition: ProcessDefinition) -> dict[str, Any]:
         return {

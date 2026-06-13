@@ -36,7 +36,7 @@ from .core import (
     Token,
     TokenManager,
     TokenSnapshot,
-    TokenState,
+    TokenStateEnum as TokenState,
     TokenType,
     TransactionManager,
     TransactionParticipant,

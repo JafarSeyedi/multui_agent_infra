@@ -546,153 +546,222 @@ class FEELEngine:
         except Exception as e:
             raise FEELError(f"FEEL evaluation error: {e}")
 
+    _OP_HANDLERS: dict[str, str] = {
+        "literal": "_eval_literal",
+        "var": "_eval_var",
+        "path": "_eval_path",
+        "filter": "_eval_filter",
+        "or": "_eval_or",
+        "and": "_eval_and",
+        "not": "_eval_not",
+        "eq": "_eval_eq",
+        "neq": "_eval_neq",
+        "lt": "_eval_lt",
+        "gt": "_eval_gt",
+        "lte": "_eval_lte",
+        "gte": "_eval_gte",
+        "between": "_eval_between",
+        "in": "_eval_in",
+        "in_range": "_eval_in_range",
+        "instance_of": "_eval_instance_of",
+        "add": "_eval_add",
+        "sub": "_eval_sub",
+        "mul": "_eval_mul",
+        "div": "_eval_div",
+        "mod": "_eval_mod",
+        "neg": "_eval_neg",
+        "if": "_eval_if",
+        "for": "_eval_for",
+        "some": "_eval_quantified",
+        "every": "_eval_quantified",
+        "list": "_eval_list",
+        "context": "_eval_context",
+        "call": "_eval_call",
+        "duration": "_eval_duration",
+        "date": "_eval_date_time",
+        "time": "_eval_date_time",
+    }
+
     def _eval_ast(self, node: Any, variables: dict[str, Any]) -> Any:
         if not isinstance(node, tuple):
             return node
 
         op = node[0]
-
-        if op == "literal":
-            return node[1]
-        elif op == "var":
-            name = node[1]
-            if name in variables:
-                return variables[name]
-            raise FEELError(f"Variable not found: {name}")
-        elif op == "path":
-            base = self._eval_ast(node[1], variables)
-            member = node[2]
-            if isinstance(base, dict):
-                return base.get(member)
-            if hasattr(base, member):
-                return getattr(base, member)
-            raise FEELError(f"Cannot access '{member}' on {type(base)}")
-        elif op == "filter":
-            collection = self._eval_ast(node[1], variables)
-            index = self._eval_ast(node[2], variables)
-            if isinstance(collection, list):
-                if isinstance(index, int):
-                    idx = index - 1 if index > 0 else index
-                    return collection[idx] if 0 <= idx < len(collection) else None
-                return [item for item in collection if self._matches_filter(item, index, variables)]
-            return None
-        elif op == "or":
-            return self._eval_ast(node[1], variables) or self._eval_ast(node[2], variables)
-        elif op == "and":
-            return self._eval_ast(node[1], variables) and self._eval_ast(node[2], variables)
-        elif op == "not":
-            return not self._eval_ast(node[1], variables)
-        elif op == "eq":
-            return self._eval_ast(node[1], variables) == self._eval_ast(node[2], variables)
-        elif op == "neq":
-            return self._eval_ast(node[1], variables) != self._eval_ast(node[2], variables)
-        elif op == "lt":
-            return self._eval_ast(node[1], variables) < self._eval_ast(node[2], variables)
-        elif op == "gt":
-            return self._eval_ast(node[1], variables) > self._eval_ast(node[2], variables)
-        elif op == "lte":
-            return self._eval_ast(node[1], variables) <= self._eval_ast(node[2], variables)
-        elif op == "gte":
-            return self._eval_ast(node[1], variables) >= self._eval_ast(node[2], variables)
-        elif op == "between":
-            val = self._eval_ast(node[1], variables)
-            low = self._eval_ast(node[2], variables)
-            high = self._eval_ast(node[3], variables)
-            return low <= val <= high
-        elif op == "in":
-            val = self._eval_ast(node[1], variables)
-            values = [self._eval_ast(v, variables) for v in node[2]]
-            return val in values
-        elif op == "in_range":
-            val = self._eval_ast(node[1], variables)
-            range_info = node[2]
-            if range_info[0] == "range":
-                low = self._eval_ast(range_info[2], variables)
-                high = self._eval_ast(range_info[3], variables)
-                left_ok = val > low if range_info[1] else val >= low
-                right_ok = val < high if range_info[4] else val <= high
-                return left_ok and right_ok
-            return False
-        elif op == "instance_of":
-            val = self._eval_ast(node[1], variables)
-            type_name = node[2]
-            type_map: dict[str, type | tuple[type, ...]] = {
-                "string": str, "number": (int, float), "boolean": bool,
-                "list": list, "context": dict, "date": str, "time": str,
-                "date and time": str, "duration": str, "range": tuple,
-            }
-            expected = type_map.get(type_name.lower())
-            if expected is not None:
-                return isinstance(val, expected)
-            return False
-        elif op == "add":
-            return self._eval_ast(node[1], variables) + self._eval_ast(node[2], variables)
-        elif op == "sub":
-            return self._eval_ast(node[1], variables) - self._eval_ast(node[2], variables)
-        elif op == "mul":
-            return self._eval_ast(node[1], variables) * self._eval_ast(node[2], variables)
-        elif op == "div":
-            divisor = self._eval_ast(node[2], variables)
-            if divisor == 0:
-                raise FEELError("Division by zero")
-            return self._eval_ast(node[1], variables) / divisor
-        elif op == "mod":
-            return self._eval_ast(node[1], variables) % self._eval_ast(node[2], variables)
-        elif op == "neg":
-            return -self._eval_ast(node[1], variables)
-        elif op == "if":
-            cond = self._eval_ast(node[1], variables)
-            if cond:
-                return self._eval_ast(node[2], variables)
-            return self._eval_ast(node[3], variables)
-        elif op == "for":
-            var_name = node[1]
-            collection = self._eval_ast(node[2], variables)
-            if not isinstance(collection, list):
-                return []
-            results = []
-            for item in collection:
-                local_vars = dict(variables)
-                local_vars[var_name] = item
-                results.append(self._eval_ast(node[3], local_vars))
-            return results
-        elif op in ("some", "every"):
-            var_name = node[1]
-            collection = self._eval_ast(node[2], variables)
-            if not isinstance(collection, list):
-                return False
-            for item in collection:
-                local_vars = dict(variables)
-                local_vars[var_name] = item
-                result = self._eval_ast(node[3], local_vars)
-                if op == "some" and result:
-                    return True
-                if op == "every" and not result:
-                    return False
-            return op == "every"
-        elif op == "list":
-            return [self._eval_ast(item, variables) for item in node[1]]
-        elif op == "context":
-            result = {}
-            for key, value_node in node[1]:
-                result[key] = self._eval_ast(value_node, variables)
-            return result
-        elif op == "call":
-            func_name = node[1].lower()
-            args = [self._eval_ast(a, variables) for a in node[2]]
-            func = self._functions.get(func_name)
-            if func is None:
-                raise FEELError(f"Unknown function: {func_name}")
-            try:
-                return func.func(*args)
-            except Exception as e:
-                raise FEELError(f"Function '{func_name}' error: {e}")
-        elif op == "duration":
-            return self._parse_duration_value(node[1])
-        elif op in ("date", "time"):
-            return node[1]
-        else:
+        handler = self._OP_HANDLERS.get(op)
+        if handler is None:
             raise FEELError(f"Unknown AST node: {op}")
+        return getattr(self, handler)(node, variables)
+
+    def _eval_literal(self, node: tuple, variables: dict[str, Any]) -> Any:
+        return node[1]
+
+    def _eval_var(self, node: tuple, variables: dict[str, Any]) -> Any:
+        name = node[1]
+        if name in variables:
+            return variables[name]
+        raise FEELError(f"Variable not found: {name}")
+
+    def _eval_path(self, node: tuple, variables: dict[str, Any]) -> Any:
+        base = self._eval_ast(node[1], variables)
+        member = node[2]
+        if isinstance(base, dict):
+            return base.get(member)
+        if hasattr(base, member):
+            return getattr(base, member)
+        raise FEELError(f"Cannot access '{member}' on {type(base)}")
+
+    def _eval_filter(self, node: tuple, variables: dict[str, Any]) -> Any:
+        collection = self._eval_ast(node[1], variables)
+        index = self._eval_ast(node[2], variables)
+        if isinstance(collection, list):
+            if isinstance(index, int):
+                idx = index - 1 if index > 0 else index
+                return collection[idx] if 0 <= idx < len(collection) else None
+            return [item for item in collection if self._matches_filter(item, index, variables)]
+        return None
+
+    def _eval_or(self, node: tuple, variables: dict[str, Any]) -> Any:
+        return self._eval_ast(node[1], variables) or self._eval_ast(node[2], variables)
+
+    def _eval_and(self, node: tuple, variables: dict[str, Any]) -> Any:
+        return self._eval_ast(node[1], variables) and self._eval_ast(node[2], variables)
+
+    def _eval_not(self, node: tuple, variables: dict[str, Any]) -> Any:
+        return not self._eval_ast(node[1], variables)
+
+    def _eval_eq(self, node: tuple, variables: dict[str, Any]) -> Any:
+        return self._eval_ast(node[1], variables) == self._eval_ast(node[2], variables)
+
+    def _eval_neq(self, node: tuple, variables: dict[str, Any]) -> Any:
+        return self._eval_ast(node[1], variables) != self._eval_ast(node[2], variables)
+
+    def _eval_lt(self, node: tuple, variables: dict[str, Any]) -> Any:
+        return self._eval_ast(node[1], variables) < self._eval_ast(node[2], variables)
+
+    def _eval_gt(self, node: tuple, variables: dict[str, Any]) -> Any:
+        return self._eval_ast(node[1], variables) > self._eval_ast(node[2], variables)
+
+    def _eval_lte(self, node: tuple, variables: dict[str, Any]) -> Any:
+        return self._eval_ast(node[1], variables) <= self._eval_ast(node[2], variables)
+
+    def _eval_gte(self, node: tuple, variables: dict[str, Any]) -> Any:
+        return self._eval_ast(node[1], variables) >= self._eval_ast(node[2], variables)
+
+    def _eval_between(self, node: tuple, variables: dict[str, Any]) -> Any:
+        val = self._eval_ast(node[1], variables)
+        low = self._eval_ast(node[2], variables)
+        high = self._eval_ast(node[3], variables)
+        return low <= val <= high
+
+    def _eval_in(self, node: tuple, variables: dict[str, Any]) -> Any:
+        val = self._eval_ast(node[1], variables)
+        values = [self._eval_ast(v, variables) for v in node[2]]
+        return val in values
+
+    def _eval_in_range(self, node: tuple, variables: dict[str, Any]) -> Any:
+        val = self._eval_ast(node[1], variables)
+        range_info = node[2]
+        if range_info[0] == "range":
+            low = self._eval_ast(range_info[2], variables)
+            high = self._eval_ast(range_info[3], variables)
+            left_ok = val > low if range_info[1] else val >= low
+            right_ok = val < high if range_info[4] else val <= high
+            return left_ok and right_ok
+        return False
+
+    def _eval_instance_of(self, node: tuple, variables: dict[str, Any]) -> Any:
+        val = self._eval_ast(node[1], variables)
+        type_name = node[2]
+        type_map: dict[str, type | tuple[type, ...]] = {
+            "string": str, "number": (int, float), "boolean": bool,
+            "list": list, "context": dict, "date": str, "time": str,
+            "date and time": str, "duration": str, "range": tuple,
+        }
+        expected = type_map.get(type_name.lower())
+        if expected is not None:
+            return isinstance(val, expected)
+        return False
+
+    def _eval_add(self, node: tuple, variables: dict[str, Any]) -> Any:
+        return self._eval_ast(node[1], variables) + self._eval_ast(node[2], variables)
+
+    def _eval_sub(self, node: tuple, variables: dict[str, Any]) -> Any:
+        return self._eval_ast(node[1], variables) - self._eval_ast(node[2], variables)
+
+    def _eval_mul(self, node: tuple, variables: dict[str, Any]) -> Any:
+        return self._eval_ast(node[1], variables) * self._eval_ast(node[2], variables)
+
+    def _eval_div(self, node: tuple, variables: dict[str, Any]) -> Any:
+        divisor = self._eval_ast(node[2], variables)
+        if divisor == 0:
+            raise FEELError("Division by zero")
+        return self._eval_ast(node[1], variables) / divisor
+
+    def _eval_mod(self, node: tuple, variables: dict[str, Any]) -> Any:
+        return self._eval_ast(node[1], variables) % self._eval_ast(node[2], variables)
+
+    def _eval_neg(self, node: tuple, variables: dict[str, Any]) -> Any:
+        return -self._eval_ast(node[1], variables)
+
+    def _eval_if(self, node: tuple, variables: dict[str, Any]) -> Any:
+        cond = self._eval_ast(node[1], variables)
+        if cond:
+            return self._eval_ast(node[2], variables)
+        return self._eval_ast(node[3], variables)
+
+    def _eval_for(self, node: tuple, variables: dict[str, Any]) -> Any:
+        var_name = node[1]
+        collection = self._eval_ast(node[2], variables)
+        if not isinstance(collection, list):
+            return []
+        results = []
+        for item in collection:
+            local_vars = dict(variables)
+            local_vars[var_name] = item
+            results.append(self._eval_ast(node[3], local_vars))
+        return results
+
+    def _eval_quantified(self, node: tuple, variables: dict[str, Any]) -> Any:
+        op = node[0]
+        var_name = node[1]
+        collection = self._eval_ast(node[2], variables)
+        if not isinstance(collection, list):
+            return False
+        for item in collection:
+            local_vars = dict(variables)
+            local_vars[var_name] = item
+            result = self._eval_ast(node[3], local_vars)
+            if op == "some" and result:
+                return True
+            if op == "every" and not result:
+                return False
+        return op == "every"
+
+    def _eval_list(self, node: tuple, variables: dict[str, Any]) -> Any:
+        return [self._eval_ast(item, variables) for item in node[1]]
+
+    def _eval_context(self, node: tuple, variables: dict[str, Any]) -> Any:
+        result = {}
+        for key, value_node in node[1]:
+            result[key] = self._eval_ast(value_node, variables)
+        return result
+
+    def _eval_call(self, node: tuple, variables: dict[str, Any]) -> Any:
+        func_name = node[1].lower()
+        args = [self._eval_ast(a, variables) for a in node[2]]
+        func = self._functions.get(func_name)
+        if func is None:
+            raise FEELError(f"Unknown function: {func_name}")
+        try:
+            return func.func(*args)
+        except Exception as e:
+            raise FEELError(f"Function '{func_name}' error: {e}")
+
+    def _eval_duration(self, node: tuple, variables: dict[str, Any]) -> Any:
+        return self._parse_duration_value(node[1])
+
+    def _eval_date_time(self, node: tuple, variables: dict[str, Any]) -> Any:
+        return node[1]
 
     def _matches_filter(self, item: Any, condition: Any, variables: dict[str, Any]) -> bool:
         if isinstance(condition, dict):

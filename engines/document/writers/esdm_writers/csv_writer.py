@@ -144,13 +144,13 @@ class CSVWriter(ESDMBaseWriter):
     # Abstract methods from ESDMBaseWriter (not used for CSV)
     # ------------------------------------------------------------------
     def _write_workbook_xml(self, workbook: Workbook) -> str:
-        raise NotImplementedError("CSVWriter does not generate XML")
+        raise RuntimeError("CSVWriter does not generate XML")
 
     def _write_worksheet_xml(self, worksheet: Worksheet, sheet_id: int) -> str:
-        raise NotImplementedError("CSVWriter does not generate XML")
+        raise RuntimeError("CSVWriter does not generate XML")
 
     def _write_styles_xml(self) -> str:
-        raise NotImplementedError("CSVWriter does not generate XML")
+        raise RuntimeError("CSVWriter does not generate XML")
 
     # ------------------------------------------------------------------
     # Supported types

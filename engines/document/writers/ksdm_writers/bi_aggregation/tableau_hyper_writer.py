@@ -15,20 +15,20 @@ class TableauHyperWriter(BaseDocumentWriter):
         return isinstance(document, UnifiedBiAggregationDocument)
 
     async def write(self, document: BaseDocument, destination: str | Path | BinaryIO | TextIO | None = None, **options: Any) -> bytes:
-        raise NotImplementedError(
+        raise RuntimeError(
             "Tableau .hyper is a binary format requiring the Tableau Hyper API Python library. "
             "Install `pip install tableauhyperapi` to write .hyper files."
         )
 
     async def write_stream(self, document: BaseDocument) -> AsyncIterator[bytes]:
-        raise NotImplementedError(
+        raise RuntimeError(
             "Tableau .hyper is a binary format requiring the Tableau Hyper API Python library."
         )
         if False:
             yield b""
 
     async def write_to_file(self, document: BaseDocument, target: Path, options: dict[str, Any] | None = None) -> None:
-        raise NotImplementedError(
+        raise RuntimeError(
             "Tableau .hyper is a binary format requiring the Tableau Hyper API Python library. "
             "Install `pip install tableauhyperapi` and use the TableauHyperParser with a file path."
         )

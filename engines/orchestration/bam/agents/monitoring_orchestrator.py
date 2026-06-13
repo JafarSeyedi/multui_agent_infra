@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Any
 
@@ -13,13 +14,14 @@ from engines.document.models.bam_models import (
 from ..collector.metric_collector import MetricCollector
 
 
-class BaseMonitoringAgent:
+class BaseMonitoringAgent(ABC):
     def __init__(self, agent_id: str, name: str) -> None:
         self.agent_id = agent_id
         self.name = name
 
+    @abstractmethod
     async def execute(self) -> AgentReport:
-        raise NotImplementedError
+        ...
 
 
 class MonitoringOrchestrator:

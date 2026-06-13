@@ -16,6 +16,15 @@ from dataclasses import dataclass, field
 from uuid import uuid4
 from contextlib import asynccontextmanager
 
+from .transaction_states import (
+    ActiveState as _ActiveTxState,
+    CommittedState as _CommittedTxState,
+    FailedState as _FailedTxState,
+    PreparedState as _PreparedTxState,
+    RollingBackState as _RollingBackTxState,
+    TransactionState as _TransactionStateABC,
+)
+
 
 logger = logging.getLogger(__name__)
 
@@ -83,8 +92,8 @@ class TransactionScope:
         self.transaction_id = transaction_id
         self.isolation_level = isolation_level
         self.parent = parent
-        self.state = TransactionState.ACTIVE
-        
+        self._lifecycle_state: _TransactionStateABC = _ActiveTxState()
+
         # Timing
         self.start_time = datetime.utcnow()
         self.end_time: datetime | None = None
@@ -95,16 +104,22 @@ class TransactionScope:
         # Compensation actions
         self.compensation_actions: list[CompensationAction] = []
         
-        # Nested transactions (savepoints)
-        self.savepoints: dict[str, 'TransactionScope'] = {}
-        
         # Transaction log
         self.log: list[dict[str, Any]] = []
-        
+
         # Metadata
         self.metadata: dict[str, Any] = {}
-        
-        logger.debug(f"Created transaction scope: {transaction_id}")
+
+        # Nested transactions (savepoints)
+        self.savepoints: dict[str, 'TransactionScope'] = {}
+
+    @property
+    def state(self) -> TransactionState:
+        name = self._lifecycle_state.name
+        for s in TransactionState:
+            if s.value == name:
+                return s
+        return TransactionState.FAILED
     
     def add_participant(
         self,
@@ -157,106 +172,57 @@ class TransactionScope:
         return action_id
     
     async def prepare(self) -> bool:
-        """
-        Prepare phase of two-phase commit.
-        
-        Returns:
-            True if all participants prepared successfully
-        """
-        if self.state != TransactionState.ACTIVE:
-            raise RuntimeError(f"Cannot prepare transaction in state: {self.state}")
-        
-        self.state = TransactionState.PREPARING
+        return await self._lifecycle_state.prepare(self)
+
+    async def _do_prepare(self) -> bool:
         self._log("prepare_started", {})
-        
         try:
-            # Prepare all participants
             for participant in self.participants.values():
                 if participant.prepare_handler:
                     if asyncio.iscoroutinefunction(participant.prepare_handler):
                         result = await participant.prepare_handler(self)
                     else:
                         result = participant.prepare_handler(self)
-                    
                     if not result:
-                        logger.warning(
-                            f"Participant '{participant.name}' failed to prepare"
-                        )
+                        logger.warning(f"Participant '{participant.name}' failed to prepare")
                         return False
-                
                 participant.is_prepared = True
-            
-            self.state = TransactionState.PREPARED
             self._log("prepare_completed", {})
             logger.info(f"Transaction {self.transaction_id} prepared successfully")
             return True
-            
         except Exception as e:
-            self.state = TransactionState.FAILED
             self._log("prepare_failed", {"error": str(e)})
             logger.error(f"Transaction {self.transaction_id} prepare failed: {e}")
             return False
     
     async def commit(self) -> bool:
-        """
-        Commit the transaction.
-        
-        Returns:
-            True if committed successfully
-        """
-        # For distributed transactions, must be prepared first
-        if self.participants and self.state != TransactionState.PREPARED:
-            # Auto-prepare if not done
-            if not await self.prepare():
-                return False
-        
-        if self.state not in (TransactionState.ACTIVE, TransactionState.PREPARED):
-            raise RuntimeError(f"Cannot commit transaction in state: {self.state}")
-        
-        self.state = TransactionState.COMMITTING
+        return await self._lifecycle_state.commit(self)
+
+    async def _do_commit(self) -> bool:
         self._log("commit_started", {})
-        
         try:
-            # Commit all participants
             for participant in self.participants.values():
                 if participant.commit_handler:
                     if asyncio.iscoroutinefunction(participant.commit_handler):
                         await participant.commit_handler(self)
                     else:
                         participant.commit_handler(self)
-            
-            self.state = TransactionState.COMMITTED
             self.end_time = datetime.utcnow()
             self._log("commit_completed", {})
-            
             logger.info(f"Transaction {self.transaction_id} committed successfully")
             return True
-            
         except Exception as e:
-            self.state = TransactionState.FAILED
             self._log("commit_failed", {"error": str(e)})
             logger.error(f"Transaction {self.transaction_id} commit failed: {e}")
-            
-            # Attempt rollback
             await self.rollback()
             return False
     
     async def rollback(self) -> bool:
-        """
-        Rollback the transaction.
-        
-        Returns:
-            True if rolled back successfully
-        """
-        if self.state in (TransactionState.COMMITTED, TransactionState.ROLLED_BACK):
-            logger.warning(f"Cannot rollback transaction in state: {self.state}")
-            return False
-        
-        self.state = TransactionState.ROLLING_BACK
+        return await self._lifecycle_state.rollback(self)
+
+    async def _do_rollback(self) -> bool:
         self._log("rollback_started", {})
-        
         try:
-            # Rollback all participants
             for participant in self.participants.values():
                 if participant.rollback_handler:
                     try:
@@ -265,17 +231,8 @@ class TransactionScope:
                         else:
                             participant.rollback_handler(self)
                     except Exception as e:
-                        logger.error(
-                            f"Error rolling back participant '{participant.name}': {e}"
-                        )
-            
-            # Execute compensation actions in reverse order
-            sorted_actions = sorted(
-                self.compensation_actions,
-                key=lambda a: a.order,
-                reverse=True
-            )
-            
+                        logger.error(f"Error rolling back participant '{participant.name}': {e}")
+            sorted_actions = sorted(self.compensation_actions, key=lambda a: a.order, reverse=True)
             for action in sorted_actions:
                 if not action.executed:
                     try:
@@ -283,24 +240,15 @@ class TransactionScope:
                             await action.handler(self)
                         else:
                             action.handler(self)
-                        
                         action.executed = True
                         self._log("compensation_executed", {"action_id": action.action_id})
-                        
                     except Exception as e:
-                        logger.error(
-                            f"Error executing compensation '{action.name}': {e}"
-                        )
-            
-            self.state = TransactionState.ROLLED_BACK
+                        logger.error(f"Error executing compensation '{action.name}': {e}")
             self.end_time = datetime.utcnow()
             self._log("rollback_completed", {})
-            
             logger.info(f"Transaction {self.transaction_id} rolled back successfully")
             return True
-            
         except Exception as e:
-            self.state = TransactionState.FAILED
             self._log("rollback_failed", {"error": str(e)})
             logger.error(f"Transaction {self.transaction_id} rollback failed: {e}")
             return False

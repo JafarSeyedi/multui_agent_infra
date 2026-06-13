@@ -329,7 +329,7 @@ class KnowledgeRagEngine:
         """Parse using model-driven parser."""
         parser = self._parsers.get(fmt or "default")
         if parser is None:
-            raise NotImplementedError(f"No parser registered for format '{fmt}'")
+            raise LookupError(f"No parser registered for format '{fmt}'")
         import engines.document.parsers.base as parser_base
         result = await parser.parse_bytes(source.encode() if isinstance(source, str) else source, document_id="", source_name=source if isinstance(source, str) else str(source))
         return result
@@ -338,7 +338,7 @@ class KnowledgeRagEngine:
         """Write using model-driven writer."""
         writer = self._writers.get(fmt or "default")
         if writer is None:
-            raise NotImplementedError(f"No writer registered for format '{fmt}'")
+            raise LookupError(f"No writer registered for format '{fmt}'")
         data = await writer.write(document)
         result = WriteResult(metadata={"destination": destination, "format": fmt, "data": data})
         return result

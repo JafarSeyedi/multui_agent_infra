@@ -136,35 +136,27 @@ class ActivityHandler:
         except Exception as exc:
             return ActivityExecutionResult(success=False, error=exc)
 
+    _ACTIVITY_DISPATCH: dict[type, tuple[str, str]] = {
+        ServiceTask: ("serviceTask", "_execute_service_task_osdm"),
+        UserTask: ("userTask", "_execute_user_task_osdm"),
+        ManualTask: ("manualTask", "_execute_manual_task_osdm"),
+        ScriptTask: ("scriptTask", "_execute_script_task_osdm"),
+        BusinessRuleTask: ("businessRuleTask", "_execute_business_rule_task_osdm"),
+        SendTask: ("sendTask", "_execute_send_task_osdm"),
+        ReceiveTask: ("receiveTask", "_execute_receive_task_osdm"),
+        CallActivity: ("callActivity", "_execute_call_activity_osdm"),
+        AdHocSubProcess: ("adHocSubProcess", "_execute_adhoc_sub_process_osdm"),
+        TransactionSubProcess: ("transactionSubProcess", "_execute_transaction_sub_process_osdm"),
+        SubProcess: ("subProcess", "_execute_sub_process_osdm"),
+        GlobalTask: ("globalTask", "_execute_global_task_osdm"),
+        Task: ("task", "_execute_none_task_osdm"),
+    }
+
     def _resolve_osdm_activity_type(self, activity: Activity) -> str:
-        """Resolve the activity type string from an OSDM Activity object."""
-        if isinstance(activity, ServiceTask):
-            return "serviceTask"
-        elif isinstance(activity, UserTask):
-            return "userTask"
-        elif isinstance(activity, ManualTask):
-            return "manualTask"
-        elif isinstance(activity, ScriptTask):
-            return "scriptTask"
-        elif isinstance(activity, BusinessRuleTask):
-            return "businessRuleTask"
-        elif isinstance(activity, SendTask):
-            return "sendTask"
-        elif isinstance(activity, ReceiveTask):
-            return "receiveTask"
-        elif isinstance(activity, CallActivity):
-            return "callActivity"
-        elif isinstance(activity, AdHocSubProcess):
-            return "adHocSubProcess"
-        elif isinstance(activity, TransactionSubProcess):
-            return "transactionSubProcess"
-        elif isinstance(activity, SubProcess):
-            return "subProcess"
-        elif isinstance(activity, GlobalTask):
-            return "globalTask"
-        elif isinstance(activity, Task):
-            return "task"
-        elif isinstance(activity, Activity):
+        for cls, (type_str, _) in self._ACTIVITY_DISPATCH.items():
+            if isinstance(activity, cls):
+                return type_str
+        if isinstance(activity, Activity):
             atype = getattr(activity, "activity_type", None)
             if atype:
                 if isinstance(atype, ActivityType):
@@ -174,35 +166,10 @@ class ActivityHandler:
         return "unknown"
 
     def _resolve_osdm_handler(self, activity: Activity):
-        """Resolve the correct handler method for an OSDM Activity type."""
-        if isinstance(activity, ServiceTask):
-            return self._execute_service_task_osdm
-        elif isinstance(activity, UserTask):
-            return self._execute_user_task_osdm
-        elif isinstance(activity, ManualTask):
-            return self._execute_manual_task_osdm
-        elif isinstance(activity, ScriptTask):
-            return self._execute_script_task_osdm
-        elif isinstance(activity, BusinessRuleTask):
-            return self._execute_business_rule_task_osdm
-        elif isinstance(activity, SendTask):
-            return self._execute_send_task_osdm
-        elif isinstance(activity, ReceiveTask):
-            return self._execute_receive_task_osdm
-        elif isinstance(activity, CallActivity):
-            return self._execute_call_activity_osdm
-        elif isinstance(activity, AdHocSubProcess):
-            return self._execute_adhoc_sub_process_osdm
-        elif isinstance(activity, TransactionSubProcess):
-            return self._execute_transaction_sub_process_osdm
-        elif isinstance(activity, SubProcess):
-            return self._execute_sub_process_osdm
-        elif isinstance(activity, GlobalTask):
-            return self._execute_global_task_osdm
-        elif isinstance(activity, Task):
-            return self._execute_none_task_osdm
-        else:
-            return self._execute_generic_osdm
+        for cls, (_, handler_name) in self._ACTIVITY_DISPATCH.items():
+            if isinstance(activity, cls):
+                return getattr(self, handler_name)
+        return self._execute_generic_osdm
 
     def _execute_none_task_osdm(
         self, instance: ProcessInstance, activity: Task, activity_type: str, context: ExecutionContext,

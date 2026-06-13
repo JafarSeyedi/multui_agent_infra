@@ -53,9 +53,9 @@ class TestBpmnEngineLifecycle:
     async def test_engine_start_stop(self):
         engine, _ = _make_engine()
         await engine.start()
-        assert engine.state.value == "running"
+        assert engine.state == "running"
         await engine.stop()
-        assert engine.state.value == "stopped"
+        assert engine.state == "stopped"
 
     @pytest.mark.asyncio
     async def test_deploy_and_start_instance(self):

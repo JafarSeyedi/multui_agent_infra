@@ -1,10 +1,5 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from engines.communication.buses.message_models import AgentMessage
-
 import logging
 
 import aio_pika
@@ -17,13 +12,7 @@ from aio_pika.abc import AbstractQueue
 
 from .base_message_bus import HandlerType
 from .base_message_bus import MessageBus
-
-_agent_message_cls = None
-def _get_agent_message():
-    global _agent_message_cls
-    if _agent_message_cls is None:
-        from engines.communication.buses.message_models import AgentMessage as _agent_message_cls
-    return _agent_message_cls
+from .message_models import AgentMessage
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +47,7 @@ class RabbitMQMessageBus(MessageBus):
         async def on_message(raw: AbstractIncomingMessage) -> None:
             async with raw.process():
                 try:
-                    msg = _get_agent_message().model_validate_json(raw.body)
+                    msg = AgentMessage.model_validate_json(raw.body)
                     await handler(msg)
                 except Exception as e:
                     logger.error("RabbitMQ handler error: %r", e)

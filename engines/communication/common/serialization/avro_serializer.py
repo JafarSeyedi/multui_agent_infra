@@ -2,18 +2,20 @@
 
 from __future__ import annotations
 
-from abc import ABC
+from abc import ABC, abstractmethod
 from typing import Any
 
 
 class MessageSerializer(ABC):
     content_type = "application/octet-stream"
 
+    @abstractmethod
     def serialize(self, payload: Any) -> bytes:
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def deserialize(self, data: bytes | str) -> Any:
-        raise NotImplementedError
+        ...
 
 
 class AvroSerializer(MessageSerializer):

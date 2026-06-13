@@ -507,7 +507,8 @@ class StateMachineExecutor:
             from ..expression.python_evaluator import PythonEvaluator
             result = PythonEvaluator().evaluate(guard, EvaluationContext(variables=context))
             return bool(result)
-        except Exception:
+        except Exception as e:
+            logger.warning("Guard evaluation failed for %r: %s", guard, e)
             return False
 
     def _matches_trigger(self, trigger: str, context: dict[str, Any]) -> bool:

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Callable
 
 from ..expression.evaluator import EvaluationContext
 from ..expression.python_evaluator import PythonEvaluator
@@ -15,6 +15,84 @@ from ..core.instance import ProcessInstance
 
 
 logger = logging.getLogger(__name__)
+
+
+def _op_eq(field_value: Any, comp_value: Any) -> bool:
+    return field_value == comp_value
+
+
+def _op_neq(field_value: Any, comp_value: Any) -> bool:
+    return field_value != comp_value
+
+
+def _op_gt(field_value: Any, comp_value: Any) -> bool:
+    try:
+        return float(field_value or 0) > float(comp_value or 0)
+    except (ValueError, TypeError):
+        return False
+
+
+def _op_gte(field_value: Any, comp_value: Any) -> bool:
+    try:
+        return float(field_value or 0) >= float(comp_value or 0)
+    except (ValueError, TypeError):
+        return False
+
+
+def _op_lt(field_value: Any, comp_value: Any) -> bool:
+    try:
+        return float(field_value or 0) < float(comp_value or 0)
+    except (ValueError, TypeError):
+        return False
+
+
+def _op_lte(field_value: Any, comp_value: Any) -> bool:
+    try:
+        return float(field_value or 0) <= float(comp_value or 0)
+    except (ValueError, TypeError):
+        return False
+
+
+def _op_in(field_value: Any, comp_value: Any) -> bool:
+    return field_value in comp_value if isinstance(comp_value, (list, tuple)) else False
+
+
+def _op_not_in(field_value: Any, comp_value: Any) -> bool:
+    return field_value not in comp_value if isinstance(comp_value, (list, tuple)) else True
+
+
+def _op_exists(field_value: Any, comp_value: Any) -> bool:
+    return field_value is not None
+
+
+def _op_not_exists(field_value: Any, comp_value: Any) -> bool:
+    return field_value is None
+
+
+def _op_contains(field_value: Any, comp_value: Any) -> bool:
+    return str(comp_value) in str(field_value) if field_value is not None else False
+
+
+_OPERATOR_HANDLERS: dict[str, Callable[[Any, Any], bool]] = {
+    "eq": _op_eq,
+    "neq": _op_neq,
+    "gt": _op_gt,
+    "gte": _op_gte,
+    "lt": _op_lt,
+    "lte": _op_lte,
+    "in": _op_in,
+    "not_in": _op_not_in,
+    "exists": _op_exists,
+    "not_exists": _op_not_exists,
+    "contains": _op_contains,
+}
+
+
+def _evaluate_operator(operator: str, field_value: Any, comp_value: Any) -> bool:
+    handler = _OPERATOR_HANDLERS.get(operator)
+    if handler is not None:
+        return handler(field_value, comp_value)
+    return True
 
 
 @dataclass
@@ -152,39 +230,4 @@ class RuleEvaluator:
             except Exception:
                 return False
 
-        if condition.operator == "eq":
-            return field_value == condition.comparison_value
-        elif condition.operator == "neq":
-            return field_value != condition.comparison_value
-        elif condition.operator == "gt":
-            try:
-                return float(field_value or 0) > float(condition.comparison_value or 0)
-            except (ValueError, TypeError):
-                return False
-        elif condition.operator == "gte":
-            try:
-                return float(field_value or 0) >= float(condition.comparison_value or 0)
-            except (ValueError, TypeError):
-                return False
-        elif condition.operator == "lt":
-            try:
-                return float(field_value or 0) < float(condition.comparison_value or 0)
-            except (ValueError, TypeError):
-                return False
-        elif condition.operator == "lte":
-            try:
-                return float(field_value or 0) <= float(condition.comparison_value or 0)
-            except (ValueError, TypeError):
-                return False
-        elif condition.operator == "in":
-            return field_value in condition.comparison_value if isinstance(condition.comparison_value, (list, tuple)) else False
-        elif condition.operator == "not_in":
-            return field_value not in condition.comparison_value if isinstance(condition.comparison_value, (list, tuple)) else True
-        elif condition.operator == "exists":
-            return field_value is not None
-        elif condition.operator == "not_exists":
-            return field_value is None
-        elif condition.operator == "contains":
-            return str(condition.comparison_value) in str(field_value) if field_value is not None else False
-
-        return True
+        return _evaluate_operator(condition.operator, field_value, condition.comparison_value)

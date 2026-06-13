@@ -312,74 +312,121 @@ class OsdmSerializer:
                 ))
         return process
 
+    _FLOW_ELEMENT_HANDLERS: list[tuple[str, str]] = [
+        ("startevent", "_handle_start_event"),
+        ("endevent", "_handle_end_event"),
+        ("intermediatecatch", "_handle_intermediate_catch"),
+        ("intermediatethrow", "_handle_intermediate_throw"),
+        ("boundary", "_handle_boundary_event"),
+        ("exclusivegateway", "_handle_exclusive_gateway"),
+        ("inclusivegateway", "_handle_inclusive_gateway"),
+        ("parallelgateway", "_handle_parallel_gateway"),
+        ("eventbasedgateway", "_handle_event_based_gateway"),
+        ("complexgateway", "_handle_complex_gateway"),
+        ("servicetask", "_handle_service_task"),
+        ("usertask", "_handle_user_task"),
+        ("manualtask", "_handle_manual_task"),
+        ("scripttask", "_handle_script_task"),
+        ("businessruletask", "_handle_business_rule_task"),
+        ("sendtask", "_handle_send_task"),
+        ("receivetask", "_handle_receive_task"),
+        ("callactivity", "_handle_call_activity"),
+        ("subprocess", "_handle_sub_process"),
+        ("task", "_handle_task"),
+        ("sequenceflow", "_handle_sequence_flow"),
+    ]
+
     def _dict_to_flow_element(self, data: dict[str, Any]) -> FlowElement | None:
         etype = str(data.get("type", "")).lower()
         eid = data.get("id", "")
         name = data.get("name", "")
-        if "startevent" in etype:
-            return StartEvent(id=eid, name=name)
-        elif "endevent" in etype:
-            return EndEvent(id=eid, name=name)
-        elif "intermediatecatch" in etype:
-            return IntermediateCatchEvent(id=eid, name=name)
-        elif "intermediatethrow" in etype:
-            return IntermediateThrowEvent(id=eid, name=name)
-        elif "boundary" in etype:
-            return BoundaryEvent(
-                id=eid, name=name,
-                attached_to_ref=data.get("payload", {}).get("attachedToRef"),
-                cancel_activity=data.get("payload", {}).get("cancelActivity", True),
-            )
-        elif "exclusivegateway" in etype:
-            return ExclusiveGateway(id=eid, name=name)
-        elif "inclusivegateway" in etype:
-            return InclusiveGateway(id=eid, name=name)
-        elif "parallelgateway" in etype:
-            return ParallelGateway(id=eid, name=name)
-        elif "eventbasedgateway" in etype:
-            return EventBasedGateway(id=eid, name=name)
-        elif "complexgateway" in etype:
-            return ComplexGateway(id=eid, name=name)
-        elif "servicetask" in etype:
-            return ServiceTask(id=eid, name=name)
-        elif "usertask" in etype:
-            return UserTask(id=eid, name=name)
-        elif "manualtask" in etype:
-            return ManualTask(id=eid, name=name)
-        elif "scripttask" in etype:
-            return ScriptTask(id=eid, name=name)
-        elif "businessruletask" in etype:
-            return BusinessRuleTask(id=eid, name=name)
-        elif "sendtask" in etype:
-            return SendTask(id=eid, name=name)
-        elif "receivetask" in etype:
-            return ReceiveTask(id=eid, name=name)
-        elif "callactivity" in etype:
-            return CallActivity(id=eid, name=name)
-        elif "subprocess" in etype:
-            sp_type = SubProcessType.EMBEDDED
-            payload = data.get("payload", {})
-            sp_type_str = payload.get("subProcessType", "embedded").lower()
-            for spt in SubProcessType:
-                if spt.value.lower() == sp_type_str:
-                    sp_type = spt
-                    break
-            if "transaction" in etype:
-                return TransactionSubProcess(id=eid, name=name, method=TransactionMethod.COMPENSATE)
-            elif "adhoc" in etype:
-                return AdHocSubProcess(id=eid, name=name)
-            return SubProcess(id=eid, name=name, sub_process_type=sp_type)
-        elif "task" in etype:
-            return Task(id=eid, name=name)
-        elif "sequenceflow" in etype:
-            return SequenceFlow(
-                id=eid,
-                source_ref=data.get("source", data.get("sourceRef", "")),
-                target_ref=data.get("target", data.get("targetRef", "")),
-                condition_expression=data.get("condition", data.get("conditionExpression")),
-            )
-        else:
-            return FlowElement(id=eid, name=name)
+        for keyword, handler_name in self._FLOW_ELEMENT_HANDLERS:
+            if keyword in etype:
+                return getattr(self, handler_name)(data, eid, name, etype)
+        return FlowElement(id=eid, name=name)
+
+    def _handle_start_event(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+        return StartEvent(id=eid, name=name)
+
+    def _handle_end_event(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+        return EndEvent(id=eid, name=name)
+
+    def _handle_intermediate_catch(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+        return IntermediateCatchEvent(id=eid, name=name)
+
+    def _handle_intermediate_throw(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+        return IntermediateThrowEvent(id=eid, name=name)
+
+    def _handle_boundary_event(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+        return BoundaryEvent(
+            id=eid, name=name,
+            attached_to_ref=data.get("payload", {}).get("attachedToRef"),
+            cancel_activity=data.get("payload", {}).get("cancelActivity", True),
+        )
+
+    def _handle_exclusive_gateway(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+        return ExclusiveGateway(id=eid, name=name)
+
+    def _handle_inclusive_gateway(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+        return InclusiveGateway(id=eid, name=name)
+
+    def _handle_parallel_gateway(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+        return ParallelGateway(id=eid, name=name)
+
+    def _handle_event_based_gateway(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+        return EventBasedGateway(id=eid, name=name)
+
+    def _handle_complex_gateway(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+        return ComplexGateway(id=eid, name=name)
+
+    def _handle_service_task(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+        return ServiceTask(id=eid, name=name)
+
+    def _handle_user_task(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+        return UserTask(id=eid, name=name)
+
+    def _handle_manual_task(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+        return ManualTask(id=eid, name=name)
+
+    def _handle_script_task(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+        return ScriptTask(id=eid, name=name)
+
+    def _handle_business_rule_task(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+        return BusinessRuleTask(id=eid, name=name)
+
+    def _handle_send_task(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+        return SendTask(id=eid, name=name)
+
+    def _handle_receive_task(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+        return ReceiveTask(id=eid, name=name)
+
+    def _handle_call_activity(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+        return CallActivity(id=eid, name=name)
+
+    def _handle_sub_process(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+        sp_type = SubProcessType.EMBEDDED
+        payload = data.get("payload", {})
+        sp_type_str = payload.get("subProcessType", "embedded").lower()
+        for spt in SubProcessType:
+            if spt.value.lower() == sp_type_str:
+                sp_type = spt
+                break
+        if "transaction" in etype:
+            return TransactionSubProcess(id=eid, name=name, method=TransactionMethod.COMPENSATE)
+        if "adhoc" in etype:
+            return AdHocSubProcess(id=eid, name=name)
+        return SubProcess(id=eid, name=name, sub_process_type=sp_type)
+
+    def _handle_task(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+        return Task(id=eid, name=name)
+
+    def _handle_sequence_flow(self, data: dict[str, Any], eid: str, name: str, etype: str) -> FlowElement:
+        return SequenceFlow(
+            id=eid,
+            source_ref=data.get("source", data.get("sourceRef", "")),
+            target_ref=data.get("target", data.get("targetRef", "")),
+            condition_expression=data.get("condition", data.get("conditionExpression")),
+        )
 
 
 class OsdmDeserializer:

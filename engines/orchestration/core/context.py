@@ -143,6 +143,27 @@ class Variable:
         )
 
 
+_TYPE_INFERRERS: list[tuple[type, str]] = [
+    (bool, "boolean"),
+    (int, "integer"),
+    (float, "double"),
+    (str, "string"),
+    (list, "list"),
+    (tuple, "list"),
+    (dict, "json"),
+    (bytes, "bytes"),
+]
+
+
+def _INFER_TYPE(value: Any) -> str:
+    if value is None:
+        return "null"
+    for cls, type_name in _TYPE_INFERRERS:
+        if isinstance(value, cls):
+            return type_name
+    return "object"
+
+
 class ExecutionContext:
     """
     Execution context for process instances.
@@ -387,26 +408,8 @@ scope=var.scope,
         return raw.decode("utf-8")
 
     def _infer_type(self, value: Any) -> str:
-        """Infer variable type from value"""
-        if isinstance(value, bool):
-            return "boolean"
-        elif isinstance(value, int):
-            return "integer"
-        elif isinstance(value, float):
-            return "double"
-        elif isinstance(value, str):
-            return "string"
-        elif isinstance(value, (list, tuple)):
-            return "list"
-        elif isinstance(value, dict):
-            return "json"
-        elif isinstance(value, bytes):
-            return "bytes"
-        elif value is None:
-            return "null"
-        else:
-            return "object"
-    
+        return _INFER_TYPE(value)
+
     def to_dict(self) -> dict[str, Any]:
         """Convert context to dictionary representation"""
         return {

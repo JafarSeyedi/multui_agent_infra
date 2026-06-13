@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from abc import abstractmethod
 from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Any
@@ -61,8 +62,9 @@ class BaseBAMParser(BaseDocumentParser):
     def iter_supported_extensions(self):
         yield from self.supported_extensions
 
+    @abstractmethod
     def _decode(self, data: bytes) -> dict[str, Any]:
-        raise NotImplementedError
+        ...
 
     def _build_document(
         self,

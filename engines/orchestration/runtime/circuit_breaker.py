@@ -67,43 +67,20 @@ class CircuitBreaker:
     success_count: int = 0
     last_failure_time: float = 0.0
     half_open_calls: int = 0
+    _state_obj: Any = None  # Will be lazily initialized
+
+    def __post_init__(self) -> None:
+        from .circuit_states import state_for
+        self._state_obj = state_for(self.state)
 
     def can_execute(self) -> bool:
-        if self.state == CircuitState.CLOSED:
-            return True
-        if self.state == CircuitState.OPEN:
-            if time.time() - self.last_failure_time >= self.config.open_duration_seconds:
-                self.state = CircuitState.HALF_OPEN
-                self.half_open_calls = 0
-                logger.info("Circuit breaker '%s' moved to HALF_OPEN", self.name)
-                return True
-            return False
-        if self.state == CircuitState.HALF_OPEN:
-            return self.half_open_calls < self.config.half_open_max_calls
-        return False
+        return self._state_obj.can_execute(self)
 
     def record_success(self) -> None:
-        if self.state == CircuitState.HALF_OPEN:
-            self.success_count += 1
-            self.half_open_calls += 1
-            if self.success_count >= self.config.success_threshold:
-                self.state = CircuitState.CLOSED
-                self.failure_count = 0
-                self.success_count = 0
-                logger.info("Circuit breaker '%s' CLOSED", self.name)
-        elif self.state == CircuitState.CLOSED:
-            self.failure_count = max(0, self.failure_count - 1)
+        self._state_obj.record_success(self)
 
     def record_failure(self) -> None:
-        self.failure_count += 1
-        self.last_failure_time = time.time()
-        if self.state == CircuitState.HALF_OPEN:
-            self.state = CircuitState.OPEN
-            self.half_open_calls = 0
-            logger.warning("Circuit breaker '%s' re-OPENED from HALF_OPEN", self.name)
-        elif self.state == CircuitState.CLOSED and self.failure_count >= self.config.failure_threshold:
-            self.state = CircuitState.OPEN
-            logger.warning("Circuit breaker '%s' OPENED after %d failures", self.name, self.failure_count)
+        self._state_obj.record_failure(self)
 
 
 class RetryHandler:

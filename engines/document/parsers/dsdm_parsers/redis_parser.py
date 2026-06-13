@@ -11,7 +11,7 @@ class RedisParser(BaseDSDMParser):
     name = "redis"
 
     async def _parse_to_datanode(self, raw_bytes: bytes, options: DSDMParseOptions) -> DataNode:
-        raise NotImplementedError("Use fetch_from_redis for live Redis data")
+        raise RuntimeError("Use fetch_from_redis for live Redis data")
 
     def _detect_media_type(self, source_name: str) -> str:
         return "application/x-redis-data"

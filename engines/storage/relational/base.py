@@ -13,8 +13,10 @@ from engines.storage.base_storage import BaseStorage
 class SQLStorage(BaseStorage):
     """Async SQL-backed key-value helper built on SQLite for lightweight persistence."""
 
-    def __init__(self, db_path: str = "database.db") -> None:
+    def __init__(self, db_path: str | None = None) -> None:
         super().__init__()
+        if db_path is None:
+            raise ValueError("db_path is required for SQLStorage — explicit path prevents unpredictable database file locations")
         self.db_path = db_path
         self._connection: aiosqlite.Connection | None = None
 

@@ -1,10 +1,5 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from engines.communication.buses.message_models import AgentMessage
-
 import asyncio
 import logging
 from typing import Any
@@ -13,13 +8,7 @@ from aiokafka import AIOKafkaProducer, AIOKafkaConsumer  # type: ignore[import-u
 
 from .base_message_bus import HandlerType
 from .base_message_bus import MessageBus
-
-_agent_message_cls = None
-def _get_agent_message():
-    global _agent_message_cls
-    if _agent_message_cls is None:
-        from engines.communication.buses.message_models import AgentMessage as _agent_message_cls
-    return _agent_message_cls
+from .message_models import AgentMessage
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +63,7 @@ class KafkaMessageBus(MessageBus):
         try:
             async for record in consumer:
                 handlers = list(self._handlers.get(topic, []))
-                msg = _get_agent_message().model_validate_json(record.value)
+                msg = AgentMessage.model_validate_json(record.value)
                 await asyncio.gather(*[h(msg) for h in handlers], return_exceptions=True)
         except asyncio.CancelledError:
             pass

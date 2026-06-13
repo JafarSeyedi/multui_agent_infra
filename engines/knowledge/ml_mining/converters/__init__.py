@@ -1,16 +1,19 @@
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from typing import Any
 
 
-class ModelGraphConverter:
+class ModelGraphConverter(ABC):
     """Abstract base for ModelGraph → executable ONNX protobuf converters."""
 
+    @abstractmethod
     def can_convert(self, graph: Any) -> bool:
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def convert(self, graph: Any) -> bytes:
-        raise NotImplementedError
+        ...
 
 
 class ConverterRegistry:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
@@ -23,20 +24,24 @@ class RepositoryError(RuntimeError):
     """Repository-specific error."""
 
 
-class RepositoryProtocol:
+class RepositoryProtocol(ABC):
     """Small, explicit interface for document/instance stores."""
 
+    @abstractmethod
     def save(self, key: str, payload: dict[str, Any]) -> dict[str, Any]:
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def get(self, key: str) -> dict[str, Any] | None:
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def delete(self, key: str) -> bool:
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def list(self, *, predicate: FilterFn | None = None) -> list[dict[str, Any]]:
-        raise NotImplementedError
+        ...
 
 
 class InMemoryRepository(RepositoryProtocol):

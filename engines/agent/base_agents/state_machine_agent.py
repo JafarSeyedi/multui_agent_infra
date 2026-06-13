@@ -244,23 +244,15 @@ class StateMachineAgent(BaseAgent[StateMachineAgentInput, StateMachineAgentOutpu
         """
         condition = getattr(transition, 'condition', None)
         if condition is None:
-            # No condition means always take the transition
             return True
-        
-        # We'll evaluate the condition as a Python expression for simplicity.
-        # In a real system, we would use a proper expression language with a safe evaluator.
-        # We'll allow the condition to access the context variable.
+
+        body = getattr(condition, 'body', '')
+        if not body.strip():
+            return True
+
         try:
-            # We'll evaluate the condition's body in a context that has the context variable.
-            # Note: This is a security risk if the context contains untrusted data.
-            # We restrict the builtins to None for safety, but note that this is still not fully safe.
-            # For demonstration purposes only.
-            result = eval(
-                getattr(condition, 'body', ''),
-                {"__builtins__": {}},  # Restrict builtins
-                {"context": context}
-            )
+            from engines.agent.base_agents.safe_eval import safe_expr_eval
+            result = safe_expr_eval(body, {"context": context})
             return bool(result)
         except Exception:
-            # If evaluation fails, we treat the condition as False
             return False

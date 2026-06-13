@@ -1,22 +1,11 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from engines.communication.buses.message_models import AgentMessage
-
 import asyncio
 import logging
 
 from .base_message_bus import HandlerType
 from .base_message_bus import MessageBus
-
-_agent_message_cls = None
-def _get_agent_message():
-    global _agent_message_cls
-    if _agent_message_cls is None:
-        from engines.communication.buses.message_models import AgentMessage as _agent_message_cls
-    return _agent_message_cls
+from .message_models import AgentMessage
 
 logger = logging.getLogger(__name__)
 
@@ -33,8 +22,9 @@ class RequestReplyBus(MessageBus):
         self._handlers.pop(recipient, None)
 
     async def publish(self, message: "AgentMessage") -> None:
-        """Not supported in request/reply pattern."""
-        raise NotImplementedError("Use request() instead of publish()")
+        handler = self._handlers.get(message.recipient)
+        if handler is not None:
+            await handler(message)
 
     async def request(self, message: "AgentMessage", timeout: float = 5.0) -> "AgentMessage":
         handler = self._handlers.get(message.recipient)

@@ -6,6 +6,7 @@ and execution graph semantics at BPMN 2.0 spec level.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from typing import Any, cast, overload
 
@@ -13,6 +14,8 @@ from ..expression.evaluator import EvaluationContext
 from ..expression.python_evaluator import PythonEvaluator
 
 from ...document.models.osdm_models import SequenceFlow
+
+logger = logging.getLogger(__name__)
 
 
 def _resolve_ref_id(ref: Any) -> str | None:
@@ -199,7 +202,8 @@ class SequenceFlowEngine:
             return False
         try:
             return bool(self._evaluator.evaluate(expression, EvaluationContext(variables=context)))
-        except Exception:
+        except Exception as exc:
+            logger.debug("Sequence flow condition evaluation failed: %s", exc)
             return False
 
 

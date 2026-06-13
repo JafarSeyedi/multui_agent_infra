@@ -10,7 +10,7 @@ from .instance import ActivityInstance, IncidentInfo, InstanceManager, InstanceS
 
 from .scheduler import ScheduleType, ScheduledTask, Scheduler, TaskState
 
-from .token import Token, TokenManager, TokenSnapshot, TokenState, TokenType
+from .token import Token, TokenManager, TokenSnapshot, TokenStateEnum, TokenType
 
 from .transaction import CompensationAction, IsolationLevel, TransactionManager, TransactionParticipant, TransactionScope, TransactionState
 
@@ -50,7 +50,7 @@ __all__ = [
     "Token",
     "TokenManager",
     "TokenSnapshot",
-    "TokenState",
+    "TokenStateEnum",
     "TokenType",
     "TransactionManager",
     "TransactionParticipant",

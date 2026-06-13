@@ -7,6 +7,7 @@ import pytest
 from engines.orchestration.core.correlation import CorrelationKeySet
 from engines.orchestration.core.event_bus import Event, EventBus, EventType
 from engines.orchestration.core.engine import OrchestrationEngine, ProcessDefinition
+from engines.orchestration.persistence.definition_repository import DefinitionRepository
 from engines.orchestration.core.instance import InstanceState, ProcessInstance
 from engines.orchestration.core.scheduler import Scheduler
 from engines.orchestration.persistence.event_repository import EventRepository
@@ -99,7 +100,10 @@ async def test_engine_recovery_hydrates_definitions_instances_tokens_and_variabl
         deployed_at=datetime.utcnow(),
     )
 
+    definition_repository = DefinitionRepository()
+
     engine = OrchestrationEngine(
+        definition_repository=definition_repository,
         event_repository=event_repository,
         instance_repository=instance_repository,
         variable_repository=variable_repository,
@@ -124,6 +128,7 @@ async def test_engine_recovery_hydrates_definitions_instances_tokens_and_variabl
     )
 
     recovered = OrchestrationEngine(
+        definition_repository=definition_repository,
         event_repository=event_repository,
         instance_repository=instance_repository,
         variable_repository=variable_repository,

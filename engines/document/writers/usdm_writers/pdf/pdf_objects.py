@@ -3,6 +3,7 @@ Low-level PDF object classes
 """
 import hashlib
 import zlib
+from abc import abstractmethod
 from dataclasses import dataclass
 from dataclasses import field
 from datetime import datetime
@@ -17,9 +18,10 @@ class PDFObject:
     generation: int = 0
     data: Any = None
 
+    @abstractmethod
     def to_bytes(self) -> bytes:
         """Convert object to PDF bytes"""
-        raise NotImplementedError
+        ...
 
     def get_reference(self) -> str:
         """Get object reference string"""

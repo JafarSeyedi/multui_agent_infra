@@ -5,7 +5,6 @@ from typing import Any
 
 import pytest
 
-from engines.agent.base_agents.base_agent import BaseAgent
 from engines.communication.buses.base_message_bus import HandlerType
 from engines.communication.buses.base_message_bus import MessageBus
 from engines.interaction.interaction_models import AgentMessage
@@ -62,5 +61,5 @@ def message_bus() -> DummyMessageBus1:
     return DummyMessageBus1()
 
 
-def make_agent(agent_name: str, agent_id: str) -> BaseAgent:
-    return BaseAgent(agent_id=agent_id, agent_name=agent_name)
+def make_agent(agent_name: str, agent_id: str) -> TestAgent:
+    return TestAgent(agent_name, lambda payload: None)

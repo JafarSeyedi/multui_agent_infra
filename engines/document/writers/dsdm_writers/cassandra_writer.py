@@ -15,10 +15,10 @@ class CassandraWriter(BaseDSDMWriter):
         return []
 
     async def _serialise_root(self, root_node: DataNode, options: DSDMWriteOptions) -> bytes:
-        raise NotImplementedError("Cassandra writer does not support file output. Use write_to_cassandra.")
+        raise RuntimeError("Cassandra writer does not support file output. Use write_to_cassandra.")
 
     async def _serialise_node(self, node: DataNode, options: DSDMWriteOptions) -> bytes:
-        raise NotImplementedError("Cassandra writer does not support node output.")
+        raise RuntimeError("Cassandra writer does not support node output.")
 
     async def write_to_cassandra(
         self,

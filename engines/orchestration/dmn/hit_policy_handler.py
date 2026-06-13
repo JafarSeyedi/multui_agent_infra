@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
+from typing import Any, Callable
 
 
 class HitPolicy(str, Enum):
@@ -26,6 +26,82 @@ class HitPolicy(str, Enum):
     C_COUNT = "CC" 
 
 
+def _handle_unique(matches: list[dict[str, Any]]) -> Any:
+    if len(matches) > 1:
+        return matches[0]["output_values"]
+    return matches[0]["output_values"] if matches else None
+
+
+def _handle_first(matches: list[dict[str, Any]]) -> Any:
+    sorted_matches = sorted(matches, key=lambda m: m.get("priority", 0), reverse=True)
+    return sorted_matches[0]["output_values"] if sorted_matches else None
+
+
+def _handle_priority(matches: list[dict[str, Any]]) -> Any:
+    sorted_matches = sorted(matches, key=lambda m: m.get("priority", 0), reverse=True)
+    return sorted_matches[0]["output_values"] if sorted_matches else None
+
+
+def _handle_any(matches: list[dict[str, Any]]) -> Any:
+    if not matches:
+        return None
+    first = matches[0]["output_values"]
+    for m in matches[1:]:
+        if m["output_values"] != first:
+            return first
+    return first
+
+
+def _handle_collect(matches: list[dict[str, Any]]) -> Any:
+    return [m["output_values"] for m in matches]
+
+
+def _handle_output_order(matches: list[dict[str, Any]]) -> Any:
+    sorted_matches = sorted(matches, key=lambda m: m.get("priority", 0))
+    return [m["output_values"] for m in sorted_matches]
+
+
+def _handle_rule_order(matches: list[dict[str, Any]]) -> Any:
+    return [m["output_values"] for m in matches]
+
+
+def _handle_c_sum(matches: list[dict[str, Any]]) -> Any:
+    if not matches:
+        return 0
+    values = _extract_numeric_values(matches)
+    return sum(values) if values else 0
+
+
+def _handle_c_min(matches: list[dict[str, Any]]) -> Any:
+    if not matches:
+        return None
+    values = _extract_numeric_values(matches)
+    return min(values) if values else None
+
+
+def _handle_c_max(matches: list[dict[str, Any]]) -> Any:
+    if not matches:
+        return None
+    values = _extract_numeric_values(matches)
+    return max(values) if values else None
+
+
+_HIT_POLICY_HANDLERS: dict[HitPolicy, Callable[[list[dict[str, Any]]], Any]] = {
+    HitPolicy.UNIQUE: _handle_unique,
+    HitPolicy.FIRST: _handle_first,
+    HitPolicy.PRIORITY: _handle_priority,
+    HitPolicy.ANY: _handle_any,
+    HitPolicy.COLLECT: _handle_collect,
+    HitPolicy.OUTPUT_ORDER: _handle_output_order,
+    HitPolicy.RULE_ORDER: _handle_rule_order,
+    HitPolicy.C_COLLECT: _handle_collect,
+    HitPolicy.C_SUM: _handle_c_sum,
+    HitPolicy.C_MIN: _handle_c_min,
+    HitPolicy.C_MAX: _handle_c_max,
+    HitPolicy.C_COUNT: lambda m: len(m),
+}
+
+
 def apply_hit_policy(
     policy: HitPolicy,
     matches: list[dict[str, Any]],
@@ -33,63 +109,9 @@ def apply_hit_policy(
 ) -> Any:
     if not matches:
         return None
-
-    if policy == HitPolicy.UNIQUE:
-        if len(matches) > 1:
-            return matches[0]["output_values"]
-        return matches[0]["output_values"] if matches else None
-
-    elif policy == HitPolicy.FIRST:
-        sorted_matches = sorted(matches, key=lambda m: m.get("priority", 0), reverse=True)
-        return sorted_matches[0]["output_values"] if sorted_matches else None
-
-    elif policy == HitPolicy.PRIORITY:
-        sorted_matches = sorted(matches, key=lambda m: m.get("priority", 0), reverse=True)
-        return sorted_matches[0]["output_values"] if sorted_matches else None
-
-    elif policy == HitPolicy.ANY:
-        if not matches:
-            return None
-        first = matches[0]["output_values"]
-        for m in matches[1:]:
-            if m["output_values"] != first:
-                return first
-        return first
-
-    elif policy == HitPolicy.COLLECT:
-        return [m["output_values"] for m in matches]
-
-    elif policy == HitPolicy.OUTPUT_ORDER:
-        sorted_matches = sorted(matches, key=lambda m: m.get("priority", 0))
-        return [m["output_values"] for m in sorted_matches]
-
-    elif policy == HitPolicy.RULE_ORDER:
-        return [m["output_values"] for m in matches]
-
-    elif policy == HitPolicy.C_COLLECT:
-        return [m["output_values"] for m in matches]
-
-    elif policy == HitPolicy.C_SUM:
-        if not matches:
-            return 0
-        values = _extract_numeric_values(matches)
-        return sum(values) if values else 0
-
-    elif policy == HitPolicy.C_MIN:
-        if not matches:
-            return None
-        values = _extract_numeric_values(matches)
-        return min(values) if values else None
-
-    elif policy == HitPolicy.C_MAX:
-        if not matches:
-            return None
-        values = _extract_numeric_values(matches)
-        return max(values) if values else None
-
-    elif policy == HitPolicy.C_COUNT:
-        return len(matches)
-
+    handler = _HIT_POLICY_HANDLERS.get(policy)
+    if handler is not None:
+        return handler(matches)
     return matches[0]["output_values"] if matches else None
 
 

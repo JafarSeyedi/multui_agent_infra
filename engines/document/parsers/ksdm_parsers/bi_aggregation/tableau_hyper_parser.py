@@ -14,7 +14,7 @@ class TableauHyperParser(BaseDocumentParser):
     supported_extensions = (".hyper",)
 
     async def parse_bytes(self, data: bytes, document_id: str, source_name: str, metadata: dict[str, Any] | None = None, options: ParseOptions | None = None) -> UnifiedBiAggregationDocument:
-        raise NotImplementedError(
+        raise RuntimeError(
             "Tableau .hyper is a binary format requiring the Tableau Hyper API Python library. "
             "Install `pip install tableauhyperapi` and use the TableauHyperParser with a file path."
         )
@@ -51,7 +51,7 @@ class TableauHyperParser(BaseDocumentParser):
                 )
 
     async def parse_stream(self, stream: AsyncIterator[bytes], document_id: str, source_name: str, metadata: dict[str, Any] | None = None, options: ParseOptions | None = None) -> UnifiedBiAggregationDocument:
-        raise NotImplementedError("Tableau .hyper cannot be parsed from a stream (binary format). Use parse_path with a file.")
+        raise RuntimeError("Tableau .hyper cannot be parsed from a stream (binary format). Use parse_path with a file.")
 
     def can_parse(self, source: str | Path) -> bool:
         if isinstance(source, str) and source.endswith(".hyper"):
