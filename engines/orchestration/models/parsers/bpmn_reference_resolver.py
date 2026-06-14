@@ -10,10 +10,9 @@ from __future__ import annotations
 import logging
 from typing import cast
 
-from engines.orchestration.models.osdm_models import (
+from ..bpmn.models.bpmn_models import (
     Activity,
     Association,
-    BaseElement,
     BoundaryEvent,
     BPMNDiagram,
     BPMNEdge,
@@ -63,6 +62,7 @@ from engines.orchestration.models.osdm_models import (
     Signal,
     SignalEventDefinition,
 )
+from .shared_models import BaseElement
 
 
 logger = logging.getLogger(__name__)

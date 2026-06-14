@@ -4,9 +4,8 @@ from __future__ import annotations
 
 from xml.etree import ElementTree as ET
 
-from engines.orchestration.models.osdm_models import (
-    AlignmentKind, BPMNDiagram, BPMNEdge, BPMNLabel, BPMNShape, Bounds,
-)
+from ..bpmn.models.bpmn_models import BPMNDiagram, BPMNEdge, BPMNLabel, BPMNShape
+from .shared_models import AlignmentKind, Bounds
 from .bpmn_constants import NS
 
 

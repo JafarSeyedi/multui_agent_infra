@@ -10,12 +10,7 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
-from engines.orchestration.models.osdm_models import (
-    Decision,
-    DecisionService,
-    InputData,
-    BusinessKnowledgeModel,
-)
+from .models.dmn_models import Decision, DecisionService, InputData, BusinessKnowledgeModel
 
 
 logger = logging.getLogger(__name__)

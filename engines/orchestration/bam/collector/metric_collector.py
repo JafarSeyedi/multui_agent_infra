@@ -5,7 +5,7 @@ from collections import defaultdict
 from datetime import datetime
 from typing import Any
 
-from engines.orchestration.models.bam_models import MetricValue
+from ..models.bam_models import MetricValue
 
 logger = logging.getLogger(__name__)
 

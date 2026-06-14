@@ -12,7 +12,7 @@ from typing import Any
 from ..core.correlation import CorrelationKeySet
 from ..core.engine import OrchestrationEngine
 
-from engines.orchestration.models.osdm_models import (
+from .models.bpmn_models import (
     Event as OsdmEvent,
     EventType,
     StartEvent,

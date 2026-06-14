@@ -8,9 +8,7 @@ if TYPE_CHECKING:
     from .process_executor import ProcessModel
 from ..._types import RawData, VariableValue
 
-from engines.orchestration.models.osdm_models import (
-    ActivityType, FlowNode, SequenceFlow, StartEvent,
-)
+from .models.bpmn_models import ActivityType, FlowNode, SequenceFlow, StartEvent
 from .process_model import TypedProcessModel
 from .sequence_flow import HandlerSequenceFlow
 

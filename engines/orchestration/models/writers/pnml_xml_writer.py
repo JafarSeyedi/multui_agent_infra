@@ -12,9 +12,14 @@ from __future__ import annotations
 from typing import cast
 from xml.etree.ElementTree import Element, SubElement, tostring
 
-from engines.orchestration.models.osdm_models import (
-    Arc, BaseOSDMDocument, Place, PnTransition, StateMachineDocument,
-    StateMachineModel, StateMachineRegion
+from .shared_models import BaseOSDMDocument
+from ..state_machine.models.state_machine_models import (
+    Arc,
+    Place,
+    PnTransition,
+    StateMachineDocument,
+    StateMachineModel,
+    StateMachineRegion,
 )
 from .base_osdm_writer import BaseOSDMWriter, OSDMWriteOptions
 

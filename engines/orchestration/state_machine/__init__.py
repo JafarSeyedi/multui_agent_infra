@@ -1,43 +1,41 @@
 """State machine orchestration components."""
 
-from .action_executor import ActionExecutionError, ActionExecutor, StateAction
-from .engine import StateMachineEngine, StateMachineError
-from .guard_evaluator import GuardCondition, GuardEvaluator
-from .hierarchical_handler import HierarchicalHandler, StateNode
-from .history_manager import HistoryEntry, HistoryKind, StateMachineHistory
-from .parallel_state_handler import ParallelStateHandler, RegionState
-from .state_executor import (
-    PseudoStateKind,
-    RegionContext,
-    StateContext,
-    StateKind,
-    StateMachineExecutor,
-    StateMachineModel,
-)
-from .transition_handler import Transition, TransitionHandler, TriggerMatch
+import importlib
 
-__all__ = [
-    "ActionExecutionError",
-    "ActionExecutor",
-    "GuardCondition",
-    "GuardEvaluator",
-    "HierarchicalHandler",
-    "HistoryEntry",
-    "HistoryKind",
-    "ParallelStateHandler",
-    "PseudoStateKind",
-    "RegionContext",
-    "RegionState",
-    "StateAction",
-    "StateContext",
-    "StateKind",
-    "StateMachineEngine",
-    "StateMachineError",
-    "StateMachineExecutor",
-    "StateMachineHistory",
-    "StateMachineModel",
-    "StateNode",
-    "Transition",
-    "TransitionHandler",
-    "TriggerMatch",
-]
+_LAZY_MODULES: dict[str, str] = {
+    "ActionExecutionError": ".action_executor",
+    "ActionExecutor": ".action_executor",
+    "GuardCondition": ".guard_evaluator",
+    "GuardEvaluator": ".guard_evaluator",
+    "HierarchicalHandler": ".hierarchical_handler",
+    "HistoryEntry": ".history_manager",
+    "HistoryKind": ".history_manager",
+    "ParallelStateHandler": ".parallel_state_handler",
+    "PseudoStateKind": ".state_executor",
+    "RegionContext": ".state_executor",
+    "RegionState": ".parallel_state_handler",
+    "StateAction": ".action_executor",
+    "StateContext": ".state_executor",
+    "StateKind": ".state_executor",
+    "StateMachineEngine": ".engine",
+    "StateMachineError": ".engine",
+    "StateMachineExecutor": ".state_executor",
+    "StateMachineHistory": ".history_manager",
+    "StateMachineModel": ".state_executor",
+    "StateNode": ".hierarchical_handler",
+    "Transition": ".transition_handler",
+    "TransitionHandler": ".transition_handler",
+    "TriggerMatch": ".transition_handler",
+}
+
+
+def __getattr__(name: str):
+    if name in _LAZY_MODULES:
+        mod = importlib.import_module(_LAZY_MODULES[name], __package__)
+        val = getattr(mod, name)
+        globals()[name] = val
+        return val
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+__all__ = sorted(_LAZY_MODULES.keys())

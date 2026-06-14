@@ -34,7 +34,7 @@ from .process_model import TypedProcessModel, classify_node
 from .model_normalizer import BpmnModelNormalizer, _activity_get, _activity_type_str, _activity_id
 from .gateway_classifier import BpmnGatewayClassifier
 from .sub_process_manager import BpmnSubProcessManager, _SubProcessContext
-from engines.orchestration.models.osdm_models import (
+from .models.bpmn_models import (
     Activity,
     Task,
     Event as OsdmEvent,

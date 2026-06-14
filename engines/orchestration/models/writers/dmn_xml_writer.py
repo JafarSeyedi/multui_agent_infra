@@ -11,19 +11,19 @@ from xml.etree.ElementTree import Element
 from xml.etree.ElementTree import SubElement
 from xml.etree.ElementTree import tostring
 
-from engines.orchestration.models.osdm_models import AuthorityRequirement
-from engines.orchestration.models.osdm_models import BaseElement, BaseOSDMDocument
-from engines.orchestration.models.osdm_models import BusinessKnowledgeModel
-from engines.orchestration.models.osdm_models import Decision
-from engines.orchestration.models.osdm_models import DecisionLogicType
-from engines.orchestration.models.osdm_models import DecisionTable
-from engines.orchestration.models.osdm_models import DMNDocument
-from engines.orchestration.models.osdm_models import FormalExpression
-from engines.orchestration.models.osdm_models import InformationRequirement
-from engines.orchestration.models.osdm_models import InputData
-from engines.orchestration.models.osdm_models import KnowledgeRequirement
-from engines.orchestration.models.osdm_models import KnowledgeSource
-from engines.orchestration.models.osdm_models import Script
+from ..dmn.models.dmn_models import AuthorityRequirement
+from .shared_models import BaseElement, BaseOSDMDocument
+from ..dmn.models.dmn_models import BusinessKnowledgeModel
+from ..dmn.models.dmn_models import Decision
+from ..dmn.models.dmn_models import DecisionLogicType
+from ..dmn.models.dmn_models import DecisionTable
+from ..dmn.models.dmn_models import DMNDocument
+from ..bpmn.models.bpmn_models import FormalExpression
+from ..dmn.models.dmn_models import InformationRequirement
+from ..dmn.models.dmn_models import InputData
+from ..dmn.models.dmn_models import KnowledgeRequirement
+from ..dmn.models.dmn_models import KnowledgeSource
+from ..bpmn.models.bpmn_models import Script
 from .base_osdm_writer import BaseOSDMWriter
 from .base_osdm_writer import OSDMWriteOptions
 

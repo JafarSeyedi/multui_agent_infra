@@ -1,133 +1,76 @@
 """BPMN execution components."""
 
-from .activity_handler import (
-    ActivityExecutionResult,
-    ActivityHandler,
-    ActivityIOSpecification,
-    ActivityLoopCharacteristics,
-    BoundaryBehavior,
-)
-from .adhoc_handler import (
-    AdhocHandler,
-    HandlerAdHocActivity,
-    HandlerAdHocExecutionState,
-    HandlerAdHocOutcome,
-    HandlerAdHocProcess,
-)
-from engines.orchestration.models.osdm_models import HandlerAdHocOrdering
-from .choreography_handler import (
-    ChoreographyHandler,
-    HandlerChoreographyOutcome,
-    HandlerChoreographyState,
-    HandlerChoreographyStep,
-)
-from .collaboration_handler import (
-    CollaborationHandler,
-    HandlerCollaborationContext,
-    MessageRoutingResult,
-)
-from .data_object_handler import (
-    DataObjectHandler,
-    HandlerDataAssociation,
-    HandlerDataObject,
-    HandlerDataStoreRef,
-    HandlerMessageObject,
-)
-from .engine import BPMNExecutionError, BPMNEngine
-from .event_handler import (
-    EventHandler,
-    HandlerBPMNEvent,
-    HandlerBPMNEventOutcome,
-    TimerSchedule,
-)
-from .gateway_handler import (
-    GatewayBranch,
-    GatewayContext,
-    GatewayDecision,
-    GatewayHandler,
-)
-from .global_task_handler import (
-    GlobalTaskExecutionResult,
-    GlobalTaskHandler,
-    HandlerGlobalTask,
-)
-from .loop_handler import (
-    HandlerLoopConfiguration,
-    HandlerLoopIteration,
-    HandlerLoopOutcome,
-    HandlerLoopState,
-    LoopHandler,
-)
-from .process_model import TypedProcessModel, classify_node
-from .process_executor import BPMNProcessExecutor, ProcessExecutionOutcome, ProcessModel
-from .sequence_flow import (
-    FlowTraversalResult,
-    HandlerSequenceFlow,
-    SequenceFlowEngine,
-    compute_next_nodes,
-    find_default_flow,
-    has_conditional_flows,
-)
-from .transaction_handler import (
-    HandlerTransactionBoundary,
-    HandlerTransactionContext,
-    TransactionHandler,
-    TransactionState,
-)
+import importlib
 
-__all__ = [
-    "ActivityExecutionResult",
-    "ActivityHandler",
-    "ActivityIOSpecification",
-    "ActivityLoopCharacteristics",
-    "AdhocHandler",
-    "BPMNExecutionError",
-    "BPMNEngine",
-    "BPMNProcessExecutor",
-    "BoundaryBehavior",
-    "ChoreographyHandler",
-    "CollaborationHandler",
-    "DataObjectHandler",
-    "EventHandler",
-    "GatewayBranch",
-    "GatewayContext",
-    "GatewayDecision",
-    "GatewayHandler",
-    "GlobalTaskExecutionResult",
-    "GlobalTaskHandler",
-    "HandlerAdHocActivity",
-    "HandlerAdHocExecutionState",
-    "HandlerAdHocOutcome",
-    "HandlerAdHocProcess",
-    "HandlerBPMNEvent",
-    "HandlerBPMNEventOutcome",
-    "HandlerChoreographyOutcome",
-    "HandlerChoreographyState",
-    "HandlerChoreographyStep",
-    "HandlerCollaborationContext",
-    "HandlerDataAssociation",
-    "HandlerDataObject",
-    "HandlerDataStoreRef",
-    "HandlerGlobalTask",
-    "HandlerLoopConfiguration",
-    "HandlerLoopIteration",
-    "HandlerLoopOutcome",
-    "HandlerLoopState",
-    "HandlerMessageObject",
-    "HandlerSequenceFlow",
-    "HandlerTransactionBoundary",
-    "HandlerTransactionContext",
-    "LoopHandler",
-    "MessageRoutingResult",
-    "ProcessExecutionOutcome",
-    "ProcessModel",
-    "FlowTraversalResult",
-    "HandlerSequenceFlow",
-    "SequenceFlowEngine",
-    "TimerSchedule",
-    "TransactionHandler",
-    "TransactionState",
-    "compute_next_nodes",
-    "find_default_flow",
-    "has_conditional_flows",
-]
+_LAZY_MODULES: dict[str, str] = {
+    "ActivityExecutionResult": ".activity_handler",
+    "ActivityHandler": ".activity_handler",
+    "ActivityIOSpecification": ".activity_handler",
+    "ActivityLoopCharacteristics": ".activity_handler",
+    "BoundaryBehavior": ".activity_handler",
+    "AdhocHandler": ".adhoc_handler",
+    "HandlerAdHocActivity": ".adhoc_handler",
+    "HandlerAdHocExecutionState": ".adhoc_handler",
+    "HandlerAdHocOutcome": ".adhoc_handler",
+    "HandlerAdHocProcess": ".adhoc_handler",
+    "HandlerAdHocOrdering": ".models.bpmn_models",
+    "ChoreographyHandler": ".choreography_handler",
+    "HandlerChoreographyOutcome": ".choreography_handler",
+    "HandlerChoreographyState": ".choreography_handler",
+    "HandlerChoreographyStep": ".choreography_handler",
+    "CollaborationHandler": ".collaboration_handler",
+    "HandlerCollaborationContext": ".collaboration_handler",
+    "MessageRoutingResult": ".collaboration_handler",
+    "DataObjectHandler": ".data_object_handler",
+    "HandlerDataAssociation": ".data_object_handler",
+    "HandlerDataObject": ".data_object_handler",
+    "HandlerDataStoreRef": ".data_object_handler",
+    "HandlerMessageObject": ".data_object_handler",
+    "BPMNExecutionError": ".engine",
+    "BPMNEngine": ".engine",
+    "EventHandler": ".event_handler",
+    "HandlerBPMNEvent": ".event_handler",
+    "HandlerBPMNEventOutcome": ".event_handler",
+    "TimerSchedule": ".event_handler",
+    "GatewayBranch": ".gateway_handler",
+    "GatewayContext": ".gateway_handler",
+    "GatewayDecision": ".gateway_handler",
+    "GatewayHandler": ".gateway_handler",
+    "GlobalTaskExecutionResult": ".global_task_handler",
+    "GlobalTaskHandler": ".global_task_handler",
+    "HandlerGlobalTask": ".global_task_handler",
+    "HandlerLoopConfiguration": ".loop_handler",
+    "HandlerLoopIteration": ".loop_handler",
+    "HandlerLoopOutcome": ".loop_handler",
+    "HandlerLoopState": ".loop_handler",
+    "LoopHandler": ".loop_handler",
+    "TypedProcessModel": ".process_model",
+    "classify_node": ".process_model",
+    "BPMNProcessExecutor": ".process_executor",
+    "ProcessExecutionOutcome": ".process_executor",
+    "ProcessModel": ".process_executor",
+    "FlowTraversalResult": ".sequence_flow",
+    "HandlerSequenceFlow": ".sequence_flow",
+    "SequenceFlowEngine": ".sequence_flow",
+    "compute_next_nodes": ".sequence_flow",
+    "find_default_flow": ".sequence_flow",
+    "has_conditional_flows": ".sequence_flow",
+    "HandlerTransactionBoundary": ".transaction_handler",
+    "HandlerTransactionContext": ".transaction_handler",
+    "TransactionHandler": ".transaction_handler",
+    "TransactionState": ".transaction_handler",
+}
+
+
+def __getattr__(name: str):
+    if name in _LAZY_MODULES:
+        mod = importlib.import_module(_LAZY_MODULES[name], __package__)
+        val = getattr(mod, name)
+        globals()[name] = val
+        return val
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+
+
+__all__ = sorted(_LAZY_MODULES.keys())

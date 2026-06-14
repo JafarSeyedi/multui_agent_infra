@@ -16,9 +16,16 @@ import uuid
 from xml.etree import ElementTree as ET
 
 from engines.document.models.media_types import MEDIA_TYPES
-from engines.orchestration.models.osdm_models import (
-    Arc, BaseOSDMDocument, FormalExpression, Place, PnTransition, State,
-    StateMachineDocument, StateMachineModel, StateMachineRegion
+from ..bpmn.models.bpmn_models import FormalExpression
+from .shared_models import BaseOSDMDocument
+from ..state_machine.models.state_machine_models import (
+    Arc,
+    Place,
+    PnTransition,
+    State,
+    StateMachineDocument,
+    StateMachineModel,
+    StateMachineRegion,
 )
 from engines.document.parsers.base import ParseOptions
 from .base_osdm_parser import BaseOSDMParser

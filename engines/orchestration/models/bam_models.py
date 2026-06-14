@@ -9,7 +9,8 @@ from pydantic import BaseModel, Field
 from engines.document.models.base import BaseDocument
 from engines.document.models.media_types import DocumentFormat, MediaContentKind, MediaRawType, MediaType
 from engines.document.models.msdm_models import Entity
-from .osdm_models import CEPRule, Process
+from ..bpmn.models.bpmn_models import Process
+from ..cep.models.cep_models import CEPRule
 from engines.document.models.standard import DocumentStandard
 
 

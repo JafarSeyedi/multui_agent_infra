@@ -21,7 +21,7 @@ from engines.document.models.lsdm_models import (
     XesTrace,
 )
 from engines.document.models.media_types import MEDIA_TYPES
-from engines.orchestration.models.osdm_models import DecisionLogicType
+from engines.orchestration.dmn.models.dmn_models import DecisionLogicType
 from engines.document.models.standard import DocumentStandard
 from engines.knowledge.models.parsers.process_mining.jprm_parser import JprmParser
 from engines.knowledge.models.parsers.process_mining.yprm_parser import YprmParser

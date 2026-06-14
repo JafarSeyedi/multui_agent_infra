@@ -12,12 +12,10 @@ from enum import Enum
 from typing import Any
 from collections.abc import Callable
 
-from engines.orchestration.models.osdm_models import (
-    ErrorEventDefinition,
-    Error,
-    EscalationEventDefinition,
-    Escalation,
-)
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..bpmn.models.bpmn_models import ErrorEventDefinition, Error, EscalationEventDefinition, Escalation
 
 
 logger = logging.getLogger(__name__)

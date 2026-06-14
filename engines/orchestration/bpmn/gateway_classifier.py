@@ -7,9 +7,14 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-from engines.orchestration.models.osdm_models import (
-    ExclusiveGateway, Gateway, InclusiveGateway, ParallelGateway,
-    EventBasedGateway, ComplexGateway, SequenceFlow,
+from .models.bpmn_models import (
+    ExclusiveGateway,
+    Gateway,
+    InclusiveGateway,
+    ParallelGateway,
+    EventBasedGateway,
+    ComplexGateway,
+    SequenceFlow,
 )
 from .model_normalizer import _activity_id, _activity_type_str
 from .process_model import TypedProcessModel

@@ -2,7 +2,7 @@ import pytest
 from datetime import datetime
 from engines.orchestration.bam.collector.metric_collector import MetricCollector
 from engines.orchestration.bam.collector.kpi_evaluator import KpiEvaluator
-from engines.orchestration.models.bam_models import (
+from engines.orchestration.bam.models.bam_models import (
     BusinessMetric, KPI, MetricCategory, MetricValue,
 )
 

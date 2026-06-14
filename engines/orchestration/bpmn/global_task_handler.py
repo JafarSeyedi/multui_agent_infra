@@ -14,7 +14,7 @@ from collections.abc import Callable
 from ..core.engine import OrchestrationEngine
 from ..core.event_bus import Event, EventType
 
-from engines.orchestration.models.osdm_models import (
+from .models.bpmn_models import (
     GlobalTask as OSDMGlobalTask,
     GlobalUserTask,
     GlobalScriptTask,

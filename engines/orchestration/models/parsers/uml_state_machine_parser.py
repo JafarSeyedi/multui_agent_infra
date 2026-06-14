@@ -21,10 +21,15 @@ import uuid
 from xml.etree import ElementTree as ET
 
 from engines.document.models.media_types import MEDIA_TYPES
-from engines.orchestration.models.osdm_models import (
-    BaseOSDMDocument, FormalExpression, PseudoState, PseudoStateKind,
-    Script, ScriptLanguage, State, StateMachineDocument, StateMachineModel,
-    StateMachineRegion, StateTransition
+from ..bpmn.models.bpmn_models import FormalExpression, Script, ScriptLanguage
+from .shared_models import BaseOSDMDocument, PseudoStateKind
+from ..state_machine.models.state_machine_models import (
+    PseudoState,
+    State,
+    StateMachineDocument,
+    StateMachineModel,
+    StateMachineRegion,
+    StateTransition,
 )
 from engines.document.parsers.base import ParseOptions
 from .base_osdm_parser import BaseOSDMParser

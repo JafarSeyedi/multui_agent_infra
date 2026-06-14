@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from typing import Any
 
-from engines.orchestration.models.bam_models import (
+from ..models.bam_models import (
     MetricValue, SlaComplianceReport, SlaDefinition,
 )
 

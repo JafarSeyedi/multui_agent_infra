@@ -11,9 +11,15 @@ from __future__ import annotations
 from typing import cast
 from xml.etree.ElementTree import Element, SubElement, tostring
 
-from engines.orchestration.models.osdm_models import (
-    BaseElement, BaseOSDMDocument, PseudoState, Script, State,
-    StateMachineDocument, StateMachineModel, StateMachineRegion, StateTransition, Transition
+from ..bpmn.models.bpmn_models import Script, Transition
+from .shared_models import BaseElement, BaseOSDMDocument
+from ..state_machine.models.state_machine_models import (
+    PseudoState,
+    State,
+    StateMachineDocument,
+    StateMachineModel,
+    StateMachineRegion,
+    StateTransition,
 )
 from .base_osdm_writer import BaseOSDMWriter, OSDMWriteOptions
 

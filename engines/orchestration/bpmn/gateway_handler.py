@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 from ..expression.evaluator import EvaluationContext
 from ..expression.python_evaluator import PythonEvaluator
 
-from engines.orchestration.models.osdm_models import (
+from .models.bpmn_models import (
     FlowNode,
     GatewayType,
     GatewayDirection,

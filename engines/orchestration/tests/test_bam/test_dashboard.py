@@ -1,7 +1,7 @@
 import pytest
 from datetime import datetime
 from engines.orchestration.bam.dashboard.dashboard_manager import DashboardManager
-from engines.orchestration.models.bam_models import (
+from engines.orchestration.bam.models.bam_models import (
     Dashboard, DashboardWidget, BusinessMetric, KPI,
     MetricValue,
 )

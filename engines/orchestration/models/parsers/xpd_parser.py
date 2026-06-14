@@ -24,13 +24,34 @@ from typing import Any
 from xml.etree import ElementTree as ET
 
 from engines.document.models.media_types import MEDIA_TYPES
-from engines.orchestration.models.osdm_models import (
-    Artifact, Association, AssociationDirection, BaseOSDMDocument,
-    BPMNDocument, CallActivity, Collaboration, DataObject, EndEvent,
-    ExclusiveGateway, FlowElement, FlowNode, FormalExpression, Group,
-    IntermediateCatchEvent, Lane, LaneSet, Participant, Process, ProcessType,
-    Property, SequenceFlow, StartEvent, Task, TextAnnotation
+from ..bpmn.models.bpmn_models import (
+    Artifact,
+    Association,
+    AssociationDirection,
+    BPMNDocument,
+    CallActivity,
+    Collaboration,
+    DataObject,
+    EndEvent,
+    StandardLoopCharacteristics,
+    ExclusiveGateway,
+    FlowElement,
+    FlowNode,
+    FormalExpression,
+    Group,
+    IntermediateCatchEvent,
+    Lane,
+    LaneSet,
+    Participant,
+    Process,
+    ProcessType,
+    Property,
+    SequenceFlow,
+    StartEvent,
+    Task,
+    TextAnnotation,
 )
+from .shared_models import BaseOSDMDocument
 from engines.document.parsers.base import ParseOptions
 from .base_osdm_parser import BaseOSDMParser
 
@@ -184,7 +205,6 @@ class XPDLParser(BaseOSDMParser):
                 task = Task(id=act_id, name=act_name)
                 loop_elem = elem.find("xpdl:Loop", NS)
                 if loop_elem is not None:
-                    from engines.orchestration.models.osdm_models import StandardLoopCharacteristics
                     loop = StandardLoopCharacteristics(id=f"{act_id}_loop")
                     loop.test_before = loop_elem.get("LoopType", "Standard") == "Standard"
                     cond = loop_elem.find("xpdl:LoopCondition", NS)

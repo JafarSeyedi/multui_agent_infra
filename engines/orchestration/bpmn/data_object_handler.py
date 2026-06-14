@@ -11,7 +11,7 @@ from typing import Any
 
 from ...document.models.dsdm_models import DataDocument, DataSchemaReference, SchemaBinding
 from ...document.models.msdm_models import Entity, Attribute, DataType, ScalarType
-from engines.orchestration.models.osdm_models import (
+from .models.bpmn_models import (
     DataObject,
     DataObjectReference,
     DataStore,

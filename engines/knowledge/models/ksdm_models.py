@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field, ConfigDict
 from engines.document.models.base import BaseDocument
 from engines.document.models.lsdm_models import EventLogDocument
 from engines.document.models.msdm_models import Attribute as MsdmAttribute, DataType
-from engines.orchestration.models.osdm_models import CatchEvent, FlowElement, Process
+from engines.orchestration.bpmn.models.bpmn_models import CatchEvent, FlowElement, Process
 from engines.document.models.standard import DocumentStandard
 
 # ==========================================================

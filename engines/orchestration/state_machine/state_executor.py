@@ -19,14 +19,9 @@ from ..core.event_bus import Event as BusEvent
 from ..core.event_bus import EventType as BusEventType
 from ..core.instance import ProcessInstance
 from ..core.engine import OrchestrationEngine
-from engines.orchestration.models.osdm_models import (
-    PseudoState,
-    PseudoStateKind,
-    State,
-    StateMachineModel,
-    StateMachineRegion,
-    StateNode,
-)
+from ..bpmn.models.bpmn_models import StateNode
+from ..models.shared_models import PseudoStateKind
+from .models.state_machine_models import PseudoState, State, StateMachineModel, StateMachineRegion
 from .transition_handler import TransitionHandler
 from .history_manager import StateMachineHistory
 

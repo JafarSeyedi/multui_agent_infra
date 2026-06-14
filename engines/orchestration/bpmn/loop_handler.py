@@ -20,7 +20,7 @@ from collections.abc import Callable
 
 from ..core.engine import OrchestrationEngine
 
-from engines.orchestration.models.osdm_models import (
+from .models.bpmn_models import (
     Activity,
     LoopCharacteristics,
     StandardLoopCharacteristics,

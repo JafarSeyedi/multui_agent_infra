@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from engines.document.models.base import BaseDocument
-from engines.orchestration.models.osdm_models import BaseOSDMDocument
+from ..shared_models import BaseOSDMDocument
 from engines.document.writers.base import BaseDocumentWriter
 from engines.document.writers.base import WriteOptions
 from engines.document.writers.versioning import VersioningContext

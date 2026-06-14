@@ -14,13 +14,13 @@ from typing import Any
 from ..core.instance import ProcessInstance
 from ..core.event_bus import Event, EventType
 from ..core.engine import OrchestrationEngine
-from engines.orchestration.models.osdm_models import (
+from ..bpmn.models.bpmn_models import FormalExpression
+from .models.cmmn_models import (
     PlanItem,
     Milestone,
     DiscretionaryItem,
     EntryCriterion,
     ExitCriterion,
-    FormalExpression,
     HumanTask,
     CaseTask,
     ProcessTask,

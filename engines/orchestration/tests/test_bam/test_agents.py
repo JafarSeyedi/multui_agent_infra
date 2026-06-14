@@ -6,7 +6,7 @@ from engines.orchestration.bam.agents.threshold_agent import ThresholdAgent
 from engines.orchestration.bam.agents.monitoring_orchestrator import (
     MonitoringOrchestrator,
 )
-from engines.orchestration.models.bam_models import (
+from engines.orchestration.bam.models.bam_models import (
     MonitoringAgentDefinition, MonitoringAgentType,
     AgentReport, MetricValue,
 )

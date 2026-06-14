@@ -15,14 +15,14 @@ from __future__ import annotations
 
 from typing import cast
 
-from engines.orchestration.models.osdm_models import BaseOSDMDocument
-from engines.orchestration.models.osdm_models import Script
-from engines.orchestration.models.osdm_models import State
-from engines.orchestration.models.osdm_models import StateMachineDocument
-from engines.orchestration.models.osdm_models import StateMachineModel
-from engines.orchestration.models.osdm_models import StateMachineRegion
-from engines.orchestration.models.osdm_models import StateTransition
-from engines.orchestration.models.osdm_models import Transition
+from .shared_models import BaseOSDMDocument
+from ..bpmn.models.bpmn_models import Script
+from ..state_machine.models.state_machine_models import State
+from ..state_machine.models.state_machine_models import StateMachineDocument
+from ..state_machine.models.state_machine_models import StateMachineModel
+from ..state_machine.models.state_machine_models import StateMachineRegion
+from ..state_machine.models.state_machine_models import StateTransition
+from ..bpmn.models.bpmn_models import Transition
 from .base_osdm_writer import BaseOSDMWriter
 from .base_osdm_writer import OSDMWriteOptions
 

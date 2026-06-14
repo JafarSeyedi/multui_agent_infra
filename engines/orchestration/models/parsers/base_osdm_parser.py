@@ -11,7 +11,7 @@ from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Any
 
-from engines.orchestration.models.osdm_models import BaseOSDMDocument
+from ..shared_models import BaseOSDMDocument
 from engines.document.parsers.base import BaseDocumentParser, ParseOptions
 
 

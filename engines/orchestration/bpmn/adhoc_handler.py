@@ -15,12 +15,7 @@ from collections.abc import Iterator
 
 from ..core.engine import OrchestrationEngine
 
-from engines.orchestration.models.osdm_models import (
-    AdHocOrdering,
-    AdHocSubProcess,
-    FlowElement,
-    FormalExpression,
-)
+from .models.bpmn_models import AdHocOrdering, AdHocSubProcess, FlowElement, FormalExpression
 
 
 def get_ordering(adhoc: AdHocSubProcess) -> AdHocOrdering:

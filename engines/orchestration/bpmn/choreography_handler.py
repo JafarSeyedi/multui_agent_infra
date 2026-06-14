@@ -13,10 +13,7 @@ from typing import Any
 from ..core.event_bus import Event, EventType
 from ..core.engine import OrchestrationEngine
 
-from engines.orchestration.models.osdm_models import (
-    ChoreographyLoopType,
-    ChoreographyTask as OSDMChoreographyTask,
-)
+from .models.bpmn_models import ChoreographyLoopType, ChoreographyTask as OSDMChoreographyTask
 
 
 logger = logging.getLogger(__name__)

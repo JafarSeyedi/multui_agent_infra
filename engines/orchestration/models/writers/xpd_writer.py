@@ -13,15 +13,15 @@ from xml.etree.ElementTree import Element
 from xml.etree.ElementTree import SubElement
 from xml.etree.ElementTree import tostring
 
-from engines.orchestration.models.osdm_models import BaseOSDMDocument
-from engines.orchestration.models.osdm_models import BPMNDocument
-from engines.orchestration.models.osdm_models import Event
-from engines.orchestration.models.osdm_models import FlowElement
-from engines.orchestration.models.osdm_models import Participant
-from engines.orchestration.models.osdm_models import Process
-from engines.orchestration.models.osdm_models import SequenceFlow
-from engines.orchestration.models.osdm_models import SubProcess
-from engines.orchestration.models.osdm_models import Task
+from .shared_models import BaseOSDMDocument
+from ..bpmn.models.bpmn_models import BPMNDocument
+from ..bpmn.models.bpmn_models import Event
+from ..bpmn.models.bpmn_models import FlowElement
+from ..bpmn.models.bpmn_models import Participant
+from ..bpmn.models.bpmn_models import Process
+from ..bpmn.models.bpmn_models import SequenceFlow
+from ..bpmn.models.bpmn_models import SubProcess
+from ..bpmn.models.bpmn_models import Task
 from .base_osdm_writer import BaseOSDMWriter
 from .base_osdm_writer import OSDMWriteOptions
 

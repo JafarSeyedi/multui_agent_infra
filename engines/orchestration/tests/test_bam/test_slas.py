@@ -1,7 +1,7 @@
 import pytest
 from datetime import datetime, timedelta
 from engines.orchestration.bam.slas.sla_tracker import SlaTracker
-from engines.orchestration.models.bam_models import (
+from engines.orchestration.bam.models.bam_models import (
     SlaDefinition, BusinessMetric, MetricValue,
 )
 

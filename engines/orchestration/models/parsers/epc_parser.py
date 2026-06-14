@@ -20,11 +20,25 @@ from __future__ import annotations
 from xml.etree import ElementTree as ET
 
 from engines.document.models.media_types import MEDIA_TYPES
-from engines.orchestration.models.osdm_models import (
-    BaseOSDMDocument, BPMNDocument, Event, EventType, ExclusiveGateway,
-    FlowElement, FlowNode, Gateway, InclusiveGateway, Lane, LaneSet,
-    ParallelGateway, Process, ResourceRole, ResourceRoleType, SequenceFlow, Task
+from ..bpmn.models.bpmn_models import (
+    BPMNDocument,
+    Event,
+    EventType,
+    ExclusiveGateway,
+    FlowElement,
+    FlowNode,
+    Gateway,
+    InclusiveGateway,
+    Lane,
+    LaneSet,
+    ParallelGateway,
+    Process,
+    ResourceRole,
+    ResourceRoleType,
+    SequenceFlow,
+    Task,
 )
+from .shared_models import BaseOSDMDocument
 from engines.document.parsers.base import ParseOptions
 from .base_osdm_parser import BaseOSDMParser
 

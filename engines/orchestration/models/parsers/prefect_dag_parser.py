@@ -17,9 +17,14 @@ from pathlib import Path
 from typing import Any
 
 from engines.document.models.media_types import MEDIA_TYPES
-from engines.orchestration.models.osdm_models import (
-    BaseOSDMDocument, Script, ScriptLanguage, State, StateMachineDocument,
-    StateMachineModel, StateMachineRegion, StateTransition
+from ..bpmn.models.bpmn_models import Script, ScriptLanguage
+from .shared_models import BaseOSDMDocument
+from ..state_machine.models.state_machine_models import (
+    State,
+    StateMachineDocument,
+    StateMachineModel,
+    StateMachineRegion,
+    StateTransition,
 )
 from engines.document.parsers.base import ParseOptions
 from .base_osdm_parser import BaseOSDMParser

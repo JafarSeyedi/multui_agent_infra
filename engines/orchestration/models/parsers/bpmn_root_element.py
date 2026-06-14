@@ -5,17 +5,38 @@ from __future__ import annotations
 from typing import Any, Optional
 from xml.etree import ElementTree as ET
 
-from engines.orchestration.models.osdm_models import (
-    Association, AssociationDirection, Artifact, Auditing,
-    CorrelationKey, CorrelationProperty, CorrelationPropertyType,
-    CorrelationSubscription, DataInput, DataOutput, Error,
-    Escalation, FormalExpression, GlobalTask, Group,
-    InputOutputSpecification, Interface, ItemDefinition, ItemKind,
-    Message, Operation, Property, Rendering, Resource,
-    ResourceAssignmentExpression, ResourceParameter,
-    ResourceParameterType, ResourceRole, ResourceRoleType,
-    ScriptLanguage, Signal, TextAnnotation,
+from ..bpmn.models.bpmn_models import (
+    Association,
+    AssociationDirection,
+    Artifact,
+    Auditing,
+    CorrelationKey,
+    CorrelationProperty,
+    CorrelationSubscription,
+    DataInput,
+    DataOutput,
+    Error,
+    Escalation,
+    FormalExpression,
+    GlobalTask,
+    Group,
+    InputOutputSpecification,
+    Interface,
+    ItemDefinition,
+    Message,
+    Operation,
+    Property,
+    Rendering,
+    Resource,
+    ResourceAssignmentExpression,
+    ResourceParameter,
+    ResourceRole,
+    ResourceRoleType,
+    ScriptLanguage,
+    Signal,
+    TextAnnotation,
 )
+from .shared_models import CorrelationPropertyType, ItemKind, ResourceParameterType
 from .bpmn_constants import NS
 
 

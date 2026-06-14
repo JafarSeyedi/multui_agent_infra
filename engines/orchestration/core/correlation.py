@@ -15,14 +15,18 @@ from dataclasses import dataclass, field
 from uuid import uuid4
 from collections import defaultdict
 
+from typing import TYPE_CHECKING
+
 from ..persistence.history_repository import HistoryRepository
-from engines.orchestration.models.osdm_models import (
-    CorrelationKey as OsDmCorrelationKey,
-    CorrelationSubscription as OsDmCorrelationSubscription,
-    CorrelationPropertyBinding as OsDmCorrelationPropertyBinding,
-    CorrelationPropertyRetrievalExpression as OsDmCorrelationPropertyRetrievalExpression,
-    TimerEventDefinition as OsDmTimerEventDefinition,
-)
+
+if TYPE_CHECKING:
+    from ..bpmn.models.bpmn_models import (
+        CorrelationKey as OsDmCorrelationKey,
+        CorrelationSubscription as OsDmCorrelationSubscription,
+        CorrelationPropertyBinding as OsDmCorrelationPropertyBinding,
+        CorrelationPropertyRetrievalExpression as OsDmCorrelationPropertyRetrievalExpression,
+        TimerEventDefinition as OsDmTimerEventDefinition,
+    )
 
 
 logger = logging.getLogger(__name__)

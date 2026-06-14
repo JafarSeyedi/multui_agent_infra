@@ -16,7 +16,8 @@ from ..._types import DmnValue, FeelContext, Metadata, RawData
 
 from ..core.instance import ProcessInstance
 from ..core.engine import OrchestrationEngine
-from engines.orchestration.models.osdm_models import (
+from ..bpmn.models.bpmn_models import FormalExpression
+from .models.dmn_models import (
     Decision,
     DecisionTable,
     InputClause,
@@ -24,7 +25,6 @@ from engines.orchestration.models.osdm_models import (
     DecisionRule,
     LiteralExpression,
     UnaryTests,
-    FormalExpression,
     Context,
     ContextEntry,
     Relation,

@@ -12,12 +12,8 @@ from typing import Any
 
 from ..._types import RawData
 from ...document.models.media_types import MEDIA_TYPES
-from engines.orchestration.models.osdm_models import (
+from ..bpmn.models.bpmn_models import (
     BPMNDocument,
-    CMMNDocument,
-    StateMachineDocument,
-    DMNDocument,
-    CEPDocument,
     Process,
     ProcessType,
     EventType,
@@ -102,8 +98,6 @@ from engines.orchestration.models.osdm_models import (
     GatewayDirection,
     AssociationDirection,
     EventBasedGatewayType,
-    TimerEventType,
-    ItemKind,
     CallActivityType,
     ChoreographyLoopType,
     ChoreographyTask,
@@ -112,6 +106,21 @@ from engines.orchestration.models.osdm_models import (
     Conversation,
     ConversationNode,
     ConversationAssociation,
+    StateNode,
+    Transition,
+    BPMNDiagram,
+    BPMNPlane,
+    BPMNShape,
+    BPMNEdge,
+    BPMNLabel,
+    ItemDefinition,
+    Rendering,
+    RenderingForm,
+    ComplexBehaviorDefinition,
+)
+from ..cep.models.cep_models import CEPDocument, EventStream, CEPRule, CEPOperator
+from ..cmmn.models.cmmn_models import (
+    CMMNDocument,
     PlanItem,
     DiscretionaryItem,
     CaseFileItem,
@@ -126,6 +135,9 @@ from engines.orchestration.models.osdm_models import (
     Sentry,
     SentryExpression,
     ApplicabilityRule,
+)
+from ..dmn.models.dmn_models import (
+    DMNDocument,
     InformationRequirement,
     KnowledgeRequirement,
     AuthorityRequirement,
@@ -135,23 +147,11 @@ from engines.orchestration.models.osdm_models import (
     InputData,
     KnowledgeSource,
     DecisionTable,
-    State,
-    StateNode,
-    Transition,
-    StateTransition,
-    StateInvoke,
-    StateMachineRegion,
-    StateMachineModel,
-    PseudoState,
+)
+from ..models.shared_models import (
+    TimerEventType,
+    ItemKind,
     PseudoStateKind,
-    Place,
-    PnTransition,
-    Arc,
-    EventStream,
-    CEPRule,
-    CEPOperator,
-    InteractionProtocol,
-    InteractionModel,
     Extension,
     ExtensionDefinition,
     ExtensionAttributeValue,
@@ -159,21 +159,25 @@ from engines.orchestration.models.osdm_models import (
     DiagramElement,
     Edge,
     Shape,
-    BPMNDiagram,
-    BPMNPlane,
-    BPMNShape,
-    BPMNEdge,
-    BPMNLabel,
-    ItemDefinition,
-    Rendering,
-    RenderingForm,
-    ComplexBehaviorDefinition,
     ErrorHandlingConfig,
     RetryConfig,
     TimeoutConfig,
     ErrorHandlingOperator,
     CloudResourceBinding,
     BaseOSDMDocument,
+)
+from ..multi_agent.models.multi_agent_models import InteractionProtocol, InteractionModel
+from ..state_machine.models.state_machine_models import (
+    StateMachineDocument,
+    State,
+    StateTransition,
+    StateInvoke,
+    StateMachineRegion,
+    StateMachineModel,
+    PseudoState,
+    Place,
+    PnTransition,
+    Arc,
 )
 
 

@@ -17,13 +17,16 @@ from typing import Any, cast
 from uuid import uuid4
 
 from ..._types import FeelContext, Metadata, RawData
-from engines.orchestration.models.osdm_models import (
-    Activity as OsDmActivity,
-    FlowNode as OsDmFlowNode,
-    SequenceFlow as OsDmSequenceFlow,
-    Gateway as OsDmGateway,
-    Event as OsDmEvent,
-)
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..bpmn.models.bpmn_models import (
+        Activity as OsDmActivity,
+        FlowNode as OsDmFlowNode,
+        SequenceFlow as OsDmSequenceFlow,
+        Gateway as OsDmGateway,
+        Event as OsDmEvent,
+    )
 from ..utils.time_utils import parse_duration
 
 from .token_states import TokenState as TokenStateObj

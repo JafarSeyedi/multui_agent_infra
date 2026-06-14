@@ -4,6 +4,10 @@ from __future__ import annotations
 
 import pytest
 
+from engines.orchestration.bpmn.models.bpmn_models import Transition
+from engines.orchestration.models.shared_models import PseudoStateKind
+from engines.orchestration.state_machine.models.state_machine_models import StateTransition
+
 
 class TestStateMachineEngine:
     def test_engine_creation(self):
@@ -17,7 +21,6 @@ class TestStateMachineEngine:
 
 class TestPseudoStateKind:
     def test_all_pseudo_state_kinds(self):
-        from engines.orchestration.models.osdm_models import PseudoStateKind
         expected = {"initial", "choice", "junction", "fork", "join",
                     "shallowHistory", "deepHistory", "terminate",
                     "entryPoint", "exitPoint"}
@@ -27,5 +30,4 @@ class TestPseudoStateKind:
 
 class TestStateTransition:
     def test_transition_hierarchy(self):
-        from engines.orchestration.models.osdm_models import Transition, StateTransition
         assert issubclass(StateTransition, Transition)

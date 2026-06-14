@@ -17,10 +17,19 @@ from .conversation_executor import ConversationExecutor
 from .pool_lane_executor import PoolLaneExecutor
 
 # OSDM BPMN model imports
-from engines.orchestration.models.parsers.bpmn_xml_parser import BPMNXMLParser
-from engines.orchestration.models.osdm_models import (
-    BPMNDocument, Process, FlowElement, FlowNode, Activity, SequenceFlow,
-    Event, Gateway, EventType, Choreography, Collaboration,
+from .parsers.bpmn_xml_parser import BPMNXMLParser
+from .models.bpmn_models import (
+    BPMNDocument,
+    Process,
+    FlowElement,
+    FlowNode,
+    Activity,
+    SequenceFlow,
+    Event,
+    Gateway,
+    EventType,
+    Choreography,
+    Collaboration,
 )
 
 

@@ -13,7 +13,7 @@ from ..._types import MessagePayload, RawData
 from ..core.event_bus import Event, EventType
 from ..core.engine import OrchestrationEngine
 
-from engines.orchestration.models.osdm_models import (
+from .models.bpmn_models import (
     Collaboration as OSDMCollaboration,
     ConversationLink as OSDMConversationLink,
     Lane as OSDMLane,

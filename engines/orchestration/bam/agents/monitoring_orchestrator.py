@@ -7,7 +7,7 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-from engines.orchestration.models.bam_models import (
+from ..models.bam_models import (
     AgentReport, MonitoringAgentDefinition,
 )
 

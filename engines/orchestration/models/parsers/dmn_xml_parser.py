@@ -22,12 +22,21 @@ from typing import Union
 from xml.etree import ElementTree as ET
 
 from engines.document.models.media_types import MEDIA_TYPES
-from engines.orchestration.models.osdm_models import (
-    AuthorityRequirement, BaseOSDMDocument, BusinessKnowledgeModel, Decision,
-    DecisionLogicType, DecisionTable, DMNDefinition, DMNDocument,
-    InformationRequirement, InputData, KnowledgeRequirement, KnowledgeSource,
-    Script, ScriptLanguage
+from ..bpmn.models.bpmn_models import Script, ScriptLanguage
+from ..dmn.models.dmn_models import (
+    AuthorityRequirement,
+    BusinessKnowledgeModel,
+    Decision,
+    DecisionLogicType,
+    DecisionTable,
+    DMNDefinition,
+    DMNDocument,
+    InformationRequirement,
+    InputData,
+    KnowledgeRequirement,
+    KnowledgeSource,
 )
+from .shared_models import BaseOSDMDocument
 from engines.document.parsers.base import ParseOptions
 from .base_osdm_parser import BaseOSDMParser
 

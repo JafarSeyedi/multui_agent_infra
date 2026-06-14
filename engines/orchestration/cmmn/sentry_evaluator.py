@@ -13,12 +13,7 @@ from collections.abc import Sequence
 from typing import Any
 
 from ..._types import FeelContext, RawData
-from engines.orchestration.models.osdm_models import (
-    Sentry,
-    EntryCriterion,
-    ExitCriterion,
-    SentryExpression,
-)
+from .models.cmmn_models import Sentry, EntryCriterion, ExitCriterion, SentryExpression
 from ..expression.evaluator import EvaluationContext
 from ..expression.python_evaluator import PythonEvaluator
 

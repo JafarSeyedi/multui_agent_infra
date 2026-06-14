@@ -12,7 +12,7 @@ from engines.knowledge.models.ksdm_models import (
 )
 from engines.document.models.lsdm_models import EventLogDocument, LogAttribute
 from engines.document.models.media_types import MEDIA_TYPES
-from engines.orchestration.models.osdm_models import (
+from engines.orchestration.dmn.models.dmn_models import (
     DMNDefinition,
     DMNDocument,
     Decision,

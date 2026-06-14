@@ -1,54 +1,46 @@
 """CMMN execution components."""
 
-from .case_executor import CaseExecutionError, CaseExecutor, CasePlanModel
-from .case_file_manager import CaseFileDefinition, CaseFileManager, CaseFileItem
-from .discretionary_handler import (
-    DiscretionaryItem,
-    DiscretionaryTaskHandler,
-    PlanningTableTable,
-)
-from .engine import CMMNEngine, CMMNExecutionError
-from .milestone_handler import Milestone, MilestoneHandler, MilestoneState
-from .planning_table_handler import PlanningTableHandler
-from .sentry_evaluator import SentryEvaluator, SentryRule, SentryEvaluationResult
-from .stage_handler import Stage, StageHandler, StageState
-from .task_handler import (
-    CMMNTask,
-    CMMNTaskHandler,
-    CMMNTaskState,
-    HumanTaskConfig,
-    ProcessTaskConfig,
-    CaseTaskConfig,
-    DecisionTaskConfig,
-)
+import importlib
 
-__all__ = [
-    "CaseExecutionError",
-    "CaseExecutor",
-    "CaseFileDefinition",
-    "CaseFileManager",
-    "CaseFileItem",
-    "CasePlanModel",
-    "CMMNEngine",
-    "CMMNExecutionError",
-    "CMMNTask",
-    "CMMNTaskHandler",
-    "CMMNTaskState",
-    "DiscretionaryItem",
-    "DiscretionaryTaskHandler",
-    "HumanTaskConfig",
-    "Milestone",
-    "MilestoneHandler",
-    "MilestoneState",
-    "PlanningTableHandler",
-    "PlanningTableTable",
-    "ProcessTaskConfig",
-    "CaseTaskConfig",
-    "DecisionTaskConfig",
-    "SentryEvaluator",
-    "SentryRule",
-    "SentryEvaluationResult",
-    "Stage",
-    "StageHandler",
-    "StageState",
-]
+_LAZY_MODULES: dict[str, str] = {
+    "CaseExecutionError": ".case_executor",
+    "CaseExecutor": ".case_executor",
+    "CaseFileDefinition": ".case_file_manager",
+    "CaseFileItem": ".case_file_manager",
+    "CaseFileManager": ".case_file_manager",
+    "CasePlanModel": ".case_executor",
+    "CaseTaskConfig": ".task_handler",
+    "CMMNEngine": ".engine",
+    "CMMNExecutionError": ".engine",
+    "CMMNTask": ".task_handler",
+    "CMMNTaskHandler": ".task_handler",
+    "CMMNTaskState": ".task_handler",
+    "DecisionTaskConfig": ".task_handler",
+    "DiscretionaryItem": ".discretionary_handler",
+    "DiscretionaryTaskHandler": ".discretionary_handler",
+    "HumanTaskConfig": ".task_handler",
+    "Milestone": ".milestone_handler",
+    "MilestoneHandler": ".milestone_handler",
+    "MilestoneState": ".milestone_handler",
+    "PlanningTableHandler": ".planning_table_handler",
+    "PlanningTableTable": ".discretionary_handler",
+    "ProcessTaskConfig": ".task_handler",
+    "SentryEvaluator": ".sentry_evaluator",
+    "SentryEvaluationResult": ".sentry_evaluator",
+    "SentryRule": ".sentry_evaluator",
+    "Stage": ".stage_handler",
+    "StageHandler": ".stage_handler",
+    "StageState": ".stage_handler",
+}
+
+
+def __getattr__(name: str):
+    if name in _LAZY_MODULES:
+        mod = importlib.import_module(_LAZY_MODULES[name], __package__)
+        val = getattr(mod, name)
+        globals()[name] = val
+        return val
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+__all__ = sorted(_LAZY_MODULES.keys())

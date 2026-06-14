@@ -7,7 +7,7 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-from engines.orchestration.models.osdm_models import EndEvent, SubProcess
+from .models.bpmn_models import EndEvent, SubProcess
 from .model_normalizer import _activity_get, _activity_id, _activity_type_str
 from .process_model import TypedProcessModel
 from ..core.instance import ProcessInstance

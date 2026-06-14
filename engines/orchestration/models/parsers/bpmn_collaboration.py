@@ -5,13 +5,27 @@ from __future__ import annotations
 from typing import Optional
 from xml.etree import ElementTree as ET
 
-from engines.orchestration.models.osdm_models import (
-    Artifact, Association, AssociationDirection, Choreography,
-    ChoreographyActivity, ChoreographyLoopType, Collaboration,
-    ConversationAssociation, ConversationLink, ConversationNode,
-    CorrelationKey, Group, Lane, LaneSet, MessageFlow,
-    MessageFlowAssociation, Participant, ParticipantAssociation,
-    ParticipantMultiplicity, TextAnnotation,
+from ..bpmn.models.bpmn_models import (
+    Artifact,
+    Association,
+    AssociationDirection,
+    Choreography,
+    ChoreographyActivity,
+    ChoreographyLoopType,
+    Collaboration,
+    ConversationAssociation,
+    ConversationLink,
+    ConversationNode,
+    CorrelationKey,
+    Group,
+    Lane,
+    LaneSet,
+    MessageFlow,
+    MessageFlowAssociation,
+    Participant,
+    ParticipantAssociation,
+    ParticipantMultiplicity,
+    TextAnnotation,
 )
 from .bpmn_constants import NS
 

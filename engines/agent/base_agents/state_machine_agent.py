@@ -42,11 +42,11 @@ class StateMachineAgent(BaseAgent[StateMachineAgentInput, StateMachineAgentOutpu
     ) -> None:
         # Import StateMachineDocument here to avoid circular import issues
         try:
-            from engines.orchestration.models.osdm_models import StateMachineDocument
+            from engines.orchestration.state_machine.models.state_machine_models import StateMachineDocument
             if not isinstance(state_machine_doc, StateMachineDocument):
                 raise ValueError("state_machine_doc must be an instance of StateMachineDocument")
         except ImportError as e:
-            raise ImportError("Could not import StateMachineDocument from engines.orchestration.models.osdm_models") from e
+            raise ImportError("Could not import StateMachineDocument from engines.orchestration.state_machine.models.state_machine_models") from e
 
         super().__init__(
             agent_id=agent_id,
@@ -94,7 +94,7 @@ class StateMachineAgent(BaseAgent[StateMachineAgentInput, StateMachineAgentOutpu
         Looks for a pseudo_state of kind INITIAL, or uses the region's initial_state if set.
         """
         # Import PseudoStateKind here to avoid circular import issues
-        from engines.orchestration.models.osdm_models import PseudoStateKind
+        from engines.orchestration.models.shared_models import PseudoStateKind
         # We'll use Any for state and region types to avoid importing
         region = self.state_machine.top_region
         # First, look for an initial pseudo state

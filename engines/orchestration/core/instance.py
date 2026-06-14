@@ -19,7 +19,13 @@ from uuid import uuid4
 from ..._types import Metadata, RawData, VariableValue
 from ...document.models.dsdm_models import DataDocument
 from ...document.models.media_types import MEDIA_TYPES
-from engines.orchestration.models.osdm_models import Process, Stage, Decision, StateMachineModel
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..bpmn.models.bpmn_models import Process
+    from ..cmmn.models.cmmn_models import Stage
+    from ..dmn.models.dmn_models import Decision
+    from ..state_machine.models.state_machine_models import StateMachineModel
 
 from .instance_states import ProcessState
 

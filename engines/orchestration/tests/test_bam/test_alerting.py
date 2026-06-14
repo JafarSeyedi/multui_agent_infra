@@ -1,7 +1,7 @@
 import pytest
 from datetime import datetime, timedelta
 from engines.orchestration.bam.alerting.alert_manager import AlertManager
-from engines.orchestration.models.bam_models import (
+from engines.orchestration.bam.models.bam_models import (
     AlertRule, AlertSeverity, AlertNotification, AlertState,
 )
 

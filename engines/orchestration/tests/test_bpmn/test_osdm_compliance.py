@@ -4,45 +4,70 @@ from __future__ import annotations
 
 import pytest
 
-from engines.orchestration.models.osdm_models import (
+from engines.orchestration.bpmn.models.bpmn_models import (
+    Activity,
     ActivityType,
     AdHocOrdering,
+    BoundaryEvent,
+    BusinessRuleTask,
+    CallActivity,
+    CatchEvent,
     ChoreographyLoopType,
+    ComplexGateway,
+    EndEvent,
+    EventBasedGateway,
     EventDefinitionType,
     EventType,
-    GatewayType,
+    ExclusiveGateway,
+    Gateway,
     GatewayDirection,
+    GatewayType,
+    InclusiveGateway,
+    IntermediateCatchEvent,
+    IntermediateThrowEvent,
     LoopType,
+    ManualTask,
     MultiInstanceBehavior,
-    TransactionMethod,
-    ScriptLanguage,
+    ParallelGateway,
     ProcessType,
+    ReceiveTask,
+    ScriptTask,
+    SendTask,
+    ServiceTask,
+    StartEvent,
     SubProcessType,
+    Task,
     TaskType,
+    ThrowEvent,
+    TransactionMethod,
+    UserTask,
     CallActivityType,
-    TimerEventType,
-    ItemKind,
     AssociationDirection,
     EventBasedGatewayType,
-    MessageVisibleKind,
-    ParticipantBandKind,
-    RelationshipDirection,
-    CaseFileMultiplicity,
-    CorrelationPropertyType,
-    EscapeType,
-    DurationResolution,
-    TimeReference,
-    TimerCalculationType,
-    WorkflowStateType,
-    ResourceParameterType,
     ResourceRoleType,
     PotentialOwnerType,
     InteractionNodeType,
-    DecisionLogicType,
-    InteractionStrategy,
-    AlignmentKind,
-    PseudoStateKind,
+    ScriptLanguage,
 )
+from engines.orchestration.dmn.models.dmn_models import DecisionLogicType
+from engines.orchestration.models.shared_models import (
+    AlignmentKind,
+    CaseFileMultiplicity,
+    CorrelationPropertyType,
+    DurationResolution,
+    EscapeType,
+    ItemKind,
+    MessageVisibleKind,
+    ParticipantBandKind,
+    PseudoStateKind,
+    RelationshipDirection,
+    ResourceParameterType,
+    TimeReference,
+    TimerCalculationType,
+    TimerEventType,
+    WorkflowStateType,
+)
+from engines.orchestration.multi_agent.models.multi_agent_models import InteractionStrategy
 
 
 class TestOsdmEnumsImported:
@@ -140,12 +165,10 @@ class TestOsdmHandlerImports:
         from engines.orchestration.bpmn.activity_handler import ActivityHandler
         import inspect
         source = inspect.getsource(ActivityHandler)
-        # Should NOT redefine LoopType, MultiInstanceBehavior etc.
         assert "class LoopType" not in source
         assert "class MultiInstanceBehavior" not in source
         assert "class IOSpecification" not in source
         assert "class LoopCharacteristics" not in source
-        # Should use handler-specific renamed classes
         assert "ActivityLoopCharacteristics" in source or "ActivityExecutionResult" in source
 
     def test_gateway_handler_uses_osdm_enums(self):
@@ -182,10 +205,6 @@ class TestOsdmClassTypeHierarchy:
     """Verify OSDM class hierarchy is preserved when imported."""
 
     def test_event_hierarchy(self):
-        from engines.orchestration.models.osdm_models import (
-            StartEvent, EndEvent, IntermediateCatchEvent, IntermediateThrowEvent,
-            BoundaryEvent, CatchEvent, ThrowEvent,
-        )
         assert issubclass(StartEvent, CatchEvent)
         assert issubclass(EndEvent, ThrowEvent)
         assert issubclass(IntermediateCatchEvent, CatchEvent)
@@ -193,10 +212,6 @@ class TestOsdmClassTypeHierarchy:
         assert issubclass(BoundaryEvent, CatchEvent)
 
     def test_gateway_hierarchy(self):
-        from engines.orchestration.models.osdm_models import (
-            Gateway, ExclusiveGateway, InclusiveGateway, ParallelGateway,
-            EventBasedGateway, ComplexGateway,
-        )
         assert issubclass(ExclusiveGateway, Gateway)
         assert issubclass(InclusiveGateway, Gateway)
         assert issubclass(ParallelGateway, Gateway)
@@ -204,10 +219,6 @@ class TestOsdmClassTypeHierarchy:
         assert issubclass(ComplexGateway, Gateway)
 
     def test_task_hierarchy(self):
-        from engines.orchestration.models.osdm_models import (
-            Activity, Task, ServiceTask, UserTask, ManualTask, ScriptTask,
-            BusinessRuleTask, SendTask, ReceiveTask, CallActivity,
-        )
         assert issubclass(Task, Activity)
         assert issubclass(ServiceTask, Task)
         assert issubclass(UserTask, Task)

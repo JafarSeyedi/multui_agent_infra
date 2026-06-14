@@ -9,8 +9,13 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any, Protocol
 
-from engines.orchestration.models.osdm_models import (
-    Activity, Event, Gateway, Process, SequenceFlow, SubProcess,
+from ..bpmn.models.bpmn_models import (
+    Activity,
+    Event,
+    Gateway,
+    Process,
+    SequenceFlow,
+    SubProcess,
 )
 
 

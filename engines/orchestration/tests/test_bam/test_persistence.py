@@ -2,7 +2,7 @@ import pytest
 from datetime import datetime
 from engines.orchestration.bam.persistence.metric_repository import MetricRepository
 from engines.orchestration.bam.persistence.alert_repository import AlertRepository
-from engines.orchestration.models.bam_models import (
+from engines.orchestration.bam.models.bam_models import (
     MetricValue, AlertNotification, AlertSeverity, AlertState,
 )
 

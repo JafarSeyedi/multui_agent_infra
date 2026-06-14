@@ -14,7 +14,10 @@ from typing import Any
 from collections.abc import Callable
 from uuid import uuid4
 
-from engines.orchestration.models.osdm_models import TimerEventDefinition, DueTimeDuration
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..bpmn.models.bpmn_models import TimerEventDefinition, DueTimeDuration
 from ..utils.time_utils import parse_duration, utc_now
 
 

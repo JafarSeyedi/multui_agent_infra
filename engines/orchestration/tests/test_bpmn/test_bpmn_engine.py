@@ -6,13 +6,15 @@ from datetime import datetime
 
 import pytest
 
-from engines.orchestration.bpmn.engine import BPMNEngine
-from engines.orchestration.models.osdm_models import FlowNode
 from engines.orchestration.bpmn.bpmn_execution_semantics import (
-    BpmnGatewaySemantics,
-    BpmnEventSubProcessHandler,
-    BpmnTransactionHandler,
     BpmnBoundaryEventHandler,
+    BpmnEventSubProcessHandler,
+    BpmnGatewaySemantics,
+    BpmnTransactionHandler,
+)
+from engines.orchestration.bpmn.engine import BPMNEngine
+from engines.orchestration.bpmn.models.bpmn_models import (
+    BoundaryEvent, Event, EventType, FlowNode, GatewayType, StartEvent,
 )
 from engines.orchestration.core.engine import OrchestrationEngine, ProcessDefinition
 from engines.orchestration.core.instance import InstanceState
@@ -126,7 +128,6 @@ class TestParallelGateway:
 class TestEventSubProcess:
     def test_event_sub_process_registration(self):
         handler = BpmnEventSubProcessHandler()
-        from engines.orchestration.models.osdm_models import StartEvent
         start_evt = StartEvent(id="msg_start", name="Message Start")
         ctx = handler.register_event_sub_process(
             "inst1", "subproc1", start_evt, is_interrupting=True
@@ -137,7 +138,6 @@ class TestEventSubProcess:
 
     def test_interrupting_sub_process_interrupts_parent(self):
         handler = BpmnEventSubProcessHandler()
-        from engines.orchestration.models.osdm_models import StartEvent
         start_evt = StartEvent(id="err_start", name="Error Start")
         ctx = handler.register_event_sub_process(
             "inst1", "subproc1", start_evt, is_interrupting=True
@@ -147,7 +147,6 @@ class TestEventSubProcess:
 
     def test_non_interrupting_does_not_interrupt(self):
         handler = BpmnEventSubProcessHandler()
-        from engines.orchestration.models.osdm_models import StartEvent
         start_evt = StartEvent(id="timer_start", name="Timer Start")
         ctx = handler.register_event_sub_process(
             "inst1", "subproc1", start_evt, is_interrupting=False
@@ -187,12 +186,10 @@ class TestTransactionSemantics:
 
 class TestBoundaryEventSemantics:
     def test_interrupting_boundary_event(self):
-        from engines.orchestration.models.osdm_models import BoundaryEvent, Event, EventType
         be = BoundaryEvent(id="be1", event_type=EventType.BOUNDARY, cancel_activity=True)
         assert BpmnBoundaryEventHandler.is_interrupting(be) is True
 
     def test_non_interrupting_boundary_event(self):
-        from engines.orchestration.models.osdm_models import BoundaryEvent, EventType
         be = BoundaryEvent(id="be2", event_type=EventType.BOUNDARY, cancel_activity=False)
         assert BpmnBoundaryEventHandler.is_interrupting(be) is False
 
@@ -220,7 +217,6 @@ class TestEventBasedGateway:
     @pytest.mark.asyncio
     async def test_event_based_gateway_waits_for_events(self):
         from engines.orchestration.bpmn.gateway_handler import GatewayHandler
-        from engines.orchestration.models.osdm_models import GatewayType
         handler = GatewayHandler()
         gateway = {
             "id": "gw1", "type": "eventBasedGateway",
@@ -230,7 +226,6 @@ class TestEventBasedGateway:
             ],
         }
         result = handler.choose(gateway=gateway, context={})
-        # Event-based gateway doesn't immediately select a path
         assert result.gateway_type == GatewayType.EVENT_BASED
 
     @pytest.mark.asyncio

@@ -22,7 +22,8 @@ from ..._types import Metadata, RawData
 from ..core.instance import ProcessInstance
 from ..core.event_bus import Event, EventType
 from ..core.engine import OrchestrationEngine
-from engines.orchestration.models.osdm_models import (
+from ..bpmn.models.bpmn_models import FormalExpression
+from .models.cmmn_models import (
     CaseFileItem,
     CaseTask,
     CMMNDefinition,
@@ -30,7 +31,6 @@ from engines.orchestration.models.osdm_models import (
     DiscretionaryItem,
     EntryCriterion,
     ExitCriterion,
-    FormalExpression,
     HumanTask,
     Milestone,
     PlanItem,

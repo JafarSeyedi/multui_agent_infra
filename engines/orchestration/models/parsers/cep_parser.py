@@ -20,10 +20,15 @@ import json
 import uuid
 
 from engines.document.models.media_types import MEDIA_TYPES
-from engines.orchestration.models.osdm_models import (
-    ActionList, BaseOSDMDocument, CEPDefinition, CEPDocument, CEPOperator,
-    CEPRule, EventStream, Script, ScriptLanguage
+from ..bpmn.models.bpmn_models import Script, ScriptLanguage
+from ..cep.models.cep_models import (
+    CEPDefinition,
+    CEPDocument,
+    CEPOperator,
+    CEPRule,
+    EventStream,
 )
+from .shared_models import ActionList, BaseOSDMDocument
 from engines.document.parsers.base import ParseOptions
 from .base_osdm_parser import BaseOSDMParser
 

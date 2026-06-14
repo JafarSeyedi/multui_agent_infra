@@ -16,13 +16,31 @@ import logging
 from xml.etree import ElementTree as ET
 
 from engines.document.models.media_types import MEDIA_TYPES
-from engines.orchestration.models.osdm_models import (
-    ApplicabilityRule, BaseOSDMDocument, CaseFileItem, CaseFileMultiplicity,
-    CaseTask, CMMNDefinition, CMMNDocument, DiscretionaryItem, EntryCriterion,
-    EventListener, EventListenerType, ExitCriterion, FormalExpression,
-    HumanTask, ItemDefinition, Milestone, PlanItem, Process, ProcessTask,
-    ResourceRole, Sentry, Stage
+from ..bpmn.models.bpmn_models import (
+    EventListenerType,
+    FormalExpression,
+    ItemDefinition,
+    Process,
+    ResourceRole,
 )
+from ..cmmn.models.cmmn_models import (
+    ApplicabilityRule,
+    CaseFileItem,
+    CaseTask,
+    CMMNDefinition,
+    CMMNDocument,
+    DiscretionaryItem,
+    EntryCriterion,
+    EventListener,
+    ExitCriterion,
+    HumanTask,
+    Milestone,
+    PlanItem,
+    ProcessTask,
+    Sentry,
+    Stage,
+)
+from .shared_models import BaseOSDMDocument, CaseFileMultiplicity
 from engines.document.parsers.base import ParseOptions
 from .base_osdm_parser import BaseOSDMParser
 

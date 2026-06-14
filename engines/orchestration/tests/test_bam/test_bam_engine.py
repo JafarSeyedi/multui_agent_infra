@@ -1,6 +1,6 @@
 import pytest
 from engines.orchestration.bam.engine import BamEngine
-from engines.orchestration.models.bam_models import MonitoringDashboardDocument, BusinessMetric
+from engines.orchestration.bam.models.bam_models import MonitoringDashboardDocument, BusinessMetric
 
 
 @pytest.mark.asyncio

@@ -18,7 +18,7 @@ from ..runtime.compensation import CompensationManager, CompensationStep
 from ..core.event_bus import Event, EventType
 from ..core.engine import OrchestrationEngine
 
-from engines.orchestration.models.osdm_models import (
+from .models.bpmn_models import (
     Artifact,
     FlowElement,
     LaneSet,

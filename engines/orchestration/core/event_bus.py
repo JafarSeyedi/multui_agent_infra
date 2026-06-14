@@ -19,7 +19,11 @@ from collections.abc import Callable
 from uuid import uuid4
 
 from ..persistence.event_repository import EventRepository
-from engines.orchestration.models.osdm_models import EventListenerType, EventDefinitionType, CEPOperator
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..bpmn.models.bpmn_models import EventListenerType, EventDefinitionType
+    from ..cep.models.cep_models import CEPOperator
 
 
 logger = logging.getLogger(__name__)

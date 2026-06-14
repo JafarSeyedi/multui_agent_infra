@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from engines.orchestration.models.bam_models import (
+from ..models.bam_models import (
     KPI, KpiResult, KpiStatus, TrendDirection,
 )
 

@@ -9,12 +9,12 @@ from __future__ import annotations
 import json
 from typing import cast, Union
 
-from engines.orchestration.models.osdm_models import ActionList
-from engines.orchestration.models.osdm_models import BaseOSDMDocument
-from engines.orchestration.models.osdm_models import CEPDefinition
-from engines.orchestration.models.osdm_models import CEPDocument
-from engines.orchestration.models.osdm_models import CEPRule
-from engines.orchestration.models.osdm_models import EventStream
+from .shared_models import ActionList
+from .shared_models import BaseOSDMDocument
+from ..cep.models.cep_models import CEPDefinition
+from ..cep.models.cep_models import CEPDocument
+from ..cep.models.cep_models import CEPRule
+from ..cep.models.cep_models import EventStream
 from .base_osdm_writer import BaseOSDMWriter, OSDMWriteOptions
 
 

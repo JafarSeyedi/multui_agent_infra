@@ -1,40 +1,40 @@
 """DMN decision runtime components."""
 
-from .decision_executor import DecisionExecutor, DecisionNode, DecisionResult
-from .decision_table_evaluator import (
-    DecisionTable,
-    DecisionTableEvaluator,
-    DecisionRule,
-    InputClause,
-    OutputClause,
-)
-from .engine import DMNEngine, DMNExecutionError
-from .feel_engine import FEELEngine, FEELError, FEELFunction
-from .hit_policy_handler import HitPolicy, HitPolicyHandler, apply_hit_policy
-from .invocation_handler import Binding, Invocation, InvocationHandler, InvocationResult
-from .literal_expression_eval import LiteralExpression, LiteralExpressionEvaluator
+import importlib
 
-__all__ = [
-    "Binding",
-    "DecisionExecutor",
-    "DecisionNode",
-    "DecisionResult",
-    "DecisionRule",
-    "DecisionTable",
-    "DecisionTableEvaluator",
-    "DMNEngine",
-    "DMNExecutionError",
-    "FEELEngine",
-    "FEELError",
-    "FEELFunction",
-    "HitPolicy",
-    "HitPolicyHandler",
-    "InputClause",
-    "Invocation",
-    "InvocationHandler",
-    "InvocationResult",
-    "LiteralExpression",
-    "LiteralExpressionEvaluator",
-    "OutputClause",
-    "apply_hit_policy",
-]
+_LAZY_MODULES: dict[str, str] = {
+    "Binding": ".invocation_handler",
+    "DMNEngine": ".engine",
+    "DMNExecutionError": ".engine",
+    "DecisionExecutor": ".decision_executor",
+    "DecisionNode": ".decision_executor",
+    "DecisionResult": ".decision_executor",
+    "DecisionRule": ".decision_table_evaluator",
+    "DecisionTable": ".decision_table_evaluator",
+    "DecisionTableEvaluator": ".decision_table_evaluator",
+    "FEELEngine": ".feel_engine",
+    "FEELError": ".feel_engine",
+    "FEELFunction": ".feel_engine",
+    "HitPolicy": ".hit_policy_handler",
+    "HitPolicyHandler": ".hit_policy_handler",
+    "InputClause": ".decision_table_evaluator",
+    "Invocation": ".invocation_handler",
+    "InvocationHandler": ".invocation_handler",
+    "InvocationResult": ".invocation_handler",
+    "LiteralExpression": ".literal_expression_eval",
+    "LiteralExpressionEvaluator": ".literal_expression_eval",
+    "OutputClause": ".decision_table_evaluator",
+    "apply_hit_policy": ".hit_policy_handler",
+}
+
+
+def __getattr__(name: str):
+    if name in _LAZY_MODULES:
+        mod = importlib.import_module(_LAZY_MODULES[name], __package__)
+        val = getattr(mod, name)
+        globals()[name] = val
+        return val
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+__all__ = sorted(_LAZY_MODULES.keys())

@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from engines.orchestration.models.osdm_models import (
+from ..bpmn.models.bpmn_models import (
     AdHocSubProcess,
     BoundaryEvent,
     BusinessRuleTask,

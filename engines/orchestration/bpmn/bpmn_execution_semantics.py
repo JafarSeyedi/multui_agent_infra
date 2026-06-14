@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
-from engines.orchestration.models.osdm_models import (
+from .models.bpmn_models import (
     Process,
     FlowNode,
     Activity,

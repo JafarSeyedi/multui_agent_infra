@@ -10,7 +10,7 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
-from engines.orchestration.models.osdm_models import (
+from .models.bpmn_models import (
     Pool,
     Lane,
     LaneSet,
