@@ -25,6 +25,7 @@ from .models.computer_use import ComputerUseExecutor
 from .models.gemini_code_exec import GeminiCodeExecutionExecutor
 from .models.google_search import GoogleSearchExecutor
 from .models.vertex_ai_search import VertexAiSearchExecutor
+from .models.litellm import LiteLLMExecutor
 
 __all__ = [
     "AIModelExecutor",
@@ -44,6 +45,7 @@ __all__ = [
     "GrpcToolExecutor",
     "HTTPToolExecutor",
     "HTTPServiceExecutor",
+    "LiteLLMExecutor",
     "MCPToolExecutor",
     "MIBSNMPExecutor",
     "MessageBusExecutor",
