@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
 from typing import Any, AsyncIterator
 
 from engines.agent.models import AgentInput, AgentOutput
@@ -50,18 +51,35 @@ class Runner:
         yield user_event
 
         if self._multi_agent_engine is not None:
-            from ..core.engine import ProcessDefinition
+            from ..core._definition_models import ProcessDefinition
             from ..core.instance import ProcessInstance
 
+            instance_key = f"runner_{session_id}"
             instance = ProcessInstance(
                 id=session_id,
                 definition_id=session_id,
+                definition_key=instance_key,
+                definition_version=1,
                 variables={"user_message": new_message},
             )
-            instance_key = f"runner_{session_id}"
             definition = ProcessDefinition(
+                id=session_id,
                 key=instance_key,
-                definition_xml={"message": new_message, "_engine_type": "multi_agent"},
+                name="runner_definition",
+                version=1,
+                deployment_id="runner_deploy",
+                resource_name="runner.bpmn",
+                diagram_resource_name=None,
+                has_start_form_key=False,
+                has_graphical_notation=False,
+                is_suspended=False,
+                tenant_id=None,
+                version_tag=None,
+                history_time_to_live=None,
+                is_startable_in_tasklist=False,
+                definition_type="multi_agent",
+                definition_xml="",
+                deployed_at=datetime.now(),
             )
             await self._multi_agent_engine.execute_instance(instance, definition)
 
@@ -85,7 +103,8 @@ class Runner:
             if plugin_override is not None:
                 output = plugin_override
             else:
-                output: AgentOutput = await self._agent.run(input_data)
+                output = await self._agent.run(input_data)
+            assert isinstance(output, AgentOutput)
 
             await self.plugins.fire_after_agent("runner", input_data, output)
 
