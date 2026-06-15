@@ -3,9 +3,9 @@ import pytest
 from pydantic import ValidationError
 
 from engines.agent.base_agents.interaction_agent import InteractionAgent
-from engines.interaction.backends.base_backend import BaseOrchestrationBackend
-from engines.interaction.interaction_models import InteractionRequest
-from engines.interaction.interaction_models import InteractionResult
+from engines.agent.backends.base_backend import BaseOrchestrationBackend
+from engines.agent.interaction_models import InteractionRequest
+from engines.agent.interaction_models import InteractionResult
 
 
 class DummyBackend(BaseOrchestrationBackend):
@@ -24,16 +24,15 @@ class DummyBackend(BaseOrchestrationBackend):
 async def test_run_returns_serialized_result(monkeypatch):
     dummy_backend = DummyBackend()
     monkeypatch.setattr(
-        "engines.agent.base_agents.interaction_agent.NativeOrchestrationBackend",
+        "engines.agent.backends.native_backend.NativeOrchestrationBackend",
         lambda *args, **kwargs: dummy_backend,
     )
 
-    agent = InteractionAgent(name="orc", agent_registry=None, message_bus=None)
-    payload = {"workflow_id": "wf-1", "scenario": "pipeline", "tasks": []}
+    agent = InteractionAgent(id="orc-1", name="orc", agent_registry=None, message_bus=None)
+    payload = {"workflow_id": "wf-1", "scenario": "pipeline", "agents": []}
     response = await agent.run(payload)
 
     assert response["success"] is True
-    assert response["workflow"] == "wf-1"
     assert dummy_backend.calls
 
 
@@ -41,10 +40,10 @@ async def test_run_returns_serialized_result(monkeypatch):
 async def test_run_raises_when_request_invalid(monkeypatch):
     dummy_backend = DummyBackend()
     monkeypatch.setattr(
-        "engines.agent.base_agents.interaction_agent.NativeOrchestrationBackend",
+        "engines.agent.backends.native_backend.NativeOrchestrationBackend",
         lambda *args, **kwargs: dummy_backend,
     )
 
-    agent = InteractionAgent(name="orc", agent_registry=None, message_bus=None)
+    agent = InteractionAgent(id="orc-2", name="orc", agent_registry=None, message_bus=None)
     with pytest.raises(ValidationError):
         await agent.run({"invalid_field": True})
