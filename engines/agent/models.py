@@ -29,9 +29,22 @@ class AgentDefinition(BaseModel):
         description="For skill_call_agent: the skill identifier (relative path to SKILL.md)"
     )
     # For STATE_MACHINE type: the state machine definition
-    state_machine: VariableValue | None = Field(  # We'll use Any to avoid importing StateMachineDocument
+    state_machine: VariableValue | None = Field(
         None,
         description="For state_machine_agent: the state machine definition that orchestrates skills"
+    )
+    # I/O schema: ADT-style input/output specification
+    input_schema: dict[str, object] | None = Field(
+        None,
+        description="JSON Schema describing expected input structure"
+    )
+    output_schema: dict[str, object] | None = Field(
+        None,
+        description="JSON Schema describing output structure"
+    )
+    output_key: str | None = Field(
+        None,
+        description="Key to extract from output when chaining agents"
     )
     # Optional configuration
     config: Metadata = Field(default_factory=dict, description="Additional agent-specific configuration")
