@@ -16,14 +16,28 @@ from .models.mib_snmp import MIBSNMPExecutor
 from .models.python_function import PythonFunctionExecutor
 from .models.tcp_socket import TCPSocketExecutor
 from .models.yang_netconf import YANGNetconfExecutor
+from .models.bigquery import BigQueryExecutor
+from .models.bigtable import BigtableExecutor
+from .models.data_agent import DataAgentExecutor
+from .models.apigee import ApigeeExecutor
+from .models.code_execution import CodeExecutionExecutor
+from .models.computer_use import ComputerUseExecutor
+from .models.gemini_code_exec import GeminiCodeExecutionExecutor
 
 __all__ = [
     "AIModelExecutor",
+    "ApigeeExecutor",
     "BaseToolExecutor",
+    "BigQueryExecutor",
+    "BigtableExecutor",
     "CLIExecutor",
+    "CodeExecutionExecutor",
     "CompositeExecutor",
+    "ComputerUseExecutor",
+    "DataAgentExecutor",
     "DBQueryExecutor",
     "FileExecutor",
+    "GeminiCodeExecutionExecutor",
     "GrpcToolExecutor",
     "HTTPToolExecutor",
     "HTTPServiceExecutor",
