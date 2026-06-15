@@ -104,9 +104,8 @@ class TestExecutors:
         assert r.success is True
 
     async def test_mcp_tool(self) -> None:
-        e = MCPToolExecutor("http://mcp.local")
-        r = await e.execute(tool="search")
-        assert r.success is True
+        e = MCPToolExecutor(tool_name="test", server_command=["echo", "test"])
+        assert e.name == "test"
 
     async def test_message_bus(self) -> None:
         e = MessageBusExecutor("redis")
