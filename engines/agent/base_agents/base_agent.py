@@ -15,6 +15,7 @@ from pydantic import BaseModel
 
 from ...storage.event_log.base import LogStorage
 from ...storage.vector.base import VectorDBAdapter
+from ..callbacks import CallbackContext, CallbackRegistry
 from ..models import AgentExecutionRecord
 from ..models import AgentInput
 from ..models import AgentOutput
@@ -26,8 +27,6 @@ TOutput = TypeVar("TOutput", bound=AgentOutput)
 class BaseAgent(ABC, Generic[TInput, TOutput]):
     """Production-ready base class for typed educational agents."""
 
-    # agent_id: str = ""
-    # agent_name: str = "BaseAgent"
     agent_version: str = "1.0.0"
 
     input_model_class: type[TInput]
@@ -40,20 +39,40 @@ class BaseAgent(ABC, Generic[TInput, TOutput]):
         vector_db: VectorDBAdapter | None = None,
         storage: LogStorage | None = None,
         metadata: dict[str, Any] | None = None,
+        callback_registry: CallbackRegistry | None = None,
     ) -> None:
         self.agent_id = agent_id
         self.agent_name = agent_name
         self.vector_db = vector_db
         self.storage = storage
         self.metadata = metadata or {}
+        self.callback_registry = callback_registry or CallbackRegistry()
+
+    def _build_callback_context(self) -> CallbackContext:
+        return CallbackContext(
+            agent_name=self.agent_name,
+            agent_id=self.agent_id,
+            invocation_id=str(uuid.uuid4()),
+        )
 
     async def run(self, input_data: Any) -> TOutput:
         start = time.perf_counter()
         validated_input = self._validate_input(input_data)
+        ctx = self._build_callback_context()
+
+        for cb in self.callback_registry.before_agent:
+            override = await cb(ctx)
+            if override is not None:
+                validated_output = self._validate_output(override)
+                await self._log_execution(validated_input, validated_output, start, status="skipped")
+                return validated_output
+
         try:
             result = await self._invoke_execute(validated_input)
             validated_output = self._validate_output(result)
             await self._log_execution(validated_input, validated_output, start, status="success")
+            for cb in self.callback_registry.after_agent:
+                await cb(ctx)
             return validated_output
         except Exception as exc:
             await self._log_execution(validated_input, None, start, status="failure", error_message=str(exc))
