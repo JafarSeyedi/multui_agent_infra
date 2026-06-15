@@ -24,3 +24,5 @@ from .mib_snmp.mib_snmp_models import MibSnmpTool
 from .python_function.python_function_models import PythonFunctionTool
 from .tcp_socket.tcp_socket_models import TcpSocketTool
 from .yang_netconf.yang_netconf_models import YangNetconfTool
+from .google_search.google_search_models import GoogleSearchTool
+from .vertex_ai_search.vertex_ai_search_models import VertexAiSearchTool

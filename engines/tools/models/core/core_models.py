@@ -32,6 +32,8 @@ class ToolKind(str, Enum):
     CODE_EXECUTION = "codeExecution"
     COMPUTER_USE = "computerUse"
     GEMINI_CODE_EXEC = "geminiCodeExec"
+    GOOGLE_SEARCH = "googleSearch"
+    VERTEX_AI_SEARCH = "vertexAiSearch"
 
 
 class ParameterSource(str, Enum):

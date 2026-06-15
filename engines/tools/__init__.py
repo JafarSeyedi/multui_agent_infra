@@ -23,6 +23,8 @@ from .models.apigee import ApigeeExecutor
 from .models.code_execution import CodeExecutionExecutor
 from .models.computer_use import ComputerUseExecutor
 from .models.gemini_code_exec import GeminiCodeExecutionExecutor
+from .models.google_search import GoogleSearchExecutor
+from .models.vertex_ai_search import VertexAiSearchExecutor
 
 __all__ = [
     "AIModelExecutor",
@@ -38,6 +40,7 @@ __all__ = [
     "DBQueryExecutor",
     "FileExecutor",
     "GeminiCodeExecutionExecutor",
+    "GoogleSearchExecutor",
     "GrpcToolExecutor",
     "HTTPToolExecutor",
     "HTTPServiceExecutor",
@@ -49,5 +52,6 @@ __all__ = [
     "TCPSocketExecutor",
     "ToolRegistry",
     "ToolResult",
+    "VertexAiSearchExecutor",
     "YANGNetconfExecutor",
 ]
