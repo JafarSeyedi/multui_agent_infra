@@ -20,7 +20,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from engines.knowledge.models.ksdm_models import (
+from engines.knowledge.graph.models import (
     KnowledgeGraph,
     GraphNode,
     GraphEdge,

@@ -10,10 +10,12 @@ from __future__ import annotations
 from typing import cast
 from xml.etree.ElementTree import Element, SubElement, tostring
 
-from ..models.bpmn_models import BaseElement, BaseOSDMDocument, State
-from ..models.bpmn_models import StateMachineDocument, StateMachineModel
-from ..models.bpmn_models import StateMachineRegion, StateTransition
-from ...models.writers.base_osdm_writer import BaseOSDMWriter, OSDMWriteOptions
+from ...models.shared_models import BaseElement, BaseOSDMDocument
+from ...state_machine.models.state_machine_models import (
+    State, StateMachineDocument, StateMachineModel,
+    StateMachineRegion, StateTransition
+)
+from ...models.base_osdm_writer import BaseOSDMWriter, OSDMWriteOptions
 
 GRAPHML_NS = "http://graphml.graphdrawing.org/xmlns"
 XSI_NS = "http://www.w3.org/2001/XMLSchema-instance"

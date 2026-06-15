@@ -5,12 +5,12 @@ from typing import Any
 
 import pytest
 
-from engines.knowledge.models.ksdm_models import (
+from engines.knowledge.graph.models import (
     GraphEdge,
     GraphNode,
     KnowledgeGraph,
-    SemanticGraphDocument,
 )
+from engines.knowledge.semantic_graph.models import SemanticGraphDocument
 from engines.document.models.media_types import MEDIA_TYPES
 from engines.knowledge.semantic_graph import SemanticGraphEngine
 

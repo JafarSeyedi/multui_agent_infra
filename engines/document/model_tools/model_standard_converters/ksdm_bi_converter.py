@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from typing import Any
 
-from engines.knowledge.models.ksdm_models import UnifiedBiAggregationDocument
+from engines.knowledge.bi_aggregation.models import UnifiedBiAggregationDocument
 
 
 class BiAggregationConverter:
     def convert(self, doc: UnifiedBiAggregationDocument, target_format: str, **options) -> bytes:
-        from engines.knowledge.models.writers.bi_aggregation import (
+        from engines.knowledge.bi_aggregation.models.writers import (
             CwmWriter,
             MondrianSchemaWriter,
             XmlaWriter,

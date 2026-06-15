@@ -12,11 +12,12 @@ from __future__ import annotations
 from typing import cast
 from xml.etree.ElementTree import Element, SubElement, tostring
 
-from ..models.bpmn_models import (
-    Arc, BaseOSDMDocument, Place, PnTransition, StateMachineDocument,
+from ...models.shared_models import BaseOSDMDocument
+from ...state_machine.models.state_machine_models import (
+    Arc, Place, PnTransition, StateMachineDocument,
     StateMachineModel, StateMachineRegion
 )
-from ...models.writers.base_osdm_writer import BaseOSDMWriter, OSDMWriteOptions
+from ...models.base_osdm_writer import BaseOSDMWriter, OSDMWriteOptions
 
 PNML_NS = "http://www.pnml.org/version-2009/grammar/pnml"
 

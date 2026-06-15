@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from engines.knowledge.models.ksdm_models import (
+from engines.knowledge.ml_mining.models import (
     MiningField,
     MiningSchema,
     ModelGraph,

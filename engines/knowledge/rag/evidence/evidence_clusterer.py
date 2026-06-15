@@ -6,7 +6,7 @@ from typing import Any
 import numpy as np
 from sklearn.cluster import KMeans  # type: ignore[import-untyped]
 
-from engines.knowledge.rag.rag_models import RetrievedDocument
+from engines.knowledge.rag.models import RetrievedDocument
 
 
 class EvidenceClusterer:

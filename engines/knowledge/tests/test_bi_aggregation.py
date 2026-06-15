@@ -4,7 +4,7 @@ import json
 import pytest
 import xml.etree.ElementTree as ET
 
-from engines.knowledge.models.ksdm_models import (
+from engines.knowledge.bi_aggregation.models import (
     UnifiedBiAggregationDocument,
     AggregationSource,
     Dimension,
@@ -160,7 +160,7 @@ def sample_cognos_fmf() -> bytes:
 
 @pytest.mark.asyncio
 async def test_mondrian_parse(sample_mondrian_xml):
-    from engines.knowledge.models.parsers.bi_aggregation import MondrianSchemaParser
+    from engines.knowledge.bi_aggregation.models.parsers import MondrianSchemaParser
 
     parser = MondrianSchemaParser()
     doc = await parser.parse_bytes(sample_mondrian_xml, "mondrian_test", "mondrian_test")
@@ -179,7 +179,7 @@ async def test_mondrian_parse(sample_mondrian_xml):
 
 @pytest.mark.asyncio
 async def test_tmsl_parse(sample_tmsl_json):
-    from engines.knowledge.models.parsers.bi_aggregation import TmslParser
+    from engines.knowledge.bi_aggregation.models.parsers import TmslParser
 
     parser = TmslParser()
     doc = await parser.parse_bytes(sample_tmsl_json, "tmsl_test", "tmsl_test")
@@ -196,7 +196,7 @@ async def test_tmsl_parse(sample_tmsl_json):
 
 @pytest.mark.asyncio
 async def test_cdm_parse(sample_cdm_json):
-    from engines.knowledge.models.parsers.bi_aggregation import CdmParser
+    from engines.knowledge.bi_aggregation.models.parsers import CdmParser
 
     parser = CdmParser()
     doc = await parser.parse_bytes(sample_cdm_json, "cdm_test", "cdm_test")
@@ -209,7 +209,7 @@ async def test_cdm_parse(sample_cdm_json):
 
 @pytest.mark.asyncio
 async def test_calcite_parse(sample_calcite_json):
-    from engines.knowledge.models.parsers.bi_aggregation import CalciteParser
+    from engines.knowledge.bi_aggregation.models.parsers import CalciteParser
 
     parser = CalciteParser()
     doc = await parser.parse_bytes(sample_calcite_json, "calcite_test", "calcite_test")
@@ -222,7 +222,7 @@ async def test_calcite_parse(sample_calcite_json):
 
 @pytest.mark.asyncio
 async def test_awxml_parse(sample_awxml):
-    from engines.knowledge.models.parsers.bi_aggregation import AwxmlParser
+    from engines.knowledge.bi_aggregation.models.parsers import AwxmlParser
 
     parser = AwxmlParser()
     doc = await parser.parse_bytes(sample_awxml, "aw_test", "aw_test")
@@ -235,7 +235,7 @@ async def test_awxml_parse(sample_awxml):
 
 @pytest.mark.asyncio
 async def test_sap_cds_parse(sample_sap_cds):
-    from engines.knowledge.models.parsers.bi_aggregation import SapCdsParser
+    from engines.knowledge.bi_aggregation.models.parsers import SapCdsParser
 
     parser = SapCdsParser()
     doc = await parser.parse_bytes(sample_sap_cds, "cds_test", "cds_test")
@@ -247,7 +247,7 @@ async def test_sap_cds_parse(sample_sap_cds):
 
 @pytest.mark.asyncio
 async def test_cognos_fmf_parse(sample_cognos_fmf):
-    from engines.knowledge.models.parsers.bi_aggregation import CognosFmfParser
+    from engines.knowledge.bi_aggregation.models.parsers import CognosFmfParser
 
     parser = CognosFmfParser()
     doc = await parser.parse_bytes(sample_cognos_fmf, "cognos_test", "cognos_test")
@@ -257,7 +257,7 @@ async def test_cognos_fmf_parse(sample_cognos_fmf):
 
 @pytest.mark.asyncio
 async def test_tableau_hyper_stub_raises():
-    from engines.knowledge.models.parsers.bi_aggregation import TableauHyperParser
+    from engines.knowledge.bi_aggregation.models.parsers import TableauHyperParser
 
     parser = TableauHyperParser()
     with pytest.raises(RuntimeError, match="tableauhyperapi"):
@@ -266,8 +266,8 @@ async def test_tableau_hyper_stub_raises():
 
 @pytest.mark.asyncio
 async def test_mondrian_write_roundtrip(sample_mondrian_xml):
-    from engines.knowledge.models.parsers.bi_aggregation import MondrianSchemaParser
-    from engines.knowledge.models.writers.bi_aggregation import MondrianSchemaWriter
+    from engines.knowledge.bi_aggregation.models.parsers import MondrianSchemaParser
+    from engines.knowledge.bi_aggregation.models.writers import MondrianSchemaWriter
 
     parser = MondrianSchemaParser()
     writer = MondrianSchemaWriter()
@@ -282,8 +282,8 @@ async def test_mondrian_write_roundtrip(sample_mondrian_xml):
 
 @pytest.mark.asyncio
 async def test_tmsl_write_roundtrip(sample_tmsl_json):
-    from engines.knowledge.models.parsers.bi_aggregation import TmslParser
-    from engines.knowledge.models.writers.bi_aggregation import TmslWriter
+    from engines.knowledge.bi_aggregation.models.parsers import TmslParser
+    from engines.knowledge.bi_aggregation.models.writers import TmslWriter
 
     parser = TmslParser()
     writer = TmslWriter()
@@ -325,7 +325,7 @@ async def test_engine_convert(sample_mondrian_xml):
 
 @pytest.mark.asyncio
 async def test_cwm_parse():
-    from engines.knowledge.models.parsers.bi_aggregation import CwmParser
+    from engines.knowledge.bi_aggregation.models.parsers import CwmParser
 
     cwm_xml = b"""<?xml version="1.0"?>
 <XMI xmi.version="1.1" xmlns:CWM="http://www.omg.org/cwm">
@@ -368,7 +368,7 @@ def test_engine_sync_load():
 
 @pytest.mark.asyncio
 async def test_xmla_discover_parse():
-    from engines.knowledge.models.parsers.query_models import XmlaQueryParser as XmlaParser
+    from engines.knowledge.query.models.parsers import XmlaQueryParser as XmlaParser
 
     xmla = b"""<?xml version="1.0"?>
 <DiscoverResponse xmlns="urn:schemas-microsoft-com:xml-analysis">

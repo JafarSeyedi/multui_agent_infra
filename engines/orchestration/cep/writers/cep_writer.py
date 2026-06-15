@@ -15,7 +15,7 @@ from ..models.cep_models import CEPDefinition
 from ..models.cep_models import CEPDocument
 from ..models.cep_models import CEPRule
 from ..models.cep_models import EventStream
-from ...models.writers.base_osdm_writer import BaseOSDMWriter, OSDMWriteOptions
+from ...models.base_osdm_writer import BaseOSDMWriter, OSDMWriteOptions
 
 
 class CEPWriter(BaseOSDMWriter):

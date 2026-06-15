@@ -4,9 +4,9 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
 
-from engines.knowledge.models.ksdm_models import (
+from engines.knowledge.ml_mining.models import MiningModelType
+from engines.knowledge.process_mining.models import (
     ClusteringConfig,
-    MiningModelType,
     MiningProcessDefinition,
     ProcessMiningDefinitionDocument,
 )
@@ -25,8 +25,8 @@ from engines.orchestration.dmn.models.dmn_models import (
     UnaryTests,
 )
 from engines.document.models.standard import DocumentStandard
-from engines.knowledge.models.parsers.process_mining.jprm_parser import JprmParser
-from engines.knowledge.models.parsers.process_mining.yprm_parser import YprmParser
+from engines.knowledge.process_mining.models.parsers.jprm_parser import JprmParser
+from engines.knowledge.process_mining.models.parsers.yprm_parser import YprmParser
 from engines.knowledge.ml_mining.engine import MlMiningEngine
 
 

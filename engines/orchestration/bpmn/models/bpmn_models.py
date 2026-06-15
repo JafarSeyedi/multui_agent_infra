@@ -44,7 +44,7 @@ from ...models.shared_models import (
 )
 
 if TYPE_CHECKING:
-    from ..dmn.models.dmn_models import DecisionService
+    from ...dmn.models.dmn_models import DecisionService
 
 
 class ActivityType(str, Enum):

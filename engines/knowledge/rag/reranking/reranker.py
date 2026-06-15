@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 
-from engines.knowledge.rag.rag_models import DocumentChunk
+from engines.knowledge.rag.models import DocumentChunk
 from engines.knowledge.rag.reranking.base_reranker import BaseReranker
 
 

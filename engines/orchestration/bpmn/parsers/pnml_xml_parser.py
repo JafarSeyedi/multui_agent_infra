@@ -16,12 +16,14 @@ import uuid
 from xml.etree import ElementTree as ET
 
 from engines.document.models.media_types import MEDIA_TYPES
-from ..models.bpmn_models import (
-    Arc, BaseOSDMDocument, FormalExpression, Place, PnTransition, State,
+from ..models.bpmn_models import FormalExpression
+from ...models.shared_models import BaseOSDMDocument
+from ...state_machine.models.state_machine_models import (
+    Arc, Place, PnTransition, State,
     StateMachineDocument, StateMachineModel, StateMachineRegion
 )
 from engines.document.parsers.base import ParseOptions
-from ...models.parsers.base_osdm_parser import BaseOSDMParser
+from ...models.base_osdm_parser import BaseOSDMParser
 
 PNML_NS = "http://www.pnml.org/version-2009/grammar/pnml"
 NS = {"pnml": PNML_NS}

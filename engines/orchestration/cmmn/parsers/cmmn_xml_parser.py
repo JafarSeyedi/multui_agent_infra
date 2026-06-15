@@ -24,7 +24,7 @@ from ..models.cmmn_models import (
     ResourceRole, Sentry, Stage
 )
 from engines.document.parsers.base import ParseOptions
-from ...models.parsers.base_osdm_parser import BaseOSDMParser
+from ...models.base_osdm_parser import BaseOSDMParser
 
 CMMN_NS = "http://www.omg.org/spec/CMMN/20151109/MODEL"
 NS = {"cmmn": CMMN_NS}

@@ -1,5 +1,5 @@
 from .engine import MlMiningEngine
-from engines.knowledge.models.ksdm_models import (
+from engines.knowledge.ml_mining.models import (
     AttributeValue,
     DatasetSplit,
     EvaluationStage,

@@ -24,8 +24,8 @@ from ..models.dmn_models import InputData
 from ..models.dmn_models import KnowledgeRequirement
 from ..models.dmn_models import KnowledgeSource
 from ..models.dmn_models import Script
-from ...models.writers.base_osdm_writer import BaseOSDMWriter
-from ...models.writers.base_osdm_writer import OSDMWriteOptions
+from ...models.base_osdm_writer import BaseOSDMWriter
+from ...models.base_osdm_writer import OSDMWriteOptions
 
 
 # ── Namespaces ────────────────────────────────────────────────────

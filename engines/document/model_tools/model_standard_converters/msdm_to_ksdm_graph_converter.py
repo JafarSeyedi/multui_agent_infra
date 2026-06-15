@@ -21,7 +21,7 @@ from engines.document.models.msdm_models import (
     ScalarType,
     ConstraintType,
 )
-from engines.knowledge.models.ksdm_models import (
+from engines.knowledge.graph.models import (
     KnowledgeGraph,
     GraphNode,
     GraphEdge,

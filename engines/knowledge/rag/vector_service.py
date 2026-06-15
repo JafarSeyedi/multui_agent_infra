@@ -5,7 +5,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from engines.knowledge.rag.rag_models import Document, DocumentChunk
+from engines.knowledge.rag.models import Document, DocumentChunk
 from ...document.storage.document_store import DocumentStore
 from engines.knowledge.graph.graph_retriever import GraphRetriever
 from .planner.adaptive_planner import AdaptiveRetrievalPlanner

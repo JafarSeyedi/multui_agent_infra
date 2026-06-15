@@ -6,10 +6,12 @@ from collections import deque
 from pathlib import Path
 from typing import Any, cast
 
-from engines.knowledge.models.ksdm_models import (
+from engines.knowledge.graph.models import (
     GraphEdge,
     GraphNode,
     KnowledgeGraph,
+)
+from engines.knowledge.semantic_graph.models import (
     SemanticGraphDocument,
     TransformationModelDocument,
 )
@@ -23,10 +25,10 @@ from engines.document.writers.base import BaseDocumentWriter
 # ---------------------------------------------------------------------------
 
 def _import_parsers() -> dict[str, type[BaseDocumentParser]]:
-    from engines.knowledge.models.parsers.semantic_graph.rdf_parser import (
+    from engines.knowledge.semantic_graph.models.parsers.rdf_parser import (
         RdfParser,
     )
-    from engines.knowledge.models.parsers.semantic_graph.rml_parser import (
+    from engines.knowledge.semantic_graph.models.parsers.rml_parser import (
         RmlParser,
     )
     return {
@@ -36,10 +38,10 @@ def _import_parsers() -> dict[str, type[BaseDocumentParser]]:
 
 
 def _import_writers() -> dict[str, type[BaseDocumentWriter]]:
-    from engines.knowledge.models.writers.semantic_graph.rdf_writer import (
+    from engines.knowledge.semantic_graph.models.writers.rdf_writer import (
         RdfWriter,
     )
-    from engines.knowledge.models.writers.semantic_graph.rml_writer import (
+    from engines.knowledge.semantic_graph.models.writers.rml_writer import (
         RmlWriter,
     )
     return {

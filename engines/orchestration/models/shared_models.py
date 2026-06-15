@@ -16,7 +16,7 @@ from engines.document.models.media_types import DocumentFormat
 from engines.document.models.msdm_models import MSDMDocument
 from engines.document.models.ssdm_models import SSDMDocument
 from engines.document.models.standard import DocumentStandard
-from engines.tools.models.tsdm_models import TSDMDocument
+from engines.tools.models import TSDMDocument
 
 if TYPE_CHECKING:
     from ..bpmn.models.bpmn_models import BPMNDiagram, BPMNDocument

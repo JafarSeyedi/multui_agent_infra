@@ -15,16 +15,14 @@ from __future__ import annotations
 
 from typing import cast
 
-from ..models.bpmn_models import BaseOSDMDocument
-from ..models.bpmn_models import Script
-from ..models.bpmn_models import State
-from ..models.bpmn_models import StateMachineDocument
-from ..models.bpmn_models import StateMachineModel
-from ..models.bpmn_models import StateMachineRegion
-from ..models.bpmn_models import StateTransition
-from ..models.bpmn_models import Transition
-from ...models.writers.base_osdm_writer import BaseOSDMWriter
-from ...models.writers.base_osdm_writer import OSDMWriteOptions
+from ..models.bpmn_models import Script, Transition
+from ...models.shared_models import BaseOSDMDocument
+from ...state_machine.models.state_machine_models import (
+    State, StateMachineDocument,
+    StateMachineModel, StateMachineRegion, StateTransition
+)
+from ...models.base_osdm_writer import BaseOSDMWriter
+from ...models.base_osdm_writer import OSDMWriteOptions
 
 
 class PrefectDAGWriter(BaseOSDMWriter):

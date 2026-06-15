@@ -37,8 +37,8 @@ from ..models.bpmn_models import (
     UserTask,
 )
 from engines.document.models.ssdm_models import SSDMDocument 
-from engines.tools.models.tsdm_models import TSDMDocument
-from ...models.writers.base_osdm_writer import BaseOSDMWriter, OSDMWriteOptions
+from engines.tools.models import TSDMDocument
+from ...models.base_osdm_writer import BaseOSDMWriter, OSDMWriteOptions
 
 # Namespaces
 BPMN_NS = "http://www.omg.org/spec/BPMN/20100524/MODEL"

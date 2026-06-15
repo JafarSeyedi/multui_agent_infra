@@ -1,7 +1,7 @@
 import numpy as np
 
 from .base import BaseCompressor
-from ..rag_models import DocumentChunk
+from ..models.rag_models import DocumentChunk
 from ..embedding import EmbeddingModel
 
 

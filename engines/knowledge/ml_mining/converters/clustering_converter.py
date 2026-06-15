@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from engines.knowledge.models.ksdm_models import ModelGraph, ModelNode, OpType
+from engines.knowledge.ml_mining.models import ModelGraph, ModelNode, OpType
 from engines.knowledge.ml_mining.converters import ConverterRegistry, ModelGraphConverter
 
 

@@ -8,7 +8,7 @@ from typing import Any
 import numpy as np
 import pytest
 
-from engines.knowledge.models.ksdm_models import (
+from engines.knowledge.ml_mining.models import (
     MiningModelType,
     ModelFormat,
     ModelGraph,
@@ -16,7 +16,7 @@ from engines.knowledge.models.ksdm_models import (
     MlMiningDocument,
     OpType,
 )
-from engines.knowledge.models.parsers.ml_mining import SklearnParser
+from engines.knowledge.ml_mining.models.parsers import SklearnParser
 from engines.knowledge.ml_mining import MlMiningEngine
 from engines.knowledge.ml_mining.converters import ConverterRegistry
 from engines.knowledge.ml_mining.metrics import MetricsCalculator
@@ -110,7 +110,7 @@ class TestPyTorchParser:
         traced = torch.jit.trace(model, torch.randn(1, 4))
         torch.jit.save(traced, buf)
         data = buf.getvalue()
-        from engines.knowledge.models.parsers.ml_mining import PyTorchParser
+        from engines.knowledge.ml_mining.models.parsers import PyTorchParser
         parser = PyTorchParser()
         doc = await parser.parse_bytes(data, "pt", "pt.pt")
         assert doc.model_format == ModelFormat.PYTORCH
@@ -124,7 +124,7 @@ class TestPyTorchParser:
         buf = io.BytesIO()
         torch.save(model.state_dict(), buf)
         data = buf.getvalue()
-        from engines.knowledge.models.parsers.ml_mining import PyTorchParser
+        from engines.knowledge.ml_mining.models.parsers import PyTorchParser
         parser = PyTorchParser()
         doc = await parser.parse_bytes(data, "pt2", "pt2.pt")
         assert doc.model_format == ModelFormat.PYTORCH
@@ -310,7 +310,7 @@ class TestValidation:
         assert len(warnings) >= 1
 
     def test_validate_graph_no_nodes(self):
-        from engines.knowledge.models.ksdm_models import ModelGraph
+        from engines.knowledge.ml_mining.models import ModelGraph
         graph = ModelGraph(nodes=[])
         warnings = validate_graph(graph)
         assert "Graph has no nodes" in warnings
@@ -324,7 +324,7 @@ class TestValidation:
         assert any("Duplicate" in w for w in warnings)
 
     def test_validate_mining_schema(self):
-        from engines.knowledge.models.ksdm_models import (
+        from engines.knowledge.ml_mining.models import (
             MiningField,
             MiningSchema,
         )

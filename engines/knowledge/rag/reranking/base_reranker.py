@@ -3,7 +3,7 @@ from abc import ABC
 from abc import abstractmethod
 from collections.abc import Sequence
 
-from engines.knowledge.rag.rag_models import DocumentChunk
+from engines.knowledge.rag.models import DocumentChunk
 
 class BaseReranker(ABC):
     """Common contract for all Rerankers"""

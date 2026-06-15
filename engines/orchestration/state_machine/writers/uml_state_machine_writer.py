@@ -15,7 +15,7 @@ from ..models.state_machine_models import (
     BaseElement, BaseOSDMDocument, PseudoState, Script, State,
     StateMachineDocument, StateMachineModel, StateMachineRegion, StateTransition, Transition
 )
-from ...models.writers.base_osdm_writer import BaseOSDMWriter, OSDMWriteOptions
+from ...models.base_osdm_writer import BaseOSDMWriter, OSDMWriteOptions
 
 # Namespaces
 UML_NS = "http://www.omg.org/spec/UML/20131001"

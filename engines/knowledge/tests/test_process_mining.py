@@ -5,11 +5,11 @@ from pathlib import Path
 import pytest
 import yaml
 
-from engines.knowledge.models.ksdm_models import (
+from engines.knowledge.ml_mining.models import MiningModelType
+from engines.knowledge.process_mining.models import (
     ClusteringConfig,
     DecisionPointDefinition,
     CatchEventMiningDefinition,
-    MiningModelType,
     MiningProcessDefinition,
     ProcessMiningDefinitionDocument,
 )
@@ -23,10 +23,10 @@ from engines.document.models.lsdm_models import (
 from engines.document.models.media_types import MEDIA_TYPES
 from engines.orchestration.dmn.models.dmn_models import DecisionLogicType
 from engines.document.models.standard import DocumentStandard
-from engines.knowledge.models.parsers.process_mining.jprm_parser import JprmParser
-from engines.knowledge.models.parsers.process_mining.yprm_parser import YprmParser
-from engines.knowledge.models.writers.process_mining.jprm_writer import JprmWriter
-from engines.knowledge.models.writers.process_mining.yprm_writer import YprmWriter
+from engines.knowledge.process_mining.models.parsers.jprm_parser import JprmParser
+from engines.knowledge.process_mining.models.parsers.yprm_parser import YprmParser
+from engines.knowledge.process_mining.models.writers.jprm_writer import JprmWriter
+from engines.knowledge.process_mining.models.writers.yprm_writer import YprmWriter
 from engines.knowledge.process_mining import ProcessMiningEngine
 
 

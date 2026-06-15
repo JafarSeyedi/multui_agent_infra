@@ -55,7 +55,7 @@ from ..models.bpmn_models import (
 )
 
 from engines.document.parsers.base import ParseOptions
-from ...models.parsers.base_osdm_parser import BaseOSDMParser
+from ...models.base_osdm_parser import BaseOSDMParser
 from .bpmn_collaboration import BPMNCollaborationParser
 from .bpmn_diagram import BPMNDiagramParser
 from .bpmn_flow_parser import BPMNFlowParser

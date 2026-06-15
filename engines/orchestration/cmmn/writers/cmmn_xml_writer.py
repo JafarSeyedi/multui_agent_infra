@@ -28,8 +28,8 @@ from ..models.cmmn_models import PlanItem
 from ..models.cmmn_models import ProcessTask
 from ..models.cmmn_models import Sentry
 from ..models.cmmn_models import Stage
-from ...models.writers.base_osdm_writer import BaseOSDMWriter
-from ...models.writers.base_osdm_writer import OSDMWriteOptions
+from ...models.base_osdm_writer import BaseOSDMWriter
+from ...models.base_osdm_writer import OSDMWriteOptions
 
 
 # ── Namespaces ────────────────────────────────────────────────────

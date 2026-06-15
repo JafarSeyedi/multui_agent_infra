@@ -22,8 +22,8 @@ from ..models.bpmn_models import Process
 from ..models.bpmn_models import SequenceFlow
 from ..models.bpmn_models import SubProcess
 from ..models.bpmn_models import Task
-from ...models.writers.base_osdm_writer import BaseOSDMWriter
-from ...models.writers.base_osdm_writer import OSDMWriteOptions
+from ...models.base_osdm_writer import BaseOSDMWriter
+from ...models.base_osdm_writer import OSDMWriteOptions
 
 
 XPDL_NS = "http://www.wfmc.org/2008/XPDL2.1"

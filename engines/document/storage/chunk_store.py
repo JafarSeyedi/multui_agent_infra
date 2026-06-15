@@ -1,8 +1,13 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from ..ingestion.ingestion_models import ChunkRecord
 from engines.storage.key_value.base import KeyValueStorage
 from engines.storage.vector.base import VectorDBAdapter
+
+if TYPE_CHECKING:
+    from engines.knowledge.rag.models import DocumentChunk
 
 
 class ChunkStore:
@@ -82,7 +87,7 @@ class ChunkStore:
             await self.vector_index.batch_upsert(items)
 
     async def search_similar(self, embedding: list[float], top_k: int = 5) -> list[DocumentChunk]:
-        from engines.knowledge.rag.rag_models import DocumentChunk
+        from engines.knowledge.rag.models import DocumentChunk
         if self.vector_index is None:
             return []
         results = await self.vector_index.query(embedding, top_k=top_k)

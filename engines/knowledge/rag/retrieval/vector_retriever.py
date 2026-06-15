@@ -4,7 +4,7 @@ from typing import Any
 
 from .base_retriever import BaseRetriever
 from .retriever_result import RetrievalResult
-from engines.knowledge.rag.rag_models import DocumentChunk
+from engines.knowledge.rag.models import DocumentChunk
 from ..embedding import EmbeddingModel
 from ....storage.vector.base import VectorDBAdapter
 

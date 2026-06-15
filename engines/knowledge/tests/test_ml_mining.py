@@ -5,10 +5,10 @@ from typing import Any
 
 import pytest
 
-from engines.knowledge.models.parsers.ml_mining import OnnxParser, PmmlParser
-from engines.knowledge.models.writers.ml_mining import OnnxWriter, PmmlWriter
+from engines.knowledge.ml_mining.models.parsers import OnnxParser, PmmlParser
+from engines.knowledge.ml_mining.models.writers import OnnxWriter, PmmlWriter
 from engines.knowledge.ml_mining import MlMiningEngine
-from engines.knowledge.models.ksdm_models import (
+from engines.knowledge.ml_mining.models import (
     AttributeValue,
     DatasetSplit,
     EvaluationStage,

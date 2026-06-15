@@ -39,8 +39,8 @@ Monorepo under `engines/` with 10 engine packages:
 
 - **Agent flow**: Orchestrator → AgentInput → AgentAdapter → Agent → AgentOutput. Adapters convert between base and agent-specific models.
 - **Tools layer**: LLM, RAG, Search, MCP are all Tools, not Agents. Agents decide, Tools execute.
-- **Engine-specific SDM models live in their owning engine** (not in `engines/document/`): KSDM → `engines/knowledge/models/`, OSDM + BAM → `engines/orchestration/models/`, TSDM → `engines/tools/models/`. Each model dir has `parsers/` and `writers/` subdirectories. The document engine keeps USDM, PSDM, ESDM, DSDM, CSDM, MSDM, SSDM, ISDM, LSDM.
-- **Knowledge engines** (`engines/knowledge/apps/`) import models/parsers/writers from `engines.knowledge.models`, not `engines.document.*`. Backward-compat wrappers have been removed.
+- **Engine-specific SDM models live in their owning engine** (not in `engines/document/`): KSDM models are now per-engine under `engines/knowledge/{engine}/models/`, OSDM + BAM → `engines/orchestration/models/`, TSDM → `engines/tools/models/`. Each model dir has `{engine}_models.py`, `parsers/` and `writers/` subdirectories. The document engine keeps USDM, PSDM, ESDM, DSDM, CSDM, MSDM, SSDM, ISDM, LSDM.
+- **Knowledge engines** import models/parsers/writers from their own per-engine `models/` package. Use `engines.knowledge.{engine}.models` instead of the old centralized `engines.knowledge.models`. Backward-compat wrappers have been removed.
 - **Knowledge `__init__.py`** only eagerly imports the 5 stable engines (bi_aggregation, ml_mining, process_mining, semantic_graph, graph). RAG and memory engines are excluded because they have missing transitive dependencies.
 - **`KnowledgeRagEngine`** cannot be imported directly — it depends on `engines.knowledge.rag.{services,llm,research}` modules that don't exist. If you need it, create stubs first.
 - **`UnifiedGraphEngine` ↔ `SemanticGraphEngine` circular dependency**: `UnifiedGraphEngine.__init__` must pass `unified_engine=self` to `SemanticGraphEngine()` to avoid infinite recursion. This is already fixed.
@@ -52,7 +52,7 @@ Monorepo under `engines/` with 10 engine packages:
 - `asyncio_mode = auto` in pyproject.toml — async tests are auto-detected.
 - No integration test prerequisites (no DB, no external services needed for knowledge tests).
 - 2 tests in `test_engines.py` are skipped (RAG/memory) due to missing dependencies.
-- 96 total knowledge tests (67 ML mining + 15 BI aggregation + 14 query models) + 36 Phase E + 44 semantic graph = 146 total.
+- 171 total knowledge tests (15 BI aggregation + 67 ML mining + 36 Phase E + 14 query models + 44 semantic graph + 25 process mining).
 - Phase E tests in `test_ml_mining_phase_e.py` — sklearn/PyTorch parser, converter→ORT inference, engine predict/evaluate, metrics, validation, full pipeline.
 - Semantic graph tests in `test_semantic_graph.py` — RDF parse, graph API, traversal, shortest path, subgraph, statistics, validate, convert, write round-trip, edge cases.
 
@@ -69,6 +69,6 @@ Monorepo under `engines/` with 10 engine packages:
 ## Important constraints
 
 - **`engines/document/models/media_types.py`** is the single source of truth for `DocumentFormat` enum and `MEDIA_TYPES` registry. Format enums live here, not in model files.
-- **`engines/knowledge/models/media_types.py`** has `KnowledgeMediaType` (a separate pydantic model with richer metadata) — kept for backward compat but the document layer uses `MediaType` from `engines.document.models.media_types`.
+- **`engines/knowledge/models/`** has been removed — KSDM models are now per-engine under `engines/knowledge/{engine}/models/`.
 - Format enum values use snake_case keys (`xes_xml`, `cwm_xmi`, `rdf_turtle`) — the old `bi_model_json`/`rdfxml` style is gone.
 - `.gitignore` excludes `prompts/` — don't store generated prompts in git.

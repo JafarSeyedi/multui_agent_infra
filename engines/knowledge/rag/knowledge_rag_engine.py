@@ -18,7 +18,7 @@ from .retrieval.hybrid_retriever import HybridRetriever
 from .retrieval.bm25_retriever import BM25KeywordRetriever
 from .retrieval.keyword_retriever import KeywordRetriever
 from .retrieval.retriever_result import RetrievalResult
-from .rag_models import RetrievedDocument
+from .models.rag_models import RetrievedDocument
 from .reranking.reranker import Reranker
 from .planner.adaptive_planner import AdaptiveRetrievalPlanner
 from .planner.retrieval_plan import RetrievalPlan

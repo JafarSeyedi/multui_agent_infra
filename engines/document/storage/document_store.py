@@ -3,8 +3,8 @@ from __future__ import annotations
 
 
 from ..ingestion.ingestion_models import DocumentRecord
-from engines.knowledge.rag.rag_models import Document
-from engines.knowledge.rag.rag_models import DocumentChunk
+from engines.knowledge.rag.models import Document
+from engines.knowledge.rag.models import DocumentChunk
 from engines.storage.key_value.base import KeyValueStorage
 
 

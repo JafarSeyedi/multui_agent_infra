@@ -18,8 +18,8 @@ from ..models.bpmn_models import Gateway
 from ..models.bpmn_models import Process
 from ..models.bpmn_models import SequenceFlow
 from ..models.bpmn_models import Task
-from ...models.writers.base_osdm_writer import BaseOSDMWriter
-from ...models.writers.base_osdm_writer import OSDMWriteOptions
+from ...models.base_osdm_writer import BaseOSDMWriter
+from ...models.base_osdm_writer import OSDMWriteOptions
 
 
 # ── Namespaces ────────────────────────────────────────────────────

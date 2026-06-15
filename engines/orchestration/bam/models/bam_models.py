@@ -246,4 +246,4 @@ from engines.orchestration.bpmn.models.bpmn_models import Script  # noqa: E402
 for _model in [BusinessMetric, KPI, SlaDefinition, AlertRule, DashboardWidget, Dashboard,
                MonitoringAgentDefinition, MetricValue, KpiResult, SlaComplianceReport,
                AlertNotification, AgentReport, MonitoringDashboardDocument]:
-    _model.model_rebuild()
+    _model.model_rebuild()  # type: ignore[attr-defined]

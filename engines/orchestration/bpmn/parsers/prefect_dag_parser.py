@@ -17,12 +17,14 @@ from pathlib import Path
 from typing import Any
 
 from engines.document.models.media_types import MEDIA_TYPES
-from ..models.bpmn_models import (
-    BaseOSDMDocument, Script, ScriptLanguage, State, StateMachineDocument,
+from ..models.bpmn_models import Script, ScriptLanguage
+from ...models.shared_models import BaseOSDMDocument
+from ...state_machine.models.state_machine_models import (
+    State, StateMachineDocument,
     StateMachineModel, StateMachineRegion, StateTransition
 )
 from engines.document.parsers.base import ParseOptions
-from ...models.parsers.base_osdm_parser import BaseOSDMParser
+from ...models.base_osdm_parser import BaseOSDMParser
 
 
 class PrefectDAGParser(BaseOSDMParser):

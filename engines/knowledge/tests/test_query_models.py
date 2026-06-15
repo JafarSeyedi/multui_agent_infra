@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import pytest
 
-from engines.knowledge.models.query_models import (
+from engines.knowledge.query.models import (
     UnifiedQueryDocument,
     QueryLanguage,
     QueryTransport,
@@ -65,7 +65,7 @@ def sample_graphql_query_text() -> str:
 
 @pytest.mark.asyncio
 async def test_mdx_parse(sample_mdx_text):
-    from engines.knowledge.models.parsers.query_models import MdxParser
+    from engines.knowledge.query.models.parsers import MdxParser
 
     parser = MdxParser()
     doc = await parser.parse_bytes(sample_mdx_text.encode(), "mdx_test", "mdx_test")
@@ -78,8 +78,8 @@ async def test_mdx_parse(sample_mdx_text):
 
 @pytest.mark.asyncio
 async def test_mdx_write_roundtrip(sample_mdx_text):
-    from engines.knowledge.models.parsers.query_models import MdxParser
-    from engines.knowledge.models.writers.query_models import MdxWriter
+    from engines.knowledge.query.models.parsers import MdxParser
+    from engines.knowledge.query.models.writers import MdxWriter
 
     parser = MdxParser()
     writer = MdxWriter()
@@ -93,7 +93,7 @@ async def test_mdx_write_roundtrip(sample_mdx_text):
 
 @pytest.mark.asyncio
 async def test_dax_parse(sample_dax_text):
-    from engines.knowledge.models.parsers.query_models import DaxParser
+    from engines.knowledge.query.models.parsers import DaxParser
 
     parser = DaxParser()
     doc = await parser.parse_bytes(sample_dax_text.encode(), "dax_test", "dax_test")
@@ -104,7 +104,7 @@ async def test_dax_parse(sample_dax_text):
 
 @pytest.mark.asyncio
 async def test_sql_tabular_parse(sample_sql_tabular_text):
-    from engines.knowledge.models.parsers.query_models import SqlTabularParser
+    from engines.knowledge.query.models.parsers import SqlTabularParser
 
     parser = SqlTabularParser()
     doc = await parser.parse_bytes(sample_sql_tabular_text.encode(), "sql_test", "sql_test")
@@ -115,7 +115,7 @@ async def test_sql_tabular_parse(sample_sql_tabular_text):
 
 @pytest.mark.asyncio
 async def test_m_parse(sample_m_text):
-    from engines.knowledge.models.parsers.query_models import PowerQueryMParser
+    from engines.knowledge.query.models.parsers import PowerQueryMParser
 
     parser = PowerQueryMParser()
     doc = await parser.parse_bytes(sample_m_text.encode(), "m_test", "m_test")
@@ -126,7 +126,7 @@ async def test_m_parse(sample_m_text):
 
 @pytest.mark.asyncio
 async def test_jpql_parse(sample_jpql_text):
-    from engines.knowledge.models.parsers.query_models import JpqlParser
+    from engines.knowledge.query.models.parsers import JpqlParser
 
     parser = JpqlParser()
     doc = await parser.parse_bytes(sample_jpql_text.encode(), "jpql_test", "jpql_test")
@@ -137,7 +137,7 @@ async def test_jpql_parse(sample_jpql_text):
 
 @pytest.mark.asyncio
 async def test_oql_parse(sample_oql_text):
-    from engines.knowledge.models.parsers.query_models import OqlParser
+    from engines.knowledge.query.models.parsers import OqlParser
 
     parser = OqlParser()
     doc = await parser.parse_bytes(sample_oql_text.encode(), "oql_test", "oql_test")
@@ -148,7 +148,7 @@ async def test_oql_parse(sample_oql_text):
 
 @pytest.mark.asyncio
 async def test_graphql_parse(sample_graphql_query_text):
-    from engines.knowledge.models.parsers.query_models import GraphqlQueryParser
+    from engines.knowledge.query.models.parsers import GraphqlQueryParser
 
     parser = GraphqlQueryParser()
     doc = await parser.parse_bytes(sample_graphql_query_text.encode(), "gql_test", "gql_test")
@@ -160,7 +160,7 @@ async def test_graphql_parse(sample_graphql_query_text):
 
 @pytest.mark.asyncio
 async def test_xmla_parse_execute():
-    from engines.knowledge.models.parsers.query_models import XmlaQueryParser
+    from engines.knowledge.query.models.parsers import XmlaQueryParser
 
     xmla = b"""<?xml version="1.0"?>
     <Envelope xmlns="http://schemas.xmlsoap.org/soap/envelope/">
@@ -180,7 +180,7 @@ async def test_xmla_parse_execute():
 
 @pytest.mark.asyncio
 async def test_dax_rest_json():
-    from engines.knowledge.models.parsers.query_models import DaxParser
+    from engines.knowledge.query.models.parsers import DaxParser
 
     payload = {
         "queries": [{"Expression": "EVALUATE 'Sales'"}],
@@ -219,7 +219,7 @@ async def test_engine_convert():
 
 @pytest.mark.asyncio
 async def test_graphql_response():
-    from engines.knowledge.models.parsers.query_models import GraphqlQueryParser
+    from engines.knowledge.query.models.parsers import GraphqlQueryParser
 
     resp = {"data": {"user": {"id": "1", "name": "Alice"}}, "errors": []}
     parser = GraphqlQueryParser()

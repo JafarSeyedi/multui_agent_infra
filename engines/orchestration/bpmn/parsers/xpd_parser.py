@@ -32,7 +32,7 @@ from ..models.bpmn_models import (
     Property, SequenceFlow, StartEvent, Task, TextAnnotation
 )
 from engines.document.parsers.base import ParseOptions
-from ...models.parsers.base_osdm_parser import BaseOSDMParser
+from ...models.base_osdm_parser import BaseOSDMParser
 
 XPDL_NS = "http://www.wfmc.org/2008/XPDL2.1"
 NS = {"xpdl": XPDL_NS}

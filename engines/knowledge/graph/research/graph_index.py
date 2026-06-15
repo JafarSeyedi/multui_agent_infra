@@ -6,7 +6,7 @@ from collections import deque
 from collections.abc import Iterable
 
 
-from engines.knowledge.models.ksdm_models import GraphNode, GraphEdge
+from engines.knowledge.graph.models import GraphNode, GraphEdge
 
 
 class GraphIndex:

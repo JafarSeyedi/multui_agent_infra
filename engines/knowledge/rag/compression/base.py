@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from ..rag_models import DocumentChunk
+from ..models.rag_models import DocumentChunk
 
 
 class BaseCompressor(ABC):

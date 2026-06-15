@@ -34,8 +34,8 @@ from ..models.state_machine_models import StateMachineModel
 from ..models.state_machine_models import StateMachineRegion
 from ..models.state_machine_models import StateTransition
 from ..models.state_machine_models import Transition
-from ...models.writers.base_osdm_writer import BaseOSDMWriter
-from ...models.writers.base_osdm_writer import OSDMWriteOptions
+from ...models.base_osdm_writer import BaseOSDMWriter
+from ...models.base_osdm_writer import OSDMWriteOptions
 
 
 SCXML_NS = "http://www.w3.org/2005/07/scxml"

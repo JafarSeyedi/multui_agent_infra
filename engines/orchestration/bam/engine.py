@@ -9,7 +9,7 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-from ..models.bam_models import (
+from .models.bam_models import (
     AgentReport, AlertNotification, AlertState, KpiResult,
     KpiStatus, MetricValue, MonitoringDashboardDocument,
     SlaComplianceReport, TrendDirection,
@@ -40,10 +40,10 @@ class BamEngine:
         parser: Any
         p = Path(path)
         if p.suffix == ".json" or ".bam.json" in str(p):
-            from ..parsers.bam_json_parser import BamJsonParser
+            from .parsers.bam_json_parser import BamJsonParser
             parser = BamJsonParser()
         elif ".bam.yaml" in str(p) or ".bam.yml" in str(p):
-            from ..parsers.bam_yaml_parser import BamYamlParser
+            from .parsers.bam_yaml_parser import BamYamlParser
             parser = BamYamlParser()
         else:
             raise ValueError(f"Unsupported BAM file: {path}")
@@ -54,11 +54,11 @@ class BamEngine:
     async def parse(self, content: str, fmt: str) -> MonitoringDashboardDocument:
         parser: Any
         if fmt == "json":
-            from ..parsers.bam_json_parser import BamJsonParser
+            from .parsers.bam_json_parser import BamJsonParser
             parser = BamJsonParser()
             doc = await parser.parse_bytes(content.encode("utf-8"), "inline", "inline.bam.json")
         elif fmt == "yaml":
-            from ..parsers.bam_yaml_parser import BamYamlParser
+            from .parsers.bam_yaml_parser import BamYamlParser
             parser = BamYamlParser()
             doc = await parser.parse_bytes(content.encode("utf-8"), "inline", "inline.bam.yaml")
         else:

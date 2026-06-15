@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from engines.knowledge.models.query_models import (
+from engines.knowledge.query.models import (
     CellAxis,
     CellValue,
     DaxQuery,
@@ -31,7 +31,7 @@ from engines.knowledge.models.query_models import (
     XmlaTransport,
 )
 from engines.document.parsers.base import BaseDocumentParser
-from engines.knowledge.models.parsers.query_models import (
+from engines.knowledge.query.models.parsers import (
     DaxParser,
     GraphqlQueryParser,
     JpqlParser,
@@ -42,7 +42,7 @@ from engines.knowledge.models.parsers.query_models import (
     XmlaQueryParser,
 )
 from engines.document.writers.base import BaseDocumentWriter
-from engines.knowledge.models.writers.query_models import (
+from engines.knowledge.query.models.writers import (
     DaxWriter,
     GraphqlQueryWriter,
     JpqlWriter,

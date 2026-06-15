@@ -1,5 +1,5 @@
 from .base import BaseCompressor
-from ..rag_models import DocumentChunk
+from ..models.rag_models import DocumentChunk
 
 
 class LLMCompressor(BaseCompressor):
