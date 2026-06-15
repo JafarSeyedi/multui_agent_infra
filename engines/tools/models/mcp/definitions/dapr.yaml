@@ -1,0 +1,12 @@
+id: dapr-mcp
+name: Dapr
+description: Dapr distributed application runtime MCP server
+server_command: ["npx", "@dapr/mcp-server"]
+tools:
+  - pubsub
+  - state
+  - actors
+  - workflows
+  - bindings
+  - configuration
+  - secrets

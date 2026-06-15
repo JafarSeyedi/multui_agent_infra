@@ -1,0 +1,9 @@
+id: cisco-ai-defense-mcp
+name: Cisco AI Defense
+description: Cisco AI security and defense MCP server
+server_command: ["npx", "@cisco/ai-defense-mcp"]
+tools:
+  - policy
+  - audit
+  - threat_detection
+  - compliance

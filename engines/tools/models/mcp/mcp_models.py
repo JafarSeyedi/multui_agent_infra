@@ -9,7 +9,7 @@ from engines.tools.models.core.core_models import ToolKind
 @dataclass
 class MCPTool(Tool):
     kind: ToolKind = ToolKind.MCP
-    server_command: str = ""
+    server_command: list[str] = field(default_factory=list)
     server_url: str = ""
     tool_name: str = ""
     transport: str = "stdio"

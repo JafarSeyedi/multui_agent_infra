@@ -1,0 +1,9 @@
+id: dbos-mcp
+name: DBOS
+description: DBOS durable execution framework MCP server
+server_command: ["npx", "@dbos/mcp-server"]
+tools:
+  - workflow
+  - step
+  - transaction
+  - communicator

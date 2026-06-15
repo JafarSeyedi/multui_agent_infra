@@ -1,0 +1,10 @@
+id: restate-mcp
+name: Restate
+description: Restate durable execution framework MCP server
+server_command: ["npx", "@restate/mcp-server"]
+tools:
+  - service
+  - virtual_object
+  - workflow
+  - state_machine
+  - invocations

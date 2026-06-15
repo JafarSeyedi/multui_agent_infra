@@ -1,0 +1,9 @@
+id: daytona-mcp
+name: Daytona
+description: Daytona development sandbox MCP server
+server_command: ["npx", "@daytona/mcp-server"]
+tools:
+  - sandbox
+  - environment
+  - workspace
+  - git
