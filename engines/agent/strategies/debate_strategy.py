@@ -1,10 +1,10 @@
 from typing import Any
 
-from .._types import FeelContext, RawData, VariableValue
-from ..agent.models import AgentOutput
+from ..._types import FeelContext, RawData, VariableValue
+from ..models import AgentOutput
 from .base_strategy import InteractionStrategy
-from .interaction_models import InteractionRequest
-from .interaction_models import InteractionResult
+from ..interaction_models import InteractionRequest
+from ..interaction_models import InteractionResult
 
 
 class DebateStrategy(InteractionStrategy):

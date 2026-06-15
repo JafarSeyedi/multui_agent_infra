@@ -72,6 +72,13 @@ class MessageRouter:
                 )
             )
 
+        try:
+            from engines.agent.agent_mediator import AgentMediator
+            mediator = AgentMediator()
+            asyncio.ensure_future(mediator.send(message.sender, message.receiver, message.content))
+        except ImportError:
+            pass
+
         return RoutingResult(
             message_id=message.message_id,
             routed=True,

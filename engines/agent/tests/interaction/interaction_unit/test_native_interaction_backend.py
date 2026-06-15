@@ -5,7 +5,7 @@ import pytest
 
 from engines.communication.buses.base_message_bus import HandlerType
 from engines.communication.buses.base_message_bus import MessageBus
-from engines.interaction.backends.native_backend import NativeOrchestrationBackend
+from engines.agent.backends.native_backend import NativeOrchestrationBackend
 # from engines.interaction.backends.autogen_backend import AutoGenOrchestrationBackend  # for Shared helpers if needed
 
 

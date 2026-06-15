@@ -11,7 +11,7 @@ class MLflowBackend(ObservabilityBackend):
 
     async def start_span(self, name: str, attributes: dict[str, Any] | None = None) -> Any:
         try:
-            import mlflow
+            import mlflow  # type: ignore[import-not-found]
             if self._tracking_uri:
                 mlflow.set_tracking_uri(self._tracking_uri)
             return mlflow.start_span(name, attributes=attributes or {})

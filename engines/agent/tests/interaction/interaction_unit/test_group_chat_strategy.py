@@ -2,8 +2,8 @@
 import pytest
 
 from engines.agent.base_agents.base_agent import BaseAgent
-from engines.interaction.group_chat_strategy import GroupChatStrategy
-from engines.interaction.interaction_models import InteractionRequest
+from engines.agent.strategies.group_chat_strategy import GroupChatStrategy
+from engines.agent.interaction_models import InteractionRequest
 from .conftest import TestAgent
 
 

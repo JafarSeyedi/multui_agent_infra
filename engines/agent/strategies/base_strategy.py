@@ -6,11 +6,11 @@ from abc import abstractmethod
 from datetime import datetime
 from typing import Any
 
-from .._types import FeelContext, MessagePayload
-from ..agent.models import AgentInput
-from ..agent.models import AgentOutput
-from ..communication.buses.base_message_bus import MessageBus
-from .interaction_models import AgentMessage
+from ..._types import FeelContext, MessagePayload
+from ..models import AgentInput
+from ..models import AgentOutput
+from ...communication.buses.base_message_bus import MessageBus
+from ..interaction_models import AgentMessage
 
 
 class InteractionStrategy(ABC):

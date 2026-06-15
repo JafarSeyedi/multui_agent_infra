@@ -11,7 +11,7 @@ class FutureAGIBackend(ObservabilityBackend):
 
     async def start_span(self, name: str, attributes: dict[str, Any] | None = None) -> Any:
         try:
-            import future_agi
+            import future_agi  # type: ignore[import-not-found]
             return future_agi.start_span(name, attributes or {})
         except ImportError:
             return None

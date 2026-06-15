@@ -1,8 +1,8 @@
 # tests/agents/orchestration/interaction/unit/test_self_refine_strategy.py
 import pytest
 
-from engines.interaction.interaction_models import InteractionRequest
-from engines.interaction.self_refine_strategy import SelfRefineStrategy
+from engines.agent.interaction_models import InteractionRequest
+from engines.agent.strategies.self_refine_strategy import SelfRefineStrategy
 from .conftest import TestAgent
 
 

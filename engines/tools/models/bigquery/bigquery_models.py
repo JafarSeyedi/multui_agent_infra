@@ -8,7 +8,7 @@ from engines.tools.models.core.core_models import Tool, ToolKind
 
 @dataclass
 class BigQueryTool(Tool):
-    kind: str = "bigquery"
+    kind: ToolKind = ToolKind.BIGQUERY
     project_id: str = ""
     dataset_id: str = ""
     query: str = ""

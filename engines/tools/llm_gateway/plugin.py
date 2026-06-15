@@ -8,7 +8,7 @@ from engines.agent.plugins import AgentPlugin
 class LLMGatewayPlugin(AgentPlugin):
     def __init__(self, config: dict[str, Any] | None = None):
         self._config = config or {}
-        self._gateway = None
+        self._gateway: Any = None
 
     def plugin_id(self) -> str:
         return "llm-gateway"

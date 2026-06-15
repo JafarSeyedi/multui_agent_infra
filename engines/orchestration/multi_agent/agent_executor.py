@@ -1,7 +1,4 @@
-"""Agent executor for multi-agent runtime.
-
-Executes agent behaviors with runtime context and retry/control semantics.
-"""
+"""Agent executor for multi-agent runtime — delegates to engines.agent."""
 
 from __future__ import annotations
 
@@ -10,7 +7,6 @@ from enum import Enum
 from typing import Any
 
 from ..core.instance import ProcessInstance
-from ..core.engine import OrchestrationEngine
 from ..core.event_bus import Event, EventType
 
 
@@ -45,72 +41,45 @@ class AgentExecutionResult:
 
 
 class AgentExecutor:
-    def __init__(self, orchestration_engine: OrchestrationEngine | None = None) -> None:
+    """Executes agent behaviors using engines.agent runtime."""
+
+    def __init__(self, orchestration_engine=None) -> None:
         self._engine = orchestration_engine
         self._behaviors: dict[str, AgentBehavior] = {}
 
     def register_behavior(self, behavior: AgentBehavior) -> None:
         self._behaviors[behavior.behavior_id] = behavior
 
-    async def execute(
-        self,
-        agent: dict[str, Any],
-        instance: ProcessInstance,
-    ) -> AgentExecutionResult:
-        agent_id = agent.get("id", f"agent_{id(agent)}")
-        agent_type = agent.get("type", "automated")
-        payload = agent.get("payload", agent.get("configuration", {}))
-
-        result = AgentExecutionResult(agent_id=agent_id)
-        result.state = "completed"
-        result.result = {
-            "agent_id": agent_id,
-            "agent_type": agent_type,
-            "payload": payload,
-            "executed": True,
-        }
-
-        if instance:
-            instance.set_variable(f"agent.{agent_id}", result.result)
-
-        if self._engine is not None:
-            await self._engine.event_bus.publish(
-                Event(
-                    type=EventType.ACTIVITY_COMPLETED,
-                    data={
-                        "instance_id": instance.id if instance else "",
-                        "agent_id": agent_id,
-                        "engine_type": "multi_agent",
-                    },
+    async def execute(self, agent: dict, instance: ProcessInstance) -> AgentExecutionResult:
+        agent_name = agent.get("agent_name") or agent.get("name", "unknown")
+        try:
+            from engines.agent.agent_registry import AgentRegistry
+            registry = AgentRegistry()
+            result = await registry.run(agent_name, instance.variables)
+            instance.variables[f"agent.{agent.get('id', agent_name)}"] = result
+            if self._engine and hasattr(self._engine, 'event_bus'):
+                import asyncio
+                asyncio.ensure_future(
+                    self._engine.event_bus.publish(Event(EventType.ACTIVITY_COMPLETED, {
+                        "agent_id": agent.get("id"),
+                        "agent_name": agent_name,
+                    }))
                 )
-            )
+            return AgentExecutionResult(agent_id=agent.get("id", agent_name), success=True, result=result)
+        except Exception as e:
+            return AgentExecutionResult(agent_id=agent.get("id", agent_name), success=False, state="failed", errors=[str(e)])
 
-        return result
-
-    async def execute_with_retry(
-        self,
-        agent: dict[str, Any],
-        instance: ProcessInstance,
-        retry_count: int = 3,
-    ) -> AgentExecutionResult:
-        agent_id = agent.get("id", "")
-        last_error = ""
-
-        for attempt in range(retry_count + 1):
-            try:
-                result = await self.execute(agent, instance)
-                result.retries = attempt
+    async def execute_with_retry(self, agent: dict, instance: ProcessInstance, retry_count: int = 3) -> AgentExecutionResult:
+        import asyncio
+        for attempt in range(retry_count):
+            result = await self.execute(agent, instance)
+            if result.success:
                 return result
-            except Exception as e:
-                last_error = str(e)
-                if attempt == retry_count:
-                    result = AgentExecutionResult(
-                        agent_id=agent_id,
-                        success=False,
-                        state="failed",
-                        retries=attempt,
-                        errors=[last_error],
-                    )
-                    return result
-
-        return AgentExecutionResult(agent_id=agent_id, success=False, errors=[last_error])
+            await asyncio.sleep(1 * (attempt + 1))
+        return AgentExecutionResult(
+            agent_id=agent.get("id", "unknown"),
+            success=False,
+            state="failed",
+            retries=retry_count,
+            errors=[f"Failed after {retry_count} retries"],
+        )

@@ -20,7 +20,7 @@ class BigQueryExecutor(BaseToolExecutor):
         if not query:
             return ToolResult(success=False, error="Query cannot be empty")
         try:
-            from google.cloud import bigquery
+            from google.cloud import bigquery  # type: ignore[import-untyped]
             client = bigquery.Client(project=project_id or None)
             job = client.query(query)
             rows = [dict(row) for row in job.result(max_results=kwargs.get("max_results", 1000))]

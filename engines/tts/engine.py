@@ -14,7 +14,7 @@ class VoiceSpec:
 
 
 class TTSEngine:
-    def __init__(self):
+    def __init__(self) -> None:
         self._backends: dict[str, Any] = {}
         self._default_backend: str = ""
 

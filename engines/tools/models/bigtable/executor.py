@@ -22,7 +22,7 @@ class BigtableExecutor(BaseToolExecutor):
         if not table_id:
             return ToolResult(success=False, error="table_id is required")
         try:
-            from google.cloud import bigtable
+            from google.cloud import bigtable  # type: ignore[import-untyped]
             client = bigtable.Client()
             instance = client.instance(instance_id)
             table = instance.table(table_id)

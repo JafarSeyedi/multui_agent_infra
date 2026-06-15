@@ -11,7 +11,7 @@ class ArizeBackend(ObservabilityBackend):
 
     async def start_span(self, name: str, attributes: dict[str, Any] | None = None) -> Any:
         try:
-            from openinference import semconv
+            from openinference import semconv  # type: ignore[import-not-found]
             return {"name": name, "attributes": attributes or {}}
         except ImportError:
             return None

@@ -12,9 +12,7 @@ from pydantic import Field
 
 from .._types import FeelContext, Metadata
 from engines.communication.buses.message_models import AgentMessage
-from ..agent.base_agents.base_agent import BaseAgent
-
-from ..agent.models import AgentOutput
+from .models import AgentOutput
 
 
 class InteractionRequest(BaseModel):
@@ -24,7 +22,7 @@ class InteractionRequest(BaseModel):
 
     workflow_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     scenario: str = "pipeline"
-    agents: list[BaseAgent]
+    agents: list[Any]
 
     # Common context for all strategies
     context: FeelContext = Field(default_factory=dict)

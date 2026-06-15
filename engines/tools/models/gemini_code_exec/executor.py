@@ -21,7 +21,7 @@ class GeminiCodeExecutionExecutor(BaseToolExecutor):
         try:
             import google.generativeai as genai
             model = genai.GenerativeModel("gemini-2.0-flash")
-            response = await model.a_generate_content_async(
+            response = await model.generate_content_async(
                 f"Execute this code and return the output:\n```{kwargs.get('language', 'python')}\n{code}\n```",
             )
             return ToolResult(success=True, data={"output": response.text})

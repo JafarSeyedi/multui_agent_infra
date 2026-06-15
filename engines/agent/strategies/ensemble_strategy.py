@@ -3,13 +3,13 @@ from __future__ import annotations
 from collections import Counter
 from typing import Any
 
-from .._types import FeelContext, VariableValue
-from ..agent.models import AgentOutput
-from ..communication.buses.base_message_bus import MessageBus
+from ..._types import FeelContext, VariableValue
+from ..models import AgentOutput
+from ...communication.buses.base_message_bus import MessageBus
 from .base_strategy import InteractionStrategy
-from .interaction_models import AgentMessage
-from .interaction_models import InteractionRequest
-from .interaction_models import InteractionResult
+from ..interaction_models import AgentMessage
+from ..interaction_models import InteractionRequest
+from ..interaction_models import InteractionResult
 
 
 class EnsembleStrategy(InteractionStrategy):

@@ -4,7 +4,7 @@ from pydantic import ValidationError
 
 from engines.agent.base_agents.base_agent import BaseAgent
 from engines.agent.models import AgentOutput
-from engines.interaction.interaction_models import InteractionRequest
+from engines.agent.interaction_models import InteractionRequest
 
 
 def test_agent_definition_defaults_are_empty():

@@ -3,7 +3,7 @@ import pytest
 
 from engines.communication.buses.base_message_bus import HandlerType
 from engines.communication.buses.base_message_bus import MessageBus
-from engines.interaction.backends.autogen_backend import AutoGenOrchestrationBackend
+from engines.agent.backends.autogen_backend import AutoGenOrchestrationBackend
 
 
 class DummyRegistry1:

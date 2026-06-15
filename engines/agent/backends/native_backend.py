@@ -3,16 +3,16 @@ from datetime import datetime
 
 from .base_backend import BaseOrchestrationBackend
 from engines.communication.buses.base_message_bus import MessageBus
-from engines.interaction.base_strategy import InteractionStrategy
-from engines.interaction.broadcast_strategy import BroadcastStrategy
-from engines.interaction.coordinator_strategy import CoordinatorStrategy
-from engines.interaction.debate_strategy import DebateStrategy
-from engines.interaction.ensemble_strategy import EnsembleStrategy
-from engines.interaction.group_chat_strategy import GroupChatStrategy
-from engines.interaction.interaction_models import InteractionRequest
-from engines.interaction.interaction_models import InteractionResult
-from engines.interaction.round_robin_strategy import RoundRobinStrategy
-from engines.interaction.self_refine_strategy import SelfRefineStrategy
+from ..strategies.base_strategy import InteractionStrategy
+from ..strategies.broadcast_strategy import BroadcastStrategy
+from ..strategies.coordinator_strategy import CoordinatorStrategy
+from ..strategies.debate_strategy import DebateStrategy
+from ..strategies.ensemble_strategy import EnsembleStrategy
+from ..strategies.group_chat_strategy import GroupChatStrategy
+from ..interaction_models import InteractionRequest
+from ..interaction_models import InteractionResult
+from ..strategies.round_robin_strategy import RoundRobinStrategy
+from ..strategies.self_refine_strategy import SelfRefineStrategy
 # import all strategies
 
 

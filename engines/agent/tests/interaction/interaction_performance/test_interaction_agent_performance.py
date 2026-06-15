@@ -4,9 +4,9 @@ import time
 import pytest
 
 from engines.agent.base_agents.interaction_agent import InteractionAgent
-from engines.interaction.backends.base_backend import BaseOrchestrationBackend
-from engines.interaction.interaction_models import InteractionRequest
-from engines.interaction.interaction_models import InteractionResult
+from engines.agent.backends.base_backend import BaseOrchestrationBackend
+from engines.agent.interaction_models import InteractionRequest
+from engines.agent.interaction_models import InteractionResult
 
 
 class DummyBackend(BaseOrchestrationBackend):

@@ -19,7 +19,7 @@ class DataAgentExecutor(BaseToolExecutor):
         if not query:
             return ToolResult(success=False, error="Query is required")
         try:
-            from google.cloud import discoveryengine_v1 as discoveryengine
+            from google.cloud import discoveryengine_v1 as discoveryengine  # type: ignore[import-untyped]
             client = discoveryengine.SearchServiceClient()
             request = discoveryengine.SearchRequest(
                 query=query,

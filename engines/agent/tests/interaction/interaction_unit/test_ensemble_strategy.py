@@ -1,8 +1,8 @@
 # tests/agents/orchestration/interaction/unit/test_ensemble_strategy.py
 import pytest
 
-from engines.interaction.ensemble_strategy import EnsembleStrategy
-from engines.interaction.interaction_models import InteractionRequest
+from engines.agent.strategies.ensemble_strategy import EnsembleStrategy
+from engines.agent.interaction_models import InteractionRequest
 from .conftest import make_agent
 from .conftest import TestAgent
 

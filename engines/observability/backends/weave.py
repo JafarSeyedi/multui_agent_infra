@@ -11,7 +11,7 @@ class WeaveBackend(ObservabilityBackend):
 
     async def start_span(self, name: str, attributes: dict[str, Any] | None = None) -> Any:
         try:
-            import wandb
+            import wandb  # type: ignore[import-not-found]
             wandb.init(anonymous="allow")
             return wandb.Log(name=name, data=attributes or {})
         except ImportError:

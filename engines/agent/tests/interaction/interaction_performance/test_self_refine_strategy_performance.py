@@ -3,8 +3,8 @@ import time
 
 import pytest
 
-from engines.interaction.interaction_models import InteractionRequest
-from engines.interaction.self_refine_strategy import SelfRefineStrategy
+from engines.agent.interaction_models import InteractionRequest
+from engines.agent.strategies.self_refine_strategy import SelfRefineStrategy
 from ..interaction_unit.conftest import TestAgent
 
 

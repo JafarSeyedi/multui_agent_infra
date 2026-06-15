@@ -25,6 +25,13 @@ class ToolKind(str, Enum):
     FILE_WRITE = "fileWrite"
     AI_MODEL = "aiModel"
     COMPOSITE = "composite"
+    BIGQUERY = "bigquery"
+    BIGTABLE = "bigtable"
+    DATA_AGENT = "dataAgent"
+    APIGEE = "apigee"
+    CODE_EXECUTION = "codeExecution"
+    COMPUTER_USE = "computerUse"
+    GEMINI_CODE_EXEC = "geminiCodeExec"
 
 
 class ParameterSource(str, Enum):

@@ -4,8 +4,8 @@ import time
 import pytest
 
 from engines.agent.base_agents.base_agent import BaseAgent
-from engines.interaction.coordinator_strategy import CoordinatorStrategy
-from engines.interaction.interaction_models import InteractionRequest
+from engines.agent.strategies.coordinator_strategy import CoordinatorStrategy
+from engines.agent.interaction_models import InteractionRequest
 from ..interaction_unit.conftest import TestAgent
 
 

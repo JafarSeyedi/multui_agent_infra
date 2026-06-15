@@ -103,6 +103,9 @@ class MultiAgentMediator(AgentMediator):
         self._orchestration_engine = orchestration_engine
         self._state_manager = state_manager or orchestration_engine.state_manager
 
+        from engines.agent.agent_mediator import AgentMediator as CoreAgentMediator
+        self._core_mediator = CoreAgentMediator()
+
         self.coordinator = CoordinationHandler()
         self.interaction_handler = InteractionHandler()
         self.protocol_handler = ProtocolHandler()
@@ -133,6 +136,7 @@ class MultiAgentMediator(AgentMediator):
 
     def register_agent(self, agent_id: str, agent_data: Metadata) -> None:
         self._agents[agent_id] = agent_data
+        self._core_mediator.register_agent(agent_data)
 
     def get_agent(self, agent_id: str) -> Metadata | None:
         return self._agents.get(agent_id)

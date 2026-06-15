@@ -7,7 +7,7 @@ import pytest
 
 from engines.communication.buses.base_message_bus import HandlerType
 from engines.communication.buses.base_message_bus import MessageBus
-from engines.interaction.interaction_models import AgentMessage
+from engines.agent.interaction_models import AgentMessage
 
 
 class TestAgent:

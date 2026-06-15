@@ -11,7 +11,7 @@ class LangWatchBackend(ObservabilityBackend):
 
     async def start_span(self, name: str, attributes: dict[str, Any] | None = None) -> Any:
         try:
-            import langwatch
+            import langwatch  # type: ignore[import-not-found]
             return langwatch.start_span(name, attributes or {})
         except ImportError:
             return None

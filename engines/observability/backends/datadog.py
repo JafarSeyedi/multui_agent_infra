@@ -11,7 +11,7 @@ class DatadogBackend(ObservabilityBackend):
 
     async def start_span(self, name: str, attributes: dict[str, Any] | None = None) -> Any:
         try:
-            from ddtrace import tracer
+            from ddtrace import tracer  # type: ignore[import-not-found]
             return tracer.trace(name, resource=name)
         except ImportError:
             return None

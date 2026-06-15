@@ -2,8 +2,8 @@
 import pytest
 
 from engines.agent.base_agents.base_agent import BaseAgent
-from engines.interaction.broadcast_strategy import BroadcastStrategy
-from engines.interaction.interaction_models import InteractionRequest
+from engines.agent.strategies.broadcast_strategy import BroadcastStrategy
+from engines.agent.interaction_models import InteractionRequest
 from .conftest import TestAgent
 
 

@@ -3,13 +3,13 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Any
 
-from .._types import FeelContext, MessagePayload, VariableValue
-from ..agent.base_agents.base_agent import BaseAgent
-from ..agent.models import AgentOutput
+from ..._types import FeelContext, MessagePayload, VariableValue
+from ..base_agents.base_agent import BaseAgent
+from ..models import AgentOutput
 from .base_strategy import InteractionStrategy
-from .interaction_models import InteractionRequest
-from .interaction_models import InteractionResult
-from engines.communication.buses.base_message_bus import MessageBus
+from ..interaction_models import InteractionRequest
+from ..interaction_models import InteractionResult
+from ...communication.buses.base_message_bus import MessageBus
 
 
 class CoordinatorStrategy(InteractionStrategy):

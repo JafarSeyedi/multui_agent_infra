@@ -11,7 +11,7 @@ class FreeplayBackend(ObservabilityBackend):
 
     async def start_span(self, name: str, attributes: dict[str, Any] | None = None) -> Any:
         try:
-            import freeplay
+            import freeplay  # type: ignore[import-not-found]
             return freeplay.start_span(name)
         except ImportError:
             return None

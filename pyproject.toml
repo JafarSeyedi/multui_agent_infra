@@ -10,6 +10,18 @@ module = [
     "engines.expression.*",
     "engines.dmn.*",
     "cassandra.*",
+    "google.cloud.*",
+    "google.cloud.bigquery*",
+    "google.cloud.bigtable*",
+    "google.cloud.discoveryengine*",
+    "wandb*",
+    "mlflow*",
+    "langwatch*",
+    "future_agi*",
+    "freeplay*",
+    "ddtrace*",
+    "openinference.*",
+    "agentops*",
 ]
 ignore_missing_imports = true
 

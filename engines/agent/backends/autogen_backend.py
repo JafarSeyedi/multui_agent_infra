@@ -4,13 +4,13 @@ from __future__ import annotations
 from datetime import datetime
 from functools import cached_property
 
-from ...agent.models import AgentOutput
+from ..models import AgentOutput
 from .base_backend import BaseOrchestrationBackend
 from .native_backend import NativeOrchestrationBackend
 from engines.communication.buses.base_message_bus import MessageBus
-from engines.interaction.base_strategy import InteractionStrategy
-from engines.interaction.interaction_models import InteractionRequest
-from engines.interaction.interaction_models import InteractionResult
+from ..strategies.base_strategy import InteractionStrategy
+from ..interaction_models import InteractionRequest
+from ..interaction_models import InteractionResult
 
 
 class AutoGenOrchestrationBackend(BaseOrchestrationBackend):
