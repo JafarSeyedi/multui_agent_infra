@@ -1,0 +1,13 @@
+engine: knowledge
+spans:
+  - name: knowledge.query
+    description: Knowledge base query
+    attributes: [engine_name, query_type]
+  - name: knowledge.ingest
+    description: Document ingestion
+    attributes: [engine_name, doc_count]
+metrics:
+  - name: knowledge.query.count
+    type: counter
+  - name: knowledge.query.duration_ms
+    type: histogram

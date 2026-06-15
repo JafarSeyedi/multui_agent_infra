@@ -1,0 +1,16 @@
+engine: agent
+spans:
+  - name: agent.run
+    description: Agent execution
+    attributes: [agent_name, workflow_id]
+  - name: mediator.send
+    description: Agent-to-agent message
+    attributes: [sender, recipient]
+  - name: mediator.broadcast
+    description: Broadcast to all agents
+    attributes: [sender]
+metrics:
+  - name: agent.run.duration_ms
+    type: histogram
+  - name: agent.run.count
+    type: counter

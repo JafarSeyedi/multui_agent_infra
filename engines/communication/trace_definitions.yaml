@@ -1,0 +1,13 @@
+engine: communication
+spans:
+  - name: message.publish
+    description: Message published to bus
+    attributes: [message_type, sender, recipient]
+  - name: message.subscribe
+    description: Subscription registered
+    attributes: [recipient]
+metrics:
+  - name: message.publish.count
+    type: counter
+  - name: message.publish.duration_ms
+    type: histogram

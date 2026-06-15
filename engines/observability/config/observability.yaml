@@ -1,0 +1,4 @@
+# engines/observability/config/observability.yaml
+backend: agentops
+agentops:
+  api_key: ${AGENTOPS_API_KEY}

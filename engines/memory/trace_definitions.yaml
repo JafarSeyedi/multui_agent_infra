@@ -1,0 +1,13 @@
+engine: memory
+spans:
+  - name: memory.store
+    description: Memory storage operation
+    attributes: [memory_type]
+  - name: memory.retrieve
+    description: Memory retrieval
+    attributes: [memory_type, query]
+metrics:
+  - name: memory.operation.count
+    type: counter
+  - name: memory.operation.duration_ms
+    type: histogram

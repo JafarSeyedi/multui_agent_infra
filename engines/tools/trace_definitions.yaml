@@ -1,0 +1,15 @@
+engine: tools
+spans:
+  - name: tool.execute
+    description: Tool invocation
+    attributes: [tool_name, tool_type]
+  - name: tool.mcp.call
+    description: MCP tool call
+    attributes: [tool_name, server]
+metrics:
+  - name: tool.execute.count
+    type: counter
+  - name: tool.execute.duration_ms
+    type: histogram
+  - name: tool.error.count
+    type: counter

@@ -1,0 +1,16 @@
+engine: storage
+spans:
+  - name: storage.read
+    description: Storage read operation
+    attributes: [storage_type]
+  - name: storage.write
+    description: Storage write operation
+    attributes: [storage_type]
+  - name: storage.delete
+    description: Storage delete operation
+    attributes: [storage_type]
+metrics:
+  - name: storage.operation.count
+    type: counter
+  - name: storage.operation.duration_ms
+    type: histogram

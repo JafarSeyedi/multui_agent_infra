@@ -1,0 +1,16 @@
+engine: orchestration
+spans:
+  - name: workflow.execute
+    description: Full workflow execution
+    attributes: [workflow_id, instance_id]
+  - name: workflow.step
+    description: Individual workflow step
+    attributes: [step_id, step_type]
+  - name: mediator.execute_agent
+    description: Agent execution via mediator
+    attributes: [agent_id]
+metrics:
+  - name: workflow.duration_ms
+    type: histogram
+  - name: workflow.steps.count
+    type: counter
