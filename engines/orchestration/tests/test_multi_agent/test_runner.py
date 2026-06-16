@@ -7,7 +7,7 @@ from engines.session.service import InMemorySessionService
 
 
 class FakeAgent:
-    def __init__(self):
+    def __init__(self) -> None:
         self.last_input: AgentInput | None = None
 
     async def run(self, input_data: AgentInput) -> AgentOutput:
