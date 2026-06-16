@@ -15,12 +15,27 @@ python3 -m pytest engines/orchestration/tests/ -v
 # run all tools tests
 python3 -m pytest engines/tools/tests/ -v
 
+# run all communication tests
+python3 -m pytest engines/communication/tests/ -v
+
+# run all state tests
+python3 -m pytest engines/state/tests/ -v
+
+# run all config tests
+python3 -m pytest engines/config/tests/ -v
+
+# run all security tests
+python3 -m pytest engines/security/tests/ -v
+
+# run all persistence tests
+python3 -m pytest engines/persistence/tests/ -v
+
 # no Makefile, no pre-commit, no CI workflows in this repo
 ```
 
 ## Architecture
 
-Monorepo under `engines/` with 10 engine packages:
+Monorepo under `engines/` with 14 engine packages:
 
 | Engine | Location | Purpose |
 |--------|----------|---------|
@@ -34,6 +49,10 @@ Monorepo under `engines/` with 10 engine packages:
 | storage | `engines/storage/` | Storage backends |
 | skill | `engines/skill/` | Skill engine |
 | memory | `engines/memory/` | Memory engine |
+| state | `engines/state/` | State management, caching, distributed locks |
+| config | `engines/config/` | Configuration loading, secret resolution |
+| security | `engines/security/` | Authentication, authorization |
+| persistence | `engines/persistence/` | Vector store, blob storage |
 
 ## Key architectural facts
 
@@ -65,6 +84,10 @@ Monorepo under `engines/` with 10 engine packages:
 - **Alembic** configured (`alembic.ini`) — DB migrations in `migrations/`.
 - **Multiple RAG frameworks**: both llama-index and langchain+langgraph are installed and may be used in different components.
 - **Graph persistence** (`rag/research/graph/graph_persistence.py`) creates a local SQLite file `research_graph.db` at init — not suitable for concurrent or production use as-is.
+
+## Execution preferences
+
+- **Plan execution default**: inline (subagent-driven available on request)
 
 ## Important constraints
 
