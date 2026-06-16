@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
 
@@ -32,7 +32,7 @@ class ChannelMessage:
     content_type: str = "application/json"
     correlation_id: str | None = None
     priority: MessagePriority = MessagePriority.NORMAL
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     traceparent: str | None = None
     tenant_id: str | None = None
     headers: dict[str, str] = field(default_factory=dict)
