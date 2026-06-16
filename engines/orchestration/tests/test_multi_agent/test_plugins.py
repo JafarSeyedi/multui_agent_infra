@@ -6,7 +6,7 @@ from engines.orchestration.multi_agent.plugins import BasePlugin, PluginRegistry
 
 
 class LoggingPlugin(BasePlugin):
-    def __init__(self):
+    def __init__(self) -> None:
         self.events: list[str] = []
         self.agent_override: object = None
 

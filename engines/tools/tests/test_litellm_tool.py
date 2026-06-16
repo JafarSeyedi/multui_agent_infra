@@ -1,57 +1,61 @@
 from __future__ import annotations
 
-from typing import Any
-
 import pytest
 
 from engines.tools.base_executor import ToolResult
-from engines.tools.models.litellm import LiteLLMExecutor, LiteLLMTool, parse_litellm_tool
-from engines.tools.models.litellm.writer import write_litellm_tool
+from engines.tools.executors.litellm import LiteLLMExecutor
+from engines.tools.models.tools_def_models import ArgName
+from engines.tools.models.tools_def_models import ParameterName
+from engines.tools.models.tools_def_models import ParameterType
+from engines.tools.models.tools_def_models import Tool
+from engines.tools.models.tools_def_models import ToolKind
+from engines.tools.models.tools_def_models import ToolParameter
 
 
 class TestLiteLLMModels:
 
     def test_tool_defaults(self):
-        tool = LiteLLMTool(id="ll1", name="llm")
-        assert tool.model == "gpt-4o-mini"
-        assert tool.temperature == 0.7
-        assert tool.max_tokens is None
+        tool = Tool(id="ll1", name="llm", kind=ToolKind.AI_MODEL)
+        assert tool.params == []
 
-    def test_parse_round_trip(self):
-        data: dict[str, Any] = {
-            "id": "ll1",
-            "name": "my_llm",
-            "description": "My LLM",
-            "model": "claude-3-opus-20240229",
-            "messages": [{"role": "user", "content": "hi"}],
-            "temperature": 0.5,
-            "max_tokens": 100,
-        }
-        tool = parse_litellm_tool(data)
-        assert tool.model == "claude-3-opus-20240229"
-        assert tool.temperature == 0.5
-        assert tool.max_tokens == 100
+    def test_tool_fields(self) -> None:
+        tool = Tool(
+            id="ll1",
+            name="my_llm",
+            description="My LLM",
+            kind=ToolKind.AI_MODEL,
+            params=[
+                ToolParameter(name=ParameterName.MODEL, default="claude-3-opus-20240229"),
+                ToolParameter(name=ArgName.MESSAGES, type=ParameterType.JSON, default='[{"role": "user", "content": "hi"}]'),
+                ToolParameter(name=ParameterName.TEMPERATURE, type=ParameterType.FLOAT, default="0.5"),
+                ToolParameter(name=ParameterName.MAX_TOKENS, type=ParameterType.INTEGER, default="100"),
+            ],
+        )
+        params = {p.name: p.default for p in tool.params}
+        assert params["model"] == "claude-3-opus-20240229"
+        assert params["temperature"] == "0.5"
+        assert params["max_tokens"] == "100"
 
-        out = write_litellm_tool(tool)
-        assert out["model"] == "claude-3-opus-20240229"
-        assert out["max_tokens"] == 100
+    def test_tool_with_extra_params(self) -> None:
+        tool = Tool(
+            id="ll2",
+            name="llm",
+            kind=ToolKind.AI_MODEL,
+            params=[
+                ToolParameter(name=ParameterName.EXTRA, type=ParameterType.JSON, default='{"stop": ["END"], "top_p": 0.9}'),
+            ],
+        )
+        import json
+        extra = json.loads(tool.params[0].default or "{}")
+        assert extra["stop"] == ["END"]
 
-    def test_parse_with_extra_kwargs(self):
-        data: dict[str, Any] = {
-            "id": "ll2",
-            "name": "llm",
-            "extra_kwargs": {"stop": ["END"], "top_p": 0.9},
-        }
-        tool = parse_litellm_tool(data)
-        assert tool.extra_kwargs["stop"] == ["END"]
-
-    def test_parse_minimal(self):
-        tool = parse_litellm_tool({"id": "m", "name": "m"})
-        assert tool.model == "gpt-4o-mini"
+    def test_tool_minimal(self):
+        tool = Tool(id="m", name="m", kind=ToolKind.AI_MODEL)
+        assert tool.params == []
 
     def test_tool_kind(self):
-        tool = LiteLLMTool(id="x", name="x")
-        assert tool.kind.value == "aiModel"
+        tool = Tool(id="x", name="x", kind=ToolKind.AI_MODEL)
+        assert tool.kind == ToolKind.AI_MODEL
 
 
 class TestLiteLLMExecutor:
@@ -61,38 +65,41 @@ class TestLiteLLMExecutor:
         return LiteLLMExecutor()
 
     async def test_execute_missing_prompt_and_messages(self, executor):
-        result = await executor.execute()
+        result = await executor.execute([])
         assert result.success is False
         assert "messages" in (result.error or "") or "prompt" in (result.error or "")
 
     async def test_execute_with_prompt(self, executor):
-        result = await executor.execute(prompt="Hello")
-        # If works → success; if not → graceful error
+        result = await executor.execute([
+            ToolParameter(name=ArgName.INPUT, default="Hello"),
+        ])
         assert isinstance(result, ToolResult)
 
     async def test_execute_with_messages(self, executor):
-        result = await executor.execute(
-            messages=[{"role": "user", "content": "Hello"}],
-        )
+        import json
+        result = await executor.execute([
+            ToolParameter(name=ArgName.MESSAGES, default=json.dumps([{"role": "user", "content": "Hello"}])),
+        ])
         assert isinstance(result, ToolResult)
 
     async def test_execute_with_model_override(self, executor):
-        result = await executor.execute(
-            model="gpt-4o",
-            prompt="Hello",
-        )
+        result = await executor.execute([
+            ToolParameter(name=ParameterName.MODEL, default="gpt-4o"),
+            ToolParameter(name=ArgName.INPUT, default="Hello"),
+        ])
         assert isinstance(result, ToolResult)
 
     async def test_execute_with_temperature(self, executor):
-        result = await executor.execute(
-            prompt="Hi", temperature=0.0,
-        )
+        result = await executor.execute([
+            ToolParameter(name=ArgName.INPUT, default="Hi"),
+            ToolParameter(name=ParameterName.TEMPERATURE, default="0.0"),
+        ])
         assert isinstance(result, ToolResult)
 
     async def test_execute_with_extra_params(self, executor):
-        result = await executor.execute(
-            prompt="Hi",
-            top_p=0.5,
-            stop=["END"],
-        )
+        result = await executor.execute([
+            ToolParameter(name=ArgName.INPUT, default="Hi"),
+            ToolParameter(name="top_p", default="0.5"),
+            ToolParameter(name="stop", default='["END"]'),
+        ])
         assert isinstance(result, ToolResult)

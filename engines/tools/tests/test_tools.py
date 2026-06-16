@@ -20,6 +20,11 @@ from engines.tools import TCPSocketExecutor
 from engines.tools import ToolResult
 from engines.tools import ToolRegistry
 from engines.tools import YANGNetconfExecutor
+from engines.tools.models.tools_def_models import ArgName
+from engines.tools.models.tools_def_models import ArgName
+from engines.tools.models.tools_def_models import ParameterName
+from engines.tools.models.tools_def_models import ParameterType
+from engines.tools.models.tools_def_models import ToolParameter
 
 
 class TestToolResult:
@@ -57,7 +62,7 @@ class TestToolRegistry:
 
     async def test_list_tools(self, registry: ToolRegistry) -> None:
         registry.register(HTTPToolExecutor())
-        registry.register(AIModelExecutor("gpt4"))
+        registry.register(AIModelExecutor([ToolParameter(name=ParameterName.MODEL, default="gpt4")]))
         tools = registry.list_tools()
         assert len(tools) == 2
         names = [t["name"] for t in tools]
@@ -73,101 +78,135 @@ class TestToolRegistry:
 
 class TestExecutors:
     async def test_ai_model(self) -> None:
-        e = AIModelExecutor("gpt4")
+        e = AIModelExecutor([ToolParameter(name=ParameterName.MODEL, default="gpt4")])
         assert "ai_model:gpt4" in e.name
-        r = await e.execute(prompt="Hello")
+        r = await e.execute([
+            ToolParameter(name=ArgName.INPUT, default="Hello"),
+        ])
         assert r.success is True
 
     async def test_db_query(self) -> None:
         e = DBQueryExecutor()
-        r = await e.execute(query="SELECT 1")
+        r = await e.execute([
+            ToolParameter(name=ArgName.INPUT, default="SELECT 1"),
+        ])
         assert r.success is True
 
     async def test_file_executor(self) -> None:
-        e = FileExecutor()
-        r = await e.execute(operation="read", path="/tmp/test")
+        e = FileExecutor([
+            ToolParameter(name=ParameterName.ACTION, default="read"),
+            ToolParameter(name=ParameterName.FILE_PATH, default="/tmp/test"),
+        ])
+        r = await e.execute([])
         assert r.success is True
 
     async def test_grpc_tool(self) -> None:
-        e = GrpcToolExecutor("localhost:50051")
-        r = await e.execute(method="SayHello")
+        e = GrpcToolExecutor([ToolParameter(name="target", default="localhost:50051")])
+        r = await e.execute([])
         assert r.success is True
 
     async def test_http_service(self) -> None:
-        e = HTTPServiceExecutor("https://api.example.com")
-        r = await e.execute(method="GET", path="/v1/status")
+        e = HTTPServiceExecutor([ToolParameter(name=ParameterName.BASE_URL, default="https://api.example.com")])
+        r = await e.execute([])
         assert r.success is True
 
     async def test_http_tool(self) -> None:
-        e = HTTPToolExecutor("token123")
-        r = await e.execute(url="https://example.com", method="POST")
+        e = HTTPToolExecutor([
+            ToolParameter(name=ParameterName.AUTH_TOKEN, default="token123"),
+            ToolParameter(name=ParameterName.URL, default="https://example.com"),
+            ToolParameter(name=ParameterName.METHOD, default="POST"),
+        ])
+        r = await e.execute([])
         assert r.success is True
 
     async def test_mcp_tool(self) -> None:
-        e = MCPToolExecutor(tool_name="test", server_command=["echo", "test"])
+        e = MCPToolExecutor([
+            ToolParameter(name="tool_name", default="test"),
+            ToolParameter(name=ParameterName.COMMAND, default="echo test"),
+        ])
         assert e.name == "test"
 
     async def test_message_bus(self) -> None:
-        e = MessageBusExecutor("redis")
-        r = await e.execute(action="publish", topic="events")
+        e = MessageBusExecutor([
+            ToolParameter(name="bus_type", default="redis"),
+            ToolParameter(name=ParameterName.ACTION, default="publish"),
+            ToolParameter(name=ParameterName.TOPIC, default="events"),
+        ])
+        r = await e.execute([])
         assert r.success is True
 
     async def test_snmp(self) -> None:
-        e = MIBSNMPExecutor("192.168.1.1")
-        r = await e.execute(operation="get", oid="1.3.6.1.2.1.1.1")
+        e = MIBSNMPExecutor([
+            ToolParameter(name="target", default="192.168.1.1"),
+            ToolParameter(name=ParameterName.ACTION, default="get"),
+            ToolParameter(name=ParameterName.OID, default="1.3.6.1.2.1.1.1"),
+        ])
+        r = await e.execute([])
         assert r.success is True
 
     async def test_tcp_socket(self) -> None:
-        e = TCPSocketExecutor("localhost", 8080)
-        r = await e.execute(data="ping")
+        e = TCPSocketExecutor([
+            ToolParameter(name=ParameterName.HOST, default="localhost"),
+            ToolParameter(name=ParameterName.PORT, default="8080"),
+        ])
+        r = await e.execute([ToolParameter(name=ArgName.DATA, default="ping")])
         assert r.success is True
 
     async def test_netconf(self) -> None:
-        e = YANGNetconfExecutor("192.168.1.1", "admin")
-        r = await e.execute(operation="get-config")
+        e = YANGNetconfExecutor([
+            ToolParameter(name=ParameterName.HOST, default="192.168.1.1"),
+            ToolParameter(name=ParameterName.USERNAME, default="admin"),
+        ])
+        r = await e.execute([])
         assert r.success is True
 
     async def test_python_function(self) -> None:
-        e = PythonFunctionExecutor()
+        e = PythonFunctionExecutor([ToolParameter(name=ParameterName.FUNCTION, default="add")])
 
         def add(a: int, b: int) -> int:
             return a + b
 
         e.register_function("add", add)
-        r = await e.execute(function="add", args=(1, 2), kwargs={})
+        r = await e.execute([
+            ToolParameter(name="args", type=ParameterType.JSON, default="[1, 2]"),
+            ToolParameter(name="kwargs", type=ParameterType.JSON, default="{}"),
+        ])
         assert r.success is True
         assert r.data["result"] == 3
 
     async def test_python_function_unknown(self) -> None:
-        e = PythonFunctionExecutor()
-        r = await e.execute(function="nonexistent")
+        e = PythonFunctionExecutor([ToolParameter(name=ParameterName.FUNCTION, default="nonexistent")])
+        r = await e.execute([])
         assert r.success is False
 
     async def test_python_function_error(self) -> None:
-        e = PythonFunctionExecutor()
+        e = PythonFunctionExecutor([ToolParameter(name=ParameterName.FUNCTION, default="fail")])
 
         def fail() -> None:
             raise ValueError("oops")
 
         e.register_function("fail", fail)
-        r = await e.execute(function="fail")
+        r = await e.execute([])
         assert r.success is False
 
     async def test_cli_executor(self) -> None:
-        e = CLIExecutor()
-        r = await e.execute(command="echo hello")
+        e = CLIExecutor([ToolParameter(name=ParameterName.COMMAND, default="echo hello")])
+        r = await e.execute([])
         assert r.success is True
         assert "hello" in r.data.get("stdout", "")
 
     async def test_cli_executor_no_command(self) -> None:
         e = CLIExecutor()
-        r = await e.execute()
+        r = await e.execute([])
         assert r.success is False
 
     async def test_composite_executor(self) -> None:
         inner = HTTPToolExecutor()
-        composite = CompositeExecutor([inner])
-        r = await composite.execute(url="http://test.com")
+        composite = CompositeExecutor()
+        composite.add(inner)
+        r = await composite.execute([
+            ToolParameter(name=ParameterName.URL, default="http://test.com"),
+        ])
         assert r.success is True
 
     async def test_composite_executor_fails_fast(self) -> None:
@@ -178,11 +217,13 @@ class TestExecutors:
             @property
             def description(self) -> str:
                 return "Always fails"
-            async def execute(self, **kwargs: str) -> ToolResult:
+            async def execute(self, args: list[ToolParameter]) -> ToolResult:
                 return ToolResult(False, error="fail")
 
-        composite = CompositeExecutor([FailingExecutor(), HTTPToolExecutor()])
-        r = await composite.execute()
+        composite = CompositeExecutor()
+        composite.add(FailingExecutor())
+        composite.add(HTTPToolExecutor())
+        r = await composite.execute([])
         assert r.success is False
 
 
