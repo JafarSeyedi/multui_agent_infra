@@ -22,7 +22,7 @@ class TestVertexAiSearchModels:
         assert tool.serving_config == "default_search"
         assert tool.location == "global"
 
-    def test_parse_round_trip(self) -> None:
+    def test_parse_round_trip(self):
         data: dict[str, Any] = {
             "id": "va1",
             "name": "enterprise_search",

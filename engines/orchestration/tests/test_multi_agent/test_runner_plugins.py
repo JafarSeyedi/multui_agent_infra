@@ -10,7 +10,7 @@ from engines.session.service import InMemorySessionService
 
 
 class FakeAgent:
-    def __init__(self) -> None:
+    def __init__(self):
         self.last_input: AgentInput | None = None
 
     async def run(self, input_data: AgentInput) -> AgentOutput:
@@ -22,7 +22,7 @@ class FakeAgent:
 
 
 class TrackingPlugin(BasePlugin):
-    def __init__(self) -> None:
+    def __init__(self):
         self.starts: list[tuple[str, str, str]] = []
         self.ends: list[tuple[str, str, str]] = []
         self.befores: list[str] = []

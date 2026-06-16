@@ -15,60 +15,12 @@ python3 -m pytest engines/orchestration/tests/ -v
 # run all tools tests
 python3 -m pytest engines/tools/tests/ -v
 
-# run all communication tests
-python3 -m pytest engines/communication/tests/ -v
-
-# run all state tests
-python3 -m pytest engines/state/tests/ -v
-
-# run all config tests
-python3 -m pytest engines/config/tests/ -v
-
-# run all security tests
-python3 -m pytest engines/security/tests/ -v
-
-# run all persistence tests
-python3 -m pytest engines/persistence/tests/ -v
-
-# run all observability tests
-python3 -m pytest engines/observability/tests/ -v
-
-# run all events tests
-python3 -m pytest engines/events/tests/ -v
-
-# run all consistency tests
-python3 -m pytest engines/consistency/tests/ -v
-
-# run all artifacts tests
-python3 -m pytest engines/artifacts/tests/ -v
-
-# run all provenance tests
-python3 -m pytest engines/provenance/tests/ -v
-
-# run all masking tests
-python3 -m pytest engines/masking/tests/ -v
-
-# run all gateway tests
-python3 -m pytest engines/gateway/tests/ -v
-
-# run all integration tests
-python3 -m pytest engines/integration/tests/ -v
-
-# run all agentic tests
-python3 -m pytest engines/agentic/tests/ -v
-
-# run all ui_backend tests
-python3 -m pytest engines/ui_backend/tests/ -v
-
-# run all engine tests simultaneously
-python3 -m pytest engines/knowledge/tests/ engines/communication/tests/ engines/state/tests/ engines/config/tests/ engines/security/tests/ engines/persistence/tests/ engines/observability/tests/ engines/events/tests/ engines/consistency/tests/ engines/artifacts/tests/ engines/provenance/tests/ engines/masking/tests/ engines/gateway/tests/ engines/integration/tests/ engines/agentic/tests/ engines/ui_backend/tests/ -v
-
 # no Makefile, no pre-commit, no CI workflows in this repo
 ```
 
 ## Architecture
 
-Monorepo under `engines/` with 16 engine packages:
+Monorepo under `engines/` with 10 engine packages:
 
 | Engine | Location | Purpose |
 |--------|----------|---------|
@@ -82,20 +34,6 @@ Monorepo under `engines/` with 16 engine packages:
 | storage | `engines/storage/` | Storage backends |
 | skill | `engines/skill/` | Skill engine |
 | memory | `engines/memory/` | Memory engine |
-| state | `engines/state/` | State management, caching, distributed locks |
-| config | `engines/config/` | Configuration loading, secret resolution |
-| security | `engines/security/` | Authentication, authorization |
-| persistence | `engines/persistence/` | Vector store, blob storage |
-| observability | `engines/observability/` | Metrics, logging, distributed tracing |
-| events | `engines/events/` | Event producer/consumer, event sourcing |
-| consistency | `engines/consistency/` | Transactions, idempotency |
-| artifacts | `engines/artifacts/` | Artifact store, versioning |
-| provenance | `engines/provenance/` | Data lineage tracking |
-| masking | `engines/masking/` | PII masking, anonymization |
-| gateway | `engines/gateway/` | API gateway, rate limiting, routing |
-| integration | `engines/integration/` | Connectors, transforms, sync |
-| agentic | `engines/agentic/` | Agent orchestration, delegation |
-| ui_backend | `engines/ui_backend/` | UI adapter, session management |
 
 ## Key architectural facts
 
@@ -115,7 +53,6 @@ Monorepo under `engines/` with 16 engine packages:
 - No integration test prerequisites (no DB, no external services needed for knowledge tests).
 - 2 tests in `test_engines.py` are skipped (RAG/memory) due to missing dependencies.
 - 171 total knowledge tests (15 BI aggregation + 67 ML mining + 36 Phase E + 14 query models + 44 semantic graph + 25 process mining).
-- 125 total domain engine tests across 15 engines (communication, state, config, security, persistence, observability, events, consistency, artifacts, provenance, masking, gateway, integration, agentic, ui_backend).
 - Phase E tests in `test_ml_mining_phase_e.py` — sklearn/PyTorch parser, converter→ORT inference, engine predict/evaluate, metrics, validation, full pipeline.
 - Semantic graph tests in `test_semantic_graph.py` — RDF parse, graph API, traversal, shortest path, subgraph, statistics, validate, convert, write round-trip, edge cases.
 
@@ -128,10 +65,6 @@ Monorepo under `engines/` with 16 engine packages:
 - **Alembic** configured (`alembic.ini`) — DB migrations in `migrations/`.
 - **Multiple RAG frameworks**: both llama-index and langchain+langgraph are installed and may be used in different components.
 - **Graph persistence** (`rag/research/graph/graph_persistence.py`) creates a local SQLite file `research_graph.db` at init — not suitable for concurrent or production use as-is.
-
-## Execution preferences
-
-- **Plan execution default**: inline (subagent-driven available on request)
 
 ## Important constraints
 

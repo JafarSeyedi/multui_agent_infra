@@ -1,11 +1,3 @@
-import warnings
-
-warnings.warn(
-    "engines.communication.buses is deprecated. Use engines.communication.pubsub instead.",
-    DeprecationWarning,
-    stacklevel=2,
-)
-
 from .base_message_bus import MessageBus
 
 from .durable_message_bus import DurableMessageBus

@@ -27,7 +27,7 @@ class VertexAiSearchExecutor(BaseToolExecutor):
         serving_config = kwargs.get("serving_config", "default_search")
         location = kwargs.get("location", "global")
         try:
-            from google.cloud import discoveryengine_v1 as discoveryengine  # type: ignore[import-untyped]
+            from google.cloud import discoveryengine_v1 as discoveryengine
             client = discoveryengine.SearchServiceClient()
             serving_config_path = (
                 f"projects/{{project}}/locations/{location}"

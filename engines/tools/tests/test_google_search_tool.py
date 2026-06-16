@@ -21,7 +21,7 @@ class TestGoogleSearchModels:
         assert tool.query == ""
         assert tool.num_results == 10
 
-    def test_parse_round_trip(self) -> None:
+    def test_parse_round_trip(self):
         data: dict[str, Any] = {
             "id": "gs1",
             "name": "web_search",

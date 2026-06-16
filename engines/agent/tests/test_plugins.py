@@ -3,7 +3,7 @@ from engines.agent.plugins import AgentPlugin, PluginRegistry
 
 
 class DummyPlugin(AgentPlugin):
-    def __init__(self, pid: str = "test-plugin") -> None:
+    def __init__(self, pid: str = "test-plugin"):
         self._pid = pid
         self.activated = False
 

@@ -11,13 +11,13 @@ from engines.tools.models.litellm.writer import write_litellm_tool
 
 class TestLiteLLMModels:
 
-    def test_tool_defaults(self) -> None:
+    def test_tool_defaults(self):
         tool = LiteLLMTool(id="ll1", name="llm")
         assert tool.model == "gpt-4o-mini"
         assert tool.temperature == 0.7
         assert tool.max_tokens is None
 
-    def test_parse_round_trip(self) -> None:
+    def test_parse_round_trip(self):
         data: dict[str, Any] = {
             "id": "ll1",
             "name": "my_llm",
@@ -36,7 +36,7 @@ class TestLiteLLMModels:
         assert out["model"] == "claude-3-opus-20240229"
         assert out["max_tokens"] == 100
 
-    def test_parse_with_extra_kwargs(self) -> None:
+    def test_parse_with_extra_kwargs(self):
         data: dict[str, Any] = {
             "id": "ll2",
             "name": "llm",
@@ -45,11 +45,11 @@ class TestLiteLLMModels:
         tool = parse_litellm_tool(data)
         assert tool.extra_kwargs["stop"] == ["END"]
 
-    def test_parse_minimal(self) -> None:
+    def test_parse_minimal(self):
         tool = parse_litellm_tool({"id": "m", "name": "m"})
         assert tool.model == "gpt-4o-mini"
 
-    def test_tool_kind(self) -> None:
+    def test_tool_kind(self):
         tool = LiteLLMTool(id="x", name="x")
         assert tool.kind.value == "aiModel"
 
