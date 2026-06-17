@@ -39,6 +39,12 @@ from .executors.service_invocation import ServiceInvocationExecutor
 from .executors.service_discovery import ServiceDiscoveryExecutor
 from .executors.auth import AuthExecutor
 from .executors.binding import BindingExecutor
+from .executors.knowledge_rag import KnowledgeRagExecutor
+from .executors.semantic_graph import SemanticGraphKnowledgeExecutor
+from .executors.ml_mining import MlMiningKnowledgeExecutor
+from .executors.bi_aggregation import BiAggregationKnowledgeExecutor
+from .executors.process_mining import ProcessMiningKnowledgeExecutor
+from .executors.query_engine import QueryEngineKnowledgeExecutor
 
 __all__ = [
     "AIModelExecutor",
@@ -81,4 +87,10 @@ __all__ = [
     "VectorDBExecutor",
     "VertexAiSearchExecutor",
     "YANGNetconfExecutor",
+    "BiAggregationKnowledgeExecutor",
+    "KnowledgeRagExecutor",
+    "MlMiningKnowledgeExecutor",
+    "ProcessMiningKnowledgeExecutor",
+    "QueryEngineKnowledgeExecutor",
+    "SemanticGraphKnowledgeExecutor",
 ]

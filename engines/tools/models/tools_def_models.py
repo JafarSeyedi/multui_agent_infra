@@ -48,6 +48,14 @@ class ToolKind(str, Enum):
     AUTH = "auth"
     BINDING = "binding"
 
+    # ── Knowledge engine kinds ──────────────────────────────────────
+    KNOWLEDGE_RAG = "knowledgeRag"
+    KNOWLEDGE_SEMANTIC_GRAPH = "knowledgeSemanticGraph"
+    KNOWLEDGE_ML_MINING = "knowledgeMlMining"
+    KNOWLEDGE_BI_AGGREGATION = "knowledgeBiAggregation"
+    KNOWLEDGE_PROCESS_MINING = "knowledgeProcessMining"
+    KNOWLEDGE_QUERY = "knowledgeQuery"
+
 
 class ParameterName(str, Enum):
     HOST = "host"
@@ -141,6 +149,30 @@ class ParameterName(str, Enum):
     PROPERTIES = "properties"
     MESSAGE_TYPE = "message_type"
     FORMAT = "format"
+    PARSER_NAME = "parser_name"
+    TARGET_FORMAT = "target_format"
+    SOURCE = "source"
+    DESTINATION = "destination"
+    QUERY_TEXT = "query_text"
+    RETRIEVER = "retriever"
+    CHUNK_SIZE = "chunk_size"
+    CHUNK_OVERLAP = "chunk_overlap"
+    EXTRA_ARGS = "extra_args"
+    GRAPH_NODES = "graph_nodes"
+    GRAPH_EDGES = "graph_edges"
+    FEATURES = "features"
+    MAX_DEPTH = "max_depth"
+    NODE_LABEL = "node_label"
+    NODE_TYPE = "node_type"
+    OP_TYPE = "op_type"
+    FIELD_NAME = "field_name"
+    GROUP_BY = "group_by"
+    MEASURES = "measures"
+    FILTER_EXPR = "filter_expr"
+    MATERIALIZED = "materialized"
+    CUBE_NAME = "cube_name"
+    ACTIVITY_KEY = "activity_key"
+    DECISION_POINT_ID = "decision_point_id"
 
 
 class ArgName(str, Enum):
@@ -161,6 +193,13 @@ class ArgName(str, Enum):
     ARGUMENTS = "arguments"
     FILTERS = "filters"
     PARAMS = "params"
+    MODEL_FORMAT = "model_format"
+    X_DATA = "x_data"
+    Y_DATA = "y_data"
+    METRICS = "metrics"
+    DOCUMENT_ID = "document_id"
+    RETRIEVER_NAME = "retriever_name"
+    RERANK_TOP_K = "rerank_top_k"
 
 
 class RetryPolicy(str, Enum):

@@ -33,3 +33,9 @@ from . import service_invocation
 from . import service_discovery
 from . import auth
 from . import binding
+from . import knowledge_rag
+from . import semantic_graph
+from . import ml_mining
+from . import bi_aggregation
+from . import process_mining
+from . import query_engine
